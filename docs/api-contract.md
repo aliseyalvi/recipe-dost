@@ -14,29 +14,56 @@ Later allow linking guest account to email or social login.
 
 ### POST /functions/v1/parse-url
 Purpose:
-Detect platform and fetch safe public metadata if available.
+Validate a pasted recipe link, detect platform locally, and return safe fallback metadata.
 
 Input:
 {
   "source_url": "string"
 }
 
-Output:
+Success output:
 {
-  "platform": "instagram | tiktok | youtube | facebook | other",
-  "title": "string | null",
-  "description": "string | null",
-  "thumbnail_url": "string | null",
-  "metadata_status": "success | partial | failed",
-  "requires_manual_caption": true,
-  "source_url": "string"
+  "ok": true,
+  "data": {
+    "platform": "instagram | tiktok | youtube | facebook | other",
+    "title": null,
+    "description": null,
+    "thumbnail_url": null,
+    "metadata_status": "failed",
+    "requires_manual_caption": true,
+    "source_url": "original trimmed url",
+    "normalized_url": "normalized url",
+    "host": "normalized host"
+  }
+}
+
+Error output:
+{
+  "ok": false,
+  "error": {
+    "code": "method_not_allowed | invalid_json | missing_source_url | invalid_source_url | unsupported_protocol",
+    "message": "friendly user-safe error"
+  }
 }
 
 Rules:
+- POST JSON only. OPTIONS preflight is supported.
+- `source_url` is required, trimmed, and must be a valid `http` or `https` URL.
+- Reject empty strings, non-URL text, and unsupported protocols such as `file:`, `javascript:`, `data:`, and `ftp:`.
+- Normalize host by lowercasing and removing leading `www.`.
+- Platform detection:
+  - `instagram.com` -> `instagram`
+  - `tiktok.com` -> `tiktok`
+  - `youtube.com` or `youtu.be` -> `youtube`
+  - `facebook.com`, `m.facebook.com`, or `fb.watch` -> `facebook`
+  - otherwise -> `other`
 - Do not download videos.
-- Do not scrape private pages.
-- If metadata fails, return fallback response.
+- Do not scrape Instagram, TikTok, Facebook, YouTube, private pages, or protected content.
+- Do not bypass platform protections.
+- M6 always returns fallback metadata: `metadata_status: "failed"` and `requires_manual_caption: true`.
 - User can paste caption, notes, or ingredients manually.
+- Do not use a service role key or custom admin secret in this function.
+- DB logging is intentionally skipped in M6 and will be connected in a later save/logging milestone.
 
 ### POST /functions/v1/save-recipe
 Purpose:

@@ -39,4 +39,7 @@
 - No Supabase `recipe_items` insert, `parse-url` Edge Function, AI generation, paywall, RevenueCat, share intent, video download, backup, or scraping was added.
 - Save Link analytics placeholders added for `link_pasted`, `link_validation_failed`, `recipe_save_preview_viewed`, and `recipe_link_draft_saved` without sending URLs, captions, notes, or ingredients.
 - M5 runtime fix: added Expo scheme `recipe-dost`, hardened the PostHog placeholder provider to stable no-op context methods, and guarded Preview against missing or invalid draft URLs.
-- Next action: build M6 backend `parse-url` boundary and metadata fallback behavior without downloading videos.
+- Milestone M6 `parse-url` Edge Function completed with CORS, POST/OPTIONS handling, friendly JSON validation errors, URL normalization, and platform detection.
+- M6 returns safe fallback metadata only: `metadata_status = failed`, manual caption required, and null title/description/thumbnail.
+- No scraping, video download, private-page fetch, platform bypass, DB insert, DB logging, AI generation, mobile integration, paywall, RevenueCat, or share intent was added.
+- Next action: build M7 to connect Save Link flow to backend parsing and save `recipe_items`.

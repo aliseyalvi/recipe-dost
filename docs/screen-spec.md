@@ -243,3 +243,71 @@ Do not send full source URLs, captions, notes, manual ingredients, or other free
 - Do not download videos or back up deleted videos.
 - Do not scrape private saved folders.
 - Do not add calorie, allergy, medical diet, or weight-loss claims.
+
+## M6 Parse URL Edge Function
+
+Scope: backend `parse-url` Edge Function only. Do not build mobile integration, Supabase `recipe_items` insert, AI generation, recipe result screen, library/search, grocery list, RevenueCat/paywall, Android share intent, video download, video backup, or scraping private content.
+
+### Endpoint
+
+- Route: `/functions/v1/parse-url`
+- Methods: `POST`, `OPTIONS`
+- CORS allowed headers: `authorization`, `x-client-info`, `apikey`, `content-type`
+- Compatible with Supabase authenticated and anonymous users.
+- No service role key, server secret, or admin secret is used.
+
+### Request
+
+```json
+{
+  "source_url": "string"
+}
+```
+
+### Validation
+
+- `source_url` is required.
+- Trim whitespace.
+- Must be a valid `http` or `https` URL.
+- Reject empty string, non-URL text, and unsupported protocols such as `file:`, `javascript:`, `data:`, and `ftp:`.
+- Return friendly JSON errors; do not expose raw exceptions.
+
+### Platform Detection
+
+- `instagram.com` -> `instagram`
+- `tiktok.com` -> `tiktok`
+- `youtube.com` or `youtu.be` -> `youtube`
+- `facebook.com`, `m.facebook.com`, or `fb.watch` -> `facebook`
+- otherwise -> `other`
+
+Host is normalized by lowercasing and removing leading `www.`.
+
+### Success Response
+
+```json
+{
+  "ok": true,
+  "data": {
+    "platform": "instagram | tiktok | youtube | facebook | other",
+    "title": null,
+    "description": null,
+    "thumbnail_url": null,
+    "metadata_status": "failed",
+    "requires_manual_caption": true,
+    "source_url": "original trimmed url",
+    "normalized_url": "normalized url",
+    "host": "normalized host"
+  }
+}
+```
+
+### Metadata Policy
+
+M6 returns safe fallback metadata only:
+- Do not scrape Instagram, TikTok, Facebook, or YouTube pages.
+- Do not download videos.
+- Do not fetch private pages.
+- Do not attempt to bypass platform protections.
+- Always return `metadata_status: "failed"` and `requires_manual_caption: true`.
+
+DB logging is skipped in M6. Metadata logging can be connected later when the save flow has a `recipe_id`.
