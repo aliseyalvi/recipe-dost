@@ -31,17 +31,17 @@ type ParseRecipeUrlResponse =
       }
     }
 
-export type GeneratedMockRecipeCard = {
+export type GeneratedRecipeCard = {
   recipe_card_id: string
   recipe_id: string
   recipe_title: string
-  confidence: 'low'
+  confidence: 'high' | 'medium' | 'low'
 }
 
-type GenerateMockRecipeCardResponse =
+type GenerateRecipeCardResponse =
   | {
       ok: true
-      data: GeneratedMockRecipeCard
+      data: GeneratedRecipeCard
       usage: {
         free_recipe_cards_remaining: number
         should_show_paywall: boolean
@@ -113,7 +113,7 @@ export type RecipeCardStep = {
 export type RecipeCardSubstitution = {
   original: string
   substitute: string
-  reason?: string
+  note?: string
 }
 
 export type RecipeCardTime = {
@@ -163,27 +163,74 @@ export async function parseRecipeUrl(sourceUrl: string) {
   return data.data
 }
 
-export async function generateMockRecipeCard(recipeId: string) {
+export class RecipeApiError extends Error {
+  code: string
+  status?: number
+  causeName?: string
+  functionBody?: unknown
+
+  constructor({
+    code,
+    message,
+    status,
+    causeName,
+    functionBody,
+  }: {
+    code: string
+    message: string
+    status?: number
+    causeName?: string
+    functionBody?: unknown
+  }) {
+    super(message)
+    this.name = 'RecipeApiError'
+    this.code = code
+    this.status = status
+    this.causeName = causeName
+    this.functionBody = functionBody
+  }
+}
+
+export async function generateRecipeCard(recipeId: string) {
   const { data, error } =
-    await supabase.functions.invoke<GenerateMockRecipeCardResponse>(
+    await supabase.functions.invoke<GenerateRecipeCardResponse>(
       'generate-card',
       {
         body: {
           recipe_id: recipeId,
         },
       }
-    )
+  )
 
   if (error) {
-    throw new Error('Could not generate the mock recipe card. Please try again.')
+    const functionError = await getFunctionInvokeErrorDetails(error)
+    const responseError = getFunctionResponseError(functionError.functionBody)
+    const code = responseError?.code ?? functionError.code
+
+    throw new RecipeApiError({
+      code,
+      message: responseError?.message ?? functionError.message,
+      status: functionError.status,
+      causeName: functionError.name ?? undefined,
+      functionBody: functionError.functionBody,
+    })
   }
 
   if (!data) {
-    throw new Error('Could not generate the mock recipe card. Please try again.')
+    throw new RecipeApiError({
+      code: 'unexpected_generate_card_error',
+      message: getGenerateRecipeCardErrorMessage(
+        'unexpected_generate_card_error'
+      ),
+    })
   }
 
   if (!data.ok) {
-    throw new Error(data.error.message)
+    throw new RecipeApiError({
+      code: data.error.code,
+      message: data.error.message,
+      functionBody: data,
+    })
   }
 
   return data
@@ -337,10 +384,10 @@ function getSubstitutions(value: Json): RecipeCardSubstitution[] {
         substitute,
       }
 
-      const reason = getString(record?.reason)
+      const note = getString(record?.note) || getString(record?.reason)
 
-      if (reason) {
-        substitution.reason = reason
+      if (note) {
+        substitution.note = note
       }
 
       return substitution
@@ -410,4 +457,177 @@ function getString(value: unknown): string | null {
 
 function getNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
+function getGenerateRecipeCardErrorMessage(code: string, fallback?: string) {
+  switch (code) {
+    case 'missing_openai_key':
+      return 'AI generation is not configured yet.'
+    case 'missing_gemini_key':
+      return 'Gemini generation is not configured yet.'
+    case 'gemini_request_failed':
+      return 'Gemini could not create the recipe card right now.'
+    case 'gemini_rate_limited':
+      return 'Gemini is busy right now. Please try again in a few minutes.'
+    case 'gemini_bad_request':
+      return 'Gemini could not use this request. Please try again.'
+    case 'gemini_invalid_key_or_forbidden':
+      return 'Gemini generation is not allowed with the current key.'
+    case 'gemini_model_not_found':
+      return 'Gemini model is not available.'
+    case 'openai_request_failed':
+      return 'AI service could not create the recipe card right now.'
+    case 'openai_rate_limited':
+      return 'AI service is busy right now. Please try again in a few minutes.'
+    case 'openai_insufficient_quota':
+      return 'OpenAI quota is not available for this project.'
+    case 'openai_invalid_api_key':
+      return 'OpenAI key is invalid or unavailable.'
+    case 'openai_model_forbidden':
+      return 'OpenAI model is not allowed for this key.'
+    case 'openai_model_not_found':
+      return 'OpenAI model is not available.'
+    case 'openai_bad_request':
+      return 'OpenAI could not use this request. Please try again.'
+    case 'missing_openrouter_key':
+      return 'OpenRouter generation is not configured yet.'
+    case 'openrouter_request_failed':
+      return 'OpenRouter could not create the recipe card right now.'
+    case 'openrouter_rate_limited':
+      return 'OpenRouter is busy right now. Please try again in a few minutes.'
+    case 'openrouter_bad_request':
+      return 'OpenRouter could not use this request. Please try again.'
+    case 'openrouter_invalid_key_or_forbidden':
+      return 'OpenRouter generation is not allowed with the current key.'
+    case 'openrouter_model_not_found':
+      return 'OpenRouter model is not available.'
+    case 'missing_kimi_key':
+      return 'Kimi generation is not configured yet.'
+    case 'kimi_request_failed':
+      return 'Kimi could not create the recipe card right now.'
+    case 'kimi_rate_limited':
+      return 'Kimi is busy right now. Please try again in a few minutes.'
+    case 'kimi_bad_request':
+      return 'Kimi could not use this request. Please try again.'
+    case 'kimi_invalid_key_or_forbidden':
+      return 'Kimi generation is not allowed with the current key.'
+    case 'kimi_model_not_found':
+      return 'Kimi model is not available.'
+    case 'missing_anthropic_key':
+      return 'Anthropic generation is not configured yet.'
+    case 'missing_anthropic_model':
+      return 'Anthropic model is not configured yet.'
+    case 'anthropic_not_implemented':
+      return 'Anthropic generation is not available right now.'
+    case 'unsupported_ai_provider':
+      return 'AI provider is not supported.'
+    case 'free_limit_reached':
+      return 'You have used your free recipe cards.'
+    case 'invalid_ai_output':
+      return 'Recipe card could not be generated. Please add more details and try again.'
+    case 'db_insert_failed':
+      return 'Recipe card was created but could not be saved.'
+    case 'recipe_not_found':
+      return fallback || 'Recipe link not found.'
+    case 'unauthorized':
+      return 'Please restart the app and try again.'
+    case 'invalid_request':
+      return fallback || 'Choose a saved recipe link first.'
+    default:
+      return 'Something went wrong while creating your recipe card.'
+  }
+}
+
+async function getFunctionInvokeErrorDetails(error: unknown) {
+  const record = getRecord(error)
+  const context = getRecord(record?.context)
+  const response = getRecord(record?.response) ?? context
+  const responseLike =
+    getResponseLike(record?.context) ?? getResponseLike(record?.response)
+  const responseBody = await getResponseBody(responseLike)
+  const status =
+    getNumber(record?.status) ??
+    getNumber(context?.status) ??
+    getNumber(response?.status) ??
+    responseLike?.status ??
+    undefined
+  const functionBody =
+    getRecord(responseBody) ??
+    getRecord(record?.details) ??
+    getRecord(record?.body) ??
+    getRecord(context?.body) ??
+    getRecord(context?.data) ??
+    getRecord(response?.body) ??
+    null
+  const responseError = getFunctionResponseError(functionBody)
+  const code =
+    responseError?.code ??
+    getString(record?.code) ??
+    getCodeFromStatus(status) ??
+    'unexpected_generate_card_error'
+  const message =
+    responseError?.message ??
+    getString(record?.message) ??
+    getGenerateRecipeCardErrorMessage(code)
+
+  return {
+    code,
+    message: getGenerateRecipeCardErrorMessage(code, message),
+    name: getString(record?.name),
+    status,
+    functionBody,
+  }
+}
+
+async function getResponseBody(response: Response | null) {
+  if (!response) {
+    return null
+  }
+
+  try {
+    return await response.clone().json()
+  } catch {
+    try {
+      const text = await response.clone().text()
+      return parseMaybeJson(text)
+    } catch {
+      return null
+    }
+  }
+}
+
+function getResponseLike(value: unknown): Response | null {
+  return value instanceof Response ? value : null
+}
+
+function getFunctionResponseError(value: unknown) {
+  const record = getRecord(value)
+  const errorRecord = getRecord(record?.error)
+  const code = getString(errorRecord?.code)
+  const message = getString(errorRecord?.message)
+
+  if (!code || !message) {
+    return null
+  }
+
+  return {
+    code,
+    message,
+  }
+}
+
+function getCodeFromStatus(status: number | undefined) {
+  if (status === 401 || status === 403) {
+    return 'unauthorized'
+  }
+
+  if (status === 402) {
+    return 'free_limit_reached'
+  }
+
+  if (status === 429) {
+    return 'openai_rate_limited'
+  }
+
+  return null
 }

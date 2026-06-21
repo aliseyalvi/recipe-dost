@@ -2,7 +2,8 @@ import { getPlatformLabel, getReadableSource } from '@/features/recipe-draft/pla
 import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { RecipePlatform } from '@/features/recipe-draft/types'
 import {
-  generateMockRecipeCard,
+  RecipeApiError,
+  generateRecipeCard,
   getSavedRecipeItem,
 } from '@/lib/api/recipes'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
@@ -87,7 +88,7 @@ export default function SavedRecipeRoute() {
   const hasNote = Boolean(recipe.user_note)
   const hasCaption = Boolean(recipe.pasted_caption)
 
-  const handleGenerateMockRecipeCard = async () => {
+  const handleGenerateRecipeCard = async () => {
     if (!recipeId || isGenerating) {
       return
     }
@@ -96,15 +97,13 @@ export default function SavedRecipeRoute() {
     setGenerationError(null)
     track('ai_recipe_started', {
       platform,
-      model_used: 'mock',
     })
 
     try {
-      const response = await generateMockRecipeCard(recipeId)
+      const response = await generateRecipeCard(recipeId)
 
       track('ai_recipe_completed', {
         platform,
-        model_used: 'mock',
         confidence: response.data.confidence,
       })
       router.push(`/recipe-card/${response.data.recipe_card_id}`)
@@ -112,12 +111,15 @@ export default function SavedRecipeRoute() {
       const nextError =
         caughtError instanceof Error
           ? caughtError
-          : new Error('Could not generate the mock recipe card. Please try again.')
+          : new Error('Something went wrong while creating your recipe card.')
 
       setGenerationError(nextError)
       track('ai_recipe_failed', {
         platform,
-        model_used: 'mock',
+        error_code:
+          caughtError instanceof RecipeApiError
+            ? caughtError.code
+            : 'generation_failed',
       })
     } finally {
       setIsGenerating(false)
@@ -131,7 +133,7 @@ export default function SavedRecipeRoute() {
           Recipe link saved
         </Text>
         <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-          AI recipe card generation is coming next.
+          Create a clean recipe card from your saved notes and caption.
         </Text>
       </View>
 
@@ -167,26 +169,26 @@ export default function SavedRecipeRoute() {
       </Card>
 
       {isGenerating ? (
-        <LoadingState message="Generating mock recipe card..." />
+        <LoadingState message="Creating your recipe card..." />
       ) : null}
 
       {generationError ? (
         <ErrorState
-          title="Could not generate mock card"
-          message={generationError.message}
+          title="Could not create recipe card"
+          message={getGenerationErrorMessage(generationError)}
           retryLabel="Retry"
           onRetry={() => {
-            void handleGenerateMockRecipeCard()
+            void handleGenerateRecipeCard()
           }}
         />
       ) : null}
 
       <Button
-        label="Generate Mock Recipe Card"
+        label="Generate Recipe Card"
         fullWidth
         disabled={isGenerating}
         onPress={() => {
-          void handleGenerateMockRecipeCard()
+          void handleGenerateRecipeCard()
         }}
       />
 
@@ -227,4 +229,95 @@ function getRecipePlatform(platform: string | null): RecipePlatform {
   }
 
   return 'other'
+}
+
+function getGenerationErrorMessage(error: Error) {
+  const code =
+    error instanceof RecipeApiError
+      ? error.code
+      : 'unexpected_generate_card_error'
+  const message = getFriendlyGenerateCardErrorMessage(code)
+
+  if (__DEV__) {
+    return `${message}\nDebug code: ${code}`
+  }
+
+  return message
+}
+
+function getFriendlyGenerateCardErrorMessage(code: string) {
+  switch (code) {
+    case 'missing_openai_key':
+      return 'AI generation is not configured yet.'
+    case 'missing_gemini_key':
+      return 'Gemini generation is not configured yet.'
+    case 'gemini_request_failed':
+      return 'Gemini could not create the recipe card right now.'
+    case 'gemini_rate_limited':
+      return 'Gemini is busy right now. Please try again in a few minutes.'
+    case 'gemini_bad_request':
+      return 'Gemini could not use this request. Please try again.'
+    case 'gemini_invalid_key_or_forbidden':
+      return 'Gemini generation is not allowed with the current key.'
+    case 'gemini_model_not_found':
+      return 'Gemini model is not available.'
+    case 'openai_request_failed':
+      return 'AI service could not create the recipe card right now.'
+    case 'openai_rate_limited':
+      return 'AI service is busy right now. Please try again in a few minutes.'
+    case 'openai_insufficient_quota':
+      return 'OpenAI quota is not available for this project.'
+    case 'openai_invalid_api_key':
+      return 'OpenAI key is invalid or unavailable.'
+    case 'openai_model_forbidden':
+      return 'OpenAI model is not allowed for this key.'
+    case 'openai_model_not_found':
+      return 'OpenAI model is not available.'
+    case 'openai_bad_request':
+      return 'OpenAI could not use this request. Please try again.'
+    case 'missing_openrouter_key':
+      return 'OpenRouter generation is not configured yet.'
+    case 'openrouter_request_failed':
+      return 'OpenRouter could not create the recipe card right now.'
+    case 'openrouter_rate_limited':
+      return 'OpenRouter is busy right now. Please try again in a few minutes.'
+    case 'openrouter_bad_request':
+      return 'OpenRouter could not use this request. Please try again.'
+    case 'openrouter_invalid_key_or_forbidden':
+      return 'OpenRouter generation is not allowed with the current key.'
+    case 'openrouter_model_not_found':
+      return 'OpenRouter model is not available.'
+    case 'missing_kimi_key':
+      return 'Kimi generation is not configured yet.'
+    case 'kimi_request_failed':
+      return 'Kimi could not create the recipe card right now.'
+    case 'kimi_rate_limited':
+      return 'Kimi is busy right now. Please try again in a few minutes.'
+    case 'kimi_bad_request':
+      return 'Kimi could not use this request. Please try again.'
+    case 'kimi_invalid_key_or_forbidden':
+      return 'Kimi generation is not allowed with the current key.'
+    case 'kimi_model_not_found':
+      return 'Kimi model is not available.'
+    case 'missing_anthropic_key':
+      return 'Anthropic generation is not configured yet.'
+    case 'missing_anthropic_model':
+      return 'Anthropic model is not configured yet.'
+    case 'anthropic_not_implemented':
+      return 'Anthropic generation is not available right now.'
+    case 'unsupported_ai_provider':
+      return 'AI provider is not supported.'
+    case 'invalid_ai_output':
+      return 'Recipe card could not be generated. Please add more details and try again.'
+    case 'db_insert_failed':
+      return 'Recipe card was created but could not be saved.'
+    case 'recipe_not_found':
+      return 'Recipe link not found.'
+    case 'free_limit_reached':
+      return 'You have used your free recipe cards.'
+    case 'unauthorized':
+      return 'Please restart the app and try again.'
+    default:
+      return 'Something went wrong while creating your recipe card.'
+  }
 }

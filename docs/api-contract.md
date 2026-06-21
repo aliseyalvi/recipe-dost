@@ -110,7 +110,7 @@ Not implemented in M7. The M7 mobile app writes simple user-owned `recipe_items`
 
 ### POST /functions/v1/generate-card
 Purpose:
-M8 mock backend flow that generates a deterministic mock recipe card for a saved `recipe_items` row and stores it in `recipe_cards`.
+M10 backend flow that generates an AI recipe card for an authenticated user's saved `recipe_items` row and stores it in `recipe_cards`.
 
 Input:
 {
@@ -124,7 +124,7 @@ Output:
     "recipe_card_id": "uuid",
     "recipe_id": "uuid",
     "recipe_title": "string",
-    "confidence": "low"
+    "confidence": "high | medium | low"
   },
   "usage": {
     "free_recipe_cards_remaining": 0,
@@ -136,7 +136,7 @@ Error output:
 {
   "ok": false,
   "error": {
-    "code": "missing_auth | unauthorized | missing_recipe_id | invalid_recipe_id | recipe_not_found | free_limit_reached | generation_failed",
+    "code": "unauthorized | invalid_request | unsupported_ai_provider | recipe_not_found | free_limit_reached | missing_gemini_key | gemini_rate_limited | gemini_bad_request | gemini_invalid_key_or_forbidden | gemini_model_not_found | gemini_request_failed | missing_openai_key | openai_rate_limited | openai_insufficient_quota | openai_invalid_api_key | openai_model_forbidden | openai_model_not_found | openai_bad_request | openai_request_failed | missing_openrouter_key | openrouter_rate_limited | openrouter_bad_request | openrouter_invalid_key_or_forbidden | openrouter_model_not_found | openrouter_request_failed | missing_kimi_key | kimi_rate_limited | kimi_bad_request | kimi_invalid_key_or_forbidden | kimi_model_not_found | kimi_request_failed | missing_anthropic_key | missing_anthropic_model | anthropic_not_implemented | invalid_ai_output | db_insert_failed | unexpected_generate_card_error",
     "message": "friendly user-safe error"
   }
 }
@@ -146,15 +146,43 @@ Rules:
 - The Edge Function reads the authenticated user from the Authorization header.
 - Fetch `recipe_items` where `id = recipe_id` and `user_id = authenticated user id`.
 - If the recipe is missing, return `recipe_not_found`.
-- M8 does not call OpenAI or any LLM provider.
-- M8 creates mock card JSON matching `docs/ai-prompt-contract.md`.
-- Insert a `recipe_cards` row with `model_used = "mock"`, `prompt_version = "mock-v1"`, token counts `0`, and estimated cost `0`.
-- If an existing mock card exists for the same user and recipe, update it instead of creating duplicate tap-spam rows.
-- Free users can generate up to 3 recipe cards total in M8, enforced by counting the user's `recipe_cards` rows.
-- `usage_counters` is updated best-effort for the current month when a new mock card is created, but the M8 limit is based on `recipe_cards` count so usage-counter schema details do not block the milestone.
+- The Edge Function reads provider secrets from Supabase function environment variables only. The mobile app never receives AI keys.
+- `AI_PROVIDER` supports `mock`, `gemini`, `openai`, `openrouter`, `kimi`, and `anthropic`; it defaults to `gemini` when missing.
+- Shared env:
+  - `MAX_INPUT_CHARS`
+- Gemini env:
+  - `GEMINI_API_KEY`
+  - `GEMINI_MODEL`, default `gemini-2.5-flash-lite`
+- OpenAI env:
+  - `OPENAI_API_KEY`
+  - `OPENAI_MODEL`, default `gpt-4o-mini`
+- OpenRouter env:
+  - `OPENROUTER_API_KEY`
+  - `OPENROUTER_MODEL`
+- Kimi env:
+  - `KIMI_API_KEY`
+  - `KIMI_MODEL`
+  - `KIMI_BASE_URL`
+- Anthropic env:
+  - `ANTHROPIC_API_KEY`
+  - `ANTHROPIC_MODEL`
+- Build AI input only from saved `recipe_items` fields: platform, title, description, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, source link, and metadata_status.
+- Do not fetch the source URL, scrape platforms, download videos, or claim the video was watched.
+- Require structured JSON output matching `docs/ai-prompt-contract.md`; invalid output returns `invalid_ai_output`.
+- Insert a `recipe_cards` row with provider-specific `model_used`, provider-specific `prompt_version`, token counts when available, and estimated cost `0`.
+- Provider prompt versions:
+  - mock: `mock-v1`
+  - gemini: `recipe-card-v1-gemini`
+  - openai: `recipe-card-v1-openai`
+  - openrouter: `recipe-card-v1-openrouter`
+  - kimi: `recipe-card-v1-kimi`
+  - anthropic: `recipe-card-v1-anthropic`
+- If an existing card exists for the same user, recipe, and provider prompt version, update it instead of creating duplicate tap-spam rows.
+- Free users can generate up to 3 recipe cards total, enforced by counting the user's `recipe_cards` rows.
+- `usage_counters` is updated best-effort for the current month when a new card is created, but the limit is based on `recipe_cards` count so usage-counter schema details do not block generation.
 - Do not use a service-role key in mobile.
 - Do not download videos, scrape platforms, or fetch private content.
-- Real AI generation is deferred to a later milestone.
+- Do not add paywall/RevenueCat behavior in M10; paywall remains deferred to M14.
 
 ### POST /functions/v1/grocery-list
 Purpose:

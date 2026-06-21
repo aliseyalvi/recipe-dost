@@ -62,3 +62,14 @@
 - M9 displays existing mock `recipe_cards` data with summary, timing, ingredients, steps, grocery list, substitutions, storage/safety, missing details, and source-link actions.
 - Real AI generation remains deferred to M10.
 - No paywall, video download, backup, scraping, RevenueCat, or Android share intent was added in M9.
+- Milestone M10 real `generate-card` integration completed in the Supabase Edge Function.
+- M10 uses the OpenAI Responses API with strict structured JSON output and stores cards with `prompt_version = recipe-card-v1`.
+- AI input is limited to saved captions, notes, manual ingredients, safe metadata, and the source link as a reference only; no scraping, video download, platform fetch, or watched-video claim was added.
+- Mobile generation copy now says "Generate Recipe Card" with "Creating your recipe card..." loading text and friendly errors for missing OpenAI config, free limit, invalid AI output, and generic failures.
+- The 3 free recipe card behavior is preserved, paywall/RevenueCat remains deferred to M14, and no Android share intent or grocery list generation was added.
+- M10 `generate-card` was refactored to a provider-based AI adapter system with `AI_PROVIDER = mock | gemini | openai | openrouter | kimi | anthropic`.
+- Default development provider is Gemini using `GEMINI_API_KEY` and `GEMINI_MODEL`; mock remains available for offline/no-cost testing.
+- OpenAI, OpenRouter, Kimi, and Anthropic are selectable through Supabase Edge Function secrets only; no AI keys were added to the mobile app.
+- Provider adapters normalize output into the same `recipe_cards` shape before DB insert/update.
+- No scraping, video download, deleted-video backup, paywall, RevenueCat, Android share intent, or M11 library/search work was added.
+- `FREE_RECIPE_CARD_LIMIT` is now configurable for `generate-card`; development can use a higher limit for AI provider testing, and production can return to `3` before the paywall milestone.

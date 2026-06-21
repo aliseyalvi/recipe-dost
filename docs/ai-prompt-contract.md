@@ -28,13 +28,16 @@ You convert user-provided public link metadata, captions, manual notes, and ingr
     "cuisine_preference": "Pakistani"
   },
   "recipe_source": {
-    "source_url": "string",
+    "source_link": "string",
     "platform": "instagram | tiktok | youtube | facebook | other",
     "title": "string | null",
     "description": "string | null",
     "user_note": "string | null",
     "pasted_caption": "string | null",
-    "manual_ingredients": "string | null"
+    "manual_ingredients": "string | null",
+    "meal_type": "string | null",
+    "cuisine": "string | null",
+    "metadata_status": "string | null"
   },
   "app_context": {
     "platform": "android",
@@ -72,7 +75,7 @@ You convert user-provided public link metadata, captions, manual notes, and ingr
     {
       "original": "string",
       "substitute": "string",
-      "reason": "string"
+      "note": "string"
     }
   ],
   "storage_tip": "string",
@@ -82,12 +85,52 @@ You convert user-provided public link metadata, captions, manual notes, and ingr
   "source_link": "string"
 }
 
-## M8 Mock Behavior
+## M10 Provider Adapter Behavior
 
-M8 does not call an AI provider. The `generate-card` Edge Function creates deterministic mock data that follows the required JSON response shape above, stores it in `recipe_cards`, and marks:
-- `model_used = "mock"`
-- `prompt_version = "mock-v1"`
-- `confidence = "low"`
-- token counts and estimated cost as `0`
+M10 calls AI providers from the Supabase `generate-card` Edge Function only. The mobile app never calls Gemini, OpenAI, OpenRouter, Kimi, Anthropic, or any other AI provider directly.
 
-Mock cards must clearly include missing info that says real AI generation will be added later.
+The function selects a provider with `AI_PROVIDER`:
+- `mock`
+- `gemini`
+- `openai`
+- `openrouter`
+- `kimi`
+- `anthropic`
+
+If `AI_PROVIDER` is missing, it defaults to `gemini` for development and testing.
+
+Provider secrets are Supabase Edge Function secrets only:
+- Gemini: `GEMINI_API_KEY`, `GEMINI_MODEL`
+- OpenAI: `OPENAI_API_KEY`, `OPENAI_MODEL`
+- OpenRouter: `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`
+- Kimi: `KIMI_API_KEY`, `KIMI_MODEL`, `KIMI_BASE_URL`
+- Anthropic: `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`
+- Shared: `MAX_INPUT_CHARS`
+
+The AI input is built only from the saved `recipe_items` row. Recipe Dost does not fetch the source link, scrape Instagram/TikTok/YouTube/Facebook, download videos, or claim the video was watched.
+
+Output must be structured JSON with strict required fields and `additionalProperties: false`. Invalid or unparseable model output returns:
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "invalid_ai_output",
+    "message": "Recipe card could not be generated. Please add more details and try again."
+  }
+}
+```
+
+Generated cards are stored with:
+- `model_used = provider model`
+- provider-specific `prompt_version`
+- input/output tokens when available, otherwise `0`
+- `estimated_cost = 0`
+
+Provider prompt versions:
+- `mock-v1`
+- `recipe-card-v1-gemini`
+- `recipe-card-v1-openai`
+- `recipe-card-v1-openrouter`
+- `recipe-card-v1-kimi`
+- `recipe-card-v1-anthropic`

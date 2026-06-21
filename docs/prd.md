@@ -212,7 +212,7 @@ M5 does not insert into `recipe_items`, call `parse-url`, call Edge Functions, f
     {
       "original": "string",
       "substitute": "string",
-      "reason": "string"
+      "note": "string"
     }
   ],
   "storage_tip": "string",

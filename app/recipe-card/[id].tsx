@@ -346,9 +346,9 @@ function SubstitutionsSection({
               {' -> '}
               {substitution.substitute}
             </Text>
-            {substitution.reason ? (
+            {substitution.note ? (
               <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-                {substitution.reason}
+                {substitution.note}
               </Text>
             ) : null}
           </View>

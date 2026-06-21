@@ -468,12 +468,12 @@ Success response:
 
 Route: `/recipe/[id]`
 
-Add CTA: "Generate Mock Recipe Card"
+M8 historical CTA: "Generate Mock Recipe Card"
 
 On press:
 - Track `ai_recipe_started`.
 - Show `LoadingState`.
-- Call `generateMockRecipeCard(recipeId)`.
+- Call the then-current mock generator helper.
 - On success, show:
   - "Mock recipe card generated"
   - returned recipe title
@@ -513,7 +513,7 @@ Scope: display existing `recipe_cards` data created by M8 mock generation. Do no
 
 - Route: `/recipe-card/[id]`
 - Receives `recipe_card_id`.
-- The M8 saved recipe placeholder navigates to this route after `generateMockRecipeCard` succeeds.
+- The saved recipe placeholder navigates to this route after generation succeeds.
 - Do not create competing result routes.
 
 ### Data
@@ -596,3 +596,46 @@ Do not send source URLs, ingredients, instructions, notes, captions, or recipe c
 - M9 displays saved recipe card data only.
 - Real AI generation remains deferred to M10.
 - No paywall, video download, backup, scraping, or share intent was added.
+
+## M10 Real Generate Card
+
+Scope: replace the M8 mock `generate-card` behavior with real OpenAI Responses API generation inside the Supabase Edge Function. Preserve the existing saved-link trigger and M9 result screen. Do not build paywall/RevenueCat, Android share intent, library/search, grocery list generation, video download/backup, scraping, or medical/diet/calorie/allergy/weight-loss features.
+
+### Backend Flow
+
+saved `recipe_items` row -> authenticated `generate-card` Edge Function -> OpenAI structured JSON response -> insert/update `recipe_cards` row -> mobile navigates to `/recipe-card/[id]`.
+
+### Generate CTA
+
+Route: `/recipe/[id]`
+
+- CTA label: "Generate Recipe Card"
+- Loading state: "Creating your recipe card..."
+- On success: navigate to `/recipe-card/[recipe_card_id]`.
+- Known friendly errors:
+  - `missing_openai_key`: "AI generation is not configured yet."
+  - `free_limit_reached`: "You have used your free recipe cards."
+  - `invalid_ai_output`: "Recipe card could not be generated. Please add more details and try again."
+  - generic: "Something went wrong while creating your recipe card."
+
+### AI Input Rules
+
+- Use only saved `recipe_items` values: platform, title, description, user note, pasted caption, manual ingredients, meal type, cuisine, source link, and metadata status.
+- Do not fetch the source link, scrape platforms, download videos, or imply Recipe Dost watched the video.
+- Store generated cards with `model_used = AI_MODEL` and `prompt_version = "recipe-card-v1"`.
+- Preserve the 3 free recipe card limit.
+
+### Analytics
+
+Events remain:
+- `ai_recipe_started`
+- `ai_recipe_completed`
+- `ai_recipe_failed`
+
+Allowed properties:
+- `platform`
+- `model_used`
+- `confidence`
+- `error_code`
+
+Do not send source URLs, captions, notes, manual ingredients, generated recipe content, or sensitive personal data.
