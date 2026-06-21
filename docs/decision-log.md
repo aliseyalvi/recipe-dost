@@ -23,4 +23,16 @@
 - Onboarding profile now persists locally with Zustand/SecureStore and upserts to Supabase `user_profiles`; `onboarding_completed` is set only after a successful finish.
 - Added migration for `user_profiles.cooking_preferences` so optional preference chips are stored instead of ignored.
 - Onboarding analytics placeholders added for `onboarding_started`, `onboarding_step_viewed`, `onboarding_option_selected`, `language_selected`, and `onboarding_completed` without sending sensitive freeform data.
-- Next action: build M4 Save Link flow with Supabase Edge Function boundaries and no video downloading.
+- Next action: build M4 Home Dashboard before the Save Link flow.
+
+## Current Build Plan Alignment
+- Canonical milestone order confirmed.
+- M1 = App Foundation.
+- M2 = Supabase Client + Anonymous Auth.
+- M3 = Onboarding.
+- Previous naming conflict corrected where older plan used M2 for Onboarding.
+- Going forward, every milestone must first update screen/API spec, then Codex builds only that milestone.
+- Milestone M4 Home Dashboard completed with greeting, promise card, compliance note, how-it-works steps, recent recipe query, empty/loading/error/retry states, and quick actions.
+- Save Recipe Link now routes to an M5 placeholder only; no Save Link form, AI generation, Edge Functions, paywall, RevenueCat, share intent, or grocery list generation was added.
+- Home analytics placeholders added for `home_viewed`, `home_primary_cta_clicked`, and `recent_recipe_clicked` without sending source URLs or user notes.
+- Next action: build M5 Save Link flow with Supabase Edge Function boundaries and no video downloading.

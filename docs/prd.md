@@ -106,7 +106,7 @@ This should happen before any paywall.
 | Splash / loading          | App init, auth, subscription check                              |
 | Welcome                   | “Save recipe videos as clean recipe cards”                      |
 | Onboarding                | Select cooking style, language, optional preferences, household size |
-| Home                      | Recent recipes, primary CTA, empty state                        |
+| Home                      | Greeting, promise card, compliance note, how-it-works steps, recent recipes, quick actions |
 | Save Link / Share Capture | Accept URL from Android share sheet or paste manually           |
 | Preview & Add Note        | Show link, platform, optional thumbnail/title, user note        |
 | AI Recipe Result          | Ingredients, steps, grocery list, time, serving size, tags      |
@@ -155,6 +155,20 @@ Onboarding persists locally first and saves to `user_profiles` for the current a
 | Manual ingredients | Optional fallback                                         |
 | Meal type          | Optional: breakfast, lunch, dinner, snack, dessert, iftar |
 | Cuisine            | Optional                                                  |
+
+## 12.1 Home Dashboard
+
+After onboarding, users land on Home. Home should remind users that Recipe Dost is link-first and does not save video files.
+
+Home sections:
+- Header greeting: "Assalam o Alaikum 👋" for Urdu/Roman Urdu users, otherwise "Welcome back".
+- Main promise card: "Stop losing recipe Reels" with CTAs for Save Recipe Link and View Library.
+- Trust note: "Recipe Dost saves recipe cards and links, not video files."
+- How it works: paste a recipe video link, add notes or caption if needed, get ingredients, steps, and grocery list.
+- Recent recipes: show the latest 3 `recipe_items` for the current user with title, platform, created date, metadata status, and thumbnail when available.
+- Quick actions: Library, Grocery List, Settings.
+
+Home must include loading, empty, error, and retry states for recent recipes. The Save Link CTA navigates to the M5 placeholder until the real save flow is built.
 
 ## 13. AI Output Format
 
