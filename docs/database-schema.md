@@ -15,6 +15,7 @@ Every user-owned table must include user_id uuid references auth.users(id).
 - cooking_level text
 - cuisine_preference text
 - main_use text
+- cooking_preferences text[]
 - onboarding_completed boolean
 - created_at timestamptz
 - updated_at timestamptz

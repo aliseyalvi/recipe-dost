@@ -1,6 +1,7 @@
 import '@/i18n'
 
 import { AppQueryProvider } from '@/providers/query-provider'
+import { AuthProvider } from '@/providers/auth-provider'
 import { PostHogPlaceholderProvider } from '@/providers/posthog-placeholder-provider'
 import { SentryPlaceholderProvider } from '@/providers/sentry-placeholder-provider'
 import { ReactNode } from 'react'
@@ -16,7 +17,9 @@ export function AppProviders({ children }: Props) {
     <SentryPlaceholderProvider>
       <PostHogPlaceholderProvider>
         <I18nextProvider i18n={i18n}>
-          <AppQueryProvider>{children}</AppQueryProvider>
+          <AppQueryProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </AppQueryProvider>
         </I18nextProvider>
       </PostHogPlaceholderProvider>
     </SentryPlaceholderProvider>

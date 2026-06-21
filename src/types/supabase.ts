@@ -430,6 +430,7 @@ export type Database = {
       user_profiles: {
         Row: {
           cooking_level: string | null
+          cooking_preferences: string[]
           created_at: string
           cuisine_preference: string | null
           household_size: string | null
@@ -441,6 +442,7 @@ export type Database = {
         }
         Insert: {
           cooking_level?: string | null
+          cooking_preferences?: string[]
           created_at?: string
           cuisine_preference?: string | null
           household_size?: string | null
@@ -452,6 +454,7 @@ export type Database = {
         }
         Update: {
           cooking_level?: string | null
+          cooking_preferences?: string[]
           created_at?: string
           cuisine_preference?: string | null
           household_size?: string | null

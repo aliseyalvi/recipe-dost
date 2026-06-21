@@ -1,9 +1,12 @@
 import { PlaceholderScreen } from '@/screens/placeholder-screen'
+import { useAuth } from '@/providers/auth-provider'
 import { colors, spacing, typography } from '@/theme'
 import { Card } from '@/ui/card'
 import { Text, View } from 'react-native'
 
 export default function SettingsRoute() {
+  const { user } = useAuth()
+
   return (
     <PlaceholderScreen
       screenName="settings"
@@ -22,7 +25,10 @@ export default function SettingsRoute() {
             RevenueCat: not initialized
           </Text>
           <Text selectable style={[typography.body, { color: colors.text }]}>
-            Supabase: not connected in M1
+            Supabase: anonymous auth enabled
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.text }]}>
+            Anonymous user: {user?.id ?? 'Not available'}
           </Text>
         </View>
       </Card>

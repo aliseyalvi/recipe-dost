@@ -105,7 +105,7 @@ This should happen before any paywall.
 | ------------------------- | --------------------------------------------------------------- |
 | Splash / loading          | App init, auth, subscription check                              |
 | Welcome                   | “Save recipe videos as clean recipe cards”                      |
-| Onboarding                | Select cooking style, language, diet preference, household size |
+| Onboarding                | Select cooking style, language, optional preferences, household size |
 | Home                      | Recent recipes, primary CTA, empty state                        |
 | Save Link / Share Capture | Accept URL from Android share sheet or paste manually           |
 | Preview & Add Note        | Show link, platform, optional thumbnail/title, user note        |
@@ -116,18 +116,31 @@ This should happen before any paywall.
 | Paywall                   | Unlock unlimited recipes, meal plans, grocery export            |
 | Settings                  | Language, subscription, support, privacy, terms, delete account |
 
-## 11. Onboarding Questions
+## 11. Onboarding Flow
 
-| Question               | Options                                                                     |
-| ---------------------- | --------------------------------------------------------------------------- |
-| What do you cook most? | Pakistani, Indian, Arabic, Western, Chinese, baking, mixed                  |
-| Preferred language     | English, Urdu, Roman Urdu, both                                             |
-| Household size         | 1, 2, 3–4, 5+                                                               |
-| Cooking level          | Beginner, average, confident                                                |
-| Main use               | Save recipes, meal planning, grocery list, food content ideas               |
-| Any preference?        | Budget meals, quick meals, healthy-ish, kids meals, Ramadan/iftar, desserts |
+| Screen                 | Copy / Question                                           | Options                                                                     | Required? | Saved Field            |
+| ---------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------- | --------- | ---------------------- |
+| Welcome                | Save recipe videos as clean recipe cards                  | CTA: Start Free                                                             | Yes       | n/a                    |
+| Cooking Style          | What do you cook most?                                    | Pakistani, Indian, Arabic, Western, Chinese, Baking, Mixed                  | Yes       | cuisine_preference     |
+| Preferred Language     | How should Recipe Dost explain recipes?                   | English, Urdu, Roman Urdu, Both                                             | Yes       | language               |
+| Household Size         | How many people do you usually cook for?                  | 1, 2, 3-4, 5+                                                               | Yes       | household_size         |
+| Cooking Level          | What is your cooking level?                               | Beginner, Average, Confident                                                | Yes       | cooking_level          |
+| Main Use + Preferences | What do you want to use Recipe Dost for?                  | Save recipes, Meal planning, Grocery list, Food content ideas               | Yes       | main_use               |
+| Optional Preferences   | Optional preference chips on the Main Use screen          | Budget meals, Quick meals, Healthy-ish, Kids meals, Ramadan/Iftar, Desserts | No        | cooking_preferences    |
 
-Avoid medical/diet diagnosis. Preferences are for organization only, not medical nutrition advice.
+Welcome subtext: "Turn Reels, TikToks, Shorts, and food videos into ingredients, steps, grocery lists, and Urdu/Roman Urdu cooking notes."
+
+Trust note: "We save recipe cards and links, not video files."
+
+Preferred Language helper: "You can change this later in Settings."
+
+Household Size helper: "We will estimate servings and grocery quantities better."
+
+Cooking Level helper: "Beginner mode gives simpler steps and extra tips."
+
+Avoid medical/diet diagnosis. Preferences are for organization only, not medical nutrition advice. Do not make calorie, allergy, medical diet, or weight-loss claims.
+
+Onboarding persists locally first and saves to `user_profiles` for the current anonymous Supabase user. `onboarding_completed` is set to true only after successful finish. If Supabase save fails, users can retry or continue later with local data while Supabase remains incomplete where possible.
 
 ## 12. Input Fields
 

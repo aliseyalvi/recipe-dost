@@ -7,6 +7,8 @@ type Props = {
   message: string
   retryLabel?: string
   onRetry?: () => void
+  secondaryActionLabel?: string
+  onSecondaryAction?: () => void
 }
 
 export function ErrorState({
@@ -14,6 +16,8 @@ export function ErrorState({
   message,
   retryLabel = 'Try again',
   onRetry,
+  secondaryActionLabel,
+  onSecondaryAction,
 }: Props) {
   return (
     <View
@@ -35,6 +39,13 @@ export function ErrorState({
       </Text>
       {onRetry ? (
         <Button label={retryLabel} onPress={onRetry} variant="secondary" />
+      ) : null}
+      {onSecondaryAction && secondaryActionLabel ? (
+        <Button
+          label={secondaryActionLabel}
+          onPress={onSecondaryAction}
+          variant="ghost"
+        />
       ) : null}
     </View>
   )
