@@ -407,3 +407,100 @@ Do not send full source URLs, captions, notes, ingredients, recipe content, or s
 - Do not download or back up videos.
 - Do not scrape private saved folders or platform-protected content.
 - Do not add calorie, allergy, medical diet, or weight-loss claims.
+
+## M8 Mock Generate Card
+
+Scope: mock `generate-card` Edge Function plus a minimal mobile trigger from the saved-link placeholder. Do not build real AI generation, a full recipe result screen, grocery list generation, RevenueCat/paywall, Android share intent, video download/backup, scraping private content, or medical/diet/calorie/allergy/weight-loss features.
+
+### Backend Flow
+
+saved `recipe_items` row -> `generate-card` Edge Function -> mock `recipe_cards` row -> mobile success state.
+
+### Endpoint
+
+- Route: `/functions/v1/generate-card`
+- Methods: `POST`, `OPTIONS`
+- CORS allowed headers: `authorization`, `x-client-info`, `apikey`, `content-type`
+- Requires authenticated Supabase user JWT.
+- Do not deploy with `--no-verify-jwt`.
+- Do not use a service-role key in mobile.
+
+Request:
+
+```json
+{
+  "recipe_id": "uuid"
+}
+```
+
+Success response:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "recipe_card_id": "uuid",
+    "recipe_id": "uuid",
+    "recipe_title": "string",
+    "confidence": "low"
+  },
+  "usage": {
+    "free_recipe_cards_remaining": 0,
+    "should_show_paywall": true
+  }
+}
+```
+
+### Mock Recipe Card Rules
+
+- Fetch `recipe_items` where `id = recipe_id` and `user_id = authenticated user id`.
+- If not found, return `recipe_not_found` with "Recipe link not found."
+- Do not call OpenAI or any LLM provider.
+- Use available `recipe_items` fields to create deterministic mock data.
+- If `manual_ingredients` exists, use it as ingredient hints.
+- If `pasted_caption` or `user_note` exists and title is missing, use a generic platform-based notes title.
+- Insert or update one latest mock `recipe_cards` row for the user and recipe to avoid duplicate tap-spam.
+- Store `model_used = "mock"`, `prompt_version = "mock-v1"`, token counts `0`, and estimated cost `0`.
+- Enforce the M8 free limit as 3 total `recipe_cards` rows per user.
+- Update `usage_counters` best-effort for the current month when a new mock card is created.
+
+### Saved Recipe Placeholder
+
+Route: `/recipe/[id]`
+
+Add CTA: "Generate Mock Recipe Card"
+
+On press:
+- Track `ai_recipe_started`.
+- Show `LoadingState`.
+- Call `generateMockRecipeCard(recipeId)`.
+- On success, show:
+  - "Mock recipe card generated"
+  - returned recipe title
+  - "Full result screen is coming next."
+- On error, show `ErrorState` with Retry.
+
+### Analytics
+
+Use the existing placeholder wrapper only.
+
+Events:
+- `ai_recipe_started`
+- `ai_recipe_completed`
+- `ai_recipe_failed`
+
+Allowed properties:
+- `platform`
+- `model_used: "mock"`
+- `confidence`
+
+Do not send source URLs, notes, captions, manual ingredients, recipe content, or sensitive personal data.
+
+### Product Guardrails
+
+- Save links, notes, safe metadata, and mock recipe cards only.
+- Do not scrape or download videos.
+- Do not fetch Instagram, TikTok, Facebook, or YouTube metadata.
+- Do not add paywall, RevenueCat, or Android share intent behavior.
+- Real AI generation is deferred to M10.
+- Full result UI is next as M9.

@@ -39,13 +39,19 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "expo-doctor": "^1.19.10",
     "typescript": "~6.0.3"
   },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "doctor": "expo-doctor",
+    "doctor:verbose": "expo-doctor --verbose",
+    "functions:check": "deno check --config supabase/functions/deno.json supabase/functions/*/index.ts",
+    "functions:fmt": "deno fmt --config supabase/functions/deno.json supabase/functions"
   },
   "private": true
 }

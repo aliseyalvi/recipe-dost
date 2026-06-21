@@ -110,34 +110,51 @@ Not implemented in M7. The M7 mobile app writes simple user-owned `recipe_items`
 
 ### POST /functions/v1/generate-card
 Purpose:
-Generate AI recipe card from saved link metadata, caption, note, and user preferences.
+M8 mock backend flow that generates a deterministic mock recipe card for a saved `recipe_items` row and stores it in `recipe_cards`.
 
 Input:
 {
-  "recipe_id": "uuid",
-  "language": "english | urdu | roman_urdu | both",
-  "household_size": "1 | 2 | 3-4 | 5+",
-  "cooking_level": "beginner | average | confident",
-  "cuisine_preference": "string | null"
+  "recipe_id": "uuid"
 }
 
 Output:
 {
   "ok": true,
-  "data": "AI recipe card JSON",
+  "data": {
+    "recipe_card_id": "uuid",
+    "recipe_id": "uuid",
+    "recipe_title": "string",
+    "confidence": "low"
+  },
   "usage": {
     "free_recipe_cards_remaining": 0,
     "should_show_paywall": true
   }
 }
 
+Error output:
+{
+  "ok": false,
+  "error": {
+    "code": "missing_auth | unauthorized | missing_recipe_id | invalid_recipe_id | recipe_not_found | free_limit_reached | generation_failed",
+    "message": "friendly user-safe error"
+  }
+}
+
 Rules:
-- Verify user JWT.
-- Check usage limits.
-- Free users get 3 AI recipe cards.
-- Save result to recipe_cards.
-- Track token usage and estimated cost.
-- Return structured JSON only.
+- Requires a valid authenticated Supabase user JWT. Do not deploy with `--no-verify-jwt`.
+- The Edge Function reads the authenticated user from the Authorization header.
+- Fetch `recipe_items` where `id = recipe_id` and `user_id = authenticated user id`.
+- If the recipe is missing, return `recipe_not_found`.
+- M8 does not call OpenAI or any LLM provider.
+- M8 creates mock card JSON matching `docs/ai-prompt-contract.md`.
+- Insert a `recipe_cards` row with `model_used = "mock"`, `prompt_version = "mock-v1"`, token counts `0`, and estimated cost `0`.
+- If an existing mock card exists for the same user and recipe, update it instead of creating duplicate tap-spam rows.
+- Free users can generate up to 3 recipe cards total in M8, enforced by counting the user's `recipe_cards` rows.
+- `usage_counters` is updated best-effort for the current month when a new mock card is created, but the M8 limit is based on `recipe_cards` count so usage-counter schema details do not block the milestone.
+- Do not use a service-role key in mobile.
+- Do not download videos, scrape platforms, or fetch private content.
+- Real AI generation is deferred to a later milestone.
 
 ### POST /functions/v1/grocery-list
 Purpose:

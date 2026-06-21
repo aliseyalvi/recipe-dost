@@ -14,3 +14,26 @@ Rules:
 - Every feature must include PostHog event tracking.
 - Run typecheck before finishing a task.
 - Update docs/decision-log.md after each milestone.
+
+## Validation commands
+
+This project uses npm as the package manager.
+
+Prefer these commands:
+- npm run typecheck
+- npm run doctor
+- npm run functions:check
+
+Avoid relying on npx inside Codex if PATH is missing.
+
+Do not use local Supabase Docker commands.
+This project uses Supabase cloud-first development.
+Use:
+- supabase db push
+- supabase functions deploy <function-name>
+
+Do not suggest:
+- supabase start
+- supabase db reset
+- supabase functions serve
+unless explicitly requested.

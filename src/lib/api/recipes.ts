@@ -31,6 +31,30 @@ type ParseRecipeUrlResponse =
       }
     }
 
+export type GeneratedMockRecipeCard = {
+  recipe_card_id: string
+  recipe_id: string
+  recipe_title: string
+  confidence: 'low'
+}
+
+type GenerateMockRecipeCardResponse =
+  | {
+      ok: true
+      data: GeneratedMockRecipeCard
+      usage: {
+        free_recipe_cards_remaining: number
+        should_show_paywall: boolean
+      }
+    }
+  | {
+      ok: false
+      error: {
+        code: string
+        message: string
+      }
+    }
+
 export type SavedRecipeItem = Pick<
   Database['public']['Tables']['recipe_items']['Row'],
   | 'id'
@@ -69,6 +93,32 @@ export async function parseRecipeUrl(sourceUrl: string) {
   }
 
   return data.data
+}
+
+export async function generateMockRecipeCard(recipeId: string) {
+  const { data, error } =
+    await supabase.functions.invoke<GenerateMockRecipeCardResponse>(
+      'generate-card',
+      {
+        body: {
+          recipe_id: recipeId,
+        },
+      }
+    )
+
+  if (error) {
+    throw new Error('Could not generate the mock recipe card. Please try again.')
+  }
+
+  if (!data) {
+    throw new Error('Could not generate the mock recipe card. Please try again.')
+  }
+
+  if (!data.ok) {
+    throw new Error(data.error.message)
+  }
+
+  return data
 }
 
 export async function saveRecipeItem({

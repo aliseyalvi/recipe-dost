@@ -49,4 +49,12 @@
 - Fixed the PostHog placeholder provider runtime warning by making it a pure static no-op context with no state, effects, memoization, provider-side tracking, or async work.
 - Confirmed the M7 `recipe_items` insert works and remains the current save path.
 - Confirmed `title = null` and `metadata_status = failed` are expected until safe metadata providers or AI title generation are added.
-- Next action: build AI recipe card generation as the next backend/app milestone.
+- Milestone M8 mock `generate-card` completed with authenticated Edge Function handling, recipe ownership checks, mock card generation, and safe CORS.
+- M8 `recipe_cards` insert/update works with deterministic mock data using `model_used = mock`, `prompt_version = mock-v1`, zero token usage, and zero estimated cost.
+- The saved recipe placeholder now has a minimal "Generate Mock Recipe Card" trigger and success/error/loading states.
+- Real AI generation is deferred to M10.
+- Full recipe result UI is next as M9.
+- No video download, scraping, paywall, RevenueCat, or Android share intent was added in M8.
+- Deno function validation fixed for Supabase Edge Functions.
+- Added `supabase/functions/deno.json` and updated function check/format scripts to use it.
+- M8 mock `generate-card` behavior remains unchanged.

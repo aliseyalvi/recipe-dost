@@ -1,7 +1,12 @@
 import { getPlatformLabel, getReadableSource } from '@/features/recipe-draft/platform'
 import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { RecipePlatform } from '@/features/recipe-draft/types'
-import { getSavedRecipeItem } from '@/lib/api/recipes'
+import {
+  GeneratedMockRecipeCard,
+  generateMockRecipeCard,
+  getSavedRecipeItem,
+} from '@/lib/api/recipes'
+import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, spacing, typography } from '@/theme'
 import { Button } from '@/ui/button'
 import { Card } from '@/ui/card'
@@ -11,12 +16,18 @@ import { LoadingState } from '@/ui/loading-state'
 import { Screen } from '@/ui/screen'
 import { useQuery } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useState } from 'react'
 import { Text, View } from 'react-native'
 
 export default function SavedRecipeRoute() {
   const router = useRouter()
+  const { track } = usePostHog()
   const { id } = useLocalSearchParams<{ id?: string }>()
   const recipeId = Array.isArray(id) ? id[0] : id
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generationError, setGenerationError] = useState<Error | null>(null)
+  const [generatedCard, setGeneratedCard] =
+    useState<GeneratedMockRecipeCard | null>(null)
   const recipeQuery = useQuery({
     enabled: Boolean(recipeId),
     queryKey: ['recipe-item', recipeId],
@@ -79,6 +90,44 @@ export default function SavedRecipeRoute() {
   const hasNote = Boolean(recipe.user_note)
   const hasCaption = Boolean(recipe.pasted_caption)
 
+  const handleGenerateMockRecipeCard = async () => {
+    if (!recipeId || isGenerating) {
+      return
+    }
+
+    setIsGenerating(true)
+    setGenerationError(null)
+    setGeneratedCard(null)
+    track('ai_recipe_started', {
+      platform,
+      model_used: 'mock',
+    })
+
+    try {
+      const response = await generateMockRecipeCard(recipeId)
+
+      setGeneratedCard(response.data)
+      track('ai_recipe_completed', {
+        platform,
+        model_used: 'mock',
+        confidence: response.data.confidence,
+      })
+    } catch (caughtError) {
+      const nextError =
+        caughtError instanceof Error
+          ? caughtError
+          : new Error('Could not generate the mock recipe card. Please try again.')
+
+      setGenerationError(nextError)
+      track('ai_recipe_failed', {
+        platform,
+        model_used: 'mock',
+      })
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   return (
     <Screen>
       <View style={{ gap: spacing.md }}>
@@ -120,6 +169,44 @@ export default function SavedRecipeRoute() {
           </Text>
         </View>
       </Card>
+
+      {isGenerating ? (
+        <LoadingState message="Generating mock recipe card..." />
+      ) : null}
+
+      {generationError ? (
+        <ErrorState
+          title="Could not generate mock card"
+          message={generationError.message}
+          retryLabel="Retry"
+          onRetry={() => {
+            void handleGenerateMockRecipeCard()
+          }}
+        />
+      ) : null}
+
+      {generatedCard ? (
+        <Card>
+          <Text selectable style={[typography.heading, { color: colors.text }]}>
+            Mock recipe card generated
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.text }]}>
+            {generatedCard.recipe_title}
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+            Full result screen is coming next.
+          </Text>
+        </Card>
+      ) : null}
+
+      <Button
+        label="Generate Mock Recipe Card"
+        fullWidth
+        disabled={isGenerating}
+        onPress={() => {
+          void handleGenerateMockRecipeCard()
+        }}
+      />
 
       <Button
         label="Back to Home"

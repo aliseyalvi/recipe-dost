@@ -81,3 +81,13 @@ You convert user-provided public link metadata, captions, manual notes, and ingr
   "missing_info": ["string"],
   "source_link": "string"
 }
+
+## M8 Mock Behavior
+
+M8 does not call an AI provider. The `generate-card` Edge Function creates deterministic mock data that follows the required JSON response shape above, stores it in `recipe_cards`, and marks:
+- `model_used = "mock"`
+- `prompt_version = "mock-v1"`
+- `confidence = "low"`
+- token counts and estimated cost as `0`
+
+Mock cards must clearly include missing info that says real AI generation will be added later.
