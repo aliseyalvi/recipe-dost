@@ -22,6 +22,8 @@ export default function RootLayout() {
         <Stack.Screen name="grocery" options={{ title: 'Grocery List' }} />
         <Stack.Screen name="settings" options={{ title: 'Settings' }} />
         <Stack.Screen name="save-recipe" options={{ title: 'Save Recipe' }} />
+        <Stack.Screen name="recipe/preview" options={{ title: 'Preview' }} />
+        <Stack.Screen name="recipe/ready" options={{ title: 'Recipe Card' }} />
         <Stack.Screen name="paywall" options={{ title: 'Recipe Dost Pro' }} />
       </Stack>
     </AppProviders>

@@ -1,15 +1,21 @@
 import { AnalyticsProperties } from '@/config/posthog'
-import { ReactNode, createContext, use, useMemo } from 'react'
+import { ReactNode, createContext, useContext, useMemo } from 'react'
 
 type PostHogPlaceholderContextValue = {
   isEnabled: false
   track: (eventName: string, properties?: AnalyticsProperties) => void
+  capture: (eventName: string, properties?: AnalyticsProperties) => void
+  identify: (distinctId: string, properties?: AnalyticsProperties) => void
+  reset: () => void
 }
 
 const PostHogPlaceholderContext =
   createContext<PostHogPlaceholderContextValue>({
     isEnabled: false,
     track: () => undefined,
+    capture: () => undefined,
+    identify: () => undefined,
+    reset: () => undefined,
   })
 
 type Props = {
@@ -18,10 +24,17 @@ type Props = {
 
 export function PostHogPlaceholderProvider({ children }: Props) {
   const value = useMemo<PostHogPlaceholderContextValue>(
-    () => ({
-      isEnabled: false,
-      track: () => undefined,
-    }),
+    () => {
+      const noop = () => undefined
+
+      return {
+        isEnabled: false,
+        track: noop,
+        capture: noop,
+        identify: noop,
+        reset: noop,
+      }
+    },
     []
   )
 
@@ -33,5 +46,5 @@ export function PostHogPlaceholderProvider({ children }: Props) {
 }
 
 export function usePostHog() {
-  return use(PostHogPlaceholderContext)
+  return useContext(PostHogPlaceholderContext)
 }

@@ -35,4 +35,8 @@
 - Milestone M4 Home Dashboard completed with greeting, promise card, compliance note, how-it-works steps, recent recipe query, empty/loading/error/retry states, and quick actions.
 - Save Recipe Link now routes to an M5 placeholder only; no Save Link form, AI generation, Edge Functions, paywall, RevenueCat, share intent, or grocery list generation was added.
 - Home analytics placeholders added for `home_viewed`, `home_primary_cta_clicked`, and `recent_recipe_clicked` without sending source URLs or user notes.
-- Next action: build M5 Save Link flow with Supabase Edge Function boundaries and no video downloading.
+- Milestone M5 Save Link + Preview completed with URL validation, local platform detection, local persisted draft storage, Preview & Add Note fields, and safe next-step placeholder.
+- No Supabase `recipe_items` insert, `parse-url` Edge Function, AI generation, paywall, RevenueCat, share intent, video download, backup, or scraping was added.
+- Save Link analytics placeholders added for `link_pasted`, `link_validation_failed`, `recipe_save_preview_viewed`, and `recipe_link_draft_saved` without sending URLs, captions, notes, or ingredients.
+- M5 runtime fix: added Expo scheme `recipe-dost`, hardened the PostHog placeholder provider to stable no-op context methods, and guarded Preview against missing or invalid draft URLs.
+- Next action: build M6 backend `parse-url` boundary and metadata fallback behavior without downloading videos.

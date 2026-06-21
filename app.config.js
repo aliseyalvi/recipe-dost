@@ -2,6 +2,7 @@ module.exports = {
   expo: {
     name: 'recipe-dost',
     slug: 'recipe-dost',
+    scheme: 'recipe-dost',
     version: '1.0.0',
     orientation: 'portrait',
     icon: './assets/icon.png',

@@ -170,6 +170,17 @@ Home sections:
 
 Home must include loading, empty, error, and retry states for recent recipes. The Save Link CTA navigates to the M5 placeholder until the real save flow is built.
 
+## 12.2 Save Link + Preview Flow
+
+M5 adds the front-end-only save link draft flow:
+- Home CTA opens `/save-recipe`.
+- Save Link validates a pasted http/https recipe video URL and detects platform locally.
+- Preview & Add Note uses a local persisted draft store instead of long route params.
+- Preview captures optional user note, pasted caption, manual ingredients, meal type, and cuisine.
+- Save Link in Preview stores the draft locally and routes to a safe placeholder for future backend saving and AI recipe card generation.
+
+M5 does not insert into `recipe_items`, call `parse-url`, call Edge Functions, fetch metadata, generate AI recipe cards, download videos, or scrape content.
+
 ## 13. AI Output Format
 
 ```json

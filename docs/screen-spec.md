@@ -142,3 +142,104 @@ Do not send source URLs, user notes, captions, recipe content, or sensitive pers
 - Do not download videos or back up deleted videos.
 - Do not scrape private saved folders.
 - Do not add calorie, allergy, medical diet, or weight-loss claims.
+
+## M5 Save Link + Preview
+
+Scope: front-end Save Link + Preview flow only. Do not build Supabase DB insert for `recipe_items`, `parse-url` Edge Function, AI generation, recipe result screen, library/search, grocery list, RevenueCat/paywall, Android share intent, video download, video backup, or scraping private content.
+
+### Flow
+
+Home -> Save Link -> Preview & Add Note -> safe next-step placeholder.
+
+### Routes
+
+- Save Link uses existing `/save-recipe`.
+- Preview route: `/recipe/preview`.
+- Safe placeholder route: `/recipe/ready`.
+- Do not create duplicate save routes.
+
+### Save Link Screen
+
+- Header: "Save a recipe video"
+- Subtext: "Paste a Reel, TikTok, Short, or food video link. We will turn it into a clean recipe card later."
+- Input label: "Recipe video link"
+- Placeholder: "https://www.instagram.com/reel/..."
+- Helper: "Works with Instagram, TikTok, YouTube, Facebook, and other recipe links."
+- Compliance note: "Recipe Dost saves recipe cards and links, not video files."
+- Primary CTA: "Continue"
+- Continue is disabled until URL is valid.
+- Show friendly validation errors after blur or invalid submit.
+
+Validation:
+- Use zod.
+- Trim whitespace.
+- Required.
+- Must be a valid URL.
+- Must use `http://` or `https://`.
+- Reject non-URL text.
+- Do not fetch remote metadata in M5.
+
+Platform detection:
+- `instagram.com` -> `instagram`
+- `tiktok.com` -> `tiktok`
+- `youtube.com` or `youtu.be` -> `youtube`
+- `facebook.com` or `fb.watch` -> `facebook`
+- Otherwise -> `other`
+
+### Preview & Add Note Screen
+
+- Header: "Add recipe details"
+- Show platform badge: Instagram, TikTok, YouTube, Facebook, or Other.
+- Show source URL in readable shortened form.
+- Note: "If we cannot read the caption, your notes help AI create a better recipe card."
+- Optional text area: "Your note"
+- Optional text area: "Paste caption"
+- Optional text area: "Manual ingredients"
+- Optional meal type selector: Breakfast, Lunch, Dinner, Snack, Dessert, Iftar, Other.
+- Optional cuisine selector: Pakistani, Indian, Arabic, Western, Chinese, Baking, Mixed, Other.
+- Primary CTA: "Save Link"
+- Secondary action: "Back"
+
+### Local Draft
+
+Store draft locally with Zustand and SecureStore-backed persistence:
+
+```ts
+type RecipeLinkDraft = {
+  source_url: string;
+  platform: 'instagram' | 'tiktok' | 'youtube' | 'facebook' | 'other';
+  user_note?: string;
+  pasted_caption?: string;
+  manual_ingredients?: string;
+  meal_type?: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'dessert' | 'iftar' | 'other';
+  cuisine?: string;
+  created_at: string;
+};
+```
+
+Do not insert the draft into Supabase in M5. Do not call Edge Functions.
+
+### Safe Placeholder
+
+After Preview "Save Link", route to `/recipe/ready`:
+- Title: "Recipe card generation is coming next"
+- Body: "Your link and notes are ready. The next milestone will connect backend saving and AI recipe cards."
+
+### Analytics
+
+Use existing analytics wrapper/stub only.
+
+Events:
+- `link_pasted`
+- `link_validation_failed`
+- `recipe_save_preview_viewed`
+- `recipe_link_draft_saved`
+
+Do not send full source URLs, captions, notes, manual ingredients, or other freeform content. Only send platform and boolean flags such as `has_note`, `has_caption`, and `has_manual_ingredients`.
+
+### Product Guardrails
+
+- Save links, notes, legal metadata, and AI recipe cards only.
+- Do not download videos or back up deleted videos.
+- Do not scrape private saved folders.
+- Do not add calorie, allergy, medical diet, or weight-loss claims.
