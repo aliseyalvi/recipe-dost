@@ -504,3 +504,95 @@ Do not send source URLs, notes, captions, manual ingredients, recipe content, or
 - Do not add paywall, RevenueCat, or Android share intent behavior.
 - Real AI generation is deferred to M10.
 - Full result UI is next as M9.
+
+## M9 Recipe Result Screen
+
+Scope: display existing `recipe_cards` data created by M8 mock generation. Do not build real OpenAI generation, paywall/RevenueCat, video download/backup, scraping, Android share intent, or medical/diet/calorie/allergy/weight-loss features.
+
+### Route
+
+- Route: `/recipe-card/[id]`
+- Receives `recipe_card_id`.
+- The M8 saved recipe placeholder navigates to this route after `generateMockRecipeCard` succeeds.
+- Do not create competing result routes.
+
+### Data
+
+- Fetch `recipe_cards` by `id` through `getRecipeCard(recipeCardId)`.
+- Use the authenticated Supabase client and RLS.
+- Select recipe title, summary, JSON card sections, source link, confidence, model metadata, and timestamps.
+- Normalize JSON fields defensively so nulls, strings, objects, or malformed values do not crash the UI.
+
+### States
+
+- Loading: `LoadingState`
+- Error: `ErrorState` with Retry and Back to Home
+- Missing ID or empty card: `EmptyState`
+- Main result: full recipe card sections
+
+### Main Result Sections
+
+1. Header
+   - Recipe title or "Untitled recipe"
+   - Platform/source badge when `source_link` can be detected
+   - Confidence badge
+   - If `model_used = "mock"`, show: "Mock recipe card - real AI generation is coming next."
+
+2. Summary
+   - `short_summary` or friendly fallback text.
+
+3. Time and serving
+   - Prep time
+   - Cook time
+   - Servings
+   - Difficulty
+
+4. Ingredients
+   - Render each normalized ingredient name, quantity, and optional notes.
+
+5. Steps
+   - Render each step number, instruction, and optional Urdu/Roman Urdu tip.
+
+6. Grocery list
+   - Render normalized grocery items.
+   - "Copy Grocery List" uses Expo Clipboard, which is already installed.
+
+7. Substitutions
+   - Render substitutions only when present.
+
+8. Storage and safety
+   - Render storage tip and generic food safety note when present.
+   - Do not add medical, diet, calorie, allergy, or weight-loss claims.
+
+9. Missing details
+   - Render missing info when present.
+
+10. Source link
+   - "Open Original Recipe" uses `Linking.openURL` only for safe http/https links.
+
+11. Footer
+   - "Back to Home"
+   - "Save another recipe"
+
+### Analytics
+
+Use the existing placeholder wrapper only.
+
+Events:
+- `recipe_result_viewed`
+- `grocery_list_copied`
+- `original_source_opened`
+
+Allowed properties:
+- `confidence`
+- `model_used`
+- `has_grocery_list`
+- `has_missing_info`
+
+Do not send source URLs, ingredients, instructions, notes, captions, or recipe content.
+
+### Product Guardrails
+
+- M9 displays saved recipe card data only.
+- Real AI generation remains deferred to M10.
+- No paywall, video download, backup, scraping, or share intent was added.

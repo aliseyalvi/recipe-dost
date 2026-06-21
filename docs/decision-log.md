@@ -58,3 +58,7 @@
 - Deno function validation fixed for Supabase Edge Functions.
 - Added `supabase/functions/deno.json` and updated function check/format scripts to use it.
 - M8 mock `generate-card` behavior remains unchanged.
+- Milestone M9 Recipe Result Screen completed at `/recipe-card/[id]`.
+- M9 displays existing mock `recipe_cards` data with summary, timing, ingredients, steps, grocery list, substitutions, storage/safety, missing details, and source-link actions.
+- Real AI generation remains deferred to M10.
+- No paywall, video download, backup, scraping, RevenueCat, or Android share intent was added in M9.

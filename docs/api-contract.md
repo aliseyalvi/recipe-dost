@@ -209,3 +209,40 @@ Sensitive operations should use Edge Functions:
 - usage limit checks
 - subscription sync
 - account deletion
+
+### M9 Mobile Recipe Card Read
+
+The M9 result screen reads a generated recipe card directly from `recipe_cards` using the Supabase mobile client and RLS.
+
+Helper:
+- `getRecipeCard(recipeCardId: string)`
+
+Selected fields:
+- `id`
+- `recipe_id`
+- `user_id`
+- `recipe_title`
+- `short_summary`
+- `ingredients_json`
+- `steps_json`
+- `time_json`
+- `servings`
+- `difficulty`
+- `grocery_list_json`
+- `tags_json`
+- `substitutions_json`
+- `storage_tip`
+- `safety_note`
+- `confidence`
+- `missing_info_json`
+- `source_link`
+- `model_used`
+- `prompt_version`
+- `created_at`
+- `updated_at`
+
+Rules:
+- Use the authenticated Supabase client and RLS.
+- Do not use a service-role key in mobile.
+- Normalize JSON fields defensively so nulls, strings, or unexpected objects do not crash the result screen.
+- Do not send source URLs, ingredients, recipe instructions, notes, or captions to analytics.
