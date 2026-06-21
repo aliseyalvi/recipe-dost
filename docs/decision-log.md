@@ -42,4 +42,11 @@
 - Milestone M6 `parse-url` Edge Function completed with CORS, POST/OPTIONS handling, friendly JSON validation errors, URL normalization, and platform detection.
 - M6 returns safe fallback metadata only: `metadata_status = failed`, manual caption required, and null title/description/thumbnail.
 - No scraping, video download, private-page fetch, platform bypass, DB insert, DB logging, AI generation, mobile integration, paywall, RevenueCat, or share intent was added.
-- Next action: build M7 to connect Save Link flow to backend parsing and save `recipe_items`.
+- Milestone M7 connected Save Link to the deployed cloud `parse-url` Edge Function.
+- M7 saves `recipe_items` rows from Preview using the authenticated Supabase mobile client and RLS, then routes to a saved-link placeholder.
+- Home recent recipes now refresh after a successful save and can open the saved-link placeholder.
+- M7 kept the scope to links, notes, safe fallback metadata, and `recipe_items`; no AI generation, `recipe_cards` insert, video download/backup, scraping, paywall, RevenueCat, or Android share intent was added.
+- Fixed the PostHog placeholder provider runtime warning by making it a pure static no-op context with no state, effects, memoization, provider-side tracking, or async work.
+- Confirmed the M7 `recipe_items` insert works and remains the current save path.
+- Confirmed `title = null` and `metadata_status = failed` are expected until safe metadata providers or AI title generation are added.
+- Next action: build AI recipe card generation as the next backend/app milestone.

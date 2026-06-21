@@ -41,6 +41,7 @@ export default function HomeRoute() {
       platform: recipe.platform,
       metadata_status: recipe.metadata_status,
     })
+    router.push(`/recipe/${recipe.id}`)
   }
 
   return (

@@ -65,14 +65,23 @@ Rules:
 - Do not use a service role key or custom admin secret in this function.
 - DB logging is intentionally skipped in M6 and will be connected in a later save/logging milestone.
 
-### POST /functions/v1/save-recipe
-Purpose:
-Save recipe link, platform, metadata, and user note.
+## M7 Mobile Save Link Flow
 
-Input:
+M7 uses the deployed `parse-url` Edge Function and then writes a user-owned `recipe_items` row directly from the mobile app through the Supabase client and RLS.
+
+Flow:
+1. Mobile validates the pasted URL locally.
+2. Mobile calls `supabase.functions.invoke("parse-url", { body: { source_url } })`.
+3. Mobile stores the returned metadata in the local draft.
+4. Preview lets the user add optional note, caption, manual ingredients, meal type, and cuisine.
+5. Preview inserts into `recipe_items` using the authenticated anonymous user's session.
+6. The app routes to a saved-link placeholder. AI recipe card generation is a later milestone.
+
+`recipe_items` insert fields:
 {
+  "user_id": "current auth user id",
   "source_url": "string",
-  "platform": "string",
+  "platform": "instagram | tiktok | youtube | facebook | other",
   "title": "string | null",
   "description": "string | null",
   "thumbnail_url": "string | null",
@@ -80,14 +89,24 @@ Input:
   "pasted_caption": "string | null",
   "manual_ingredients": "string | null",
   "meal_type": "string | null",
-  "cuisine": "string | null"
+  "cuisine": "string | null",
+  "metadata_status": "success | partial | failed"
 }
 
-Output:
-{
-  "ok": true,
-  "recipe_id": "uuid"
-}
+Rules:
+- Use the public Supabase client and the current authenticated/anonymous session.
+- Rely on RLS for user-owned row access.
+- Do not use service-role keys in mobile.
+- Do not insert `recipe_cards` in M7.
+- Do not call AI generation in M7.
+- Do not scrape, download, or back up video content.
+
+### POST /functions/v1/save-recipe
+Purpose:
+Future server-side save endpoint if usage limits, auditing, or server validation need to move behind an Edge Function.
+
+Status:
+Not implemented in M7. The M7 mobile app writes simple user-owned `recipe_items` rows directly through Supabase RLS.
 
 ### POST /functions/v1/generate-card
 Purpose:

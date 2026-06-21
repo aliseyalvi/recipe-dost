@@ -4,11 +4,14 @@ import {
 } from '@/features/recipe-draft/platform'
 import { useRecipeDraftStore } from '@/features/recipe-draft/recipe-draft-store'
 import { validateRecipeUrl } from '@/features/recipe-draft/validation'
+import { parseRecipeUrl } from '@/lib/api/recipes'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, spacing, typography } from '@/theme'
 import { Button } from '@/ui/button'
 import { Card } from '@/ui/card'
+import { ErrorState } from '@/ui/error-state'
 import { Input } from '@/ui/input'
+import { LoadingState } from '@/ui/loading-state'
 import { Screen } from '@/ui/screen'
 import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
@@ -20,6 +23,8 @@ export default function SaveRecipeRoute() {
   const { setDraft } = useRecipeDraftStore()
   const [sourceUrl, setSourceUrl] = useState('')
   const [hasBlurred, setHasBlurred] = useState(false)
+  const [isParsing, setIsParsing] = useState(false)
+  const [parseError, setParseError] = useState<Error | null>(null)
   const validationResult = useMemo(
     () => validateRecipeUrl(sourceUrl),
     [sourceUrl]
@@ -32,7 +37,11 @@ export default function SaveRecipeRoute() {
     : validationResult.error.issues[0]?.message ?? 'Enter a valid recipe link.'
   const shouldShowError = hasBlurred && !validationResult.success
 
-  const continueToPreview = () => {
+  const continueToPreview = async () => {
+    if (isParsing) {
+      return
+    }
+
     if (!validationResult.success) {
       track('link_validation_failed', {
         reason: 'invalid_url',
@@ -43,15 +52,51 @@ export default function SaveRecipeRoute() {
 
     const platform = detectRecipePlatform(validationResult.data)
 
-    setDraft({
-      source_url: validationResult.data,
-      platform,
-      created_at: new Date().toISOString(),
-    })
+    setIsParsing(true)
+    setParseError(null)
     track('link_pasted', {
       platform,
     })
-    router.push('/recipe/preview')
+    track('metadata_fetch_started', {
+      platform,
+    })
+
+    try {
+      const parsedRecipeUrl = await parseRecipeUrl(validationResult.data)
+
+      setDraft({
+        source_url: parsedRecipeUrl.source_url,
+        normalized_url: parsedRecipeUrl.normalized_url,
+        host: parsedRecipeUrl.host,
+        platform: parsedRecipeUrl.platform,
+        title: parsedRecipeUrl.title,
+        description: parsedRecipeUrl.description,
+        thumbnail_url: parsedRecipeUrl.thumbnail_url,
+        metadata_status: parsedRecipeUrl.metadata_status,
+        requires_manual_caption: parsedRecipeUrl.requires_manual_caption,
+        created_at: new Date().toISOString(),
+      })
+      track('metadata_fetch_completed', {
+        platform: parsedRecipeUrl.platform,
+        metadata_status: parsedRecipeUrl.metadata_status,
+        requires_manual_caption: parsedRecipeUrl.requires_manual_caption,
+      })
+      router.push('/recipe/preview')
+    } catch (caughtError) {
+      const nextError =
+        caughtError instanceof Error
+          ? caughtError
+          : new Error('Could not check this recipe link. Please try again.')
+
+      setParseError(nextError)
+      track('metadata_fetch_failed', {
+        platform,
+        metadata_status: 'failed',
+        requires_manual_caption: true,
+      })
+    } finally {
+      setIsParsing(false)
+    }
   }
 
   return (
@@ -70,6 +115,7 @@ export default function SaveRecipeRoute() {
         <Input
           autoCapitalize="none"
           autoCorrect={false}
+          editable={!isParsing}
           keyboardType="url"
           label="Recipe video link"
           onBlur={() => {
@@ -82,9 +128,14 @@ export default function SaveRecipeRoute() {
             }
           }}
           onChangeText={(value) => {
+            if (parseError) {
+              setParseError(null)
+            }
             setSourceUrl(value)
           }}
-          onSubmitEditing={continueToPreview}
+          onSubmitEditing={() => {
+            void continueToPreview()
+          }}
           placeholder="https://www.instagram.com/reel/..."
           returnKeyType="next"
           value={sourceUrl}
@@ -110,11 +161,25 @@ export default function SaveRecipeRoute() {
         Recipe Dost saves recipe cards and links, not video files.
       </Text>
 
+      {isParsing ? <LoadingState message="Checking recipe link..." /> : null}
+      {parseError ? (
+        <ErrorState
+          title="Could not check link"
+          message={parseError.message}
+          retryLabel="Retry"
+          onRetry={() => {
+            void continueToPreview()
+          }}
+        />
+      ) : null}
+
       <Button
         label="Continue"
         fullWidth
-        disabled={!validationResult.success}
-        onPress={continueToPreview}
+        disabled={!validationResult.success || isParsing}
+        onPress={() => {
+          void continueToPreview()
+        }}
       />
     </Screen>
   )

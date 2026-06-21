@@ -311,3 +311,99 @@ M6 returns safe fallback metadata only:
 - Always return `metadata_status: "failed"` and `requires_manual_caption: true`.
 
 DB logging is skipped in M6. Metadata logging can be connected later when the save flow has a `recipe_id`.
+
+## M7 Cloud Parse + Save Link
+
+Scope: connect the existing Save Link flow to the deployed cloud `parse-url` Edge Function and save a `recipe_items` row. Do not build AI generation, `generate-card`, `recipe_cards` insert, grocery list generation, RevenueCat/paywall, Android share intent, video download/backup, scraping private content, or medical/diet/calorie/allergy/weight-loss features.
+
+### Flow
+
+Home -> Save Link -> cloud `parse-url` -> Preview & Add Note -> save `recipe_items` -> saved-link placeholder.
+
+### Save Link Screen
+
+- Keep M5 URL validation.
+- On Continue:
+  - Track `metadata_fetch_started` with platform only.
+  - Call `supabase.functions.invoke("parse-url", { body: { source_url } })` through the recipe API helper.
+  - Show `LoadingState` while checking the link.
+  - On success, save returned metadata to the persisted draft and route to `/recipe/preview`.
+  - On failure, show `ErrorState` with Retry.
+- If `parse-url` returns fallback `metadata_status: failed`, continue to Preview.
+- Mobile must not scrape or fetch metadata directly.
+
+### Draft Data
+
+Draft stores:
+- `source_url`
+- `normalized_url`
+- `host`
+- `platform`
+- `title`
+- `description`
+- `thumbnail_url`
+- `metadata_status`
+- `requires_manual_caption`
+- optional user note, pasted caption, manual ingredients, meal type, and cuisine
+
+### Preview & Add Note
+
+- Show the platform badge from `parse-url`.
+- Show metadata status.
+- If metadata failed, show: "We could not read recipe details automatically. Paste the caption or add notes to improve the recipe card later."
+- Show title if present.
+- Show thumbnail only when a safe http/https thumbnail URL is present.
+- Keep fields for note, caption, manual ingredients, meal type, and cuisine.
+- Primary CTA: "Save Link".
+
+### Saving
+
+- Require the current Supabase authenticated/anonymous user.
+- Insert one `recipe_items` row with `user_id`, source URL, platform, title, description, thumbnail URL, user note, pasted caption, manual ingredients, meal type, cuisine, and metadata status.
+- Use the mobile Supabase client and RLS; do not use a service-role key.
+- Show `LoadingState` while saving.
+- Show `ErrorState` with Retry if the insert fails.
+- Invalidate the Home recent recipes query after a successful save.
+- Clear the local draft after a successful save.
+
+### Saved Recipe Placeholder
+
+Route: `/recipe/[id]`
+
+Shows:
+- "Recipe link saved"
+- Platform
+- Title or "Untitled recipe link"
+- Source link
+- Note/caption indicator
+- "AI recipe card generation is coming next."
+- CTA: "Back to Home"
+
+### Analytics
+
+Use the existing placeholder wrapper only.
+
+Events:
+- `metadata_fetch_started`
+- `metadata_fetch_completed`
+- `metadata_fetch_failed`
+- `recipe_save_preview_viewed`
+- `recipe_link_saved`
+- `recipe_link_save_failed`
+
+Allowed properties:
+- `platform`
+- `metadata_status`
+- `requires_manual_caption`
+- `has_note`
+- `has_caption`
+- `has_manual_ingredients`
+
+Do not send full source URLs, captions, notes, ingredients, recipe content, or sensitive personal data.
+
+### Product Guardrails
+
+- Save links, notes, safe metadata, and later AI recipe cards only.
+- Do not download or back up videos.
+- Do not scrape private saved folders or platform-protected content.
+- Do not add calorie, allergy, medical diet, or weight-loss claims.

@@ -1,45 +1,38 @@
-import { AnalyticsProperties } from '@/config/posthog'
-import { ReactNode, createContext, useContext, useMemo } from 'react'
+import { createContext, useContext, type ReactNode } from 'react'
 
-type PostHogPlaceholderContextValue = {
+type AnalyticsProperties = Record<
+  string,
+  string | number | boolean | null | undefined
+>
+
+type PostHogPlaceholderClient = {
   isEnabled: false
-  track: (eventName: string, properties?: AnalyticsProperties) => void
-  capture: (eventName: string, properties?: AnalyticsProperties) => void
-  identify: (distinctId: string, properties?: AnalyticsProperties) => void
+  track: (event: string, properties?: AnalyticsProperties) => void
+  capture: (event: string, properties?: AnalyticsProperties) => void
+  identify: (userId: string, properties?: AnalyticsProperties) => void
   reset: () => void
 }
 
-const PostHogPlaceholderContext =
-  createContext<PostHogPlaceholderContextValue>({
-    isEnabled: false,
-    track: () => undefined,
-    capture: () => undefined,
-    identify: () => undefined,
-    reset: () => undefined,
-  })
+const noop = () => undefined
 
-type Props = {
-  children: ReactNode
+const defaultClient: PostHogPlaceholderClient = {
+  isEnabled: false,
+  track: noop,
+  capture: noop,
+  identify: noop,
+  reset: noop,
 }
 
-export function PostHogPlaceholderProvider({ children }: Props) {
-  const value = useMemo<PostHogPlaceholderContextValue>(
-    () => {
-      const noop = () => undefined
+const PostHogPlaceholderContext =
+  createContext<PostHogPlaceholderClient>(defaultClient)
 
-      return {
-        isEnabled: false,
-        track: noop,
-        capture: noop,
-        identify: noop,
-        reset: noop,
-      }
-    },
-    []
-  )
-
+export function PostHogPlaceholderProvider({
+  children,
+}: {
+  children: ReactNode
+}) {
   return (
-    <PostHogPlaceholderContext.Provider value={value}>
+    <PostHogPlaceholderContext.Provider value={defaultClient}>
       {children}
     </PostHogPlaceholderContext.Provider>
   )

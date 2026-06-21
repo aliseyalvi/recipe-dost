@@ -14,9 +14,18 @@ export type RecipeMealType =
   | 'iftar'
   | 'other'
 
+export type RecipeMetadataStatus = 'success' | 'partial' | 'failed'
+
 export type RecipeLinkDraft = {
   source_url: string
+  normalized_url?: string
+  host?: string
   platform: RecipePlatform
+  title?: string | null
+  description?: string | null
+  thumbnail_url?: string | null
+  metadata_status?: RecipeMetadataStatus
+  requires_manual_caption?: boolean
   user_note?: string
   pasted_caption?: string
   manual_ingredients?: string

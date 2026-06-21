@@ -8,22 +8,28 @@ import {
 import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { useRecipeDraftStore } from '@/features/recipe-draft/recipe-draft-store'
 import { RecipeMealType } from '@/features/recipe-draft/types'
+import { saveRecipeItem } from '@/lib/api/recipes'
+import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
-import { colors, spacing, typography } from '@/theme'
+import { colors, radius, spacing, typography } from '@/theme'
 import { Button } from '@/ui/button'
 import { Card } from '@/ui/card'
 import { EmptyState } from '@/ui/empty-state'
 import { ErrorState } from '@/ui/error-state'
+import { LoadingState } from '@/ui/loading-state'
 import { Screen } from '@/ui/screen'
 import { TextArea } from '@/ui/text-area'
+import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { Text, View } from 'react-native'
+import { Image, Text, View } from 'react-native'
 
 export default function RecipePreviewRoute() {
   const router = useRouter()
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
   const { track } = usePostHog()
-  const { draft, updateDraft } = useRecipeDraftStore()
+  const { clearDraft, draft, updateDraft } = useRecipeDraftStore()
   const [userNote, setUserNote] = useState(draft?.user_note ?? '')
   const [pastedCaption, setPastedCaption] = useState(draft?.pasted_caption ?? '')
   const [manualIngredients, setManualIngredients] = useState(
@@ -33,12 +39,16 @@ export default function RecipePreviewRoute() {
     draft?.meal_type
   )
   const [cuisine, setCuisine] = useState(draft?.cuisine ?? '')
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<Error | null>(null)
   const hasValidDraftUrl = isValidHttpUrl(draft?.source_url)
 
   useEffect(() => {
     if (draft) {
       track('recipe_save_preview_viewed', {
         platform: draft.platform,
+        metadata_status: draft.metadata_status ?? 'failed',
+        requires_manual_caption: draft.requires_manual_caption ?? true,
       })
     }
   }, [draft, track])
@@ -69,28 +79,76 @@ export default function RecipePreviewRoute() {
     )
   }
 
-  const saveDraft = () => {
+  const metadataStatus = draft.metadata_status ?? 'failed'
+  const requiresManualCaption = draft.requires_manual_caption ?? true
+  const thumbnailUrl = isValidHttpUrl(draft.thumbnail_url)
+    ? draft.thumbnail_url
+    : null
+
+  const saveDraft = async () => {
+    if (!hasValidDraftUrl) {
+      return
+    }
+
     const nextNote = sanitizeOptionalText(userNote)
     const nextCaption = sanitizeOptionalText(pastedCaption)
     const nextIngredients = sanitizeOptionalText(manualIngredients)
     const nextCuisine = sanitizeOptionalText(cuisine)
+    const analyticsProps = {
+      platform: draft.platform,
+      metadata_status: metadataStatus,
+      requires_manual_caption: requiresManualCaption,
+      has_note: Boolean(nextNote),
+      has_caption: Boolean(nextCaption),
+      has_manual_ingredients: Boolean(nextIngredients),
+    }
 
-    updateDraft({
+    if (!user?.id) {
+      const nextError = new Error(
+        'Please wait for your Recipe Dost session and try again.'
+      )
+
+      setSaveError(nextError)
+      track('recipe_link_save_failed', analyticsProps)
+      return
+    }
+
+    setIsSaving(true)
+    setSaveError(null)
+
+    const nextDraft = {
+      ...draft,
       user_note: nextNote,
       pasted_caption: nextCaption,
       manual_ingredients: nextIngredients,
       meal_type: mealType,
       cuisine: nextCuisine,
-    })
-    track('recipe_link_draft_saved', {
-      platform: draft.platform,
-      has_note: Boolean(nextNote),
-      has_caption: Boolean(nextCaption),
-      has_manual_ingredients: Boolean(nextIngredients),
-      has_meal_type: Boolean(mealType),
-      has_cuisine: Boolean(nextCuisine),
-    })
-    router.push('/recipe/ready')
+    }
+
+    try {
+      updateDraft(nextDraft)
+      const savedRecipe = await saveRecipeItem({
+        draft: nextDraft,
+        userId: user.id,
+      })
+
+      void queryClient.invalidateQueries({
+        queryKey: ['recent-recipes', user.id],
+      })
+      track('recipe_link_saved', analyticsProps)
+      clearDraft()
+      setIsSaving(false)
+      router.replace(`/recipe/${savedRecipe.id}`)
+    } catch (caughtError) {
+      const nextError =
+        caughtError instanceof Error
+          ? caughtError
+          : new Error('Could not save this recipe link. Please try again.')
+
+      setSaveError(nextError)
+      setIsSaving(false)
+      track('recipe_link_save_failed', analyticsProps)
+    }
   }
 
   return (
@@ -107,6 +165,23 @@ export default function RecipePreviewRoute() {
 
       <Card>
         <PlatformBadge platform={draft.platform} />
+        {thumbnailUrl ? (
+          <Image
+            accessibilityLabel="Recipe thumbnail"
+            source={{ uri: thumbnailUrl }}
+            style={{
+              width: '100%',
+              aspectRatio: 16 / 9,
+              borderRadius: radius.md,
+              backgroundColor: colors.surfaceMuted,
+            }}
+          />
+        ) : null}
+        {draft.title ? (
+          <Text selectable style={[typography.heading, { color: colors.text }]}>
+            {draft.title}
+          </Text>
+        ) : null}
         <View style={{ gap: spacing.xs }}>
           <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
             Source
@@ -115,6 +190,22 @@ export default function RecipePreviewRoute() {
             {getReadableSource(draft.source_url)}
           </Text>
         </View>
+        <View style={{ gap: spacing.xs }}>
+          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+            Metadata status
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.text }]}>
+            {metadataStatus === 'failed'
+              ? 'Manual caption recommended'
+              : metadataStatus}
+          </Text>
+        </View>
+        {metadataStatus === 'failed' ? (
+          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+            We could not read recipe details automatically. Paste the caption or
+            add notes to improve the recipe card later.
+          </Text>
+        ) : null}
         <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
           Detected as {getPlatformLabel(draft.platform)}. Recipe Dost saves the
           link and recipe card details, not the video file.
@@ -174,17 +265,32 @@ export default function RecipePreviewRoute() {
         </View>
       </Card>
 
+      {isSaving ? <LoadingState message="Saving recipe link..." /> : null}
+      {saveError ? (
+        <ErrorState
+          title="Could not save link"
+          message={saveError.message}
+          retryLabel="Retry"
+          onRetry={() => {
+            void saveDraft()
+          }}
+        />
+      ) : null}
+
       <View style={{ gap: spacing.md }}>
         <Button
           label="Save Link"
           fullWidth
-          disabled={!hasValidDraftUrl}
-          onPress={saveDraft}
+          disabled={!hasValidDraftUrl || isSaving}
+          onPress={() => {
+            void saveDraft()
+          }}
         />
         <Button
           label="Back"
           fullWidth
           variant="secondary"
+          disabled={isSaving}
           onPress={() => router.back()}
         />
       </View>
