@@ -639,3 +639,108 @@ Allowed properties:
 - `error_code`
 
 Do not send source URLs, captions, notes, manual ingredients, generated recipe content, or sensitive personal data.
+
+## M11 Library + Search
+
+Scope: Library + Search only. Do not build paywall/RevenueCat, Android share intent, grocery list generation, video download/backup, scraping, deleted-video backup claims, or M12+ features.
+
+### Route
+
+- Route: `/library`
+- Use the existing `app/library.tsx` route.
+- Home "View Library" and the Home Library quick action navigate here.
+
+### Data
+
+Use `getRecipeLibrary()` from `src/lib/api/recipes.ts`.
+
+The helper fetches:
+- Current user's `recipe_items`.
+- Current user's `recipe_cards` for those recipe IDs.
+- Latest recipe card per `recipe_id`, mapped client-side.
+
+Use the authenticated Supabase client and RLS. Do not use service-role keys in mobile.
+
+### Search
+
+Search input placeholder:
+"Search recipes, ingredients, or notes"
+
+M11 search is client-side over the fetched user's rows only.
+
+Search fields:
+- recipe card title
+- recipe item title
+- user note
+- pasted caption
+- manual ingredients
+- platform
+- cuisine
+- meal type
+
+Do not send the raw search query to analytics.
+
+### Filters
+
+Status chips:
+- All
+- Recipe Cards
+- Saved Links
+
+Platform chips:
+- All Platforms
+- Instagram
+- TikTok
+- YouTube
+- Facebook
+- Other
+
+Sort chips:
+- Newest first
+- Oldest first
+
+### Item Card
+
+Each card shows:
+- Title: recipe card title, item title, or "Untitled recipe link"
+- Subtitle: platform, status, and created date
+- Status badge: "Recipe Card" or "Saved Link"
+- Metadata status badge when available
+- Short summary when a recipe card exists
+- Optional thumbnail when `thumbnail_url` exists
+- "Has notes" when user note, pasted caption, or manual ingredients exist
+
+Tap behavior:
+- If a recipe card exists, navigate to `/recipe-card/[id]`.
+- If no recipe card exists, navigate to `/recipe/[id]`.
+
+### States
+
+- Loading: `LoadingState`
+- Error: `ErrorState` with Retry
+- Empty: `EmptyState`
+  - Title: "No recipes saved yet"
+  - Body: "Save your first recipe Reel, TikTok, Short, or food video link."
+  - CTA: "Save Recipe Link"
+- No search results:
+  - Title: "No matching recipes"
+  - Body: "Try a different keyword or clear filters."
+
+Pull to refresh refetches library data.
+
+### Analytics
+
+Events:
+- `library_viewed`
+- `library_search_used`
+- `library_filter_changed`
+- `library_item_opened`
+
+Allowed properties:
+- `result_count`
+- `filter_status`
+- `filter_platform`
+- `has_query`
+- `opened_item_type`
+
+Do not send search text, source URLs, captions, notes, ingredients, instructions, or recipe content.

@@ -140,6 +140,43 @@ export type RecipeCard = Omit<
   missing_info: string[]
 }
 
+type RecipeLibraryItemRow = Pick<
+  Database['public']['Tables']['recipe_items']['Row'],
+  | 'id'
+  | 'source_url'
+  | 'platform'
+  | 'title'
+  | 'thumbnail_url'
+  | 'metadata_status'
+  | 'user_note'
+  | 'pasted_caption'
+  | 'manual_ingredients'
+  | 'meal_type'
+  | 'cuisine'
+  | 'created_at'
+  | 'updated_at'
+>
+
+export type RecipeLibraryCard = Pick<
+  Database['public']['Tables']['recipe_cards']['Row'],
+  | 'id'
+  | 'recipe_id'
+  | 'recipe_title'
+  | 'short_summary'
+  | 'confidence'
+  | 'model_used'
+  | 'created_at'
+  | 'updated_at'
+>
+
+export type RecipeLibraryItem = RecipeLibraryItemRow & {
+  latest_card: RecipeLibraryCard | null
+}
+
+export type RecipeLibraryParams = {
+  limit?: number
+}
+
 export async function parseRecipeUrl(sourceUrl: string) {
   const { data, error } =
     await supabase.functions.invoke<ParseRecipeUrlResponse>('parse-url', {
@@ -301,6 +338,68 @@ export async function getSavedRecipeItem(recipeId: string) {
   }
 
   return data satisfies SavedRecipeItem
+}
+
+export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    throw new Error('Could not load your recipe library.')
+  }
+
+  let recipeItemsQuery = supabase
+    .from('recipe_items')
+    .select(
+      'id, source_url, platform, title, thumbnail_url, metadata_status, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, created_at, updated_at'
+    )
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+
+  if (params.limit && params.limit > 0) {
+    recipeItemsQuery = recipeItemsQuery.limit(params.limit)
+  }
+
+  const { data: recipeItems, error: recipeItemsError } = await recipeItemsQuery
+
+  if (recipeItemsError) {
+    throw new Error('Could not load your recipe library.')
+  }
+
+  const items = recipeItems satisfies RecipeLibraryItemRow[]
+  const recipeIds = items.map((item) => item.id)
+
+  if (recipeIds.length === 0) {
+    return []
+  }
+
+  const { data: recipeCards, error: recipeCardsError } = await supabase
+    .from('recipe_cards')
+    .select(
+      'id, recipe_id, recipe_title, short_summary, confidence, model_used, created_at, updated_at'
+    )
+    .eq('user_id', user.id)
+    .in('recipe_id', recipeIds)
+    .order('created_at', { ascending: false })
+
+  if (recipeCardsError) {
+    throw new Error('Could not load your recipe library.')
+  }
+
+  const latestCardByRecipeId = new Map<string, RecipeLibraryCard>()
+
+  for (const card of recipeCards satisfies RecipeLibraryCard[]) {
+    if (!latestCardByRecipeId.has(card.recipe_id)) {
+      latestCardByRecipeId.set(card.recipe_id, card)
+    }
+  }
+
+  return items.map((item): RecipeLibraryItem => ({
+    ...item,
+    latest_card: latestCardByRecipeId.get(item.id) ?? null,
+  }))
 }
 
 function normalizeRecipeCard(row: RecipeCardRow): RecipeCard {

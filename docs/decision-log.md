@@ -73,3 +73,7 @@
 - Provider adapters normalize output into the same `recipe_cards` shape before DB insert/update.
 - No scraping, video download, deleted-video backup, paywall, RevenueCat, Android share intent, or M11 library/search work was added.
 - `FREE_RECIPE_CARD_LIMIT` is now configurable for `generate-card`; development can use a higher limit for AI provider testing, and production can return to `3` before the paywall milestone.
+- Milestone M11 Library + Search completed at `/library`.
+- Users can browse saved links and generated recipe cards, search across titles/notes/captions/manual ingredients/platform/cuisine/meal type, filter by status/platform, sort by date, and reopen saved-link or recipe-card detail screens.
+- M11 search and filters are client-side over the authenticated user's fetched data for the MVP.
+- No paywall, RevenueCat, video download, scraping, deleted-video backup, Android share intent, or M12+ work was added.

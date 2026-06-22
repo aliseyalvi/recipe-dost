@@ -274,3 +274,47 @@ Rules:
 - Do not use a service-role key in mobile.
 - Normalize JSON fields defensively so nulls, strings, or unexpected objects do not crash the result screen.
 - Do not send source URLs, ingredients, recipe instructions, notes, or captions to analytics.
+
+### M11 Mobile Recipe Library Read
+
+The M11 Library screen reads saved recipe links and generated cards through the authenticated Supabase mobile client and RLS.
+
+Helper:
+- `getRecipeLibrary(params)`
+
+Behavior:
+- Fetch current user's `recipe_items`.
+- Fetch current user's `recipe_cards` for those recipe IDs.
+- Map the latest card per `recipe_id` client-side.
+- Search and filter are client-side over the fetched user's rows for MVP.
+
+Selected `recipe_items` fields:
+- `id`
+- `source_url`
+- `platform`
+- `title`
+- `thumbnail_url`
+- `metadata_status`
+- `user_note`
+- `pasted_caption`
+- `manual_ingredients`
+- `meal_type`
+- `cuisine`
+- `created_at`
+- `updated_at`
+
+Selected latest `recipe_cards` fields:
+- `id`
+- `recipe_id`
+- `recipe_title`
+- `short_summary`
+- `confidence`
+- `model_used`
+- `created_at`
+- `updated_at`
+
+Rules:
+- Use the authenticated Supabase client and RLS.
+- Do not use a service-role key in mobile.
+- Do not fetch other users' data.
+- Do not send raw search text, source URLs, captions, notes, ingredients, or recipe content to analytics.
