@@ -571,6 +571,7 @@ Scope: display existing `recipe_cards` data created by M8 mock generation. Do no
    - "Open Original Recipe" uses `Linking.openURL` only for safe http/https links.
 
 11. Footer
+   - "View Grocery List" when the card has `grocery_list_json` or `ingredients_json`
    - "Back to Home"
    - "Save another recipe"
 
@@ -588,6 +589,11 @@ Allowed properties:
 - `model_used`
 - `has_grocery_list`
 - `has_missing_info`
+
+For `grocery_list_copied`, use the M12 grocery analytics shape:
+- `item_count`
+- `checked_count`
+- `has_recipe_title`
 
 Do not send source URLs, ingredients, instructions, notes, captions, or recipe content.
 
@@ -744,3 +750,74 @@ Allowed properties:
 - `opened_item_type`
 
 Do not send search text, source URLs, captions, notes, ingredients, instructions, or recipe content.
+
+## M12 Grocery List
+
+Scope: single recipe-card grocery checklist only. Do not call AI, generate combined multi-recipe grocery lists, add grocery delivery, paywall/RevenueCat, scraping, video download/backup, or Android share intent.
+
+### Route
+
+- Route: `/grocery?recipeCardId=[recipe_card_id]`
+- Use the existing `app/grocery.tsx` route.
+- Recipe Result adds "View Grocery List" when a card has grocery items or ingredients for fallback.
+
+### Data
+
+Use `getRecipeGroceryList(recipeCardId)` from `src/lib/api/recipes.ts`.
+
+The helper reads the authenticated user's `recipe_cards` row through the Supabase mobile client and RLS.
+
+Selected fields:
+- `id`
+- `recipe_id`
+- `recipe_title`
+- `grocery_list_json`
+- `ingredients_json`
+- `servings`
+- `source_link`
+- `created_at`
+- `updated_at`
+
+Data handling:
+- Prefer `grocery_list_json`.
+- If grocery items are empty, create fallback checklist items from `ingredients_json`.
+- Handle null, stringified JSON, malformed JSON, and empty arrays without crashing.
+- Normalize each item to `{ id, label, quantity?, checked }`.
+
+### Screen
+
+Header:
+- "Grocery List"
+- Recipe title or "Untitled recipe"
+- Servings row when available
+
+States:
+- Loading: `LoadingState`
+- Error: `ErrorState` with Retry
+- Empty: `EmptyState` when no grocery items or ingredients can be normalized
+
+Checklist:
+- Large tap targets with checkbox affordance.
+- Tapping an item toggles local checked state only.
+- Checked items remain readable and visually distinct.
+- "Uncheck All" clears local checked state.
+
+Actions:
+- "Copy List" copies clean text with the recipe title and bullet items.
+- "Uncheck All"
+- "Back to Recipe"
+
+### Analytics
+
+Events:
+- `grocery_list_viewed`
+- `grocery_item_checked`
+- `grocery_list_copied`
+- `grocery_list_unchecked_all`
+
+Allowed properties:
+- `item_count`
+- `checked_count`
+- `has_recipe_title`
+
+Do not send grocery item names, ingredients text, instructions, source URLs, notes, captions, or generated recipe content.

@@ -318,3 +318,43 @@ Rules:
 - Do not use a service-role key in mobile.
 - Do not fetch other users' data.
 - Do not send raw search text, source URLs, captions, notes, ingredients, or recipe content to analytics.
+
+### M12 Mobile Grocery List Read
+
+The M12 Grocery List screen reads one generated recipe card and normalizes its grocery data on device. It does not call AI and does not create a new grocery-list record.
+
+Helper:
+- `getRecipeGroceryList(recipeCardId: string)`
+
+Behavior:
+- Fetch the authenticated user's `recipe_cards` row for the supplied recipe card ID.
+- Prefer `grocery_list_json`.
+- If no grocery items can be read, fall back to `ingredients_json`.
+- Normalize values into local checklist items:
+
+```ts
+type GroceryItem = {
+  id: string
+  label: string
+  quantity?: string
+  checked: boolean
+}
+```
+
+Selected `recipe_cards` fields:
+- `id`
+- `recipe_id`
+- `recipe_title`
+- `grocery_list_json`
+- `ingredients_json`
+- `servings`
+- `source_link`
+- `created_at`
+- `updated_at`
+
+Rules:
+- Use the authenticated Supabase client and RLS.
+- Filter by the authenticated user's ID in addition to relying on RLS.
+- Do not use a service-role key in mobile.
+- Do not call AI, generate combined multi-recipe grocery lists, or create grocery delivery integrations.
+- Do not send grocery item names, ingredients text, recipe instructions, source URLs, notes, or captions to analytics.

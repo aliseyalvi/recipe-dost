@@ -140,6 +140,33 @@ export type RecipeCard = Omit<
   missing_info: string[]
 }
 
+type RecipeGroceryListRow = Pick<
+  Database['public']['Tables']['recipe_cards']['Row'],
+  | 'id'
+  | 'recipe_id'
+  | 'recipe_title'
+  | 'grocery_list_json'
+  | 'ingredients_json'
+  | 'servings'
+  | 'source_link'
+  | 'created_at'
+  | 'updated_at'
+>
+
+export type GroceryItem = {
+  id: string
+  label: string
+  quantity?: string
+  checked: boolean
+}
+
+export type RecipeGroceryList = Omit<
+  RecipeGroceryListRow,
+  'grocery_list_json' | 'ingredients_json'
+> & {
+  grocery_items: GroceryItem[]
+}
+
 type RecipeLibraryItemRow = Pick<
   Database['public']['Tables']['recipe_items']['Row'],
   | 'id'
@@ -324,6 +351,32 @@ export async function getRecipeCard(recipeCardId: string) {
   return normalizeRecipeCard(data satisfies RecipeCardRow)
 }
 
+export async function getRecipeGroceryList(recipeCardId: string) {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    throw new Error('Could not load this grocery list.')
+  }
+
+  const { data, error } = await supabase
+    .from('recipe_cards')
+    .select(
+      'id, recipe_id, recipe_title, grocery_list_json, ingredients_json, servings, source_link, created_at, updated_at'
+    )
+    .eq('id', recipeCardId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (error) {
+    throw new Error('Could not load this grocery list.')
+  }
+
+  return normalizeRecipeGroceryList(data satisfies RecipeGroceryListRow)
+}
+
 export async function getSavedRecipeItem(recipeId: string) {
   const { data, error } = await supabase
     .from('recipe_items')
@@ -413,6 +466,90 @@ function normalizeRecipeCard(row: RecipeCardRow): RecipeCard {
     substitutions: getSubstitutions(row.substitutions_json),
     missing_info: getStringArray(row.missing_info_json),
   }
+}
+
+function normalizeRecipeGroceryList(row: RecipeGroceryListRow): RecipeGroceryList {
+  return {
+    id: row.id,
+    recipe_id: row.recipe_id,
+    recipe_title: row.recipe_title,
+    servings: row.servings,
+    source_link: row.source_link,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    grocery_items: getGroceryItems(row.grocery_list_json, row.ingredients_json),
+  }
+}
+
+function getGroceryItems(groceryListValue: Json, ingredientsValue: Json) {
+  const groceryItems = getArray(groceryListValue)
+    .map((item, index) => getGroceryItemFromUnknown(item, index, 'grocery'))
+    .filter((item): item is GroceryItem => Boolean(item))
+
+  if (groceryItems.length > 0) {
+    return groceryItems
+  }
+
+  return getIngredients(ingredientsValue).map((ingredient, index) => {
+    const item: GroceryItem = {
+      id: `ingredient-${index}`,
+      label: ingredient.name,
+      checked: false,
+    }
+
+    if (ingredient.quantity) {
+      item.quantity = ingredient.quantity
+    }
+
+    return item
+  })
+}
+
+function getGroceryItemFromUnknown(
+  value: unknown,
+  index: number,
+  source: string
+): GroceryItem | null {
+  if (typeof value === 'string') {
+    const label = value.trim()
+
+    if (!label) {
+      return null
+    }
+
+    return {
+      id: `${source}-${index}`,
+      label,
+      checked: false,
+    }
+  }
+
+  const record = getRecord(value)
+  const label =
+    getString(record?.label) ||
+    getString(record?.name) ||
+    getString(record?.item) ||
+    getString(record?.ingredient)
+
+  if (!label) {
+    return null
+  }
+
+  const quantity =
+    getString(record?.quantity) ||
+    getString(record?.amount) ||
+    getString(record?.measure)
+  const item: GroceryItem = {
+    id: `${source}-${index}`,
+    label,
+    checked: false,
+  }
+
+  if (quantity) {
+    item.quantity = quantity
+  }
+
+  return item
 }
 
 function getIngredients(value: Json): RecipeCardIngredient[] {

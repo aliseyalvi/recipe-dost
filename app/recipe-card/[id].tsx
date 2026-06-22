@@ -100,6 +100,8 @@ export default function RecipeCardResultRoute() {
     ? detectRecipePlatform(recipeCard.source_link)
     : null
   const canOpenSource = isValidHttpUrl(recipeCard.source_link)
+  const canViewGroceryList =
+    recipeCard.grocery_list.length > 0 || recipeCard.ingredients.length > 0
 
   const copyGroceryList = async () => {
     if (recipeCard.grocery_list.length === 0) {
@@ -107,7 +109,11 @@ export default function RecipeCardResultRoute() {
     }
 
     await Clipboard.setStringAsync(recipeCard.grocery_list.join('\n'))
-    track('grocery_list_copied', getAnalyticsProperties(recipeCard))
+    track('grocery_list_copied', {
+      item_count: recipeCard.grocery_list.length,
+      checked_count: 0,
+      has_recipe_title: Boolean(recipeCard.recipe_title?.trim()),
+    })
   }
 
   const openOriginalSource = async () => {
@@ -162,6 +168,14 @@ export default function RecipeCardResultRoute() {
         groceryList={recipeCard.grocery_list}
         onCopy={copyGroceryList}
       />
+      {canViewGroceryList ? (
+        <Button
+          label="View Grocery List"
+          fullWidth
+          variant="secondary"
+          onPress={() => router.push(`/grocery?recipeCardId=${recipeCard.id}`)}
+        />
+      ) : null}
       <SubstitutionsSection substitutions={recipeCard.substitutions} />
       <StorageSafetySection recipeCard={recipeCard} />
       <MissingInfoSection missingInfo={recipeCard.missing_info} />

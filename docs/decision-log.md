@@ -77,3 +77,8 @@
 - Users can browse saved links and generated recipe cards, search across titles/notes/captions/manual ingredients/platform/cuisine/meal type, filter by status/platform, sort by date, and reopen saved-link or recipe-card detail screens.
 - M11 search and filters are client-side over the authenticated user's fetched data for the MVP.
 - No paywall, RevenueCat, video download, scraping, deleted-video backup, Android share intent, or M12+ work was added.
+- Milestone M12 Grocery List completed at `/grocery?recipeCardId=[recipe_card_id]`.
+- M12 uses existing `recipe_cards.grocery_list_json`, with a defensive `ingredients_json` fallback when grocery items are unavailable.
+- Grocery checklist state is local-only for the MVP and is not persisted to Supabase yet.
+- Recipe Result now exposes "View Grocery List" when a card has grocery items or ingredients.
+- No AI call, grocery delivery integration, paywall, RevenueCat, scraping, video download, video backup, deleted-video backup, Android share intent, or multi-recipe meal planning was added.
