@@ -2,6 +2,7 @@ import {
   detectRecipePlatform,
   getPlatformLabel,
 } from '@/features/recipe-draft/platform'
+import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { useRecipeDraftStore } from '@/features/recipe-draft/recipe-draft-store'
 import { validateRecipeUrl } from '@/features/recipe-draft/validation'
 import { parseRecipeUrl } from '@/lib/api/recipes'
@@ -9,6 +10,8 @@ import { getUsageSummary } from '@/lib/api/usage'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, spacing, typography } from '@/theme'
+import { AppBadge } from '@/ui/app-badge'
+import { AppHeader } from '@/ui/app-header'
 import { Button } from '@/ui/button'
 import { Card } from '@/ui/card'
 import { ErrorState } from '@/ui/error-state'
@@ -18,7 +21,7 @@ import { Screen } from '@/ui/screen'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
-import { Text, View } from 'react-native'
+import { ScrollView, Text, View } from 'react-native'
 
 export default function SaveRecipeRoute() {
   const router = useRouter()
@@ -110,18 +113,24 @@ export default function SaveRecipeRoute() {
   }
 
   return (
-    <Screen>
-      <View style={{ gap: spacing.md }}>
-        <Text selectable style={[typography.title, { color: colors.text }]}>
-          Save a recipe video
-        </Text>
-        <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-          Paste a Reel, TikTok, Short, or food video link. We will turn it into
-          a clean recipe card later.
-        </Text>
-      </View>
+    <Screen compact>
+      <AppHeader
+        eyebrow="Save"
+        title="Save Recipe"
+        subtitle="Paste a Reel, TikTok, Short, or recipe video link."
+      />
 
-      <Card>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: spacing.sm }}
+      >
+        {['Instagram', 'TikTok', 'YouTube', 'Facebook', 'Other'].map((label) => (
+          <AppBadge key={label} label={label} />
+        ))}
+      </ScrollView>
+
+      <Card tone="warm">
         <Input
           autoCapitalize="none"
           autoCorrect={false}
@@ -151,8 +160,7 @@ export default function SaveRecipeRoute() {
           value={sourceUrl}
         />
         <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-          Works with Instagram, TikTok, YouTube, Facebook, and other recipe
-          links.
+          Paste a public recipe link. Captions and notes come next.
         </Text>
         {shouldShowError && validationMessage ? (
           <Text selectable style={[typography.caption, { color: colors.danger }]}>
@@ -160,15 +168,18 @@ export default function SaveRecipeRoute() {
           </Text>
         ) : null}
         {validationResult.success ? (
-          <Text selectable style={[typography.caption, { color: colors.primary }]}>
-            Looks good. Platform:{' '}
-            {getPlatformLabel(detectRecipePlatform(trimmedSourceUrl))}.
-          </Text>
+          <View style={{ gap: spacing.sm }}>
+            <PlatformBadge platform={detectRecipePlatform(trimmedSourceUrl)} />
+            <Text selectable style={[typography.caption, { color: colors.primary }]}>
+              Looks good. Detected as{' '}
+              {getPlatformLabel(detectRecipePlatform(trimmedSourceUrl))}.
+            </Text>
+          </View>
         ) : null}
       </Card>
 
       <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-        Recipe Dost saves recipe cards and links, not video files.
+        We save links and recipe cards, not videos.
       </Text>
 
       {typeof savedLinksRemaining === 'number' ? (

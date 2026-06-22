@@ -1,5 +1,4 @@
-import { colors, radius, spacing, typography } from '@/theme'
-import { Text, View } from 'react-native'
+import { AppBadge } from '@/ui/app-badge'
 
 type Props = {
   status: string | null
@@ -7,29 +6,15 @@ type Props = {
 
 export function MetadataStatusBadge({ status }: Props) {
   const label = status ? status.replaceAll('_', ' ') : 'not checked'
+  const isFailed = status === 'failed'
 
-  return (
-    <View
-      style={{
-        alignSelf: 'flex-start',
-        borderRadius: radius.pill,
-        backgroundColor: colors.surfaceMuted,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.xs,
-      }}
-    >
-      <Text
-        selectable
-        style={[
-          typography.caption,
-          {
-            color: colors.textMuted,
-            textTransform: 'capitalize',
-          },
-        ]}
-      >
-        {label}
-      </Text>
-    </View>
-  )
+  return <AppBadge label={titleCase(label)} tone={isFailed ? 'warning' : 'default'} />
+}
+
+function titleCase(value: string) {
+  return value
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
 }

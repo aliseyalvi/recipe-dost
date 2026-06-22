@@ -23,7 +23,7 @@ export function EmptyState({
         borderColor: colors.border,
         borderRadius: 8,
         borderCurve: 'continuous',
-        backgroundColor: colors.surfaceMuted,
+        backgroundColor: colors.surfaceWarm,
         padding: spacing.xl,
       }}
     >

@@ -1,16 +1,21 @@
 export const colors = {
-  background: '#FFFDF8',
-  surface: '#FFFFFF',
-  surfaceMuted: '#F7F2EA',
-  text: '#201A16',
-  textMuted: '#6F6258',
-  border: '#E5D8C8',
-  primary: '#28745E',
-  primaryPressed: '#1F5D4B',
+  background: '#050505',
+  surface: '#121212',
+  surfaceMuted: '#1B1B1B',
+  surfaceWarm: '#201917',
+  text: '#F8F6F2',
+  textMuted: '#A7A29A',
+  border: '#242424',
+  primary: '#FF493D',
+  primaryPressed: '#E73B31',
+  primarySoft: '#351513',
   primaryText: '#FFFFFF',
-  accent: '#D86F2C',
-  danger: '#B42318',
-  dangerSurface: '#FFF1F0',
+  accent: '#53D18A',
+  accentSoft: '#123322',
+  warning: '#FFD166',
+  warningSurface: '#302716',
+  danger: '#FF8A7A',
+  dangerSurface: '#3B211F',
 } as const
 
 export const spacing = {
@@ -20,13 +25,19 @@ export const spacing = {
   lg: 16,
   xl: 24,
   xxl: 32,
+  xxxl: 40,
 } as const
 
 export const typography = {
+  hero: {
+    fontSize: 32,
+    lineHeight: 38,
+    fontWeight: '800',
+  },
   title: {
     fontSize: 28,
     lineHeight: 34,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   heading: {
     fontSize: 20,
@@ -46,7 +57,8 @@ export const typography = {
 } as const
 
 export const radius = {
-  sm: 6,
-  md: 8,
+  sm: 12,
+  md: 18,
+  lg: 24,
   pill: 999,
 } as const

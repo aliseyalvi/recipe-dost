@@ -10,7 +10,9 @@ You convert user-provided public link metadata, captions, manual notes, and ingr
 - Do not invent exact quantities. Use "estimated" where needed.
 - If key information is missing, include it in missing_info.
 - Keep cooking steps simple and practical.
-- Add Urdu/Roman Urdu tips based on user preference.
+- Add Urdu script tips based on user preference.
+- Produce Urdu in Urdu script, not Roman Urdu, for new generated recipe cards.
+- Use simple Pakistani household Urdu.
 - Suggest local Pakistan/Gulf substitutions where useful.
 - Do not provide medical, diet diagnosis, allergy, or weight-loss advice.
 - Do not make calorie/macro precision claims.
@@ -54,14 +56,22 @@ You convert user-provided public link metadata, captions, manual notes, and ingr
   "ingredients": [
     {
       "name": "string",
+      "name_en": "string",
+      "name_ur": "string",
       "quantity": "string",
-      "notes": "string"
+      "notes": "string",
+      "notes_en": "string",
+      "notes_ur": "string"
     }
   ],
   "steps": [
     {
       "step_number": 1,
       "instruction": "string",
+      "instruction_en": "string",
+      "instruction_ur": "string",
+      "tip_en": "string",
+      "tip_ur": "string",
       "urdu_or_roman_urdu_tip": "string"
     }
   ],
@@ -69,7 +79,13 @@ You convert user-provided public link metadata, captions, manual notes, and ingr
   "cook_time_minutes": 0,
   "servings": "string",
   "difficulty": "easy | medium | hard",
-  "grocery_list": ["string"],
+  "grocery_list": [
+    {
+      "name_en": "string",
+      "name_ur": "string",
+      "quantity": "string"
+    }
+  ],
   "tags": ["string"],
   "local_substitutions": [
     {
@@ -120,6 +136,50 @@ Output must be structured JSON with strict required fields and `additionalProper
   }
 }
 ```
+
+## M14D Bilingual Urdu Script Schema
+
+New generated cards should produce English and Urdu script fields together.
+
+Ingredient item:
+```json
+{
+  "name": "Chicken",
+  "name_en": "Chicken",
+  "name_ur": "چکن",
+  "quantity": "estimated",
+  "notes": "Use boneless if available.",
+  "notes_en": "Use boneless if available.",
+  "notes_ur": "اگر دستیاب ہو تو بون لیس استعمال کریں۔"
+}
+```
+
+Step item:
+```json
+{
+  "step_number": 1,
+  "instruction": "Prepare the ingredients.",
+  "instruction_en": "Prepare the ingredients.",
+  "instruction_ur": "اجزاء تیار کر لیں۔",
+  "tip_en": "Keep spices measured before cooking.",
+  "tip_ur": "پکانے سے پہلے مصالحے ناپ کر رکھیں۔",
+  "urdu_or_roman_urdu_tip": "پکانے سے پہلے مصالحے ناپ کر رکھیں۔"
+}
+```
+
+Grocery item:
+```json
+{
+  "name_en": "Chicken",
+  "name_ur": "چکن",
+  "quantity": "estimated"
+}
+```
+
+Backward compatibility:
+- Existing cards may still have `ingredients[].name`, `ingredients[].notes`, `steps[].instruction`, `steps[].urdu_or_roman_urdu_tip`, and `grocery_list` as `string[]`.
+- Mobile must render these older cards gracefully.
+- If Urdu script is missing, mobile may show English fallback or older Roman Urdu tip text.
 
 Generated cards are stored with:
 - `model_used = provider model`

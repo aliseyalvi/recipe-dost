@@ -1,6 +1,9 @@
 import { MetadataStatusBadge } from '@/features/home/metadata-status-badge'
+import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
+import { RecipePlatform } from '@/features/recipe-draft/types'
 import { RecentRecipeItem } from '@/features/home/recent-recipes-api'
 import { colors, radius, spacing, typography } from '@/theme'
+import { AppBadge } from '@/ui/app-badge'
 import { Image, Pressable, Text, View } from 'react-native'
 
 type Props = {
@@ -20,7 +23,7 @@ export function RecentRecipeCard({ recipe, onPress }: Props) {
         borderRadius: radius.md,
         borderCurve: 'continuous',
         backgroundColor: colors.surface,
-        padding: spacing.md,
+        padding: spacing.lg,
         opacity: pressed ? 0.86 : 1,
       })}
     >
@@ -44,16 +47,24 @@ export function RecentRecipeCard({ recipe, onPress }: Props) {
               justifyContent: 'center',
               borderRadius: radius.md,
               borderCurve: 'continuous',
-              backgroundColor: colors.surfaceMuted,
+              backgroundColor: colors.accentSoft,
             }}
           >
+            <Text selectable style={[typography.heading, { color: colors.accent }]}>
+              RD
+            </Text>
             <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-              Link
+              Recipe
             </Text>
           </View>
         )}
 
         <View style={{ flex: 1, gap: spacing.sm }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            <PlatformBadge platform={getRecipePlatform(recipe.platform)} />
+            <AppBadge label="Saved Link" tone="accent" />
+            <MetadataStatusBadge status={recipe.metadata_status} />
+          </View>
           <Text
             selectable
             numberOfLines={2}
@@ -62,20 +73,12 @@ export function RecentRecipeCard({ recipe, onPress }: Props) {
             {recipe.title?.trim() || 'Untitled recipe link'}
           </Text>
           <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-            {formatRecipeMeta(recipe.platform, recipe.created_at)}
+            {formatDate(recipe.created_at)}
           </Text>
-          <MetadataStatusBadge status={recipe.metadata_status} />
         </View>
       </View>
     </Pressable>
   )
-}
-
-function formatRecipeMeta(platform: string | null, createdAt: string) {
-  const platformLabel = platform ? titleCase(platform) : 'Unknown platform'
-  const dateLabel = formatDate(createdAt)
-
-  return `${platformLabel} · ${dateLabel}`
 }
 
 function formatDate(value: string) {
@@ -91,11 +94,16 @@ function formatDate(value: string) {
   })
 }
 
-function titleCase(value: string) {
-  return value
-    .replaceAll('_', ' ')
-    .split(' ')
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ')
+function getRecipePlatform(platform: string | null): RecipePlatform {
+  if (
+    platform === 'instagram' ||
+    platform === 'tiktok' ||
+    platform === 'youtube' ||
+    platform === 'facebook' ||
+    platform === 'other'
+  ) {
+    return platform
+  }
+
+  return 'other'
 }

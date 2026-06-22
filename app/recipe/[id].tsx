@@ -10,7 +10,9 @@ import {
 } from '@/lib/api/recipes'
 import { getUsageSummary } from '@/lib/api/usage'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
-import { colors, spacing, typography } from '@/theme'
+import { colors, radius, spacing, typography } from '@/theme'
+import { AppBadge } from '@/ui/app-badge'
+import { AppHeader } from '@/ui/app-header'
 import { Button } from '@/ui/button'
 import { Card } from '@/ui/card'
 import { EmptyState } from '@/ui/empty-state'
@@ -20,7 +22,7 @@ import { Screen } from '@/ui/screen'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
-import { Text, View } from 'react-native'
+import { Image, Text, View } from 'react-native'
 
 export default function SavedRecipeRoute() {
   const router = useRouter()
@@ -128,6 +130,7 @@ export default function SavedRecipeRoute() {
   const platform = getRecipePlatform(recipe.platform)
   const hasNote = Boolean(recipe.user_note)
   const hasCaption = Boolean(recipe.pasted_caption)
+  const hasManualIngredients = Boolean(recipe.manual_ingredients)
 
   const handleGenerateRecipeCard = async () => {
     if (!recipeId || isGenerating) {
@@ -175,18 +178,70 @@ export default function SavedRecipeRoute() {
   }
 
   return (
-    <Screen>
-      <View style={{ gap: spacing.md }}>
-        <Text selectable style={[typography.title, { color: colors.text }]}>
-          Recipe link saved
-        </Text>
-        <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-          Create a clean recipe card from your saved notes and caption.
-        </Text>
-      </View>
+    <Screen compact>
+      <AppHeader
+        eyebrow="Saved link"
+        title="Recipe link saved"
+        subtitle="Your link, caption, and notes are saved. AI can turn them into a clean recipe card."
+      />
 
-      <Card>
-        <PlatformBadge platform={platform} />
+      <Card tone="warm">
+        <View
+          style={{
+            overflow: 'hidden',
+            aspectRatio: 1.55,
+            borderRadius: radius.lg,
+            backgroundColor: colors.surfaceMuted,
+          }}
+        >
+          {recipe.thumbnail_url ? (
+            <Image
+              source={{ uri: recipe.thumbnail_url }}
+              style={{ width: '100%', height: '100%' }}
+            />
+          ) : (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: 'flex-end',
+                gap: spacing.sm,
+                padding: spacing.lg,
+              }}
+            >
+              <Text
+                selectable={false}
+                style={{
+                  color: colors.text,
+                  fontSize: 44,
+                  lineHeight: 48,
+                  fontWeight: '900',
+                }}
+              >
+                RD
+              </Text>
+              <View
+                style={{
+                  width: '64%',
+                  height: 8,
+                  borderRadius: radius.pill,
+                  backgroundColor: colors.primary,
+                }}
+              />
+              <View
+                style={{
+                  width: '42%',
+                  height: 8,
+                  borderRadius: radius.pill,
+                  backgroundColor: colors.accent,
+                }}
+              />
+            </View>
+          )}
+        </View>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          <PlatformBadge platform={platform} />
+          <AppBadge label="Saved Link" />
+        </View>
         <Text selectable style={[typography.heading, { color: colors.text }]}>
           {recipe.title ?? 'Untitled recipe link'}
         </Text>
@@ -211,17 +266,45 @@ export default function SavedRecipeRoute() {
             Notes
           </Text>
           <Text selectable style={[typography.body, { color: colors.text }]}>
-            {getRecipeInputSummary(hasNote, hasCaption)}
+            {getRecipeInputSummary(hasNote, hasCaption, hasManualIngredients)}
           </Text>
+        </View>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          {hasNote ? <AppBadge label="Note added" /> : null}
+          {hasCaption ? <AppBadge label="Caption added" /> : null}
+          {hasManualIngredients ? <AppBadge label="Ingredients added" /> : null}
         </View>
       </Card>
 
       {usageSummary ? (
         <UsagePill
-          label="AI recipe cards left"
+          label="Free AI tries remaining"
           value={`${usageSummary.recipeCardsRemaining}`}
         />
       ) : null}
+
+      <Card tone="warm">
+        <View style={{ gap: spacing.xs }}>
+          <Text selectable style={[typography.heading, { color: colors.text }]}>
+            AI uses your saved details
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+            Captions and notes become ingredients, steps, and a grocery list.
+          </Text>
+        </View>
+        <Button
+          label="Generate Recipe Card"
+          fullWidth
+          disabled={
+            isGenerating ||
+            usageSummaryQuery.isLoading ||
+            Boolean(usageSummary && !usageSummary.canGenerateRecipeCard)
+          }
+          onPress={() => {
+            void handleGenerateRecipeCard()
+          }}
+        />
+      </Card>
 
       {isGenerating ? (
         <LoadingState message="Creating your recipe card..." />
@@ -249,19 +332,6 @@ export default function SavedRecipeRoute() {
       ) : null}
 
       <Button
-        label="Generate Recipe Card"
-        fullWidth
-        disabled={
-          isGenerating ||
-          usageSummaryQuery.isLoading ||
-          Boolean(usageSummary && !usageSummary.canGenerateRecipeCard)
-        }
-        onPress={() => {
-          void handleGenerateRecipeCard()
-        }}
-      />
-
-      <Button
         label="Back to Home"
         fullWidth
         onPress={() => router.replace('/home')}
@@ -270,9 +340,17 @@ export default function SavedRecipeRoute() {
   )
 }
 
-function getRecipeInputSummary(hasNote: boolean, hasCaption: boolean) {
-  if (hasNote && hasCaption) {
-    return 'Note and caption added'
+function getRecipeInputSummary(
+  hasNote: boolean,
+  hasCaption: boolean,
+  hasManualIngredients: boolean
+) {
+  const detailsCount = [hasNote, hasCaption, hasManualIngredients].filter(
+    Boolean
+  ).length
+
+  if (detailsCount > 1) {
+    return 'Extra details added for better AI results'
   }
 
   if (hasNote) {
@@ -283,7 +361,11 @@ function getRecipeInputSummary(hasNote: boolean, hasCaption: boolean) {
     return 'Caption added'
   }
 
-  return 'No note or caption added yet'
+  if (hasManualIngredients) {
+    return 'Manual ingredients added'
+  }
+
+  return 'No note, caption, or ingredients added yet'
 }
 
 function getRecipePlatform(platform: string | null): RecipePlatform {

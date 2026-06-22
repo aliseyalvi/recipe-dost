@@ -14,6 +14,7 @@ import { getUsageSummary } from '@/lib/api/usage'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, radius, spacing, typography } from '@/theme'
+import { AppHeader } from '@/ui/app-header'
 import { Button } from '@/ui/button'
 import { Card } from '@/ui/card'
 import { EmptyState } from '@/ui/empty-state'
@@ -202,18 +203,14 @@ export default function RecipePreviewRoute() {
   }
 
   return (
-    <Screen>
-      <View style={{ gap: spacing.md }}>
-        <Text selectable style={[typography.title, { color: colors.text }]}>
-          Add recipe details
-        </Text>
-        <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-          If we cannot read the caption, your notes help AI create a better
-          recipe card.
-        </Text>
-      </View>
+    <Screen compact>
+      <AppHeader
+        eyebrow="Preview"
+        title="Recipe details"
+        subtitle="Add quick context before saving."
+      />
 
-      <Card>
+      <Card tone="warm">
         <PlatformBadge platform={draft.platform} />
         {thumbnailUrl ? (
           <Image
@@ -252,8 +249,8 @@ export default function RecipePreviewRoute() {
         </View>
         {metadataStatus === 'failed' ? (
           <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-            We could not read recipe details automatically. Paste the caption or
-            add notes to improve the recipe card later.
+            Paste the caption or add quick notes if the recipe details are not
+            obvious from the link.
           </Text>
         ) : null}
         <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
@@ -289,24 +286,30 @@ export default function RecipePreviewRoute() {
         />
       ) : null}
 
-      <TextArea
-        label="Your note"
-        onChangeText={setUserNote}
-        placeholder="Example: I want to make this for dinner, less spicy."
-        value={userNote}
-      />
-      <TextArea
-        label="Paste caption"
-        onChangeText={setPastedCaption}
-        placeholder="Paste the recipe caption here if available."
-        value={pastedCaption}
-      />
-      <TextArea
-        label="Manual ingredients"
-        onChangeText={setManualIngredients}
-        placeholder="Example: chicken, pasta, cream, garlic..."
-        value={manualIngredients}
-      />
+      <Card>
+        <TextArea
+          label="Your note"
+          onChangeText={setUserNote}
+          placeholder="Example: make it less spicy, good for dinner."
+          value={userNote}
+        />
+      </Card>
+      <Card>
+        <TextArea
+          label="Paste caption"
+          onChangeText={setPastedCaption}
+          placeholder="Paste the recipe caption here if available."
+          value={pastedCaption}
+        />
+      </Card>
+      <Card>
+        <TextArea
+          label="Manual ingredients"
+          onChangeText={setManualIngredients}
+          placeholder="Example: chicken, pasta, cream, garlic..."
+          value={manualIngredients}
+        />
+      </Card>
 
       <Card>
         <Text selectable style={[typography.heading, { color: colors.text }]}>

@@ -6,7 +6,7 @@ module.exports = {
     version: '1.0.0',
     orientation: 'portrait',
     icon: './assets/icon.png',
-    userInterfaceStyle: 'light',
+    userInterfaceStyle: 'dark',
     ios: {
       supportsTablet: true,
     },
@@ -17,6 +17,13 @@ module.exports = {
         backgroundImage: './assets/android-icon-background.png',
         monochromeImage: './assets/android-icon-monochrome.png',
       },
+      intentFilters: [
+        {
+          action: 'SEND',
+          category: ['DEFAULT'],
+          data: [{ mimeType: 'text/plain' }, { mimeType: 'text/*' }],
+        },
+      ],
       predictiveBackGestureEnabled: false,
     },
     web: {

@@ -1,22 +1,37 @@
 import { colors, radius, spacing } from '@/theme'
 import { ReactNode } from 'react'
-import { View } from 'react-native'
+import { View, ViewStyle } from 'react-native'
 
 type Props = {
   children: ReactNode
+  tone?: 'default' | 'warm' | 'muted'
 }
 
-export function Card({ children }: Props) {
+const toneStyles: Record<NonNullable<Props['tone']>, ViewStyle> = {
+  default: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+  },
+  warm: {
+    backgroundColor: colors.surfaceWarm,
+    borderColor: colors.accentSoft,
+  },
+  muted: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+  },
+}
+
+export function Card({ children, tone = 'default' }: Props) {
   return (
     <View
       style={{
         gap: spacing.md,
         borderWidth: 1,
-        borderColor: colors.border,
         borderRadius: radius.md,
         borderCurve: 'continuous',
-        backgroundColor: colors.surface,
         padding: spacing.lg,
+        ...toneStyles[tone],
       }}
     >
       {children}

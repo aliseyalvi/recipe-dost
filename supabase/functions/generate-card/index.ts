@@ -147,19 +147,34 @@ type GeneratedRecipeCard = {
   short_summary: string;
   ingredients: {
     name: string;
+    name_en?: string;
+    name_ur?: string;
     quantity: string;
     notes: string;
+    notes_en?: string;
+    notes_ur?: string;
   }[];
   steps: {
     step_number: number;
     instruction: string;
+    instruction_en?: string;
+    instruction_ur?: string;
+    tip_en?: string;
+    tip_ur?: string;
     urdu_or_roman_urdu_tip: string;
   }[];
   prep_time_minutes: number;
   cook_time_minutes: number;
   servings: string;
   difficulty: Difficulty;
-  grocery_list: string[];
+  grocery_list: (
+    | string
+    | {
+      name_en: string;
+      name_ur: string;
+      quantity?: string;
+    }
+  )[];
   tags: string[];
   local_substitutions: {
     original: string;
@@ -355,11 +370,15 @@ const openAiRecipeCardJsonSchema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["name", "quantity", "notes"],
+        required: ["name", "name_en", "name_ur", "quantity", "notes", "notes_en", "notes_ur"],
         properties: {
           name: { type: "string" },
+          name_en: { type: "string" },
+          name_ur: { type: "string" },
           quantity: { type: "string" },
           notes: { type: "string" },
+          notes_en: { type: "string" },
+          notes_ur: { type: "string" },
         },
       },
     },
@@ -368,10 +387,22 @@ const openAiRecipeCardJsonSchema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["step_number", "instruction", "urdu_or_roman_urdu_tip"],
+        required: [
+          "step_number",
+          "instruction",
+          "instruction_en",
+          "instruction_ur",
+          "tip_en",
+          "tip_ur",
+          "urdu_or_roman_urdu_tip",
+        ],
         properties: {
           step_number: { type: "number" },
           instruction: { type: "string" },
+          instruction_en: { type: "string" },
+          instruction_ur: { type: "string" },
+          tip_en: { type: "string" },
+          tip_ur: { type: "string" },
           urdu_or_roman_urdu_tip: { type: "string" },
         },
       },
@@ -380,7 +411,19 @@ const openAiRecipeCardJsonSchema = {
     cook_time_minutes: { type: "number" },
     servings: { type: "string" },
     difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
-    grocery_list: { type: "array", items: { type: "string" } },
+    grocery_list: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["name_en", "name_ur", "quantity"],
+        properties: {
+          name_en: { type: "string" },
+          name_ur: { type: "string" },
+          quantity: { type: "string" },
+        },
+      },
+    },
     tags: { type: "array", items: { type: "string" } },
     local_substitutions: {
       type: "array",
@@ -417,11 +460,15 @@ const geminiRecipeCardSchema = {
       type: "ARRAY",
       items: {
         type: "OBJECT",
-        required: ["name", "quantity", "notes"],
+        required: ["name", "name_en", "name_ur", "quantity", "notes", "notes_en", "notes_ur"],
         properties: {
           name: { type: "STRING" },
+          name_en: { type: "STRING" },
+          name_ur: { type: "STRING" },
           quantity: { type: "STRING" },
           notes: { type: "STRING" },
+          notes_en: { type: "STRING" },
+          notes_ur: { type: "STRING" },
         },
       },
     },
@@ -429,10 +476,22 @@ const geminiRecipeCardSchema = {
       type: "ARRAY",
       items: {
         type: "OBJECT",
-        required: ["step_number", "instruction", "urdu_or_roman_urdu_tip"],
+        required: [
+          "step_number",
+          "instruction",
+          "instruction_en",
+          "instruction_ur",
+          "tip_en",
+          "tip_ur",
+          "urdu_or_roman_urdu_tip",
+        ],
         properties: {
           step_number: { type: "NUMBER" },
           instruction: { type: "STRING" },
+          instruction_en: { type: "STRING" },
+          instruction_ur: { type: "STRING" },
+          tip_en: { type: "STRING" },
+          tip_ur: { type: "STRING" },
           urdu_or_roman_urdu_tip: { type: "STRING" },
         },
       },
@@ -441,7 +500,18 @@ const geminiRecipeCardSchema = {
     cook_time_minutes: { type: "NUMBER" },
     servings: { type: "STRING" },
     difficulty: { type: "STRING", enum: ["easy", "medium", "hard"] },
-    grocery_list: { type: "ARRAY", items: { type: "STRING" } },
+    grocery_list: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        required: ["name_en", "name_ur", "quantity"],
+        properties: {
+          name_en: { type: "STRING" },
+          name_ur: { type: "STRING" },
+          quantity: { type: "STRING" },
+        },
+      },
+    },
     tags: { type: "ARRAY", items: { type: "STRING" } },
     local_substitutions: {
       type: "ARRAY",
@@ -938,8 +1008,12 @@ function generateWithMock(
   const ingredientNames = getIngredientNames(recipeInput.manual_ingredients);
   const ingredients = ingredientNames.map((name) => ({
     name,
+    name_en: name,
+    name_ur: getMockUrduIngredientName(name),
     quantity: "estimated",
     notes: "Mock ingredient based on saved notes or manual ingredients.",
+    notes_en: "Mock ingredient based on saved notes or manual ingredients.",
+    notes_ur: "یہ محفوظ نوٹس یا اجزاء کی بنیاد پر شامل کیا گیا ہے۔",
   }));
   const card: GeneratedRecipeCard = {
     recipe_title: getMockRecipeTitle(recipeInput),
@@ -952,29 +1026,51 @@ function generateWithMock(
         step_number: 1,
         instruction:
           "Review the saved caption, notes, and manual ingredients before cooking.",
+        instruction_en:
+          "Review the saved caption, notes, and manual ingredients before cooking.",
+        instruction_ur:
+          "پکانے سے پہلے محفوظ کیپشن، نوٹس، اور دستی اجزاء دیکھ لیں۔",
+        tip_en: "Use your saved notes as the source of truth.",
+        tip_ur: "اپنے محفوظ نوٹس کو اصل حوالہ سمجھیں۔",
         urdu_or_roman_urdu_tip:
-          "Cooking se pehle caption aur apne notes zaroor check karein.",
+          "پکانے سے پہلے کیپشن اور اپنے نوٹس ضرور چیک کریں۔",
       },
       {
         step_number: 2,
         instruction:
           "Prepare the listed ingredients and adjust quantities to your household.",
+        instruction_en:
+          "Prepare the listed ingredients and adjust quantities to your household.",
+        instruction_ur:
+          "دیے گئے اجزاء تیار کریں اور مقدار اپنے گھر کے حساب سے رکھیں۔",
+        tip_en: "Start with smaller spice quantities if unsure.",
+        tip_ur: "اگر یقین نہ ہو تو مصالحہ کم مقدار سے شروع کریں۔",
         urdu_or_roman_urdu_tip:
-          "Ingredients ko apni family size ke hisaab se adjust karein.",
+          "اجزاء کو اپنی فیملی سائز کے حساب سے ایڈجسٹ کریں۔",
       },
       {
         step_number: 3,
         instruction:
           "Cook carefully using your saved details as the source reference.",
+        instruction_en:
+          "Cook carefully using your saved details as the source reference.",
+        instruction_ur:
+          "محفوظ تفصیلات کو حوالہ بنا کر احتیاط سے پکائیں۔",
+        tip_en: "Cook chicken, meat, or eggs fully before serving.",
+        tip_ur: "چکن، گوشت، یا انڈے پیش کرنے سے پہلے اچھی طرح پکائیں۔",
         urdu_or_roman_urdu_tip:
-          "Chicken, meat, ya eggs use kar rahe hain to achi tarah paka lein.",
+          "چکن، گوشت، یا انڈے استعمال کر رہے ہیں تو اچھی طرح پکا لیں۔",
       },
     ],
     prep_time_minutes: 10,
     cook_time_minutes: 20,
     servings: "2-3 people",
     difficulty: "easy",
-    grocery_list: ingredientNames,
+    grocery_list: ingredientNames.map((name) => ({
+      name_en: name,
+      name_ur: getMockUrduIngredientName(name),
+      quantity: "estimated",
+    })),
     tags: ["mock", "saved-link"],
     local_substitutions: [],
     storage_tip: "Store leftovers in a covered container in the fridge.",
@@ -1352,7 +1448,9 @@ function getSystemPrompt() {
     "Create a practical recipe card only from the saved link metadata, user notes, pasted caption, and manual ingredients provided.",
     "Do not fetch, open, scrape, download, summarize, or claim to have watched the source video.",
     "If details are missing, use estimated quantities and add clear missing_info instead of pretending certainty.",
-    "Keep steps simple, home-cook friendly, and include Urdu or Roman Urdu cooking tips.",
+    "Keep steps simple and home-cook friendly.",
+    "Produce Urdu in Urdu script, not Roman Urdu. Use simple Pakistani household Urdu.",
+    "For ingredients, steps, and grocery_list, include English and Urdu script fields where the schema asks for them.",
     "Do not make medical, allergy, calorie, macro, diet, weight-loss, diagnosis, or disease claims.",
     "Return valid JSON only, matching the requested recipe card shape.",
   ].join("\n");
@@ -1658,7 +1756,7 @@ function validateGeneratedRecipeCard(
   const sourceLink = getRequiredString(record.source_link);
   const ingredients = getIngredients(record.ingredients);
   const steps = getSteps(record.steps);
-  const groceryList = getStringArray(record.grocery_list);
+  const groceryList = getGroceryList(record.grocery_list);
   const tags = getStringArray(record.tags);
   const localSubstitutions = getSubstitutions(record.local_substitutions);
   const missingInfo = getStringArray(record.missing_info);
@@ -1706,27 +1804,39 @@ function getIngredients(value: unknown): GeneratedRecipeCard["ingredients"] {
     return [];
   }
 
-  return value
-    .map((item) => {
-      const record = isRecord(item) ? item : null;
+  const ingredients: GeneratedRecipeCard["ingredients"] = [];
 
-      if (!record) {
-        return null;
-      }
+  for (const item of value) {
+    const record = isRecord(item) ? item : null;
 
-      const name = getRequiredString(record.name);
-      const quantity = getRequiredString(record.quantity);
-      const notes = getRequiredString(record.notes);
+    if (!record) {
+      continue;
+    }
 
-      if (!name || !quantity || !notes) {
-        return null;
-      }
+    const nameEn = getRequiredString(record.name_en);
+    const nameUr = getRequiredString(record.name_ur);
+    const name = nameEn || getRequiredString(record.name);
+    const quantity = getRequiredString(record.quantity);
+    const notesEn = getRequiredString(record.notes_en);
+    const notesUr = getRequiredString(record.notes_ur);
+    const notes = notesEn || getRequiredString(record.notes);
 
-      return { name, quantity, notes };
-    })
-    .filter((item): item is GeneratedRecipeCard["ingredients"][number] =>
-      Boolean(item)
-    );
+    if (!name || !quantity || !notes) {
+      continue;
+    }
+
+    ingredients.push({
+      name,
+      name_en: nameEn || name,
+      name_ur: nameUr || "",
+      quantity,
+      notes,
+      notes_en: notesEn || notes,
+      notes_ur: notesUr || "",
+    });
+  }
+
+  return ingredients;
 }
 
 function getSteps(value: unknown): GeneratedRecipeCard["steps"] {
@@ -1734,31 +1844,82 @@ function getSteps(value: unknown): GeneratedRecipeCard["steps"] {
     return [];
   }
 
-  return value
-    .map((item) => {
-      const record = isRecord(item) ? item : null;
+  const steps: GeneratedRecipeCard["steps"] = [];
 
-      if (!record) {
-        return null;
+  for (const item of value) {
+    const record = isRecord(item) ? item : null;
+
+    if (!record) {
+      continue;
+    }
+
+    const stepNumber = getRequiredNumber(record.step_number);
+    const instructionEn = getRequiredString(record.instruction_en);
+    const instructionUr = getRequiredString(record.instruction_ur);
+    const instruction = instructionEn || getRequiredString(record.instruction);
+    const tipEn = getRequiredString(record.tip_en);
+    const tipUr = getRequiredString(record.tip_ur);
+    const tip = tipUr || getRequiredString(record.urdu_or_roman_urdu_tip);
+
+    if (stepNumber === null || !instruction || !tip) {
+      continue;
+    }
+
+    steps.push({
+      step_number: stepNumber,
+      instruction,
+      instruction_en: instructionEn || instruction,
+      instruction_ur: instructionUr || "",
+      tip_en: tipEn || "",
+      tip_ur: tipUr || tip,
+      urdu_or_roman_urdu_tip: tip,
+    });
+  }
+
+  return steps;
+}
+
+function getGroceryList(value: unknown): GeneratedRecipeCard["grocery_list"] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const groceryList: GeneratedRecipeCard["grocery_list"] = [];
+
+  for (const item of value) {
+    if (typeof item === "string") {
+      const name = item.trim();
+
+      if (name) {
+        groceryList.push(name);
       }
 
-      const stepNumber = getRequiredNumber(record.step_number);
-      const instruction = getRequiredString(record.instruction);
-      const tip = getRequiredString(record.urdu_or_roman_urdu_tip);
+      continue;
+    }
 
-      if (stepNumber === null || !instruction || !tip) {
-        return null;
-      }
+    const record = isRecord(item) ? item : null;
 
-      return {
-        step_number: stepNumber,
-        instruction,
-        urdu_or_roman_urdu_tip: tip,
-      };
-    })
-    .filter((item): item is GeneratedRecipeCard["steps"][number] =>
-      Boolean(item)
-    );
+    if (!record) {
+      continue;
+    }
+
+    const nameEn = getRequiredString(record.name_en) ||
+      getRequiredString(record.name);
+    const nameUr = getRequiredString(record.name_ur);
+    const quantity = getRequiredString(record.quantity);
+
+    if (!nameEn || !nameUr) {
+      continue;
+    }
+
+    groceryList.push({
+      name_en: nameEn,
+      name_ur: nameUr,
+      ...(quantity ? { quantity } : {}),
+    });
+  }
+
+  return groceryList;
 }
 
 function getSubstitutions(
@@ -2152,6 +2313,32 @@ function getIngredientNames(manualIngredients: string | null) {
   }
 
   return ["Main ingredient", "Spices", "Oil", "Water"];
+}
+
+function getMockUrduIngredientName(name: string) {
+  const normalizedName = name.trim().toLowerCase();
+
+  if (normalizedName.includes("chicken")) {
+    return "چکن";
+  }
+
+  if (normalizedName.includes("rice")) {
+    return "چاول";
+  }
+
+  if (normalizedName.includes("spice")) {
+    return "مصالحہ";
+  }
+
+  if (normalizedName.includes("oil")) {
+    return "تیل";
+  }
+
+  if (normalizedName.includes("water")) {
+    return "پانی";
+  }
+
+  return "اجزاء";
 }
 
 function getPlatformLabel(platform: RecipePlatform) {

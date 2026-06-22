@@ -104,13 +104,21 @@ type RecipeCardRow = Pick<
 
 export type RecipeCardIngredient = {
   name: string
+  name_en?: string
+  name_ur?: string
   quantity: string
   notes?: string
+  notes_en?: string
+  notes_ur?: string
 }
 
 export type RecipeCardStep = {
   step_number: number
   instruction: string
+  instruction_en?: string
+  instruction_ur?: string
+  tip_en?: string
+  tip_ur?: string
   urdu_or_roman_urdu_tip?: string
 }
 
@@ -139,6 +147,7 @@ export type RecipeCard = Omit<
   steps: RecipeCardStep[]
   time: RecipeCardTime
   grocery_list: string[]
+  grocery_items: GroceryItem[]
   tags: string[]
   substitutions: RecipeCardSubstitution[]
   missing_info: string[]
@@ -160,6 +169,8 @@ type RecipeGroceryListRow = Pick<
 export type GroceryItem = {
   id: string
   label: string
+  label_en?: string
+  label_ur?: string
   quantity?: string
   checked: boolean
 }
@@ -381,6 +392,33 @@ export async function getRecipeGroceryList(recipeCardId: string) {
   return normalizeRecipeGroceryList(data satisfies RecipeGroceryListRow)
 }
 
+export async function getRecipeGroceryLists() {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    throw new Error('Could not load grocery lists.')
+  }
+
+  const { data, error } = await supabase
+    .from('recipe_cards')
+    .select(
+      'id, recipe_id, recipe_title, grocery_list_json, ingredients_json, servings, source_link, created_at, updated_at'
+    )
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    throw new Error('Could not load grocery lists.')
+  }
+
+  return (data satisfies RecipeGroceryListRow[])
+    .map(normalizeRecipeGroceryList)
+    .filter((item) => item.grocery_items.length > 0)
+}
+
 export async function getSavedRecipeItem(recipeId: string) {
   const { data, error } = await supabase
     .from('recipe_items')
@@ -466,6 +504,7 @@ function normalizeRecipeCard(row: RecipeCardRow): RecipeCard {
     steps: getSteps(row.steps_json),
     time: getRecipeCardTime(row.time_json),
     grocery_list: getStringArray(row.grocery_list_json),
+    grocery_items: getGroceryItems(row.grocery_list_json, row.ingredients_json),
     tags: getStringArray(row.tags_json),
     substitutions: getSubstitutions(row.substitutions_json),
     missing_info: getStringArray(row.missing_info_json),
@@ -501,6 +540,12 @@ function getGroceryItems(groceryListValue: Json, ingredientsValue: Json) {
       checked: false,
     }
 
+    if (ingredient.name_en) {
+      item.label_en = ingredient.name_en
+    }
+    if (ingredient.name_ur) {
+      item.label_ur = ingredient.name_ur
+    }
     if (ingredient.quantity) {
       item.quantity = ingredient.quantity
     }
@@ -530,6 +575,7 @@ function getGroceryItemFromUnknown(
 
   const record = getRecord(value)
   const label =
+    getString(record?.name_en) ||
     getString(record?.label) ||
     getString(record?.name) ||
     getString(record?.item) ||
@@ -548,9 +594,17 @@ function getGroceryItemFromUnknown(
     label,
     checked: false,
   }
+  const labelEn = getString(record?.name_en) || getString(record?.label_en)
+  const labelUr = getString(record?.name_ur) || getString(record?.label_ur)
 
   if (quantity) {
     item.quantity = quantity
+  }
+  if (labelEn) {
+    item.label_en = labelEn
+  }
+  if (labelUr) {
+    item.label_ur = labelUr
   }
 
   return item
@@ -560,7 +614,9 @@ function getIngredients(value: Json): RecipeCardIngredient[] {
   return getArray(value)
     .map((item) => {
       const record = getRecord(item)
-      const name = getString(record?.name)
+      const nameEn = getString(record?.name_en)
+      const nameUr = getString(record?.name_ur)
+      const name = nameEn || getString(record?.name)
 
       if (!name) {
         return null
@@ -570,11 +626,25 @@ function getIngredients(value: Json): RecipeCardIngredient[] {
         name,
         quantity: getString(record?.quantity) || 'estimated',
       }
+      if (nameEn) {
+        ingredient.name_en = nameEn
+      }
+      if (nameUr) {
+        ingredient.name_ur = nameUr
+      }
 
-      const notes = getString(record?.notes)
+      const notesEn = getString(record?.notes_en)
+      const notesUr = getString(record?.notes_ur)
+      const notes = notesEn || getString(record?.notes)
 
       if (notes) {
         ingredient.notes = notes
+      }
+      if (notesEn) {
+        ingredient.notes_en = notesEn
+      }
+      if (notesUr) {
+        ingredient.notes_ur = notesUr
       }
 
       return ingredient
@@ -586,7 +656,9 @@ function getSteps(value: Json): RecipeCardStep[] {
   return getArray(value)
     .map((item, index) => {
       const record = getRecord(item)
-      const instruction = getString(record?.instruction)
+      const instructionEn = getString(record?.instruction_en)
+      const instructionUr = getString(record?.instruction_ur)
+      const instruction = instructionEn || getString(record?.instruction)
 
       if (!instruction) {
         return null
@@ -596,11 +668,25 @@ function getSteps(value: Json): RecipeCardStep[] {
         step_number: getNumber(record?.step_number) ?? index + 1,
         instruction,
       }
+      if (instructionEn) {
+        step.instruction_en = instructionEn
+      }
+      if (instructionUr) {
+        step.instruction_ur = instructionUr
+      }
 
-      const tip = getString(record?.urdu_or_roman_urdu_tip)
+      const tipEn = getString(record?.tip_en)
+      const tipUr = getString(record?.tip_ur)
+      const tip = tipUr || getString(record?.urdu_or_roman_urdu_tip)
 
       if (tip) {
         step.urdu_or_roman_urdu_tip = tip
+      }
+      if (tipEn) {
+        step.tip_en = tipEn
+      }
+      if (tipUr) {
+        step.tip_ur = tipUr
       }
 
       return step

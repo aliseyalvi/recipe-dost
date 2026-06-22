@@ -16,7 +16,7 @@ export function LoadingState({ message = 'Loading...' }: Props) {
         borderColor: colors.border,
         borderRadius: 8,
         borderCurve: 'continuous',
-        backgroundColor: colors.surface,
+        backgroundColor: colors.surfaceMuted,
         padding: spacing.xl,
       }}
     >

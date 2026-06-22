@@ -89,3 +89,35 @@
 - AI recipe card limits remain enforced server-side in `generate-card` through `FREE_RECIPE_CARD_LIMIT`, with mobile usage display as guidance.
 - RevenueCat/paywall remains deferred to M14.
 - No token bundles, subscription entitlement logic, video download, backup, scraping, deleted-video backup, grocery delivery, or multi-recipe meal planning was added.
+- Milestone M14 UI/UX Redesign + Navigation Polish completed.
+- The app now uses a warmer food-friendly visual system, shared app headers, section headers, improved cards/buttons/badges, and a simple bottom navigation surface for Home, Library, Grocery, and Settings.
+- Home, Save Link/Preview, Library, Recipe Detail, Recipe Result, Grocery List, and Settings were polished without changing working Supabase or AI provider flows.
+- RevenueCat/paywall moved later until auth and polished UX are ready.
+- Basic organizer features remain free and friendly: saved links, library, search, source links, notes, and captions.
+- AI features will be monetized after free tries: AI recipe cards, AI summaries, AI grocery generation, and regenerate/improve actions.
+- No video download, video backup, scraping, deleted-video backup claims, schema changes, sign-in/sign-up, or RevenueCat integration were added.
+- Milestone M14B Competitor-Inspired UI Upgrade completed.
+- The app now uses a warm dark visual system with charcoal surfaces, mint primary actions, orange accent actions, subtle dark borders, compact badges, and reusable filter chips.
+- Home, Save Link/Preview, Library, Saved Link Detail, Recipe Result, Grocery List, and Settings were polished using patterns inspired by Save It Later, Saver, and Fofo while keeping the existing Expo Router structure.
+- Library now has compact status/platform/sort filters, timeline grouping, richer Saved Link/AI Card cards, note/caption indicators, and clearer empty/no-result states.
+- Recipe result now feels more premium with a warm hero card, confidence and metadata badges, compact time/serving chips, distinct Urdu/Roman Urdu tips, and warning-styled missing details.
+- Settings is organized into Account, Plan, App, Support, and development-only sections without adding auth, paywall, RevenueCat, or entitlement behavior.
+- M14B did not change Supabase schema, AI provider logic, generate-card behavior, usage-limit enforcement, video handling, scraping policy, or backend flows.
+- Milestone M14C FoFo-style visual shell completed.
+- Recipe Dost moved from a text-heavy prototype layout to a darker, media-first saved-content UI with compact chips, visual cards, and stronger hierarchy.
+- Fixed bottom navigation now sits outside scroll content and includes a prominent central Save action that opens the Save Recipe route.
+- Home now uses compact brand copy, horizontal chips, a get-started progress card, compact usage stats, and a 2-column visual recipe grid.
+- Library now uses compact search/filter chips and a 2-column visual recipe grid while preserving existing search/filter/open behavior.
+- Grocery tab now opens a grocery index of available recipe-card grocery lists instead of a not-found detail state.
+- Saved-link detail, recipe result, Save Link, Preview, and Settings received media-first layout polish without changing app behavior.
+- Basic organizer features remain free and friendly; AI monetization remains later.
+- No video download, video backup, scraping, deleted-video backup claims, auth, RevenueCat/paywall, schema changes, or AI provider changes were added.
+- Milestone M14D App Shell, Share Intake, Visual Cards, and Urdu/English Preferences completed.
+- Fixed tab navigation to real Expo Router `Tabs` behavior with tab screens under `app/(tabs)` and hidden tab headers.
+- Added a custom fixed bottom tab bar with Home, Library, central Save action, Grocery, and Settings; tab switching no longer relies on stack pushes.
+- Added Android text/link share-to-app intake with `/share-recipe` and `+native-intent`; share intake may require a development build and keeps paste-link fallback.
+- Visual recipe cards now support safe fallback visuals and non-persistent YouTube thumbnail derivation without scraping or local media storage.
+- Added local persisted Recipe Content Language preference for English, اردو, or Both.
+- Recipe Result and Grocery List screens now respect English/Urdu/Both display preferences, including RTL Urdu rendering and language-aware Copy List.
+- Updated `generate-card` prompt/schema and mock output to produce Urdu script fields instead of Roman Urdu for new recipe card content while keeping old cards readable.
+- No sign-in/sign-up, RevenueCat/paywall, schema migration, video download, video backup, scraping, private saved folder import, or medical/diet/calorie/allergy/weight-loss claims were added.

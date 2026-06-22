@@ -10,18 +10,20 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           contentStyle: { backgroundColor: colors.background },
+          headerShown: false,
           headerBackTitle: 'Back',
           headerShadowVisible: false,
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.primary,
+          headerTitleStyle: { color: colors.text, fontWeight: '800' },
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="welcome" options={{ title: 'Recipe Dost' }} />
         <Stack.Screen name="onboarding" options={{ title: 'Onboarding' }} />
-        <Stack.Screen name="home" options={{ title: 'Home' }} />
-        <Stack.Screen name="library" options={{ title: 'Library' }} />
-        <Stack.Screen name="grocery" options={{ title: 'Grocery List' }} />
-        <Stack.Screen name="settings" options={{ title: 'Settings' }} />
         <Stack.Screen name="save-recipe" options={{ title: 'Save Recipe' }} />
+        <Stack.Screen name="share-recipe" options={{ title: 'Share Recipe' }} />
         <Stack.Screen name="recipe/preview" options={{ title: 'Preview' }} />
         <Stack.Screen name="recipe/[id]" options={{ title: 'Saved Recipe' }} />
         <Stack.Screen name="recipe-card/[id]" options={{ title: 'Recipe Card' }} />

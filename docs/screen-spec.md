@@ -902,3 +902,383 @@ Allowed properties:
 - `limit`
 
 Do not send source URLs, notes, captions, ingredients, instructions, generated recipe content, grocery item names, or search queries.
+
+## M14D App Shell, Share Intake, Visual Cards, and Urdu/English Preferences
+
+Scope: app-shell, share intake, visual-card, and language-display update only. No auth, paywall, RevenueCat, scraping, video download, video backup, deleted-video backup, private saved folder import, schema migration, or medical/diet/calorie/allergy/weight-loss claims.
+
+### Tab Architecture
+
+- Primary tabs live in `app/(tabs)`.
+- Root stack uses hidden headers for the tab group.
+- Tabs use Expo Router `Tabs` with `headerShown: false`.
+- Tab URLs remain:
+  - `/home`
+  - `/library`
+  - `/grocery`
+  - `/settings`
+- Action/detail routes remain outside tabs:
+  - `/save-recipe`
+  - `/recipe/preview`
+  - `/recipe/[id]`
+  - `/recipe-card/[id]`
+  - `/share-recipe`
+- Tab switching should not push duplicate stack screens or show back headers.
+
+### Bottom Tab Bar
+
+- Custom fixed tab bar is rendered by the Tabs layout, not by individual screens.
+- Destinations:
+  - Home
+  - Library
+  - Center Save action
+  - Grocery
+  - Settings
+- Center Save action opens `/save-recipe`.
+- Active tabs use primary accent; inactive tabs use muted text.
+- Safe-area bottom inset is respected.
+
+### Share-To-App Intake
+
+- Android app config accepts text/link share intents only.
+- Supported MIME focus:
+  - `text/plain`
+  - `text/*`
+- No video, image, file, or media import intents are configured.
+- `app/+native-intent.ts` redirects incoming shared text/URLs to `/share-recipe`.
+- `/share-recipe` extracts the first valid `http` or `https` URL.
+- If a URL is found:
+  - detect platform
+  - call existing `parse-url`
+  - save local recipe draft
+  - open Preview
+- If no URL is found:
+  - title: "No recipe link found"
+  - body: "Paste the recipe link manually."
+  - CTA: "Paste Manually"
+- Native share intent may require a development build and may not fully work in Expo Go.
+
+### Visual Cards
+
+- `VisualRecipeCard` supports:
+  - thumbnail URL
+  - safe non-persistent YouTube thumbnail derivation from video ID
+  - platform
+  - status: Saved Link, AI Card, Processing, Failed
+  - title
+  - subtitle/date
+  - grocery/notes/confidence indicators
+- If no thumbnail exists, fallback visual uses Recipe Dost initials, platform badge, and accent bars.
+- No platform scraping, thumbnail downloading, or local media storage is added.
+
+### Content Language Preference
+
+- Recipe content language is a local persisted preference for guest mode.
+- Settings includes:
+  - Language section
+  - Recipe content language segmented control: English / اردو / Both
+- Default:
+  - onboarding English -> English
+  - onboarding Urdu -> Urdu
+  - otherwise Both
+- Analytics may track `language_preference_changed` with `english | urdu | both` only.
+
+### Recipe Result Language Display
+
+- Recipe result has a segmented control near the top:
+  - English
+  - اردو
+  - Both
+- Default comes from the global preference.
+- Screen-level changes are temporary for that screen.
+- English mode shows English fields where available.
+- Urdu mode shows Urdu script fields with RTL text when available, otherwise falls back to English/older Roman Urdu.
+- Both mode shows English first and Urdu underneath in an RTL accent block.
+- Development-only model badge remains hidden from production behavior.
+
+### Grocery Language Display
+
+- Grocery detail uses the same language segmented control.
+- Checklist items display English, Urdu, or Both.
+- Copy List respects the selected language.
+- Grocery item names are not sent to analytics.
+
+### AI Output
+
+- New generated cards should include Urdu script fields in ingredients, steps, and grocery list JSON.
+- Existing old cards remain readable.
+- Mobile must not crash if Urdu fields are missing.
+
+## M14 UI/UX Redesign + Navigation Polish
+
+Scope: visual polish and navigation cohesion only. Do not build RevenueCat, sign-in/sign-up, subscription entitlement logic, new schema, AI provider changes, video download/backup, scraping, deleted-video backup claims, grocery delivery, or multi-recipe meal planning.
+
+### Product Direction
+
+- Basic organizer features should feel free and friendly:
+  - save recipe links
+  - library
+  - search
+  - open source links
+  - manual notes and captions
+- AI features are premium after free tries:
+  - AI recipe cards
+  - AI summaries
+  - AI grocery generation
+  - regenerate/improve cards
+- The app should not feel paywall-first.
+
+### Design System
+
+- Warm dark food-friendly palette with charcoal background, elevated dark cards, soft warm surfaces, mint/green primary actions, and orange/yellow accent CTAs.
+- Shared primitives:
+  - `Screen`
+  - `Card`
+  - `Button`
+  - `AppBadge`
+  - `AppHeader`
+  - `AppBottomNav`
+  - `FilterChip`
+  - `SectionHeader`
+  - `UsageLimitCard`
+  - `UsagePill`
+- Cards remain 8px radius to match the existing design system.
+- Large tap targets are preserved for Android.
+
+### Navigation
+
+The existing Expo Router Stack remains intact. Primary app destinations show a simple bottom navigation surface:
+- Home
+- Library
+- Grocery
+- Settings
+
+Save Recipe Link remains a primary CTA from Home and Library rather than a bottom tab.
+
+### Home
+
+Home is redesigned as a dashboard:
+- Greeting/header
+- Warm primary CTA card: "Save a recipe link"
+- Secondary CTA: "View Library"
+- Trust note: "Recipe Dost saves recipe cards and links, not video files."
+- Soft AI usage card: "AI recipe cards left: X" with "Free AI tries remaining"
+- Recent recipes/cards
+- Free organizer usage card
+- Quick actions
+- Bottom navigation
+
+### Save Link / Preview
+
+- Save Link headline: "Save a recipe link"
+- Helper: "Paste a Reel, TikTok, Short, or recipe video link."
+- Platform detection copy is clearer after validation.
+- Preview emphasizes that captions, notes, and ingredients improve the AI result.
+- Existing saved-link limit behavior remains unchanged.
+
+### Library
+
+- Header: "Recipe Library"
+- Primary CTA: "Save Recipe"
+- Compact filter chips support status, platform, and sort controls in one filter card.
+- Results are grouped by simple timeline labels: Today, This Week, and Earlier.
+- Recipe cards show title, platform badge, Saved Link/AI Card badge, metadata badge, summary when available, note/caption indicator, grocery-list indicator when available, and created date.
+- Empty state: "Your recipe library is waiting" with CTA "Save your first recipe."
+
+### Recipe Detail
+
+- Saved-link detail uses a polished header, warm saved-link card, platform/status badges, and input-detail indicators for notes, captions, and manual ingredients.
+- Shows "Free AI tries remaining: X".
+- AI generation remains backed by the existing Edge Function and provider adapter.
+
+### Recipe Result
+
+- Generated recipe card header uses a warm hero card with platform, AI Card, confidence, and development-only model badges.
+- Summary is emphasized in a warm card.
+- Ingredients, steps, grocery list, missing details, safety/storage, and source actions stay in clean sections.
+- Time, servings, and difficulty use compact badges.
+- Urdu/Roman Urdu tips are visually distinct in a soft accent surface.
+- Confidence and missing details remain honest.
+
+### Grocery List
+
+- Header uses recipe title as subtitle.
+- Checklist remains large and touch-friendly.
+- Copy action is "Copy List".
+- Empty state copy is clearer.
+- Existing single-card grocery behavior remains unchanged.
+
+### Settings
+
+- Settings is no longer an M1 placeholder.
+- Shows:
+  - Account: Guest mode
+  - Plan: Free plan
+  - AI tries remaining when usage loads
+  - App: warm dark theme, onboarding language, no video storage
+  - Support: help, privacy, and terms placeholders
+  - Disabled upgrade/restore placeholders
+  - Development-only debug status for telemetry, RevenueCat, and Supabase
+- No auth or paywall behavior is implemented.
+
+## M14B Competitor-Inspired UI Upgrade
+
+Scope: UI/UX upgrade only. Backend behavior, Supabase schema, AI provider logic, usage limits, auth, RevenueCat/paywall, scraping, and video handling remain unchanged.
+
+Inspired patterns:
+- Save It Later: clean bottom navigation, obvious save flow, simple saved-card hierarchy, and organized settings sections.
+- Saver: warm elevated cards, friendly empty states, dashboard-like usage stats, and visual premium-feeling recipe cards.
+- Fofo: compact filter chips, timeline grouping, category/status filters, and fast library scanning.
+
+Implemented refinements:
+- Design tokens now use a warm dark palette: charcoal background, elevated cards, mint primary, orange accent, and subtle dark borders.
+- Home emphasizes "Save a recipe link", saved-cooking stats, AI tries left, recent recipes, and quick actions.
+- Save Link and Preview feel more intentional with platform badges, warm panels, and note/caption/ingredient fields in cards.
+- Library is the strongest organizer screen with compact filters, timeline labels, richer saved-card badges, and clearer empty/no-result states.
+- Saved-link detail shows platform/status/input badges and a focused AI generation CTA without changing generation behavior.
+- Recipe result uses premium-feeling cards, compact metadata badges, distinct Roman Urdu/Urdu tips, and warning-styled missing details.
+- Grocery List keeps local checklist behavior but improves visual hierarchy, checked states, and the "Copy List" action.
+- Settings is grouped into Account, Plan, App, Support, and development-only sections.
+
+No new analytics events were added. Existing events continue to avoid URLs, notes, captions, ingredients, recipe instructions, generated recipe text, grocery item names, and search query strings.
+
+## M14C FoFo-Style Visual Shell + Media-First UI
+
+Scope: visual/app-shell transformation only. Backend behavior, Supabase schema, AI provider logic, usage enforcement, auth, RevenueCat/paywall, scraping, and video handling remain unchanged.
+
+### App Shell
+
+- Primary app screens use a fixed bottom navigation outside scroll content.
+- Bottom nav destinations:
+  - Home
+  - Library
+  - Center Save action
+  - Grocery
+  - Settings
+- Center Save action opens `/save-recipe`.
+- Scroll content includes bottom padding so content does not hide behind the fixed nav.
+- The Grocery tab opens a Grocery index when no `recipeCardId` is present.
+
+### Visual System
+
+- Near-black background with charcoal/elevated media cards.
+- Primary accent is tomato/red-orange.
+- Secondary success/AI-ready accent is green.
+- Warning/missing information remains amber.
+- Cards use larger rounded media-app radii and subtle borders.
+- Compact horizontal chips replace large vertical filter cards.
+
+### Home
+
+- Header is compact:
+  - Brand: "Recipe Dost"
+  - Subtitle: "Save food reels. Cook them later."
+- Top chips:
+  - All
+  - AI Cards
+  - Links
+  - Grocery
+  - Instagram
+  - TikTok
+- Includes a compact "Get started" progress card using usage counts where available:
+  - Save your first recipe link
+  - Generate an AI recipe card
+  - Open a grocery list
+  - Add notes or caption
+- Usage is shown as a small stats strip:
+  - Saved
+  - AI Cards
+  - AI tries left
+- Recent content is the main surface and uses 2-column visual recipe cards.
+- Empty/no-filter states remain retryable and action-oriented.
+
+### Library
+
+- Header is compact:
+  - "Library"
+  - "Saved recipe links and AI cards"
+- Search stays near the top with placeholder "Search recipes, ingredients, notes".
+- Filters are horizontally scrollable chips:
+  - All
+  - AI Cards
+  - Saved Links
+  - Instagram
+  - TikTok
+  - YouTube
+  - Facebook
+  - Other
+  - Newest
+  - Oldest
+- Results use a 2-column visual grid.
+- Cards show thumbnail/fallback visual, title, source/status metadata, AI Card/Saved Link/Failed badge, notes/grocery indicators, confidence when available, and date.
+- Tapping AI cards opens `/recipe-card/[id]`; tapping saved links opens `/recipe/[id]`.
+
+### Visual Recipe Card
+
+Shared `VisualRecipeCard` is used by Home, Library, and Grocery index.
+
+Props include:
+- title
+- subtitle/source
+- platform
+- status: `saved_link | ai_card | processing | failed`
+- thumbnailUrl
+- hasGroceryList
+- hasNotes
+- confidence
+- createdAt
+- onPress
+
+Fallback visual uses branded Recipe Dost initials and accent bars instead of external assets.
+
+### Save Link / Preview
+
+- Save screen title is "Save Recipe".
+- Platform hints are compact horizontal badges.
+- Helper copy is shorter and focused on pasting a public recipe link.
+- Trust copy is compact: "We save links and recipe cards, not videos."
+- Preview screen title is "Recipe details" and keeps existing save behavior.
+
+### Recipe Detail
+
+- Saved-link detail is styled as a pre-AI recipe card with visual fallback/thumbnail.
+- Shows platform and Saved Link badges.
+- Shows compact indicators for notes, captions, and manual ingredients.
+- AI explanation and Generate Recipe Card CTA are grouped together.
+
+### Recipe Result
+
+- Hero section includes a large visual card, platform, AI Card badge, confidence, and development-only model badge.
+- Grocery CTA is prominent: "Open Grocery List".
+- Time, servings, and difficulty use compact chips.
+- Steps use numbered circle markers.
+- Roman Urdu/Urdu tips remain visually distinct.
+- Missing info uses warning styling.
+
+### Grocery
+
+- `/grocery` without `recipeCardId` is now a grocery index.
+- It fetches recipe cards with usable grocery items for the current user.
+- Index cards use `VisualRecipeCard` and open `/grocery?recipeCardId=[id]`.
+- Empty state:
+  - Title: "No grocery lists yet"
+  - Body: "Generate a recipe card first, then open its grocery list."
+  - CTA: "Go to Library"
+- Existing grocery detail checklist remains available when `recipeCardId` is supplied.
+
+### Settings
+
+- Settings uses the fixed shell and compact sections:
+  - Account
+  - Plan
+  - App
+  - Support
+  - Development-only diagnostics
+
+No new analytics events were added. Existing events continue to avoid source URLs, captions, notes, manual ingredients, grocery items, recipe instructions, generated recipe text, and search query strings.
+
+### Analytics
+
+Existing analytics events remain. M14 does not add major new analytics.
+
+Do not send source URLs, notes, captions, ingredients, instructions, generated recipe content, grocery item names, or search queries.

@@ -17,14 +17,14 @@ export function Input({ label, ...textInputProps }: Props) {
         style={[
           typography.body,
           {
-            minHeight: 48,
+            minHeight: 52,
             borderWidth: 1,
             borderColor: colors.border,
             borderRadius: radius.md,
             borderCurve: 'continuous',
-            backgroundColor: colors.surface,
+            backgroundColor: colors.surfaceMuted,
             color: colors.text,
-            paddingHorizontal: spacing.md,
+            paddingHorizontal: spacing.lg,
           },
           textInputProps.style,
         ]}

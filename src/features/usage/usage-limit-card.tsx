@@ -10,10 +10,15 @@ export type UsageLimitRow = {
 
 type Props = {
   title?: string
+  subtitle?: string
   rows: UsageLimitRow[]
 }
 
-export function UsageLimitCard({ title = 'Free plan', rows }: Props) {
+export function UsageLimitCard({
+  title = 'Free plan',
+  subtitle = 'Basic organizing is free. AI features use free tries.',
+  rows,
+}: Props) {
   return (
     <Card>
       <View style={{ gap: spacing.xs }}>
@@ -21,7 +26,7 @@ export function UsageLimitCard({ title = 'Free plan', rows }: Props) {
           {title}
         </Text>
         <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-          Pro upgrade coming next.
+          {subtitle}
         </Text>
       </View>
       <View style={{ gap: spacing.sm }}>

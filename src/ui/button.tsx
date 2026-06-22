@@ -1,7 +1,7 @@
 import { colors, radius, spacing, typography } from '@/theme'
 import { Pressable, Text, ViewStyle } from 'react-native'
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost'
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'accent'
 
 type Props = {
   label: string
@@ -18,12 +18,16 @@ const variantStyles: Record<ButtonVariant, ViewStyle> = {
     borderColor: colors.primary,
   },
   secondary: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primarySoft,
     borderColor: colors.border,
   },
   ghost: {
     backgroundColor: 'transparent',
     borderColor: 'transparent',
+  },
+  accent: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
 }
 
@@ -35,7 +39,13 @@ export function Button({
   fullWidth = false,
   testID,
 }: Props) {
-  const isPrimary = variant === 'primary'
+  const isFilled = variant === 'primary' || variant === 'accent'
+  const textColor =
+    variant === 'accent'
+      ? '#21150B'
+      : isFilled
+        ? colors.primaryText
+        : colors.primary
 
   return (
     <Pressable
@@ -52,6 +62,7 @@ export function Button({
           borderCurve: 'continuous',
           borderWidth: 1,
           paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.sm,
           opacity: disabled ? 0.5 : pressed ? 0.82 : 1,
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
         },
@@ -59,11 +70,11 @@ export function Button({
       ]}
     >
       <Text
-        selectable
+        selectable={false}
         style={[
           typography.body,
           {
-            color: isPrimary ? colors.primaryText : colors.primary,
+            color: textColor,
             fontWeight: '700',
             textAlign: 'center',
           },

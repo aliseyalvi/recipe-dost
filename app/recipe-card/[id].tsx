@@ -1,4 +1,9 @@
 import {
+  RecipeContentLanguage,
+  useRecipeContentLanguage,
+} from '@/features/language/content-language'
+import { ContentLanguageControl } from '@/features/language/content-language-control'
+import {
   detectRecipePlatform,
   getPlatformLabel,
   isValidHttpUrl,
@@ -6,6 +11,7 @@ import {
 import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import {
   RecipeCard,
+  GroceryItem,
   RecipeCardIngredient,
   RecipeCardStep,
   RecipeCardSubstitution,
@@ -13,21 +19,27 @@ import {
 } from '@/lib/api/recipes'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, radius, spacing, typography } from '@/theme'
+import { AppBadge } from '@/ui/app-badge'
+import { AppHeader } from '@/ui/app-header'
 import { Button } from '@/ui/button'
 import { Card } from '@/ui/card'
 import { EmptyState } from '@/ui/empty-state'
 import { ErrorState } from '@/ui/error-state'
 import { LoadingState } from '@/ui/loading-state'
 import { Screen } from '@/ui/screen'
+import { UrduText } from '@/ui/urdu-text'
 import { useQuery } from '@tanstack/react-query'
 import * as Clipboard from 'expo-clipboard'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Linking, Text, View } from 'react-native'
 
 export default function RecipeCardResultRoute() {
   const router = useRouter()
   const { track } = usePostHog()
+  const { language: globalLanguage } = useRecipeContentLanguage()
+  const [screenLanguage, setScreenLanguage] =
+    useState<RecipeContentLanguage | null>(null)
   const { id } = useLocalSearchParams<{ id?: string }>()
   const recipeCardId = Array.isArray(id) ? id[0] : id
   const recipeCardQuery = useQuery({
@@ -96,21 +108,24 @@ export default function RecipeCardResultRoute() {
   }
 
   const recipeCard = recipeCardQuery.data
+  const contentLanguage = screenLanguage ?? globalLanguage
   const sourcePlatform = recipeCard.source_link
     ? detectRecipePlatform(recipeCard.source_link)
     : null
   const canOpenSource = isValidHttpUrl(recipeCard.source_link)
   const canViewGroceryList =
-    recipeCard.grocery_list.length > 0 || recipeCard.ingredients.length > 0
+    recipeCard.grocery_items.length > 0 || recipeCard.ingredients.length > 0
 
   const copyGroceryList = async () => {
-    if (recipeCard.grocery_list.length === 0) {
+    if (recipeCard.grocery_items.length === 0) {
       return
     }
 
-    await Clipboard.setStringAsync(recipeCard.grocery_list.join('\n'))
+    await Clipboard.setStringAsync(
+      formatGroceryItemsCopy(recipeCard.grocery_items, contentLanguage)
+    )
     track('grocery_list_copied', {
-      item_count: recipeCard.grocery_list.length,
+      item_count: recipeCard.grocery_items.length,
       checked_count: 0,
       has_recipe_title: Boolean(recipeCard.recipe_title?.trim()),
     })
@@ -130,28 +145,75 @@ export default function RecipeCardResultRoute() {
   }
 
   return (
-    <Screen>
-      <View style={{ gap: spacing.md }}>
+    <Screen compact>
+      <Card tone="warm">
+        <View
+          style={{
+            overflow: 'hidden',
+            aspectRatio: 1.55,
+            borderRadius: radius.lg,
+            backgroundColor: colors.surfaceMuted,
+          }}
+        >
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'flex-end',
+              gap: spacing.sm,
+              padding: spacing.lg,
+            }}
+          >
+            <Text
+              selectable={false}
+              style={{
+                color: colors.text,
+                fontSize: 42,
+                lineHeight: 46,
+                fontWeight: '900',
+              }}
+            >
+              Recipe Card
+            </Text>
+            <View
+              style={{
+                width: '70%',
+                height: 8,
+                borderRadius: radius.pill,
+                backgroundColor: colors.primary,
+              }}
+            />
+            <View
+              style={{
+                width: '46%',
+                height: 8,
+                borderRadius: radius.pill,
+                backgroundColor: colors.accent,
+              }}
+            />
+          </View>
+        </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           {sourcePlatform ? <PlatformBadge platform={sourcePlatform} /> : null}
-          <StatusBadge label={getConfidenceLabel(recipeCard.confidence)} />
+          <AppBadge label="AI Card" tone="accent" />
+          <AppBadge label={getConfidenceLabel(recipeCard.confidence)} />
         </View>
-        <Text selectable style={[typography.title, { color: colors.text }]}>
-          {recipeCard.recipe_title?.trim() || 'Untitled recipe'}
-        </Text>
-        {sourcePlatform ? (
-          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-            Source: {getPlatformLabel(sourcePlatform)}
-          </Text>
+        <AppHeader
+          eyebrow="AI recipe card"
+          title={recipeCard.recipe_title?.trim() || 'Untitled recipe'}
+          subtitle={
+            sourcePlatform ? `Source: ${getPlatformLabel(sourcePlatform)}` : undefined
+          }
+        />
+        {__DEV__ && recipeCard.model_used ? (
+          <AppBadge label={`Model: ${recipeCard.model_used}`} />
         ) : null}
-        {recipeCard.model_used === 'mock' ? (
-          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-            Mock recipe card - real AI generation is coming next.
-          </Text>
-        ) : null}
-      </View>
+        <ContentLanguageControl
+          value={contentLanguage}
+          onChange={setScreenLanguage}
+        />
+      </Card>
 
-      <Card>
+      <Card tone="warm">
         <Text selectable style={[typography.heading, { color: colors.text }]}>
           Summary
         </Text>
@@ -162,17 +224,21 @@ export default function RecipeCardResultRoute() {
       </Card>
 
       <InfoGrid recipeCard={recipeCard} />
-      <IngredientsSection ingredients={recipeCard.ingredients} />
-      <StepsSection steps={recipeCard.steps} />
+      <IngredientsSection
+        ingredients={recipeCard.ingredients}
+        language={contentLanguage}
+      />
+      <StepsSection steps={recipeCard.steps} language={contentLanguage} />
       <GroceryListSection
-        groceryList={recipeCard.grocery_list}
+        groceryItems={recipeCard.grocery_items}
+        language={contentLanguage}
         onCopy={copyGroceryList}
       />
       {canViewGroceryList ? (
         <Button
-          label="View Grocery List"
+          label="Open Grocery List"
           fullWidth
-          variant="secondary"
+          variant="accent"
           onPress={() => router.push(`/grocery?recipeCardId=${recipeCard.id}`)}
         />
       ) : null}
@@ -217,11 +283,11 @@ function InfoGrid({ recipeCard }: { recipeCard: RecipeCard }) {
       <Text selectable style={[typography.heading, { color: colors.text }]}>
         Time and serving
       </Text>
-      <View style={{ gap: spacing.sm }}>
-        <InfoRow label="Prep" value={prepTime} />
-        <InfoRow label="Cook" value={cookTime} />
-        <InfoRow label="Servings" value={recipeCard.servings || 'Not specified'} />
-        <InfoRow label="Difficulty" value={titleCase(recipeCard.difficulty)} />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        <AppBadge label={`Prep: ${prepTime}`} />
+        <AppBadge label={`Cook: ${cookTime}`} />
+        <AppBadge label={`Servings: ${recipeCard.servings || 'Not specified'}`} />
+        <AppBadge label={`Difficulty: ${titleCase(recipeCard.difficulty)}`} />
       </View>
     </Card>
   )
@@ -229,8 +295,10 @@ function InfoGrid({ recipeCard }: { recipeCard: RecipeCard }) {
 
 function IngredientsSection({
   ingredients,
+  language,
 }: {
   ingredients: RecipeCardIngredient[]
+  language: RecipeContentLanguage
 }) {
   return (
     <Card>
@@ -240,14 +308,30 @@ function IngredientsSection({
       {ingredients.length > 0 ? (
         <View style={{ gap: spacing.md }}>
           {ingredients.map((ingredient, index) => (
-            <View key={`${ingredient.name}-${index}`} style={{ gap: spacing.xs }}>
-              <Text selectable style={[typography.body, { color: colors.text }]}>
-                {ingredient.name}
-              </Text>
-              <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-                {ingredient.quantity}
-                {ingredient.notes ? ` - ${ingredient.notes}` : ''}
-              </Text>
+            <View
+              key={`${ingredient.name}-${index}`}
+              style={{
+                gap: spacing.xs,
+                borderRadius: radius.md,
+                backgroundColor: colors.surfaceMuted,
+                padding: spacing.md,
+              }}
+            >
+              <LanguageTextBlock
+                english={ingredient.name_en ?? ingredient.name}
+                urdu={ingredient.name_ur}
+                language={language}
+              />
+              <LanguageTextBlock
+                english={`${ingredient.quantity}${
+                  ingredient.notes_en ?? ingredient.notes
+                    ? ` - ${ingredient.notes_en ?? ingredient.notes}`
+                    : ''
+                }`}
+                urdu={ingredient.notes_ur}
+                language={language}
+                muted
+              />
             </View>
           ))}
         </View>
@@ -260,7 +344,13 @@ function IngredientsSection({
   )
 }
 
-function StepsSection({ steps }: { steps: RecipeCardStep[] }) {
+function StepsSection({
+  steps,
+  language,
+}: {
+  steps: RecipeCardStep[]
+  language: RecipeContentLanguage
+}) {
   return (
     <Card>
       <Text selectable style={[typography.heading, { color: colors.text }]}>
@@ -269,17 +359,56 @@ function StepsSection({ steps }: { steps: RecipeCardStep[] }) {
       {steps.length > 0 ? (
         <View style={{ gap: spacing.lg }}>
           {steps.map((step, index) => (
-            <View key={`${step.step_number}-${index}`} style={{ gap: spacing.xs }}>
-              <Text selectable style={[typography.body, { color: colors.text }]}>
-                {step.step_number}. {step.instruction}
-              </Text>
-              {step.urdu_or_roman_urdu_tip ? (
-                <Text
-                  selectable
-                  style={[typography.caption, { color: colors.textMuted }]}
+            <View
+              key={`${step.step_number}-${index}`}
+              style={{
+                gap: spacing.sm,
+                borderRadius: radius.md,
+                backgroundColor: colors.surfaceMuted,
+                padding: spacing.md,
+              }}
+            >
+              <View style={{ flexDirection: 'row', gap: spacing.md }}>
+                <View
+                  style={{
+                    width: 28,
+                    height: 28,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: radius.pill,
+                    backgroundColor: colors.primary,
+                  }}
                 >
-                  {step.urdu_or_roman_urdu_tip}
-                </Text>
+                  <Text
+                    selectable={false}
+                    style={[typography.caption, { color: colors.primaryText }]}
+                  >
+                    {step.step_number}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <LanguageTextBlock
+                    english={step.instruction_en ?? step.instruction}
+                    urdu={step.instruction_ur}
+                    language={language}
+                  />
+                </View>
+              </View>
+              {step.tip_en || step.tip_ur || step.urdu_or_roman_urdu_tip ? (
+                <View
+                  style={{
+                    borderRadius: radius.sm,
+                    backgroundColor: colors.accentSoft,
+                    padding: spacing.md,
+                  }}
+                >
+                  <LanguageTextBlock
+                    english={step.tip_en}
+                    urdu={step.tip_ur ?? step.urdu_or_roman_urdu_tip}
+                    language={language}
+                    muted
+                  />
+                </View>
               ) : null}
             </View>
           ))}
@@ -294,10 +423,12 @@ function StepsSection({ steps }: { steps: RecipeCardStep[] }) {
 }
 
 function GroceryListSection({
-  groceryList,
+  groceryItems,
+  language,
   onCopy,
 }: {
-  groceryList: string[]
+  groceryItems: GroceryItem[]
+  language: RecipeContentLanguage
   onCopy: () => Promise<void>
 }) {
   return (
@@ -305,21 +436,23 @@ function GroceryListSection({
       <Text selectable style={[typography.heading, { color: colors.text }]}>
         Grocery list
       </Text>
-      {groceryList.length > 0 ? (
+      {groceryItems.length > 0 ? (
         <>
           <View style={{ gap: spacing.sm }}>
-            {groceryList.map((item, index) => (
-              <Text
-                key={`${item}-${index}`}
-                selectable
-                style={[typography.body, { color: colors.text }]}
-              >
-                - {item}
-              </Text>
+            {groceryItems.map((item, index) => (
+              <View key={`${item.id}-${index}`}>
+                <LanguageTextBlock
+                  english={`- ${item.label_en ?? item.label}${
+                    item.quantity ? ` - ${item.quantity}` : ''
+                  }`}
+                  urdu={item.label_ur}
+                  language={language}
+                />
+              </View>
             ))}
           </View>
           <Button
-            label="Copy Grocery List"
+            label="Copy List"
             variant="secondary"
             onPress={() => {
               void onCopy()
@@ -402,7 +535,7 @@ function MissingInfoSection({ missingInfo }: { missingInfo: string[] }) {
   }
 
   return (
-    <Card>
+    <Card tone="muted">
       <Text selectable style={[typography.heading, { color: colors.text }]}>
         Missing details
       </Text>
@@ -411,7 +544,7 @@ function MissingInfoSection({ missingInfo }: { missingInfo: string[] }) {
           <Text
             key={`${item}-${index}`}
             selectable
-            style={[typography.body, { color: colors.textMuted }]}
+            style={[typography.body, { color: colors.warning }]}
           >
             - {item}
           </Text>
@@ -421,49 +554,104 @@ function MissingInfoSection({ missingInfo }: { missingInfo: string[] }) {
   )
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function LanguageTextBlock({
+  english,
+  urdu,
+  language,
+  muted = false,
+}: {
+  english?: string | null
+  urdu?: string | null
+  language: RecipeContentLanguage
+  muted?: boolean
+}) {
+  const englishText = english?.trim()
+  const urduText = urdu?.trim()
+
+  if (language === 'urdu') {
+    return urduText ? (
+      <UrduText muted={muted}>{urduText}</UrduText>
+    ) : (
+      <Text
+        selectable
+        style={[
+          typography.body,
+          { color: muted ? colors.textMuted : colors.text },
+        ]}
+      >
+        {englishText ?? 'Urdu not available for this older card'}
+      </Text>
+    )
+  }
+
+  if (language === 'both') {
+    return (
+      <View style={{ gap: spacing.xs }}>
+        {englishText ? (
+          <Text
+            selectable
+            style={[
+              typography.body,
+              { color: muted ? colors.textMuted : colors.text },
+            ]}
+          >
+            {englishText}
+          </Text>
+        ) : null}
+        {urduText ? (
+          <View
+            style={{
+              borderRadius: radius.sm,
+              backgroundColor: colors.accentSoft,
+              padding: spacing.sm,
+            }}
+          >
+            <UrduText muted={muted}>{urduText}</UrduText>
+          </View>
+        ) : null}
+      </View>
+    )
+  }
+
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: spacing.md,
-      }}
+    <Text
+      selectable
+      style={[typography.body, { color: muted ? colors.textMuted : colors.text }]}
     >
-      <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-        {label}
-      </Text>
-      <Text selectable style={[typography.body, { color: colors.text }]}>
-        {value}
-      </Text>
-    </View>
+      {englishText ?? urduText ?? ''}
+    </Text>
   )
 }
 
-function StatusBadge({ label }: { label: string }) {
-  return (
-    <View
-      style={{
-        alignSelf: 'flex-start',
-        borderRadius: radius.pill,
-        backgroundColor: colors.surfaceMuted,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.xs,
-      }}
-    >
-      <Text selectable style={[typography.caption, { color: colors.primary }]}>
-        {label}
-      </Text>
-    </View>
-  )
+function formatGroceryItemsCopy(
+  groceryItems: GroceryItem[],
+  language: RecipeContentLanguage
+) {
+  return groceryItems.map((item) => formatGroceryCopyItem(item, language)).join('\n')
+}
+
+function formatGroceryCopyItem(item: GroceryItem, language: RecipeContentLanguage) {
+  const english = `${item.label_en ?? item.label}${item.quantity ? ` - ${item.quantity}` : ''}`
+  const urdu = item.label_ur
+    ? `${item.label_ur}${item.quantity ? ` - ${item.quantity}` : ''}`
+    : null
+
+  if (language === 'urdu') {
+    return `* ${urdu ?? english}`
+  }
+
+  if (language === 'both' && urdu) {
+    return `* ${english}\n  ${urdu}`
+  }
+
+  return `* ${english}`
 }
 
 function getAnalyticsProperties(recipeCard: RecipeCard) {
   return {
     confidence: recipeCard.confidence,
     model_used: recipeCard.model_used,
-    has_grocery_list: recipeCard.grocery_list.length > 0,
+    has_grocery_list: recipeCard.grocery_items.length > 0,
     has_missing_info: recipeCard.missing_info.length > 0,
   }
 }

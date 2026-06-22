@@ -188,6 +188,35 @@ Rules:
 - Do not use a service-role key in mobile.
 - Do not download videos, scrape platforms, or fetch private content.
 - Do not add paywall/RevenueCat behavior in M10; paywall remains deferred to M14.
+- M14D bilingual output update:
+  - New generated cards should include Urdu script fields in `ingredients_json`, `steps_json`, and `grocery_list_json`.
+  - `ingredients_json` items may include `name_en`, `name_ur`, `quantity`, `notes_en`, and `notes_ur`, while old `name`/`notes` fields remain readable for backward compatibility.
+  - `steps_json` items may include `instruction_en`, `instruction_ur`, `tip_en`, and `tip_ur`, while old `instruction` and `urdu_or_roman_urdu_tip` remain readable for backward compatibility.
+  - `grocery_list_json` may be an array of old strings or objects shaped like `{ "name_en": "string", "name_ur": "string", "quantity": "string" }`.
+  - Urdu must be Urdu script, not Roman Urdu, for new provider output.
+
+## Android Share Intake
+
+Recipe Dost supports Android text/link share intents for public recipe URLs.
+
+Configuration:
+- Android share intent MIME types are limited to text/link sharing such as `text/plain` and `text/*`.
+- Video, image, file, private saved folder, and media import intents are intentionally not configured.
+- Native share intake may require a development build and may not fully work in Expo Go.
+
+Flow:
+1. Android shares text into Recipe Dost.
+2. Expo Router native-intent handling redirects to `/share-recipe`.
+3. The mobile app extracts the first valid `http` or `https` URL from the shared text.
+4. If a URL is found, the app calls the existing `parse-url` flow, stores a local recipe draft, and opens Preview.
+5. If no URL is found, the app shows "No recipe link found" with CTA "Paste Manually".
+
+Rules:
+- Do not store videos.
+- Do not download files.
+- Do not scrape source pages.
+- Do not claim deleted-video backup.
+- Analytics may track `share_intent_received` with platform only or `share_intent_failed` with reason only.
 
 ### POST /functions/v1/grocery-list
 Purpose:
