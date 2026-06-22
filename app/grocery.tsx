@@ -1,5 +1,8 @@
 import { getRecipeGroceryList } from '@/lib/api/recipes'
 import type { GroceryItem, RecipeGroceryList } from '@/lib/api/recipes'
+import { getUsageSummary } from '@/lib/api/usage'
+import { UpgradePlaceholder } from '@/features/usage/upgrade-placeholder'
+import { UsagePill } from '@/features/usage/usage-limit-card'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, radius, spacing, typography } from '@/theme'
 import { Button } from '@/ui/button'
@@ -28,12 +31,18 @@ export default function GroceryRoute() {
   )
   const [copyMessage, setCopyMessage] = useState<string | null>(null)
   const viewedCardIdRef = useRef<string | null>(null)
+  const didTrackUsageSummary = useRef(false)
   const groceryListQuery = useQuery({
     enabled: Boolean(recipeCardId),
     queryKey: ['recipe-grocery-list', recipeCardId],
     queryFn: () => getRecipeGroceryList(recipeCardId ?? ''),
   })
+  const usageSummaryQuery = useQuery({
+    queryKey: ['usage-summary', 'grocery-list'],
+    queryFn: getUsageSummary,
+  })
   const recipeGroceryList = groceryListQuery.data
+  const usageSummary = usageSummaryQuery.data
   const groceryItems = useMemo(
     () =>
       (recipeGroceryList?.grocery_items ?? []).map((item) => ({
@@ -66,6 +75,19 @@ export default function GroceryRoute() {
       })
     )
   }, [hasRecipeTitle, recipeGroceryList, track])
+
+  useEffect(() => {
+    if (!usageSummary || didTrackUsageSummary.current) {
+      return
+    }
+
+    didTrackUsageSummary.current = true
+    track('usage_summary_viewed', {
+      limit_type: 'grocery_lists',
+      used: usageSummary.groceryListsUsed,
+      limit: usageSummary.limits.groceryLists,
+    })
+  }, [track, usageSummary])
 
   if (!recipeCardId) {
     return (
@@ -180,6 +202,23 @@ export default function GroceryRoute() {
           </Text>
         ) : null}
       </View>
+
+      {usageSummary ? (
+        <UsagePill
+          label="Grocery lists used"
+          value={`${usageSummary.groceryListsUsed} / ${usageSummary.limits.groceryLists}`}
+        />
+      ) : null}
+
+      {usageSummary && !usageSummary.canOpenGroceryList ? (
+        <UpgradePlaceholder
+          limitType="grocery_lists"
+          used={usageSummary.groceryListsUsed}
+          limit={usageSummary.limits.groceryLists}
+          actionLabel="View Library"
+          onActionPress={() => router.replace('/library')}
+        />
+      ) : null}
 
       {groceryItems.length === 0 ? (
         <EmptyState

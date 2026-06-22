@@ -821,3 +821,84 @@ Allowed properties:
 - `has_recipe_title`
 
 Do not send grocery item names, ingredients text, instructions, source URLs, notes, captions, or generated recipe content.
+
+## M13 Usage Limits Foundation
+
+Scope: free-plan usage visibility and friendly limit handling only. Do not build RevenueCat, real paywall entitlement checks, token bundles, grocery delivery, multi-recipe meal planning, scraping, video download/backup, or deleted-video backup claims.
+
+### Free Limits
+
+Default free-plan limits:
+- Saved recipe links: `20`
+- AI recipe cards: `3`
+- Grocery lists: `3`
+
+Development can override mobile display limits with:
+- `EXPO_PUBLIC_FREE_SAVED_LINK_LIMIT`
+- `EXPO_PUBLIC_FREE_RECIPE_CARD_LIMIT`
+- `EXPO_PUBLIC_FREE_GROCERY_LIST_LIMIT`
+
+Missing, invalid, or values below `1` use the default limits.
+
+### Shared UI
+
+Free usage card:
+- Title: "Free plan"
+- Small copy: "Pro upgrade coming next."
+- Rows:
+  - Saved links: used / limit
+  - AI recipe cards: used / limit
+  - Grocery lists: used / limit
+
+Upgrade placeholder:
+- Title: "Upgrade coming next"
+- Message: "Recipe Dost Pro will unlock more saved recipes, AI recipe cards, and grocery lists."
+- CTA: "Back to Home" or "View Library"
+
+### Home
+
+Home shows a small Free plan usage card after the trust note.
+
+### Save Link / Preview
+
+Save Link and Preview show saved links remaining.
+
+Preview checks usage before inserting `recipe_items`.
+
+If the saved-link limit is reached:
+- Do not insert a new `recipe_items` row.
+- Show:
+  - Title: "Free saved recipe limit reached"
+  - Message: "You have used your free saved recipe links. Pro upgrade is coming next."
+  - CTA: "View Library"
+
+### Recipe Detail
+
+Route: `/recipe/[id]`
+
+- Show: "AI recipe cards left: X"
+- Disable "Generate Recipe Card" while the local usage summary says no AI recipe cards remain.
+- Show the upgrade placeholder when the local summary is exhausted.
+- The `generate-card` Edge Function remains the source of truth and still returns `free_limit_reached` if the server limit is reached.
+
+### Grocery List
+
+Route: `/grocery?recipeCardId=[recipe_card_id]`
+
+- Show: "Grocery lists used: X / limit"
+- Do not hard-block existing generated grocery lists in M13.
+- If the count is exhausted, show the upgrade placeholder for future grocery-list actions.
+
+### Analytics
+
+Events:
+- `usage_summary_viewed`
+- `usage_limit_reached`
+- `upgrade_placeholder_viewed`
+
+Allowed properties:
+- `limit_type`: `saved_links | recipe_cards | grocery_lists`
+- `used`
+- `limit`
+
+Do not send source URLs, notes, captions, ingredients, instructions, generated recipe content, grocery item names, or search queries.

@@ -173,6 +173,11 @@ type GeneratedRecipeCard = {
   source_link: string;
 };
 
+type GenerateCardUsage = {
+  free_recipe_cards_remaining: number;
+  should_show_paywall: boolean;
+};
+
 type GenerateCardSuccess = {
   ok: true;
   data: {
@@ -181,10 +186,7 @@ type GenerateCardSuccess = {
     recipe_title: string;
     confidence: Confidence;
   };
-  usage: {
-    free_recipe_cards_remaining: number;
-    should_show_paywall: boolean;
-  };
+  usage: GenerateCardUsage;
 };
 
 type GenerateCardErrorCode =
@@ -232,6 +234,7 @@ type GenerateCardError = {
     code: GenerateCardErrorCode;
     message: string;
   };
+  usage?: GenerateCardUsage;
 };
 
 type EdgeSupabaseClient = SupabaseClient<Database>;
@@ -624,8 +627,14 @@ async function handleGenerateCardRequest(request: Request) {
     return errorResponse(
       "free_limit",
       "free_limit_reached",
-      "You have used your 3 free recipe cards.",
+      "You have used your free recipe cards.",
       402,
+      undefined,
+      undefined,
+      {
+        free_recipe_cards_remaining: 0,
+        should_show_paywall: true,
+      },
     );
   }
 
@@ -2278,6 +2287,7 @@ function errorResponse(
   status: number,
   error?: unknown,
   extra?: SafeLogExtra,
+  usage?: GenerateCardUsage,
 ) {
   logFunctionError(stage, code, error ?? message, {
     ...extra,
@@ -2291,6 +2301,7 @@ function errorResponse(
         code,
         message,
       },
+      ...(usage ? { usage } : {}),
     },
     status,
   );

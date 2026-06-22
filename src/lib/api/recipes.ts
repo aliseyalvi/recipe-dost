@@ -53,6 +53,10 @@ type GenerateRecipeCardResponse =
         code: string
         message: string
       }
+      usage?: {
+        free_recipe_cards_remaining: number
+        should_show_paywall: boolean
+      }
     }
 
 export type SavedRecipeItem = Pick<

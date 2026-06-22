@@ -82,3 +82,10 @@
 - Grocery checklist state is local-only for the MVP and is not persisted to Supabase yet.
 - Recipe Result now exposes "View Grocery List" when a card has grocery items or ingredients.
 - No AI call, grocery delivery integration, paywall, RevenueCat, scraping, video download, video backup, deleted-video backup, Android share intent, or multi-recipe meal planning was added.
+- Milestone M13 Usage Limits Foundation completed.
+- Saved links, recipe cards, and grocery lists now have configurable free-plan limits with mobile defaults of 20, 3, and 3.
+- Mobile displays remaining usage on Home, Save Link/Preview, Recipe Detail, and Grocery List.
+- Saved-link inserts are blocked before `recipe_items` insert when the free saved-link limit is reached.
+- AI recipe card limits remain enforced server-side in `generate-card` through `FREE_RECIPE_CARD_LIMIT`, with mobile usage display as guidance.
+- RevenueCat/paywall remains deferred to M14.
+- No token bundles, subscription entitlement logic, video download, backup, scraping, deleted-video backup, grocery delivery, or multi-recipe meal planning was added.

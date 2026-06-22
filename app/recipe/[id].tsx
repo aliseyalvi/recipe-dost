@@ -1,11 +1,14 @@
 import { getPlatformLabel, getReadableSource } from '@/features/recipe-draft/platform'
 import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { RecipePlatform } from '@/features/recipe-draft/types'
+import { UpgradePlaceholder } from '@/features/usage/upgrade-placeholder'
+import { UsagePill } from '@/features/usage/usage-limit-card'
 import {
   RecipeApiError,
   generateRecipeCard,
   getSavedRecipeItem,
 } from '@/lib/api/recipes'
+import { getUsageSummary } from '@/lib/api/usage'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, spacing, typography } from '@/theme'
 import { Button } from '@/ui/button'
@@ -14,23 +17,61 @@ import { EmptyState } from '@/ui/empty-state'
 import { ErrorState } from '@/ui/error-state'
 import { LoadingState } from '@/ui/loading-state'
 import { Screen } from '@/ui/screen'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Text, View } from 'react-native'
 
 export default function SavedRecipeRoute() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { track } = usePostHog()
   const { id } = useLocalSearchParams<{ id?: string }>()
   const recipeId = Array.isArray(id) ? id[0] : id
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationError, setGenerationError] = useState<Error | null>(null)
+  const didTrackUsageSummary = useRef(false)
+  const didTrackLimitReached = useRef(false)
   const recipeQuery = useQuery({
     enabled: Boolean(recipeId),
     queryKey: ['recipe-item', recipeId],
     queryFn: () => getSavedRecipeItem(recipeId ?? ''),
   })
+  const usageSummaryQuery = useQuery({
+    queryKey: ['usage-summary', 'recipe-detail'],
+    queryFn: getUsageSummary,
+  })
+  const usageSummary = usageSummaryQuery.data
+
+  useEffect(() => {
+    if (!usageSummary || didTrackUsageSummary.current) {
+      return
+    }
+
+    didTrackUsageSummary.current = true
+    track('usage_summary_viewed', {
+      limit_type: 'recipe_cards',
+      used: usageSummary.recipeCardsUsed,
+      limit: usageSummary.limits.recipeCards,
+    })
+  }, [track, usageSummary])
+
+  useEffect(() => {
+    if (
+      !usageSummary ||
+      usageSummary.canGenerateRecipeCard ||
+      didTrackLimitReached.current
+    ) {
+      return
+    }
+
+    didTrackLimitReached.current = true
+    track('usage_limit_reached', {
+      limit_type: 'recipe_cards',
+      used: usageSummary.recipeCardsUsed,
+      limit: usageSummary.limits.recipeCards,
+    })
+  }, [track, usageSummary])
 
   if (!recipeId) {
     return (
@@ -93,6 +134,10 @@ export default function SavedRecipeRoute() {
       return
     }
 
+    if (usageSummary && !usageSummary.canGenerateRecipeCard) {
+      return
+    }
+
     setIsGenerating(true)
     setGenerationError(null)
     track('ai_recipe_started', {
@@ -105,6 +150,9 @@ export default function SavedRecipeRoute() {
       track('ai_recipe_completed', {
         platform,
         confidence: response.data.confidence,
+      })
+      void queryClient.invalidateQueries({
+        queryKey: ['usage-summary'],
       })
       router.push(`/recipe-card/${response.data.recipe_card_id}`)
     } catch (caughtError) {
@@ -168,8 +216,25 @@ export default function SavedRecipeRoute() {
         </View>
       </Card>
 
+      {usageSummary ? (
+        <UsagePill
+          label="AI recipe cards left"
+          value={`${usageSummary.recipeCardsRemaining}`}
+        />
+      ) : null}
+
       {isGenerating ? (
         <LoadingState message="Creating your recipe card..." />
+      ) : null}
+
+      {usageSummary && !usageSummary.canGenerateRecipeCard ? (
+        <UpgradePlaceholder
+          limitType="recipe_cards"
+          used={usageSummary.recipeCardsUsed}
+          limit={usageSummary.limits.recipeCards}
+          actionLabel="View Library"
+          onActionPress={() => router.replace('/library')}
+        />
       ) : null}
 
       {generationError ? (
@@ -186,7 +251,11 @@ export default function SavedRecipeRoute() {
       <Button
         label="Generate Recipe Card"
         fullWidth
-        disabled={isGenerating}
+        disabled={
+          isGenerating ||
+          usageSummaryQuery.isLoading ||
+          Boolean(usageSummary && !usageSummary.canGenerateRecipeCard)
+        }
         onPress={() => {
           void handleGenerateRecipeCard()
         }}

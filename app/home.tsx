@@ -2,6 +2,8 @@ import { RecentRecipeCard } from '@/features/home/recent-recipe-card'
 import { getRecentRecipes, RecentRecipeItem } from '@/features/home/recent-recipes-api'
 import { QuickActionCard } from '@/features/home/quick-action-card'
 import { useUserProfileQuery } from '@/features/onboarding/use-user-profile-query'
+import { UsageLimitCard } from '@/features/usage/usage-limit-card'
+import { getUsageSummary } from '@/lib/api/usage'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, spacing, typography } from '@/theme'
@@ -13,7 +15,7 @@ import { LoadingState } from '@/ui/loading-state'
 import { Screen } from '@/ui/screen'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Text, View } from 'react-native'
 
 export default function HomeRoute() {
@@ -21,15 +23,44 @@ export default function HomeRoute() {
   const { user } = useAuth()
   const { track } = usePostHog()
   const profileQuery = useUserProfileQuery()
+  const didTrackUsageSummary = useRef(false)
   const recentRecipesQuery = useQuery({
     enabled: Boolean(user?.id),
     queryKey: ['recent-recipes', user?.id],
     queryFn: getRecentRecipes,
   })
+  const usageSummaryQuery = useQuery({
+    enabled: Boolean(user?.id),
+    queryKey: ['usage-summary', user?.id],
+    queryFn: getUsageSummary,
+  })
 
   useEffect(() => {
     track('home_viewed')
   }, [track])
+
+  useEffect(() => {
+    if (!usageSummaryQuery.data || didTrackUsageSummary.current) {
+      return
+    }
+
+    didTrackUsageSummary.current = true
+    track('usage_summary_viewed', {
+      limit_type: 'saved_links',
+      used: usageSummaryQuery.data.savedLinksUsed,
+      limit: usageSummaryQuery.data.limits.savedLinks,
+    })
+    track('usage_summary_viewed', {
+      limit_type: 'recipe_cards',
+      used: usageSummaryQuery.data.recipeCardsUsed,
+      limit: usageSummaryQuery.data.limits.recipeCards,
+    })
+    track('usage_summary_viewed', {
+      limit_type: 'grocery_lists',
+      used: usageSummaryQuery.data.groceryListsUsed,
+      limit: usageSummaryQuery.data.limits.groceryLists,
+    })
+  }, [track, usageSummaryQuery.data])
 
   const openSaveRecipe = () => {
     track('home_primary_cta_clicked')
@@ -77,6 +108,28 @@ export default function HomeRoute() {
       <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
         Recipe Dost saves recipe cards and links, not video files.
       </Text>
+
+      {usageSummaryQuery.data ? (
+        <UsageLimitCard
+          rows={[
+            {
+              label: 'Saved links',
+              used: usageSummaryQuery.data.savedLinksUsed,
+              limit: usageSummaryQuery.data.limits.savedLinks,
+            },
+            {
+              label: 'AI recipe cards',
+              used: usageSummaryQuery.data.recipeCardsUsed,
+              limit: usageSummaryQuery.data.limits.recipeCards,
+            },
+            {
+              label: 'Grocery lists',
+              used: usageSummaryQuery.data.groceryListsUsed,
+              limit: usageSummaryQuery.data.limits.groceryLists,
+            },
+          ]}
+        />
+      ) : null}
 
       <View style={{ gap: spacing.md }}>
         <Text selectable style={[typography.heading, { color: colors.text }]}>

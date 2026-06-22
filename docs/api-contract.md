@@ -138,6 +138,10 @@ Error output:
   "error": {
     "code": "unauthorized | invalid_request | unsupported_ai_provider | recipe_not_found | free_limit_reached | missing_gemini_key | gemini_rate_limited | gemini_bad_request | gemini_invalid_key_or_forbidden | gemini_model_not_found | gemini_request_failed | missing_openai_key | openai_rate_limited | openai_insufficient_quota | openai_invalid_api_key | openai_model_forbidden | openai_model_not_found | openai_bad_request | openai_request_failed | missing_openrouter_key | openrouter_rate_limited | openrouter_bad_request | openrouter_invalid_key_or_forbidden | openrouter_model_not_found | openrouter_request_failed | missing_kimi_key | kimi_rate_limited | kimi_bad_request | kimi_invalid_key_or_forbidden | kimi_model_not_found | kimi_request_failed | missing_anthropic_key | missing_anthropic_model | anthropic_not_implemented | invalid_ai_output | db_insert_failed | unexpected_generate_card_error",
     "message": "friendly user-safe error"
+  },
+  "usage": {
+    "free_recipe_cards_remaining": 0,
+    "should_show_paywall": true
   }
 }
 
@@ -178,7 +182,8 @@ Rules:
   - kimi: `recipe-card-v1-kimi`
   - anthropic: `recipe-card-v1-anthropic`
 - If an existing card exists for the same user, recipe, and provider prompt version, update it instead of creating duplicate tap-spam rows.
-- Free users can generate up to 3 recipe cards total, enforced by counting the user's `recipe_cards` rows.
+- Free users can generate up to `FREE_RECIPE_CARD_LIMIT`, default `3`, enforced by counting the user's `recipe_cards` rows.
+- When the limit is reached, return `free_limit_reached` with message "You have used your free recipe cards." and usage `{ free_recipe_cards_remaining: 0, should_show_paywall: true }`.
 - `usage_counters` is updated best-effort for the current month when a new card is created, but the limit is based on `recipe_cards` count so usage-counter schema details do not block generation.
 - Do not use a service-role key in mobile.
 - Do not download videos, scrape platforms, or fetch private content.
@@ -358,3 +363,54 @@ Rules:
 - Do not use a service-role key in mobile.
 - Do not call AI, generate combined multi-recipe grocery lists, or create grocery delivery integrations.
 - Do not send grocery item names, ingredients text, recipe instructions, source URLs, notes, or captions to analytics.
+
+### M13 Mobile Usage Summary
+
+The M13 usage foundation reads free-plan usage directly from user-owned tables through the authenticated Supabase mobile client and RLS. It does not add subscription entitlement logic, RevenueCat, token bundles, or a paywall.
+
+Helper:
+- `getUsageSummary()`
+
+Config:
+- Mobile reads public Expo env values when present:
+  - `EXPO_PUBLIC_FREE_SAVED_LINK_LIMIT`
+  - `EXPO_PUBLIC_FREE_RECIPE_CARD_LIMIT`
+  - `EXPO_PUBLIC_FREE_GROCERY_LIST_LIMIT`
+- Fallback limits:
+  - saved recipe links: `20`
+  - AI recipe cards: `3`
+  - grocery lists: `3`
+- Missing, invalid, or values below `1` fall back to the defaults.
+
+Counts:
+- `savedLinksUsed`: exact count of current user's `recipe_items`.
+- `recipeCardsUsed`: exact count of current user's `recipe_cards`.
+- `groceryListsUsed`: count of current user's `recipe_cards` with non-empty `grocery_list_json`.
+
+Return shape:
+
+```ts
+type UsageSummary = {
+  limits: {
+    savedLinks: number
+    recipeCards: number
+    groceryLists: number
+  }
+  savedLinksUsed: number
+  recipeCardsUsed: number
+  groceryListsUsed: number
+  savedLinksRemaining: number
+  recipeCardsRemaining: number
+  groceryListsRemaining: number
+  canSaveLink: boolean
+  canGenerateRecipeCard: boolean
+  canOpenGroceryList: boolean
+}
+```
+
+Rules:
+- Use the authenticated Supabase client and RLS.
+- Filter count queries by the authenticated user's ID.
+- Do not use a service-role key in mobile.
+- The Edge Function remains the source of truth for AI recipe card limits via `FREE_RECIPE_CARD_LIMIT`.
+- No subscription entitlement, RevenueCat, token bundle, paywall, video download, scraping, or deleted-video backup behavior is added in M13.
