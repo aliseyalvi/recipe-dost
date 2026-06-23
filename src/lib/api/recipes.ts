@@ -143,6 +143,14 @@ export type RecipeCard = Omit<
   | 'substitutions_json'
   | 'missing_info_json'
 > & {
+  recipe_title_en?: string
+  recipe_title_ur?: string
+  short_summary_en?: string
+  short_summary_ur?: string
+  storage_tip_en?: string
+  storage_tip_ur?: string
+  safety_note_en?: string
+  safety_note_ur?: string
   ingredients: RecipeCardIngredient[]
   steps: RecipeCardStep[]
   time: RecipeCardTime
@@ -151,6 +159,8 @@ export type RecipeCard = Omit<
   tags: string[]
   substitutions: RecipeCardSubstitution[]
   missing_info: string[]
+  missing_info_en: string[]
+  missing_info_ur: string[]
 }
 
 type RecipeGroceryListRow = Pick<
@@ -498,8 +508,18 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
 }
 
 function normalizeRecipeCard(row: RecipeCardRow): RecipeCard {
+  const localizedMeta = getLocalizedRecipeMeta(row.missing_info_json)
+
   return {
     ...row,
+    recipe_title_en: localizedMeta.recipe_title_en ?? row.recipe_title ?? undefined,
+    recipe_title_ur: localizedMeta.recipe_title_ur ?? undefined,
+    short_summary_en: localizedMeta.short_summary_en ?? row.short_summary ?? undefined,
+    short_summary_ur: localizedMeta.short_summary_ur ?? undefined,
+    storage_tip_en: localizedMeta.storage_tip_en ?? row.storage_tip ?? undefined,
+    storage_tip_ur: localizedMeta.storage_tip_ur ?? undefined,
+    safety_note_en: localizedMeta.safety_note_en ?? row.safety_note ?? undefined,
+    safety_note_ur: localizedMeta.safety_note_ur ?? undefined,
     ingredients: getIngredients(row.ingredients_json),
     steps: getSteps(row.steps_json),
     time: getRecipeCardTime(row.time_json),
@@ -507,7 +527,33 @@ function normalizeRecipeCard(row: RecipeCardRow): RecipeCard {
     grocery_items: getGroceryItems(row.grocery_list_json, row.ingredients_json),
     tags: getStringArray(row.tags_json),
     substitutions: getSubstitutions(row.substitutions_json),
-    missing_info: getStringArray(row.missing_info_json),
+    missing_info: localizedMeta.missing_info_en,
+    missing_info_en: localizedMeta.missing_info_en,
+    missing_info_ur: localizedMeta.missing_info_ur,
+  }
+}
+
+function getLocalizedRecipeMeta(value: Json) {
+  const record = getRecord(value)
+  const legacyMissingInfo = getStringArray(value)
+  const missingInfoEn = firstNonEmptyArray(
+    getStringArray(record?.missing_info_en),
+    getStringArray(record?.missing_info),
+    legacyMissingInfo
+  )
+  const missingInfoUr = getStringArray(record?.missing_info_ur)
+
+  return {
+    recipe_title_en: getString(record?.recipe_title_en),
+    recipe_title_ur: getString(record?.recipe_title_ur),
+    short_summary_en: getString(record?.short_summary_en),
+    short_summary_ur: getString(record?.short_summary_ur),
+    storage_tip_en: getString(record?.storage_tip_en),
+    storage_tip_ur: getString(record?.storage_tip_ur),
+    safety_note_en: getString(record?.safety_note_en),
+    safety_note_ur: getString(record?.safety_note_ur),
+    missing_info_en: missingInfoEn,
+    missing_info_ur: missingInfoUr,
   }
 }
 
@@ -677,7 +723,7 @@ function getSteps(value: Json): RecipeCardStep[] {
 
       const tipEn = getString(record?.tip_en)
       const tipUr = getString(record?.tip_ur)
-      const tip = tipUr || getString(record?.urdu_or_roman_urdu_tip)
+      const tip = getString(record?.urdu_or_roman_urdu_tip)
 
       if (tip) {
         step.urdu_or_roman_urdu_tip = tip
@@ -685,7 +731,7 @@ function getSteps(value: Json): RecipeCardStep[] {
       if (tipEn) {
         step.tip_en = tipEn
       }
-      if (tipUr) {
+      if (tipUr && hasUrduScript(tipUr)) {
         step.tip_ur = tipUr
       }
 
@@ -730,7 +776,11 @@ function getRecipeCardTime(value: Json): RecipeCardTime {
   }
 }
 
-function getStringArray(value: Json): string[] {
+function firstNonEmptyArray(...values: string[][]) {
+  return values.find((value) => value.length > 0) ?? []
+}
+
+function getStringArray(value: unknown): string[] {
   return getArray(value)
     .map((item) => {
       if (typeof item === 'string') {
@@ -743,7 +793,11 @@ function getStringArray(value: Json): string[] {
     .filter((item): item is string => Boolean(item))
 }
 
-function getArray(value: Json | undefined): unknown[] {
+function hasUrduScript(value: string | null | undefined) {
+  return Boolean(value && /[\u0600-\u06ff]/.test(value))
+}
+
+function getArray(value: unknown): unknown[] {
   const parsedValue = parseMaybeJson(value)
 
   return Array.isArray(parsedValue) ? parsedValue : []

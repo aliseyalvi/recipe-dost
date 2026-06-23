@@ -1282,3 +1282,16 @@ No new analytics events were added. Existing events continue to avoid source URL
 Existing analytics events remain. M14 does not add major new analytics.
 
 Do not send source URLs, notes, captions, ingredients, instructions, generated recipe content, grocery item names, or search queries.
+
+## M14E Language, Metadata, Filters, and Safe Areas
+
+- Shared screen layout applies top safe-area padding; fixed bottom navigation and scroll padding account for bottom insets.
+- Home recent chips and Library content chips are multi-select. All clears selected content filters; Newest and Oldest remain single-select sort controls.
+- Library search combines with selected filters and analytics never sends raw search text.
+- Saved-link detail shows a large visual hero, platform/status badges, a prominent Open Original Video button, and the note that Recipe Dost saves links and recipe cards, not video files.
+- Preview and saved-link detail prompt users to paste captions or visible ingredients for better AI accuracy. URL-only generation is allowed but should be low-confidence.
+- Visual cards use saved thumbnails when present and strong fallback visuals when thumbnails are unavailable.
+- YouTube thumbnails are derived from public video IDs without fetching or storing the image server-side.
+- Recipe result and Grocery detail use English, Urdu, or Both modes. Urdu mode uses RTL Urdu script only; older cards without Urdu script fall back gracefully and do not present Roman Urdu as Urdu script.
+- Existing old cards must not crash if bilingual fields are missing.
+- No WebView, autoplay, video download, deleted-video backup, private-folder scraping, auth, or RevenueCat/paywall behavior is added in M14E.

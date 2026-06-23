@@ -4,6 +4,10 @@ import {
 } from '@/features/language/content-language'
 import { ContentLanguageControl } from '@/features/language/content-language-control'
 import {
+  hasUrduScript,
+  selectLocalizedText,
+} from '@/features/language/localized-text'
+import {
   detectRecipePlatform,
   getPlatformLabel,
   isValidHttpUrl,
@@ -115,6 +119,12 @@ export default function RecipeCardResultRoute() {
   const canOpenSource = isValidHttpUrl(recipeCard.source_link)
   const canViewGroceryList =
     recipeCard.grocery_items.length > 0 || recipeCard.ingredients.length > 0
+  const titleSelection = selectLocalizedText({
+    english: recipeCard.recipe_title_en ?? recipeCard.recipe_title,
+    urdu: recipeCard.recipe_title_ur,
+    language: contentLanguage,
+    fallback: 'Untitled recipe',
+  })
 
   const copyGroceryList = async () => {
     if (recipeCard.grocery_items.length === 0) {
@@ -199,11 +209,16 @@ export default function RecipeCardResultRoute() {
         </View>
         <AppHeader
           eyebrow="AI recipe card"
-          title={recipeCard.recipe_title?.trim() || 'Untitled recipe'}
+          title={titleSelection.primary}
           subtitle={
             sourcePlatform ? `Source: ${getPlatformLabel(sourcePlatform)}` : undefined
           }
         />
+        {titleSelection.usedFallback && contentLanguage === 'urdu' ? (
+          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+            Urdu script is available for newly generated cards.
+          </Text>
+        ) : null}
         {__DEV__ && recipeCard.model_used ? (
           <AppBadge label={`Model: ${recipeCard.model_used}`} />
         ) : null}
@@ -217,10 +232,13 @@ export default function RecipeCardResultRoute() {
         <Text selectable style={[typography.heading, { color: colors.text }]}>
           Summary
         </Text>
-        <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-          {recipeCard.short_summary?.trim() ||
-            'No summary is available for this recipe card yet.'}
-        </Text>
+        <LanguageTextBlock
+          english={recipeCard.short_summary_en ?? recipeCard.short_summary}
+          urdu={recipeCard.short_summary_ur}
+          language={contentLanguage}
+          muted
+          fallback="No summary is available for this recipe card yet."
+        />
       </Card>
 
       <InfoGrid recipeCard={recipeCard} />
@@ -243,8 +261,8 @@ export default function RecipeCardResultRoute() {
         />
       ) : null}
       <SubstitutionsSection substitutions={recipeCard.substitutions} />
-      <StorageSafetySection recipeCard={recipeCard} />
-      <MissingInfoSection missingInfo={recipeCard.missing_info} />
+      <StorageSafetySection recipeCard={recipeCard} language={contentLanguage} />
+      <MissingInfoSection recipeCard={recipeCard} language={contentLanguage} />
 
       {canOpenSource ? (
         <Button
@@ -394,7 +412,7 @@ function StepsSection({
                   />
                 </View>
               </View>
-              {step.tip_en || step.tip_ur || step.urdu_or_roman_urdu_tip ? (
+              {step.tip_en || step.tip_ur ? (
                 <View
                   style={{
                     borderRadius: radius.sm,
@@ -404,7 +422,7 @@ function StepsSection({
                 >
                   <LanguageTextBlock
                     english={step.tip_en}
-                    urdu={step.tip_ur ?? step.urdu_or_roman_urdu_tip}
+                    urdu={step.tip_ur}
                     language={language}
                     muted
                   />
@@ -505,7 +523,13 @@ function SubstitutionsSection({
   )
 }
 
-function StorageSafetySection({ recipeCard }: { recipeCard: RecipeCard }) {
+function StorageSafetySection({
+  recipeCard,
+  language,
+}: {
+  recipeCard: RecipeCard
+  language: RecipeContentLanguage
+}) {
   if (!recipeCard.storage_tip && !recipeCard.safety_note) {
     return null
   }
@@ -516,20 +540,39 @@ function StorageSafetySection({ recipeCard }: { recipeCard: RecipeCard }) {
         Storage and safety
       </Text>
       {recipeCard.storage_tip ? (
-        <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-          {recipeCard.storage_tip}
-        </Text>
+        <LanguageTextBlock
+          english={recipeCard.storage_tip_en ?? recipeCard.storage_tip}
+          urdu={recipeCard.storage_tip_ur}
+          language={language}
+          muted
+        />
       ) : null}
       {recipeCard.safety_note ? (
-        <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-          {recipeCard.safety_note}
-        </Text>
+        <LanguageTextBlock
+          english={recipeCard.safety_note_en ?? recipeCard.safety_note}
+          urdu={recipeCard.safety_note_ur}
+          language={language}
+          muted
+        />
       ) : null}
     </Card>
   )
 }
 
-function MissingInfoSection({ missingInfo }: { missingInfo: string[] }) {
+function MissingInfoSection({
+  recipeCard,
+  language,
+}: {
+  recipeCard: RecipeCard
+  language: RecipeContentLanguage
+}) {
+  const missingInfo =
+    language === 'urdu' && recipeCard.missing_info_ur.length > 0
+      ? recipeCard.missing_info_ur
+      : recipeCard.missing_info_en
+  const secondaryMissingInfo =
+    language === 'both' ? recipeCard.missing_info_ur : []
+
   if (missingInfo.length === 0) {
     return null
   }
@@ -549,6 +592,11 @@ function MissingInfoSection({ missingInfo }: { missingInfo: string[] }) {
             - {item}
           </Text>
         ))}
+        {secondaryMissingInfo.map((item, index) => (
+          <UrduText key={`${item}-${index}`} muted>
+            {`- ${item}`}
+          </UrduText>
+        ))}
       </View>
     </Card>
   )
@@ -559,35 +607,48 @@ function LanguageTextBlock({
   urdu,
   language,
   muted = false,
+  fallback,
 }: {
   english?: string | null
   urdu?: string | null
   language: RecipeContentLanguage
   muted?: boolean
+  fallback?: string
 }) {
-  const englishText = english?.trim()
-  const urduText = urdu?.trim()
+  const selection = selectLocalizedText({
+    english,
+    urdu,
+    language,
+    fallback,
+  })
 
   if (language === 'urdu') {
-    return urduText ? (
-      <UrduText muted={muted}>{urduText}</UrduText>
+    return selection.isRtl ? (
+      <UrduText muted={muted}>{selection.primary}</UrduText>
     ) : (
-      <Text
-        selectable
-        style={[
-          typography.body,
-          { color: muted ? colors.textMuted : colors.text },
-        ]}
-      >
-        {englishText ?? 'Urdu not available for this older card'}
-      </Text>
+      <View style={{ gap: spacing.xs }}>
+        <Text
+          selectable
+          style={[
+            typography.body,
+            { color: muted ? colors.textMuted : colors.text },
+          ]}
+        >
+          {selection.primary || 'Urdu not available for this older card'}
+        </Text>
+        {selection.usedFallback ? (
+          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+            Urdu script is available for newly generated cards.
+          </Text>
+        ) : null}
+      </View>
     )
   }
 
   if (language === 'both') {
     return (
       <View style={{ gap: spacing.xs }}>
-        {englishText ? (
+        {selection.primary ? (
           <Text
             selectable
             style={[
@@ -595,10 +656,10 @@ function LanguageTextBlock({
               { color: muted ? colors.textMuted : colors.text },
             ]}
           >
-            {englishText}
+            {selection.primary}
           </Text>
         ) : null}
-        {urduText ? (
+        {selection.secondary ? (
           <View
             style={{
               borderRadius: radius.sm,
@@ -606,7 +667,7 @@ function LanguageTextBlock({
               padding: spacing.sm,
             }}
           >
-            <UrduText muted={muted}>{urduText}</UrduText>
+            <UrduText muted={muted}>{selection.secondary}</UrduText>
           </View>
         ) : null}
       </View>
@@ -618,7 +679,7 @@ function LanguageTextBlock({
       selectable
       style={[typography.body, { color: muted ? colors.textMuted : colors.text }]}
     >
-      {englishText ?? urduText ?? ''}
+      {selection.primary}
     </Text>
   )
 }
@@ -632,7 +693,7 @@ function formatGroceryItemsCopy(
 
 function formatGroceryCopyItem(item: GroceryItem, language: RecipeContentLanguage) {
   const english = `${item.label_en ?? item.label}${item.quantity ? ` - ${item.quantity}` : ''}`
-  const urdu = item.label_ur
+  const urdu = hasUrduScript(item.label_ur)
     ? `${item.label_ur}${item.quantity ? ` - ${item.quantity}` : ''}`
     : null
 

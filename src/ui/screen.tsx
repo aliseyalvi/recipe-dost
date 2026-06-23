@@ -18,6 +18,7 @@ export function Screen({
   const bottomPadding = tabBarPadding
     ? 112 + insets.bottom
     : spacing.xxl + insets.bottom
+  const topPadding = insets.top + (compact ? spacing.md : spacing.lg)
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -28,7 +29,7 @@ export function Screen({
           flexGrow: 1,
           gap: compact ? spacing.lg : spacing.xl,
           paddingHorizontal: spacing.xl,
-          paddingTop: spacing.lg,
+          paddingTop: topPadding,
           paddingBottom: bottomPadding,
         }}
       >

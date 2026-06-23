@@ -3,6 +3,7 @@ import {
   useRecipeContentLanguage,
 } from '@/features/language/content-language'
 import { ContentLanguageControl } from '@/features/language/content-language-control'
+import { hasUrduScript } from '@/features/language/localized-text'
 import { detectRecipePlatform } from '@/features/recipe-draft/platform'
 import { getRecipeGroceryList, getRecipeGroceryLists } from '@/lib/api/recipes'
 import type { GroceryItem, RecipeGroceryList } from '@/lib/api/recipes'
@@ -423,7 +424,7 @@ function GroceryItemLabel({
   checked: boolean
 }) {
   const english = item.label_en ?? item.label
-  const urdu = item.label_ur
+  const urdu = hasUrduScript(item.label_ur) ? item.label_ur : null
   const textStyle = {
     color: checked ? colors.textMuted : colors.text,
     textDecorationLine: checked ? ('line-through' as const) : ('none' as const),
@@ -484,7 +485,7 @@ function formatGroceryListCopy(
 
 function formatCopyItem(item: GroceryItem, language: RecipeContentLanguage) {
   const english = `${item.label_en ?? item.label}${item.quantity ? ` - ${item.quantity}` : ''}`
-  const urdu = item.label_ur
+  const urdu = hasUrduScript(item.label_ur)
     ? `${item.label_ur}${item.quantity ? ` - ${item.quantity}` : ''}`
     : null
 

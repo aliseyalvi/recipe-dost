@@ -58,7 +58,12 @@ export function VisualRecipeCard({
             style={{ width: '100%', height: '100%' }}
           />
         ) : (
-          <RecipeFallback platform={platform} />
+          <RecipeFallback
+            platform={platform}
+            status={status}
+            title={title}
+            subtitle={subtitle}
+          />
         )}
         <View
           style={{
@@ -104,7 +109,17 @@ export function VisualRecipeCard({
   )
 }
 
-function RecipeFallback({ platform }: { platform: RecipePlatform }) {
+function RecipeFallback({
+  platform,
+  status,
+  title,
+  subtitle,
+}: {
+  platform: RecipePlatform
+  status: VisualRecipeStatus
+  title: string
+  subtitle: string
+}) {
   return (
     <View
       style={{
@@ -114,18 +129,9 @@ function RecipeFallback({ platform }: { platform: RecipePlatform }) {
         padding: spacing.md,
       }}
     >
-      <View
-        style={{
-          alignSelf: 'flex-start',
-          borderRadius: radius.pill,
-          backgroundColor: colors.primarySoft,
-          paddingHorizontal: spacing.md,
-          paddingVertical: spacing.xs,
-        }}
-      >
-        <Text selectable={false} style={[typography.caption, { color: colors.primary }]}>
-          {getPlatformLabel(platform)}
-        </Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+        <FallbackPill label={getPlatformLabel(platform)} />
+        <FallbackPill label={getStatusLabel(status)} />
       </View>
       <View style={{ gap: spacing.sm }}>
         <Text
@@ -138,6 +144,20 @@ function RecipeFallback({ platform }: { platform: RecipePlatform }) {
           }}
         >
           RD
+        </Text>
+        <Text
+          selectable={false}
+          numberOfLines={2}
+          style={[typography.heading, { color: colors.text }]}
+        >
+          {title}
+        </Text>
+        <Text
+          selectable={false}
+          numberOfLines={1}
+          style={[typography.caption, { color: colors.textMuted }]}
+        >
+          {subtitle}
         </Text>
         <View
           style={{
@@ -156,6 +176,23 @@ function RecipeFallback({ platform }: { platform: RecipePlatform }) {
           }}
         />
       </View>
+    </View>
+  )
+}
+
+function FallbackPill({ label }: { label: string }) {
+  return (
+    <View
+      style={{
+        borderRadius: radius.pill,
+        backgroundColor: colors.primarySoft,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 3,
+      }}
+    >
+      <Text selectable={false} style={[typography.caption, { color: colors.primary }]}>
+        {label}
+      </Text>
     </View>
   )
 }
@@ -245,7 +282,11 @@ function getYouTubeVideoId(sourceUrl: string | null | undefined) {
     }
 
     if (host === 'youtube.com' || host.endsWith('.youtube.com')) {
-      return cleanVideoId(parsedUrl.searchParams.get('v'))
+      const shortsMatch = parsedUrl.pathname.match(/^\/shorts\/([^/?#]+)/)
+      return (
+        cleanVideoId(parsedUrl.searchParams.get('v')) ??
+        cleanVideoId(shortsMatch?.[1] ?? null)
+      )
     }
   } catch {
     return null

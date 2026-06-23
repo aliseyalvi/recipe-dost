@@ -14,7 +14,7 @@ Later allow linking guest account to email or social login.
 
 ### POST /functions/v1/parse-url
 Purpose:
-Validate a pasted recipe link, detect platform locally, and return safe fallback metadata.
+Validate a pasted recipe link, detect platform locally, and return safe public metadata when available.
 
 Input:
 {
@@ -26,10 +26,10 @@ Success output:
   "ok": true,
   "data": {
     "platform": "instagram | tiktok | youtube | facebook | other",
-    "title": null,
-    "description": null,
-    "thumbnail_url": null,
-    "metadata_status": "failed",
+    "title": "string | null",
+    "description": "string | null",
+    "thumbnail_url": "string | null",
+    "metadata_status": "partial | failed",
     "requires_manual_caption": true,
     "source_url": "original trimmed url",
     "normalized_url": "normalized url",
@@ -58,9 +58,14 @@ Rules:
   - `facebook.com`, `m.facebook.com`, or `fb.watch` -> `facebook`
   - otherwise -> `other`
 - Do not download videos.
-- Do not scrape Instagram, TikTok, Facebook, YouTube, private pages, or protected content.
+- Do not scrape private pages or protected content.
 - Do not bypass platform protections.
-- M6 always returns fallback metadata: `metadata_status: "failed"` and `requires_manual_caption: true`.
+- M14E may return safe partial metadata:
+  - YouTube thumbnail URL derived from `youtube.com/watch?v=`, `youtu.be/`, or `youtube.com/shorts/`.
+  - Basic public Open Graph `og:title`, `og:description`, and `og:image` from a short-timeout GET with limited redirects.
+  - Images are not fetched server-side; only the URL is stored.
+- Instagram, TikTok, and Facebook may receive the same single public Open Graph attempt. If blocked or missing, return fallback metadata.
+- `requires_manual_caption` remains `true` because metadata is not a transcript or watched-video analysis.
 - User can paste caption, notes, or ingredients manually.
 - Do not use a service role key or custom admin secret in this function.
 - DB logging is intentionally skipped in M6 and will be connected in a later save/logging milestone.
@@ -188,12 +193,15 @@ Rules:
 - Do not use a service-role key in mobile.
 - Do not download videos, scrape platforms, or fetch private content.
 - Do not add paywall/RevenueCat behavior in M10; paywall remains deferred to M14.
-- M14D bilingual output update:
-  - New generated cards should include Urdu script fields in `ingredients_json`, `steps_json`, and `grocery_list_json`.
+- M14E bilingual output update:
+  - New generated cards should include Urdu script fields for title, summary, storage/safety notes, missing info, ingredients, steps, and grocery items.
+  - Legacy `recipe_title`, `short_summary`, `storage_tip`, and `safety_note` columns store English for DB compatibility.
+  - Extra top-level bilingual fields are stored inside `missing_info_json` with keys such as `recipe_title_ur`, `short_summary_ur`, `storage_tip_ur`, `safety_note_ur`, `missing_info_en`, and `missing_info_ur`.
   - `ingredients_json` items may include `name_en`, `name_ur`, `quantity`, `notes_en`, and `notes_ur`, while old `name`/`notes` fields remain readable for backward compatibility.
   - `steps_json` items may include `instruction_en`, `instruction_ur`, `tip_en`, and `tip_ur`, while old `instruction` and `urdu_or_roman_urdu_tip` remain readable for backward compatibility.
   - `grocery_list_json` may be an array of old strings or objects shaped like `{ "name_en": "string", "name_ur": "string", "quantity": "string" }`.
   - Urdu must be Urdu script, not Roman Urdu, for new provider output.
+  - If caption, manual ingredients, and useful description are missing, set confidence low and include missing info telling the user to paste caption/ingredients and verify the original video.
 
 ## Android Share Intake
 

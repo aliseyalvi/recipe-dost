@@ -55,7 +55,7 @@ function RecipeDostTabBar({
       style={{
         position: 'absolute',
         right: spacing.lg,
-        bottom: Math.max(spacing.md, insets.bottom),
+        bottom: spacing.md + insets.bottom,
         left: spacing.lg,
         minHeight: 76,
         flexDirection: 'row',

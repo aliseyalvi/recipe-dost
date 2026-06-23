@@ -51,8 +51,12 @@ You convert user-provided public link metadata, captions, manual notes, and ingr
 ## Required JSON response
 {
   "recipe_title": "string",
+  "recipe_title_en": "string",
+  "recipe_title_ur": "string",
   "source_platform": "instagram | tiktok | youtube | facebook | other",
   "short_summary": "string",
+  "short_summary_en": "string",
+  "short_summary_ur": "string",
   "ingredients": [
     {
       "name": "string",
@@ -95,9 +99,15 @@ You convert user-provided public link metadata, captions, manual notes, and ingr
     }
   ],
   "storage_tip": "string",
+  "storage_tip_en": "string",
+  "storage_tip_ur": "string",
   "safety_note": "string",
+  "safety_note_en": "string",
+  "safety_note_ur": "string",
   "confidence": "high | medium | low",
   "missing_info": ["string"],
+  "missing_info_en": ["string"],
+  "missing_info_ur": ["string"],
   "source_link": "string"
 }
 
@@ -123,7 +133,11 @@ Provider secrets are Supabase Edge Function secrets only:
 - Anthropic: `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`
 - Shared: `MAX_INPUT_CHARS`
 
-The AI input is built only from the saved `recipe_items` row. Recipe Dost does not fetch the source link, scrape Instagram/TikTok/YouTube/Facebook, download videos, or claim the video was watched.
+The AI input is built only from the saved `recipe_items` row. Recipe Dost does not scrape Instagram/TikTok/Facebook, download videos, or claim those videos were watched from URL alone.
+
+If caption, manual ingredients, and usable description are missing, providers must set `confidence = "low"` and include:
+- `missing_info_en`: "Caption or ingredients were not provided." and "Open the original video to verify steps."
+- `missing_info_ur`: Urdu-script equivalents.
 
 Output must be structured JSON with strict required fields and `additionalProperties: false`. Invalid or unparseable model output returns:
 
@@ -137,9 +151,21 @@ Output must be structured JSON with strict required fields and `additionalProper
 }
 ```
 
-## M14D Bilingual Urdu Script Schema
+## M14E Bilingual Urdu Script Schema
 
 New generated cards should produce English and Urdu script fields together.
+
+Top-level fields:
+```json
+{
+  "recipe_title": "Chicken Karahi",
+  "recipe_title_en": "Chicken Karahi",
+  "recipe_title_ur": "چکن کڑاہی",
+  "short_summary": "A simple home-style chicken karahi.",
+  "short_summary_en": "A simple home-style chicken karahi.",
+  "short_summary_ur": "گھر کے انداز کی آسان چکن کڑاہی۔"
+}
+```
 
 Ingredient item:
 ```json
@@ -179,13 +205,16 @@ Grocery item:
 Backward compatibility:
 - Existing cards may still have `ingredients[].name`, `ingredients[].notes`, `steps[].instruction`, `steps[].urdu_or_roman_urdu_tip`, and `grocery_list` as `string[]`.
 - Mobile must render these older cards gracefully.
-- If Urdu script is missing, mobile may show English fallback or older Roman Urdu tip text.
+- If Urdu script is missing, mobile shows the available English fallback and may note that Urdu script is available for newly generated cards.
+- Mobile must not show Roman Urdu as if it were Urdu script.
 
 Generated cards are stored with:
 - `model_used = provider model`
 - provider-specific `prompt_version`
 - input/output tokens when available, otherwise `0`
 - `estimated_cost = 0`
+- Legacy title/summary/storage/safety text columns store English for DB compatibility.
+- Extra top-level bilingual fields are stored in `missing_info_json` alongside `missing_info_en` and `missing_info_ur`.
 
 Provider prompt versions:
 - `mock-v1`

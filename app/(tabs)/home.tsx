@@ -19,22 +19,34 @@ import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 
-type HomeChip = 'all' | 'ai_cards' | 'links' | 'grocery' | 'instagram' | 'tiktok'
+type HomeFilter =
+  | 'ai_cards'
+  | 'saved_links'
+  | 'grocery'
+  | 'instagram'
+  | 'tiktok'
+  | 'youtube'
+  | 'facebook'
+  | 'other'
+type HomeChip = HomeFilter | 'all'
 
 const homeChips: { label: string; value: HomeChip }[] = [
   { label: 'All', value: 'all' },
   { label: 'AI Cards', value: 'ai_cards' },
-  { label: 'Links', value: 'links' },
+  { label: 'Saved Links', value: 'saved_links' },
   { label: 'Grocery', value: 'grocery' },
   { label: 'Instagram', value: 'instagram' },
   { label: 'TikTok', value: 'tiktok' },
+  { label: 'YouTube', value: 'youtube' },
+  { label: 'Facebook', value: 'facebook' },
+  { label: 'Other', value: 'other' },
 ]
 
 export default function HomeRoute() {
   const router = useRouter()
   const { user } = useAuth()
   const { track } = usePostHog()
-  const [selectedChip, setSelectedChip] = useState<HomeChip>('all')
+  const [selectedFilters, setSelectedFilters] = useState<HomeFilter[]>([])
   const didTrackUsageSummary = useRef(false)
   const recentRecipesQuery = useQuery({
     enabled: Boolean(user?.id),
@@ -47,8 +59,8 @@ export default function HomeRoute() {
     queryFn: getUsageSummary,
   })
   const filteredRecipes = useMemo(
-    () => filterHomeRecipes(recentRecipesQuery.data ?? [], selectedChip),
-    [recentRecipesQuery.data, selectedChip]
+    () => filterHomeRecipes(recentRecipesQuery.data ?? [], selectedFilters),
+    [recentRecipesQuery.data, selectedFilters]
   )
 
   useEffect(() => {
@@ -97,6 +109,21 @@ export default function HomeRoute() {
     router.push(`/recipe/${recipe.id}`)
   }
 
+  const toggleFilter = (chip: HomeChip) => {
+    const nextFilters =
+      chip === 'all'
+        ? []
+        : selectedFilters.includes(chip)
+          ? selectedFilters.filter((filter) => filter !== chip)
+          : [...selectedFilters, chip]
+
+    setSelectedFilters(nextFilters)
+    track('home_filter_changed', {
+      selected_count: nextFilters.length,
+      selected_filters: nextFilters.join(','),
+    })
+  }
+
   return (
     <Screen compact tabBarPadding>
       <View style={{ gap: spacing.xs }}>
@@ -117,8 +144,12 @@ export default function HomeRoute() {
           <FilterChip
             key={chip.value}
             label={chip.label}
-            selected={selectedChip === chip.value}
-            onPress={() => setSelectedChip(chip.value)}
+            selected={
+              chip.value === 'all'
+                ? selectedFilters.length === 0
+                : selectedFilters.includes(chip.value)
+            }
+            onPress={() => toggleFilter(chip.value)}
           />
         ))}
       </ScrollView>
@@ -339,21 +370,30 @@ function getCompletedSteps(
   ].filter(Boolean).length
 }
 
-function filterHomeRecipes(items: RecipeLibraryItem[], selectedChip: HomeChip) {
+function filterHomeRecipes(items: RecipeLibraryItem[], selectedFilters: HomeFilter[]) {
+  if (selectedFilters.length === 0) {
+    return items
+  }
+
   return items.filter((item) => {
-    switch (selectedChip) {
-      case 'ai_cards':
-        return Boolean(item.latest_card)
-      case 'links':
-        return !item.latest_card
-      case 'grocery':
-        return Boolean(item.latest_card)
-      case 'instagram':
-      case 'tiktok':
-        return getRecipePlatform(item.platform) === selectedChip
-      case 'all':
-        return true
-    }
+    const itemPlatform = getRecipePlatform(item.platform)
+
+    return selectedFilters.some((filter) => {
+      switch (filter) {
+        case 'ai_cards':
+          return Boolean(item.latest_card)
+        case 'saved_links':
+          return !item.latest_card
+        case 'grocery':
+          return Boolean(item.latest_card)
+        case 'instagram':
+        case 'tiktok':
+        case 'youtube':
+        case 'facebook':
+        case 'other':
+          return itemPlatform === filter
+      }
+    })
   })
 }
 

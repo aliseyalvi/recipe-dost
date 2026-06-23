@@ -121,3 +121,13 @@
 - Recipe Result and Grocery List screens now respect English/Urdu/Both display preferences, including RTL Urdu rendering and language-aware Copy List.
 - Updated `generate-card` prompt/schema and mock output to produce Urdu script fields instead of Roman Urdu for new recipe card content while keeping old cards readable.
 - No sign-in/sign-up, RevenueCat/paywall, schema migration, video download, video backup, scraping, private saved folder import, or medical/diet/calorie/allergy/weight-loss claims were added.
+- Milestone M14E Language, Media Metadata, Share Accuracy, Multi-select Filters, and Safe-Area Fixes completed.
+- M14E fixed global safe-area clipping by applying top inset padding through shared screen layout and keeping the fixed bottom navigation above bottom insets.
+- M14E added multi-select Home and Library content filters; All clears filters, while Newest and Oldest remain single-select sort controls.
+- M14E improved safe thumbnails with YouTube thumbnail URL extraction and fallback visuals for cards without thumbnails.
+- M14E added a prominent Open Original Video CTA on saved-link detail and clarified that Recipe Dost saves links and recipe cards, not video files.
+- M14E fixed language preference rendering so Urdu mode uses Urdu script with RTL styling and old cards fall back instead of showing Roman Urdu as Urdu script.
+- New generated cards request Urdu script fields for top-level text, ingredients, steps, grocery items, storage/safety notes, and missing info; legacy text columns continue storing English for DB compatibility.
+- Existing old cards may need regeneration for full Urdu script support.
+- AI accuracy depends on caption/manual ingredients and safe public metadata; URL-only inputs should be low-confidence with missing-info warnings.
+- Public YouTube video understanding with Gemini remains a future AI accuracy milestone; no Instagram/TikTok/Facebook video download or scraping was added.

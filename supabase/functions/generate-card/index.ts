@@ -143,8 +143,12 @@ type Database = {
 
 type GeneratedRecipeCard = {
   recipe_title: string;
+  recipe_title_en: string;
+  recipe_title_ur: string;
   source_platform: RecipePlatform;
   short_summary: string;
+  short_summary_en: string;
+  short_summary_ur: string;
   ingredients: {
     name: string;
     name_en?: string;
@@ -182,9 +186,15 @@ type GeneratedRecipeCard = {
     note: string;
   }[];
   storage_tip: string;
+  storage_tip_en: string;
+  storage_tip_ur: string;
   safety_note: string;
+  safety_note_en: string;
+  safety_note_ur: string;
   confidence: Confidence;
   missing_info: string[];
+  missing_info_en: string[];
+  missing_info_ur: string[];
   source_link: string;
 };
 
@@ -341,8 +351,12 @@ const openAiRecipeCardJsonSchema = {
   additionalProperties: false,
   required: [
     "recipe_title",
+    "recipe_title_en",
+    "recipe_title_ur",
     "source_platform",
     "short_summary",
+    "short_summary_en",
+    "short_summary_ur",
     "ingredients",
     "steps",
     "prep_time_minutes",
@@ -353,18 +367,28 @@ const openAiRecipeCardJsonSchema = {
     "tags",
     "local_substitutions",
     "storage_tip",
+    "storage_tip_en",
+    "storage_tip_ur",
     "safety_note",
+    "safety_note_en",
+    "safety_note_ur",
     "confidence",
     "missing_info",
+    "missing_info_en",
+    "missing_info_ur",
     "source_link",
   ],
   properties: {
     recipe_title: { type: "string" },
+    recipe_title_en: { type: "string" },
+    recipe_title_ur: { type: "string" },
     source_platform: {
       type: "string",
       enum: ["instagram", "tiktok", "youtube", "facebook", "other"],
     },
     short_summary: { type: "string" },
+    short_summary_en: { type: "string" },
+    short_summary_ur: { type: "string" },
     ingredients: {
       type: "array",
       items: {
@@ -439,9 +463,15 @@ const openAiRecipeCardJsonSchema = {
       },
     },
     storage_tip: { type: "string" },
+    storage_tip_en: { type: "string" },
+    storage_tip_ur: { type: "string" },
     safety_note: { type: "string" },
+    safety_note_en: { type: "string" },
+    safety_note_ur: { type: "string" },
     confidence: { type: "string", enum: ["high", "medium", "low"] },
     missing_info: { type: "array", items: { type: "string" } },
+    missing_info_en: { type: "array", items: { type: "string" } },
+    missing_info_ur: { type: "array", items: { type: "string" } },
     source_link: { type: "string" },
   },
 } as const;
@@ -451,11 +481,15 @@ const geminiRecipeCardSchema = {
   required: openAiRecipeCardJsonSchema.required,
   properties: {
     recipe_title: { type: "STRING" },
+    recipe_title_en: { type: "STRING" },
+    recipe_title_ur: { type: "STRING" },
     source_platform: {
       type: "STRING",
       enum: ["instagram", "tiktok", "youtube", "facebook", "other"],
     },
     short_summary: { type: "STRING" },
+    short_summary_en: { type: "STRING" },
+    short_summary_ur: { type: "STRING" },
     ingredients: {
       type: "ARRAY",
       items: {
@@ -526,9 +560,15 @@ const geminiRecipeCardSchema = {
       },
     },
     storage_tip: { type: "STRING" },
+    storage_tip_en: { type: "STRING" },
+    storage_tip_ur: { type: "STRING" },
     safety_note: { type: "STRING" },
+    safety_note_en: { type: "STRING" },
+    safety_note_ur: { type: "STRING" },
     confidence: { type: "STRING", enum: ["high", "medium", "low"] },
     missing_info: { type: "ARRAY", items: { type: "STRING" } },
+    missing_info_en: { type: "ARRAY", items: { type: "STRING" } },
+    missing_info_ur: { type: "ARRAY", items: { type: "STRING" } },
     source_link: { type: "STRING" },
   },
 } as const;
@@ -773,7 +813,7 @@ async function handleGenerateCardRequest(request: Request) {
     data: {
       recipe_card_id: savedCardResult.data.id,
       recipe_id: recipeResult.data.id,
-      recipe_title: normalizedCard.recipe_title,
+      recipe_title: normalizedCard.recipe_title_en,
       confidence: normalizedCard.confidence,
     },
     usage: {
@@ -1017,9 +1057,15 @@ function generateWithMock(
   }));
   const card: GeneratedRecipeCard = {
     recipe_title: getMockRecipeTitle(recipeInput),
+    recipe_title_en: getMockRecipeTitle(recipeInput),
+    recipe_title_ur: "محفوظ ترکیب",
     source_platform: recipeInput.platform,
     short_summary:
       "Mock recipe card generated from saved link details for offline testing.",
+    short_summary_en:
+      "Mock recipe card generated from saved link details for offline testing.",
+    short_summary_ur:
+      "یہ محفوظ لنک کی تفصیلات سے بنی ہوئی آزمائشی ریسیپی کارڈ ہے۔",
     ingredients,
     steps: [
       {
@@ -1074,10 +1120,24 @@ function generateWithMock(
     tags: ["mock", "saved-link"],
     local_substitutions: [],
     storage_tip: "Store leftovers in a covered container in the fridge.",
+    storage_tip_en: "Store leftovers in a covered container in the fridge.",
+    storage_tip_ur: "بچا ہوا کھانا ڈھکے ہوئے برتن میں فریج میں رکھیں۔",
     safety_note: "Cook chicken, meat, and eggs properly before eating.",
+    safety_note_en: "Cook chicken, meat, and eggs properly before eating.",
+    safety_note_ur: "چکن، گوشت، اور انڈے کھانے سے پہلے اچھی طرح پکائیں۔",
     confidence: "low",
     missing_info: [
       "This is a mock recipe card for offline testing. Use real provider output before relying on recipe details.",
+    ],
+    missing_info_en: [
+      "This is a mock recipe card for offline testing. Use real provider output before relying on recipe details.",
+      "Caption or ingredients were not provided.",
+      "Open the original video to verify steps.",
+    ],
+    missing_info_ur: [
+      "یہ آف لائن ٹیسٹنگ کے لیے موک ریسیپی کارڈ ہے۔",
+      "کیپشن یا اجزاء فراہم نہیں کیے گئے۔",
+      "مرحلے چیک کرنے کے لیے اصل ویڈیو کھولیں۔",
     ],
     source_link: recipeInput.source_link,
   };
@@ -1450,7 +1510,9 @@ function getSystemPrompt() {
     "If details are missing, use estimated quantities and add clear missing_info instead of pretending certainty.",
     "Keep steps simple and home-cook friendly.",
     "Produce Urdu in Urdu script, not Roman Urdu. Use simple Pakistani household Urdu.",
-    "For ingredients, steps, and grocery_list, include English and Urdu script fields where the schema asks for them.",
+    "Include English and Urdu script fields wherever the schema asks for *_en and *_ur fields.",
+    "For recipe_title_ur, short_summary_ur, storage_tip_ur, safety_note_ur, missing_info_ur, ingredients[].name_ur, steps[].instruction_ur, and grocery_list[].name_ur, use Urdu script only.",
+    "If the only input is a source URL or weak metadata, set confidence to low and include missing_info_en/missing_info_ur explaining that caption or ingredients were not provided and the original video should be verified.",
     "Do not make medical, allergy, calorie, macro, diet, weight-loss, diagnosis, or disease claims.",
     "Return valid JSON only, matching the requested recipe card shape.",
   ].join("\n");
@@ -1467,8 +1529,12 @@ function buildUserPrompt(recipeInput: RecipeGenerationInput) {
     output_rules: {
       response_format: "JSON object only",
       substitutions_field: "Use local_substitutions[].note, not reason.",
+      bilingual_fields:
+        "Provide recipe_title_en/recipe_title_ur, short_summary_en/short_summary_ur, storage_tip_en/storage_tip_ur, safety_note_en/safety_note_ur, missing_info_en/missing_info_ur, and bilingual ingredient/step/grocery objects.",
       uncertainty:
-        "Use estimated quantities where needed and list missing details in missing_info.",
+        "Use estimated quantities where needed. If caption/manual ingredients/description are missing, set confidence low and include Caption or ingredients were not provided plus Open the original video to verify steps in missing_info_en and Urdu equivalents in missing_info_ur.",
+      platform_boundary:
+        "Do not claim to watch or analyze Instagram, TikTok, Facebook, or other source videos from URL alone.",
     },
     recipe_source: recipeInput,
   });
@@ -1650,8 +1716,8 @@ async function saveRecipeCard({
   const recipeCardPayload: RecipeCardPayload = {
     recipe_id: recipeId,
     user_id: userId,
-    recipe_title: card.recipe_title,
-    short_summary: card.short_summary,
+    recipe_title: card.recipe_title_en,
+    short_summary: card.short_summary_en,
     ingredients_json: card.ingredients as unknown as Json,
     steps_json: card.steps as unknown as Json,
     time_json: {
@@ -1663,10 +1729,22 @@ async function saveRecipeCard({
     grocery_list_json: card.grocery_list,
     tags_json: card.tags,
     substitutions_json: card.local_substitutions as unknown as Json,
-    storage_tip: card.storage_tip,
-    safety_note: card.safety_note,
+    storage_tip: card.storage_tip_en,
+    safety_note: card.safety_note_en,
     confidence: card.confidence,
-    missing_info_json: card.missing_info,
+    missing_info_json: {
+      recipe_title_en: card.recipe_title_en,
+      recipe_title_ur: card.recipe_title_ur,
+      short_summary_en: card.short_summary_en,
+      short_summary_ur: card.short_summary_ur,
+      storage_tip_en: card.storage_tip_en,
+      storage_tip_ur: card.storage_tip_ur,
+      safety_note_en: card.safety_note_en,
+      safety_note_ur: card.safety_note_ur,
+      missing_info: card.missing_info,
+      missing_info_en: card.missing_info_en,
+      missing_info_ur: card.missing_info_ur,
+    },
     source_link: card.source_link,
     model_used: modelUsed,
     prompt_version: promptVersion,
@@ -1742,16 +1820,25 @@ function validateGeneratedRecipeCard(
   }
 
   const recipeTitle = getRequiredString(record.recipe_title);
+  const recipeTitleEn = getRequiredString(record.recipe_title_en) ?? recipeTitle;
+  const recipeTitleUr = getRequiredString(record.recipe_title_ur) ?? "";
   const sourcePlatform = getRecipePlatform(
     getRequiredString(record.source_platform),
   );
   const shortSummary = getRequiredString(record.short_summary);
+  const shortSummaryEn = getRequiredString(record.short_summary_en) ??
+    shortSummary;
+  const shortSummaryUr = getRequiredString(record.short_summary_ur) ?? "";
   const prepTimeMinutes = getRequiredNumber(record.prep_time_minutes);
   const cookTimeMinutes = getRequiredNumber(record.cook_time_minutes);
   const servings = getRequiredString(record.servings);
   const difficulty = getDifficulty(record.difficulty);
   const storageTip = getRequiredString(record.storage_tip);
+  const storageTipEn = getRequiredString(record.storage_tip_en) ?? storageTip;
+  const storageTipUr = getRequiredString(record.storage_tip_ur) ?? "";
   const safetyNote = getRequiredString(record.safety_note);
+  const safetyNoteEn = getRequiredString(record.safety_note_en) ?? safetyNote;
+  const safetyNoteUr = getRequiredString(record.safety_note_ur) ?? "";
   const confidence = getConfidence(record.confidence);
   const sourceLink = getRequiredString(record.source_link);
   const ingredients = getIngredients(record.ingredients);
@@ -1759,7 +1846,11 @@ function validateGeneratedRecipeCard(
   const groceryList = getGroceryList(record.grocery_list);
   const tags = getStringArray(record.tags);
   const localSubstitutions = getSubstitutions(record.local_substitutions);
-  const missingInfo = getStringArray(record.missing_info);
+  const missingInfoEn = firstNonEmptyArray(
+    getStringArray(record.missing_info_en),
+    getStringArray(record.missing_info),
+  );
+  const missingInfoUr = getStringArray(record.missing_info_ur);
 
   if (
     !recipeTitle ||
@@ -1780,8 +1871,12 @@ function validateGeneratedRecipeCard(
 
   return {
     recipe_title: recipeTitle,
+    recipe_title_en: recipeTitleEn ?? recipeTitle,
+    recipe_title_ur: recipeTitleUr,
     source_platform: sourcePlatform,
     short_summary: shortSummary,
+    short_summary_en: shortSummaryEn ?? shortSummary,
+    short_summary_ur: shortSummaryUr,
     ingredients,
     steps,
     prep_time_minutes: prepTimeMinutes,
@@ -1792,9 +1887,15 @@ function validateGeneratedRecipeCard(
     tags,
     local_substitutions: localSubstitutions,
     storage_tip: storageTip,
+    storage_tip_en: storageTipEn ?? storageTip,
+    storage_tip_ur: storageTipUr,
     safety_note: safetyNote,
+    safety_note_en: safetyNoteEn ?? safetyNote,
+    safety_note_ur: safetyNoteUr,
     confidence,
-    missing_info: missingInfo,
+    missing_info: missingInfoEn,
+    missing_info_en: missingInfoEn,
+    missing_info_ur: missingInfoUr,
     source_link: sourceLink,
   };
 }
@@ -2395,6 +2496,10 @@ function getStringArray(value: unknown) {
   return value
     .map((item) => getRequiredString(item))
     .filter((item): item is string => Boolean(item));
+}
+
+function firstNonEmptyArray(...values: string[][]) {
+  return values.find((value) => value.length > 0) ?? [];
 }
 
 function getRequiredString(value: unknown) {

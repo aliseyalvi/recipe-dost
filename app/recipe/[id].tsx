@@ -22,7 +22,7 @@ import { Screen } from '@/ui/screen'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
-import { Image, Text, View } from 'react-native'
+import { Image, Linking, Text, View } from 'react-native'
 
 export default function SavedRecipeRoute() {
   const router = useRouter()
@@ -131,6 +131,19 @@ export default function SavedRecipeRoute() {
   const hasNote = Boolean(recipe.user_note)
   const hasCaption = Boolean(recipe.pasted_caption)
   const hasManualIngredients = Boolean(recipe.manual_ingredients)
+  const needsAccuracyContext = !hasCaption && !hasManualIngredients
+
+  const openOriginalVideo = async () => {
+    const canOpenUrl = await Linking.canOpenURL(recipe.source_url)
+
+    if (canOpenUrl) {
+      await Linking.openURL(recipe.source_url)
+      track('original_source_opened', {
+        platform,
+        source: 'saved_recipe_detail',
+      })
+    }
+  }
 
   const handleGenerateRecipeCard = async () => {
     if (!recipeId || isGenerating) {
@@ -245,6 +258,17 @@ export default function SavedRecipeRoute() {
         <Text selectable style={[typography.heading, { color: colors.text }]}>
           {recipe.title ?? 'Untitled recipe link'}
         </Text>
+        <Button
+          label="Open Original Video"
+          fullWidth
+          variant="accent"
+          onPress={() => {
+            void openOriginalVideo()
+          }}
+        />
+        <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+          Recipe Dost saves the link and recipe card, not the video file.
+        </Text>
         <View style={{ gap: spacing.xs }}>
           <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
             Platform
@@ -253,6 +277,11 @@ export default function SavedRecipeRoute() {
             {getPlatformLabel(platform)}
           </Text>
         </View>
+        {needsAccuracyContext ? (
+          <Text selectable style={[typography.caption, { color: colors.warning }]}>
+            Add or paste the caption for better AI accuracy.
+          </Text>
+        ) : null}
         <View style={{ gap: spacing.xs }}>
           <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
             Source link
@@ -289,7 +318,9 @@ export default function SavedRecipeRoute() {
             AI uses your saved details
           </Text>
           <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-            Captions and notes become ingredients, steps, and a grocery list.
+            For best accuracy, paste the recipe caption or ingredients before
+            generating. If only the source link exists, Recipe Dost can try, but
+            confidence should stay low.
           </Text>
         </View>
         <Button

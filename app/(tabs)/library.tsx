@@ -16,9 +16,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { FlatList, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-type StatusFilter = 'all' | 'recipe_cards' | 'saved_links'
-type PlatformFilter =
-  | 'all'
+type ContentFilter =
+  | 'recipe_cards'
+  | 'saved_links'
+  | 'grocery'
   | 'instagram'
   | 'tiktok'
   | 'youtube'
@@ -26,13 +27,13 @@ type PlatformFilter =
   | 'other'
 type SortMode = 'newest' | 'oldest'
 
-const statusFilters: { label: string; value: StatusFilter }[] = [
+type ContentChip = ContentFilter | 'all'
+
+const contentFilters: { label: string; value: ContentChip }[] = [
   { label: 'All', value: 'all' },
   { label: 'AI Cards', value: 'recipe_cards' },
   { label: 'Saved Links', value: 'saved_links' },
-]
-
-const platformFilters: { label: string; value: PlatformFilter }[] = [
+  { label: 'Grocery', value: 'grocery' },
   { label: 'Instagram', value: 'instagram' },
   { label: 'TikTok', value: 'tiktok' },
   { label: 'YouTube', value: 'youtube' },
@@ -51,8 +52,7 @@ export default function LibraryRoute() {
   const { user } = useAuth()
   const { track } = usePostHog()
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [platformFilter, setPlatformFilter] = useState<PlatformFilter>('all')
+  const [selectedFilters, setSelectedFilters] = useState<ContentFilter[]>([])
   const [sortMode, setSortMode] = useState<SortMode>('newest')
   const didTrackView = useRef(false)
   const didTrackSearch = useRef(false)
@@ -67,11 +67,10 @@ export default function LibraryRoute() {
       getFilteredLibraryItems({
         items: libraryItems,
         query: searchQuery,
-        statusFilter,
-        platformFilter,
+        selectedFilters,
         sortMode,
       }),
-    [libraryItems, platformFilter, searchQuery, sortMode, statusFilter]
+    [libraryItems, searchQuery, selectedFilters, sortMode]
   )
   const hasQuery = searchQuery.trim().length > 0
 
@@ -83,11 +82,11 @@ export default function LibraryRoute() {
     didTrackView.current = true
     track('library_viewed', {
       result_count: libraryQuery.data.length,
-      filter_status: statusFilter,
-      filter_platform: platformFilter,
+      selected_filter_count: selectedFilters.length,
+      selected_filters: selectedFilters.join(','),
       has_query: false,
     })
-  }, [libraryQuery.data, platformFilter, statusFilter, track])
+  }, [libraryQuery.data, selectedFilters, track])
 
   useEffect(() => {
     if (!hasQuery || didTrackSearch.current) {
@@ -97,23 +96,21 @@ export default function LibraryRoute() {
     didTrackSearch.current = true
     track('library_search_used', {
       result_count: filteredItems.length,
-      filter_status: statusFilter,
-      filter_platform: platformFilter,
+      selected_filter_count: selectedFilters.length,
+      selected_filters: selectedFilters.join(','),
       has_query: true,
     })
-  }, [filteredItems.length, hasQuery, platformFilter, statusFilter, track])
+  }, [filteredItems.length, hasQuery, selectedFilters, track])
 
   const trackFilterChange = ({
-    nextStatusFilter = statusFilter,
-    nextPlatformFilter = platformFilter,
+    nextFilters = selectedFilters,
   }: {
-    nextStatusFilter?: StatusFilter
-    nextPlatformFilter?: PlatformFilter
+    nextFilters?: ContentFilter[]
   }) => {
     track('library_filter_changed', {
       result_count: filteredItems.length,
-      filter_status: nextStatusFilter,
-      filter_platform: nextPlatformFilter,
+      selected_filter_count: nextFilters.length,
+      selected_filters: nextFilters.join(','),
       has_query: hasQuery,
     })
   }
@@ -144,7 +141,7 @@ export default function LibraryRoute() {
           flexGrow: 1,
           gap: spacing.md,
           paddingHorizontal: spacing.xl,
-          paddingTop: spacing.lg,
+          paddingTop: insets.top + spacing.md,
           paddingBottom: 124 + insets.bottom,
         }}
         refreshControl={
@@ -158,18 +155,20 @@ export default function LibraryRoute() {
         ListHeaderComponent={
           <LibraryHeader
             searchQuery={searchQuery}
-            statusFilter={statusFilter}
-            platformFilter={platformFilter}
+            selectedFilters={selectedFilters}
             sortMode={sortMode}
             resultCount={filteredItems.length}
             onSearchChange={setSearchQuery}
-            onStatusFilterChange={(nextStatusFilter) => {
-              setStatusFilter(nextStatusFilter)
-              trackFilterChange({ nextStatusFilter })
-            }}
-            onPlatformFilterChange={(nextPlatformFilter) => {
-              setPlatformFilter(nextPlatformFilter)
-              trackFilterChange({ nextPlatformFilter })
+            onContentFilterToggle={(filter) => {
+              const nextFilters =
+                filter === 'all'
+                  ? []
+                  : selectedFilters.includes(filter)
+                    ? selectedFilters.filter((item) => item !== filter)
+                    : [...selectedFilters, filter]
+
+              setSelectedFilters(nextFilters)
+              trackFilterChange({ nextFilters })
             }}
             onSortModeChange={(nextSortMode) => {
               setSortMode(nextSortMode)
@@ -217,24 +216,20 @@ export default function LibraryRoute() {
 
 function LibraryHeader({
   searchQuery,
-  statusFilter,
-  platformFilter,
+  selectedFilters,
   sortMode,
   resultCount,
   onSearchChange,
-  onStatusFilterChange,
-  onPlatformFilterChange,
+  onContentFilterToggle,
   onSortModeChange,
   onSaveRecipe,
 }: {
   searchQuery: string
-  statusFilter: StatusFilter
-  platformFilter: PlatformFilter
+  selectedFilters: ContentFilter[]
   sortMode: SortMode
   resultCount: number
   onSearchChange: (value: string) => void
-  onStatusFilterChange: (value: StatusFilter) => void
-  onPlatformFilterChange: (value: PlatformFilter) => void
+  onContentFilterToggle: (value: ContentChip) => void
   onSortModeChange: (value: SortMode) => void
   onSaveRecipe: () => void
 }) {
@@ -267,20 +262,16 @@ function LibraryHeader({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ gap: spacing.sm }}
       >
-        {statusFilters.map((filter) => (
+        {contentFilters.map((filter) => (
           <FilterChip
             key={filter.value}
             label={filter.label}
-            selected={statusFilter === filter.value}
-            onPress={() => onStatusFilterChange(filter.value)}
-          />
-        ))}
-        {platformFilters.map((filter) => (
-          <FilterChip
-            key={filter.value}
-            label={filter.label}
-            selected={platformFilter === filter.value}
-            onPress={() => onPlatformFilterChange(filter.value)}
+            selected={
+              filter.value === 'all'
+                ? selectedFilters.length === 0
+                : selectedFilters.includes(filter.value)
+            }
+            onPress={() => onContentFilterToggle(filter.value)}
           />
         ))}
         {sortModes.map((mode) => (
@@ -350,31 +341,21 @@ function LibraryEmptyState({
 function getFilteredLibraryItems({
   items,
   query,
-  statusFilter,
-  platformFilter,
+  selectedFilters,
   sortMode,
 }: {
   items: RecipeLibraryItem[]
   query: string
-  statusFilter: StatusFilter
-  platformFilter: PlatformFilter
+  selectedFilters: ContentFilter[]
   sortMode: SortMode
 }) {
   const normalizedQuery = query.trim().toLowerCase()
 
   return [...items]
     .filter((item) => {
-      if (statusFilter === 'recipe_cards' && !item.latest_card) {
-        return false
-      }
-
-      if (statusFilter === 'saved_links' && item.latest_card) {
-        return false
-      }
-
       if (
-        platformFilter !== 'all' &&
-        getRecipePlatform(item.platform) !== platformFilter
+        selectedFilters.length > 0 &&
+        !selectedFilters.some((filter) => itemMatchesFilter(item, filter))
       ) {
         return false
       }
@@ -403,6 +384,23 @@ function getFilteredLibraryItems({
         ? secondTime - firstTime
         : firstTime - secondTime
     })
+}
+
+function itemMatchesFilter(item: RecipeLibraryItem, filter: ContentFilter) {
+  switch (filter) {
+    case 'recipe_cards':
+      return Boolean(item.latest_card)
+    case 'saved_links':
+      return !item.latest_card
+    case 'grocery':
+      return Boolean(item.latest_card)
+    case 'instagram':
+    case 'tiktok':
+    case 'youtube':
+    case 'facebook':
+    case 'other':
+      return getRecipePlatform(item.platform) === filter
+  }
 }
 
 function getLibrarySubtitle(item: RecipeLibraryItem) {

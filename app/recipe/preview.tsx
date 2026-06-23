@@ -296,15 +296,18 @@ export default function RecipePreviewRoute() {
       </Card>
       <Card>
         <TextArea
-          label="Paste caption"
+          label="Paste caption for better accuracy"
           onChangeText={setPastedCaption}
           placeholder="Paste the recipe caption here if available."
           value={pastedCaption}
         />
+        <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+          Captions usually give AI the best ingredient and step clues.
+        </Text>
       </Card>
       <Card>
         <TextArea
-          label="Manual ingredients"
+          label="Add visible ingredients if the caption is missing"
           onChangeText={setManualIngredients}
           placeholder="Example: chicken, pasta, cream, garlic..."
           value={manualIngredients}
