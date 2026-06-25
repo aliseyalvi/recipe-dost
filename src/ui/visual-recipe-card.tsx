@@ -19,6 +19,7 @@ type Props = {
   hasGroceryList?: boolean
   hasNotes?: boolean
   confidence?: string | null
+  progress?: number | null
   createdAt: string
   onPress: () => void
 }
@@ -33,6 +34,7 @@ export function VisualRecipeCard({
   hasGroceryList = false,
   hasNotes = false,
   confidence,
+  progress,
   createdAt,
   onPress,
 }: Props) {
@@ -100,6 +102,9 @@ export function VisualRecipeCard({
           {hasGroceryList ? <MiniPill label="Grocery" /> : null}
           {hasNotes ? <MiniPill label="Notes" /> : null}
           {confidence ? <MiniPill label={confidence} /> : null}
+          {status === 'processing' && typeof progress === 'number' ? (
+            <MiniPill label={`${progress}%`} />
+          ) : null}
         </View>
         <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
           {formatDate(createdAt)}

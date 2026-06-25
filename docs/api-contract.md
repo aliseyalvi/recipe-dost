@@ -246,6 +246,61 @@ Media and thumbnail boundary:
 - Edge Functions do not fetch video files or extract frames.
 - A future worker may process only user-owned/authorized temporary uploads, store a static thumbnail, and delete raw video after analysis.
 
+### POST /functions/v1/create-media-job
+
+Purpose:
+Create a server-owned media processing job for a saved recipe link and synchronously attempt to notify the configured Cloud Run worker. The Edge Function does not download, upload, or analyze media.
+
+Input:
+
+```json
+{
+  "recipe_item_id": "optional uuid",
+  "source_url": "https://...",
+  "platform": "instagram | tiktok | youtube | facebook | other"
+}
+```
+
+Success:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "media_job_id": "uuid",
+    "status": "queued",
+    "progress": 0,
+    "worker_triggered": true
+  }
+}
+```
+
+Rules:
+
+- Requires an authenticated user JWT and `verify_jwt = true`.
+- Validates an HTTP/HTTPS URL and supported platform.
+- When `recipe_item_id` is supplied, verifies that the recipe belongs to the caller and that its source/platform match.
+- Inserts `media_jobs` and a `media_job_created` event with a server-only key.
+- Does not expose media-job insert/update permissions to the mobile client.
+- Does not fetch or download the source URL.
+- Does not use FFmpeg, Gemini, Storage, or a downloader.
+- Reads `MEDIA_WORKER_URL` and `MEDIA_WORKER_SECRET` only from Edge Function secrets.
+- When both worker secrets exist, awaits `POST {MEDIA_WORKER_URL}/process-job` for up to 8 seconds with `X-Worker-Secret` and the body `{ "media_job_id": "uuid" }`.
+- Records `worker_trigger_started` followed by `worker_trigger_success` or `worker_trigger_failed`.
+- Missing worker config records `worker_trigger_skipped` with boolean config-presence metadata.
+- Worker HTTP errors, timeouts, and fetch exceptions are recorded as safe event metadata and do not fail the already-created job.
+- `worker_triggered` is true only when the worker returns a 2xx response; otherwise it is false and the job remains queued for retry/debugging.
+- The worker secret is never stored in events or returned to the mobile client.
+
+Mobile helpers:
+
+- `createMediaJob(...)`
+- `getMediaJob(mediaJobId)`
+- `getLatestMediaJobForRecipe(recipeItemId)`
+- `updateSavedRecipeCaption(...)`
+
+Saved-recipe detail polls the latest active job every 6 seconds. Polling stops for `completed`, `failed`, and `needs_caption`.
+
 ## Android Share Intake
 
 Recipe Dost supports Android text/link share intents for public recipe URLs.

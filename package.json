@@ -50,7 +50,7 @@
     "typecheck": "tsc --noEmit",
     "doctor": "expo-doctor",
     "doctor:verbose": "expo-doctor --verbose",
-    "functions:check": "deno check --config supabase/functions/generate-card/deno.json supabase/functions/generate-card/index.ts && deno check --config supabase/functions/parse-url/deno.json supabase/functions/parse-url/index.ts",
+    "functions:check": "deno check --config supabase/functions/generate-card/deno.json supabase/functions/generate-card/index.ts && deno check --config supabase/functions/parse-url/deno.json supabase/functions/parse-url/index.ts && deno check --config supabase/functions/create-media-job/deno.json supabase/functions/create-media-job/index.ts",
     "functions:fmt": "deno fmt supabase/functions"
   },
   "private": true

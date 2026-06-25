@@ -1,5 +1,10 @@
 import { RecipePlatform } from '@/features/recipe-draft/types'
-import { RecipeLibraryItem, getRecipeLibrary } from '@/lib/api/recipes'
+import {
+  RecipeLibraryItem,
+  getRecipeLibrary,
+  isMediaJobActive,
+  isMediaJobAttentionRequired,
+} from '@/lib/api/recipes'
 import { getUsageSummary } from '@/lib/api/usage'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
@@ -13,7 +18,10 @@ import { FilterChip } from '@/ui/filter-chip'
 import { LoadingState } from '@/ui/loading-state'
 import { Screen } from '@/ui/screen'
 import { SectionHeader } from '@/ui/section-header'
-import { VisualRecipeCard } from '@/ui/visual-recipe-card'
+import {
+  VisualRecipeCard,
+  VisualRecipeStatus,
+} from '@/ui/visual-recipe-card'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -103,6 +111,13 @@ export default function HomeRoute() {
 
     if (recipe.latest_card) {
       router.push(`/recipe-card/${recipe.latest_card.id}`)
+      return
+    }
+
+    if (recipe.latest_media_job?.result_recipe_card_id) {
+      router.push(
+        `/recipe-card/${recipe.latest_media_job.result_recipe_card_id}`
+      )
       return
     }
 
@@ -254,14 +269,17 @@ export default function HomeRoute() {
                     recipe.title?.trim() ||
                     'Untitled recipe'
                   }
-                  subtitle={recipe.latest_card ? 'Recipe card' : 'Saved link'}
+                  subtitle={getHomeRecipeSubtitle(recipe)}
                   platform={getRecipePlatform(recipe.platform)}
-                  status={recipe.latest_card ? 'ai_card' : getSavedLinkStatus(recipe)}
-                  thumbnailUrl={recipe.thumbnail_url}
+                  status={getRecipeVisualStatus(recipe)}
+                  thumbnailUrl={
+                    recipe.latest_media_job?.thumbnail_url ?? recipe.thumbnail_url
+                  }
                   sourceUrl={recipe.source_url}
                   hasGroceryList={Boolean(recipe.latest_card)}
                   hasNotes={hasNotes(recipe)}
                   confidence={recipe.latest_card?.confidence}
+                  progress={recipe.latest_media_job?.progress}
                   createdAt={recipe.created_at}
                   onPress={() => openRecipe(recipe)}
                 />
@@ -413,6 +431,44 @@ function getRecipePlatform(platform: string | null): RecipePlatform {
 
 function getSavedLinkStatus(recipe: RecipeLibraryItem) {
   return recipe.metadata_status === 'failed' ? 'failed' : 'saved_link'
+}
+
+function getRecipeVisualStatus(
+  recipe: RecipeLibraryItem
+): VisualRecipeStatus {
+  if (recipe.latest_card) {
+    return 'ai_card'
+  }
+
+  if (isMediaJobActive(recipe.latest_media_job)) {
+    return 'processing'
+  }
+
+  if (isMediaJobAttentionRequired(recipe.latest_media_job)) {
+    return 'failed'
+  }
+
+  return getSavedLinkStatus(recipe)
+}
+
+function getHomeRecipeSubtitle(recipe: RecipeLibraryItem) {
+  if (recipe.latest_card) {
+    return 'Recipe card'
+  }
+
+  if (isMediaJobActive(recipe.latest_media_job)) {
+    return 'Video analysis queued'
+  }
+
+  if (recipe.latest_media_job?.status === 'needs_caption') {
+    return 'Caption needed'
+  }
+
+  if (recipe.latest_media_job?.status === 'failed') {
+    return 'Analysis failed'
+  }
+
+  return 'Saved link'
 }
 
 function hasNotes(recipe: RecipeLibraryItem) {

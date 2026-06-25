@@ -1,12 +1,17 @@
 import { getPlatformLabel, getReadableSource } from '@/features/recipe-draft/platform'
 import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { RecipePlatform } from '@/features/recipe-draft/types'
+import { MediaJobCard } from '@/features/media-jobs/media-job-card'
 import { UpgradePlaceholder } from '@/features/usage/upgrade-placeholder'
 import { UsagePill } from '@/features/usage/usage-limit-card'
 import {
   RecipeApiError,
+  createMediaJob,
   generateRecipeCard,
+  getLatestMediaJobForRecipe,
   getSavedRecipeItem,
+  isMediaJobActive,
+  updateSavedRecipeCaption,
 } from '@/lib/api/recipes'
 import { getUsageSummary } from '@/lib/api/usage'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
@@ -19,6 +24,7 @@ import { EmptyState } from '@/ui/empty-state'
 import { ErrorState } from '@/ui/error-state'
 import { LoadingState } from '@/ui/loading-state'
 import { Screen } from '@/ui/screen'
+import { TextArea } from '@/ui/text-area'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
@@ -32,9 +38,15 @@ export default function SavedRecipeRoute() {
   const recipeId = Array.isArray(id) ? id[0] : id
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationError, setGenerationError] = useState<Error | null>(null)
+  const [isCreatingMediaJob, setIsCreatingMediaJob] = useState(false)
+  const [mediaJobError, setMediaJobError] = useState<Error | null>(null)
+  const [isCaptionEditorOpen, setIsCaptionEditorOpen] = useState(false)
+  const [captionDraft, setCaptionDraft] = useState('')
+  const [isSavingCaption, setIsSavingCaption] = useState(false)
   const didTrackUsageSummary = useRef(false)
   const didTrackLimitReached = useRef(false)
   const didTrackAccuracyWarning = useRef(false)
+  const lastTrackedMediaJobStatus = useRef<string | null>(null)
   const recipeQuery = useQuery({
     enabled: Boolean(recipeId),
     queryKey: ['recipe-item', recipeId],
@@ -43,6 +55,13 @@ export default function SavedRecipeRoute() {
   const usageSummaryQuery = useQuery({
     queryKey: ['usage-summary', 'recipe-detail'],
     queryFn: getUsageSummary,
+  })
+  const mediaJobQuery = useQuery({
+    enabled: Boolean(recipeId),
+    queryKey: ['media-job', 'recipe', recipeId],
+    queryFn: () => getLatestMediaJobForRecipe(recipeId ?? ''),
+    refetchInterval: (query) =>
+      isMediaJobActive(query.state.data) ? 6000 : false,
   })
   const usageSummary = usageSummaryQuery.data
 
@@ -58,6 +77,28 @@ export default function SavedRecipeRoute() {
       limit: usageSummary.limits.recipeCards,
     })
   }, [track, usageSummary])
+
+  useEffect(() => {
+    setCaptionDraft(recipeQuery.data?.pasted_caption ?? '')
+  }, [recipeQuery.data?.pasted_caption])
+
+  useEffect(() => {
+    const mediaJob = mediaJobQuery.data
+
+    if (
+      !mediaJob ||
+      lastTrackedMediaJobStatus.current === mediaJob.status
+    ) {
+      return
+    }
+
+    lastTrackedMediaJobStatus.current = mediaJob.status
+    track('media_job_status_viewed', {
+      platform: getRecipePlatform(mediaJob.platform),
+      status: mediaJob.status,
+      progress: mediaJob.progress,
+    })
+  }, [mediaJobQuery.data, track])
 
   useEffect(() => {
     const recipe = recipeQuery.data
@@ -162,6 +203,7 @@ export default function SavedRecipeRoute() {
     hasManualIngredients
   )
   const needsAccuracyInput = sourceModeHint === 'unsupported_video_link'
+  const mediaJob = mediaJobQuery.data
 
   const openOriginalVideo = async () => {
     const canOpenUrl = await Linking.canOpenURL(recipe.source_url)
@@ -220,6 +262,87 @@ export default function SavedRecipeRoute() {
       })
     } finally {
       setIsGenerating(false)
+    }
+  }
+
+  const handleCreateMediaJob = async (source: 'new' | 'retry') => {
+    if (isCreatingMediaJob) {
+      return
+    }
+
+    setIsCreatingMediaJob(true)
+    setMediaJobError(null)
+
+    if (source === 'retry') {
+      track('media_job_retry_clicked', {
+        platform,
+        previous_status: mediaJob?.status ?? 'unknown',
+      })
+    }
+
+    try {
+      const createdJob = await createMediaJob({
+        recipeItemId: recipe.id,
+        sourceUrl: recipe.source_url,
+        platform,
+      })
+
+      track('media_job_created', {
+        platform,
+        status: createdJob.status,
+        source,
+      })
+      await mediaJobQuery.refetch()
+    } catch (caughtError) {
+      const nextError =
+        caughtError instanceof Error
+          ? caughtError
+          : new Error('Could not queue video analysis. Please try again.')
+
+      setMediaJobError(nextError)
+      track('media_job_create_failed', {
+        platform,
+        source,
+        error_code:
+          caughtError instanceof RecipeApiError
+            ? caughtError.code
+            : 'media_job_failed',
+      })
+    } finally {
+      setIsCreatingMediaJob(false)
+    }
+  }
+
+  const handleSaveCaptionAndRetry = async () => {
+    const nextCaption = captionDraft.trim()
+
+    if (!nextCaption || isSavingCaption) {
+      return
+    }
+
+    setIsSavingCaption(true)
+    setMediaJobError(null)
+
+    try {
+      await updateSavedRecipeCaption({
+        recipeItemId: recipe.id,
+        pastedCaption: nextCaption,
+      })
+      await recipeQuery.refetch()
+      setIsCaptionEditorOpen(false)
+      track('media_job_caption_added', {
+        platform,
+        previous_status: mediaJob?.status ?? 'unknown',
+      })
+      await handleCreateMediaJob('retry')
+    } catch (caughtError) {
+      setMediaJobError(
+        caughtError instanceof Error
+          ? caughtError
+          : new Error('Could not save the caption. Please try again.')
+      )
+    } finally {
+      setIsSavingCaption(false)
     }
   }
 
@@ -348,6 +471,113 @@ export default function SavedRecipeRoute() {
             more input.
           </Text>
         </Card>
+      ) : null}
+
+      {mediaJobQuery.isLoading ? (
+        <LoadingState message="Checking video analysis status..." />
+      ) : null}
+
+      {mediaJobQuery.error ? (
+        <ErrorState
+          title="Could not load video analysis"
+          message={mediaJobQuery.error.message}
+          retryLabel="Retry"
+          onRetry={() => {
+            void mediaJobQuery.refetch()
+          }}
+        />
+      ) : null}
+
+      {mediaJob ? (
+        <MediaJobCard
+          job={mediaJob}
+          fallbackThumbnailUrl={recipe.thumbnail_url}
+          onOpenResult={
+            mediaJob.result_recipe_card_id
+              ? () => router.push(`/recipe-card/${mediaJob.result_recipe_card_id}`)
+              : undefined
+          }
+          onRetry={() => {
+            void handleCreateMediaJob('retry')
+          }}
+          onPasteCaption={() => {
+            setIsCaptionEditorOpen(true)
+            track('media_job_caption_requested', {
+              platform,
+              status: mediaJob.status,
+            })
+          }}
+        />
+      ) : !mediaJobQuery.isLoading && !mediaJobQuery.error ? (
+        <Card tone="warm">
+          <View style={{ gap: spacing.xs }}>
+            <Text selectable style={[typography.heading, { color: colors.text }]}>
+              Analyze the video
+            </Text>
+            <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+              Create a media job for future worker processing. This milestone only
+              queues the job and does not download or store the video.
+            </Text>
+          </View>
+          <Button
+            label="Analyze Video"
+            fullWidth
+            disabled={isCreatingMediaJob}
+            onPress={() => {
+              void handleCreateMediaJob('new')
+            }}
+          />
+        </Card>
+      ) : null}
+
+      {isCaptionEditorOpen ? (
+        <Card>
+          <Text selectable style={[typography.heading, { color: colors.text }]}>
+            Paste recipe caption
+          </Text>
+          <TextArea
+            label="Recipe caption"
+            placeholder="Paste the recipe caption or visible ingredients."
+            value={captionDraft}
+            onChangeText={setCaptionDraft}
+          />
+          <Button
+            label="Save Caption & Retry"
+            fullWidth
+            disabled={!captionDraft.trim() || isSavingCaption}
+            onPress={() => {
+              void handleSaveCaptionAndRetry()
+            }}
+          />
+          <Button
+            label="Cancel"
+            fullWidth
+            variant="secondary"
+            disabled={isSavingCaption}
+            onPress={() => setIsCaptionEditorOpen(false)}
+          />
+        </Card>
+      ) : null}
+
+      {isCreatingMediaJob || isSavingCaption ? (
+        <LoadingState
+          message={
+            isSavingCaption
+              ? 'Saving caption...'
+              : 'Queueing video analysis...'
+          }
+        />
+      ) : null}
+
+      {mediaJobError ? (
+        <ErrorState
+          title="Could not update video analysis"
+          message={mediaJobError.message}
+          retryLabel="Retry"
+          onRetry={() => {
+            void handleCreateMediaJob(mediaJob ? 'retry' : 'new')
+          }}
+        />
       ) : null}
 
       {usageSummary ? (

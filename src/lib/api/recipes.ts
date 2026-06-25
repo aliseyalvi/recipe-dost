@@ -47,6 +47,56 @@ export type AiSourceMode =
   | 'uploaded_video'
   | 'unsupported_video_link'
 
+export type MediaJobStatus =
+  | 'queued'
+  | 'resolving'
+  | 'downloading'
+  | 'validating'
+  | 'thumbnailing'
+  | 'uploading_to_ai'
+  | 'analyzing'
+  | 'saving_result'
+  | 'completed'
+  | 'failed'
+  | 'needs_caption'
+
+type MediaJobRow = Pick<
+  Database['public']['Tables']['media_jobs']['Row'],
+  | 'id'
+  | 'recipe_item_id'
+  | 'platform'
+  | 'status'
+  | 'source_mode'
+  | 'progress'
+  | 'error_code'
+  | 'error_message'
+  | 'thumbnail_url'
+  | 'result_recipe_card_id'
+  | 'created_at'
+  | 'updated_at'
+>
+
+export type MediaJob = Omit<MediaJobRow, 'status'> & {
+  status: MediaJobStatus
+}
+
+type CreateMediaJobResponse =
+  | {
+      ok: true
+      data: {
+        media_job_id: string
+        status: MediaJobStatus
+        progress: number
+      }
+    }
+  | {
+      ok: false
+      error: {
+        code: string
+        message: string
+      }
+    }
+
 type GenerateRecipeCardResponse =
   | {
       ok: true
@@ -233,6 +283,7 @@ export type RecipeLibraryCard = Pick<
 
 export type RecipeLibraryItem = RecipeLibraryItemRow & {
   latest_card: RecipeLibraryCard | null
+  latest_media_job: MediaJob | null
 }
 
 export type RecipeLibraryParams = {
@@ -333,6 +384,152 @@ export async function generateRecipeCard(recipeId: string) {
   }
 
   return data
+}
+
+export async function createMediaJob({
+  recipeItemId,
+  sourceUrl,
+  platform,
+}: {
+  recipeItemId?: string
+  sourceUrl: string
+  platform: RecipePlatform
+}) {
+  const { data, error } =
+    await supabase.functions.invoke<CreateMediaJobResponse>(
+      'create-media-job',
+      {
+        body: {
+          recipe_item_id: recipeItemId,
+          source_url: sourceUrl,
+          platform,
+        },
+      }
+    )
+
+  if (error) {
+    const functionError = await getFunctionInvokeErrorDetails(error)
+    const responseError = getFunctionResponseError(functionError.functionBody)
+
+    throw new RecipeApiError({
+      code: responseError?.code ?? functionError.code,
+      message:
+        responseError?.message ??
+        'Could not queue video analysis. Please try again.',
+      status: functionError.status,
+      causeName: functionError.name ?? undefined,
+      functionBody: functionError.functionBody,
+    })
+  }
+
+  if (!data) {
+    throw new RecipeApiError({
+      code: 'unexpected_media_job_error',
+      message: 'Could not queue video analysis. Please try again.',
+    })
+  }
+
+  if (!data.ok) {
+    throw new RecipeApiError({
+      code: data.error.code,
+      message: data.error.message,
+      functionBody: data,
+    })
+  }
+
+  return data.data
+}
+
+export async function getMediaJob(mediaJobId: string) {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    throw new Error('Could not load video analysis status.')
+  }
+
+  const { data, error } = await supabase
+    .from('media_jobs')
+    .select(MEDIA_JOB_SELECT)
+    .eq('id', mediaJobId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (error) {
+    throw new Error('Could not load video analysis status.')
+  }
+
+  return normalizeMediaJob(data satisfies MediaJobRow)
+}
+
+export async function getLatestMediaJobForRecipe(recipeItemId: string) {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    throw new Error('Could not load video analysis status.')
+  }
+
+  const { data, error } = await supabase
+    .from('media_jobs')
+    .select(MEDIA_JOB_SELECT)
+    .eq('recipe_item_id', recipeItemId)
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error('Could not load video analysis status.')
+  }
+
+  return data ? normalizeMediaJob(data satisfies MediaJobRow) : null
+}
+
+export async function updateSavedRecipeCaption({
+  recipeItemId,
+  pastedCaption,
+}: {
+  recipeItemId: string
+  pastedCaption: string
+}) {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    throw new Error('Could not save the recipe caption.')
+  }
+
+  const { error } = await supabase
+    .from('recipe_items')
+    .update({
+      pasted_caption: pastedCaption.trim(),
+    })
+    .eq('id', recipeItemId)
+    .eq('user_id', user.id)
+
+  if (error) {
+    throw new Error('Could not save the recipe caption.')
+  }
+}
+
+export function isMediaJobActive(job: MediaJob | null | undefined) {
+  return Boolean(
+    job &&
+      job.status !== 'completed' &&
+      job.status !== 'failed' &&
+      job.status !== 'needs_caption'
+  )
+}
+
+export function isMediaJobAttentionRequired(job: MediaJob | null | undefined) {
+  return job?.status === 'failed' || job?.status === 'needs_caption'
 }
 
 export async function saveRecipeItem({
@@ -503,7 +700,15 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
     throw new Error('Could not load your recipe library.')
   }
 
+  const { data: mediaJobs } = await supabase
+    .from('media_jobs')
+    .select(MEDIA_JOB_SELECT)
+    .eq('user_id', user.id)
+    .in('recipe_item_id', recipeIds)
+    .order('created_at', { ascending: false })
+
   const latestCardByRecipeId = new Map<string, RecipeLibraryCard>()
+  const latestJobByRecipeId = new Map<string, MediaJob>()
 
   for (const card of recipeCards satisfies RecipeLibraryCard[]) {
     if (!latestCardByRecipeId.has(card.recipe_id)) {
@@ -511,10 +716,48 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
     }
   }
 
+  for (const row of (mediaJobs ?? []) as MediaJobRow[]) {
+    if (row.recipe_item_id && !latestJobByRecipeId.has(row.recipe_item_id)) {
+      latestJobByRecipeId.set(row.recipe_item_id, normalizeMediaJob(row))
+    }
+  }
+
   return items.map((item): RecipeLibraryItem => ({
     ...item,
     latest_card: latestCardByRecipeId.get(item.id) ?? null,
+    latest_media_job: latestJobByRecipeId.get(item.id) ?? null,
   }))
+}
+
+const MEDIA_JOB_SELECT =
+  'id, recipe_item_id, platform, status, source_mode, progress, error_code, error_message, thumbnail_url, result_recipe_card_id, created_at, updated_at'
+
+function normalizeMediaJob(row: MediaJobRow): MediaJob {
+  return {
+    ...row,
+    status: getMediaJobStatus(row.status),
+    progress: Math.min(100, Math.max(0, row.progress)),
+  }
+}
+
+function getMediaJobStatus(value: string): MediaJobStatus {
+  if (
+    value === 'queued' ||
+    value === 'resolving' ||
+    value === 'downloading' ||
+    value === 'validating' ||
+    value === 'thumbnailing' ||
+    value === 'uploading_to_ai' ||
+    value === 'analyzing' ||
+    value === 'saving_result' ||
+    value === 'completed' ||
+    value === 'failed' ||
+    value === 'needs_caption'
+  ) {
+    return value
+  }
+
+  return 'failed'
 }
 
 function normalizeRecipeCard(row: RecipeCardRow): RecipeCard {

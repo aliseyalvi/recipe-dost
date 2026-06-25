@@ -1322,3 +1322,37 @@ Do not send source URLs, notes, captions, ingredients, instructions, generated r
 - Missing-info and confidence remain visible.
 
 No upload UI, video downloader, video backup, private-content access, medical/diet claims, auth, or paywall work is included in M14F.
+
+## M14G-1 Media Job Foundation
+
+### Saved Recipe Detail
+
+- Shows `Analyze Video` when no media job exists.
+- Creating a job shows a loading state and then a reusable processing card.
+- The processing card includes:
+  - thumbnail or Recipe Dost fallback
+  - status label
+  - progress percent and progress bar
+  - current status/error message
+- Active jobs poll every 6 seconds.
+- Queued copy clearly says the app is waiting for a worker and no video has been downloaded.
+- Completed jobs can open `result_recipe_card_id`.
+- Failed and `needs_caption` jobs show:
+  - `Retry Analysis`
+  - `Paste Caption`
+- Caption recovery saves the caption to the existing recipe item and creates a new queued job.
+- Loading, error, retry, empty/no-job, active, completed, failed, and needs-caption states are handled.
+
+### Home And Library
+
+- Existing generated recipe cards remain the highest-priority visual state.
+- Saved links with active jobs show `Processing` and the latest progress.
+- Failed or needs-caption jobs use the failed visual state and open saved-recipe detail for recovery.
+- Normal refresh behavior fetches the latest job per recipe; continuous polling is limited to saved-recipe detail.
+
+### Analytics
+
+- Tracks media-job creation, creation failure, status changes, retry, caption request, and caption-added recovery.
+- Never sends source URLs, captions, ingredient text, error messages, raw media paths, or generated recipe content.
+
+M14G-1 does not implement a downloader, worker, FFmpeg, raw media Storage, Gemini media upload, RevenueCat, or new auth UI.

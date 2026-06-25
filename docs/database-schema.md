@@ -117,6 +117,55 @@ Every user-owned table must include user_id uuid references auth.users(id).
 - error_code text
 - fetched_at timestamptz
 
+### media_jobs
+- id uuid primary key
+- user_id uuid references auth.users(id)
+- recipe_item_id uuid references recipe_items(id)
+- source_url text not null
+- platform text not null
+- status text
+- source_mode text
+- resolver_provider text
+- ai_provider text
+- ai_model text
+- progress integer
+- error_code text
+- error_message text
+- thumbnail_url text
+- raw_media_storage_path text
+- gemini_file_name text
+- media_duration_seconds integer
+- media_size_bytes bigint
+- result_recipe_card_id uuid references recipe_cards(id)
+- started_at timestamptz
+- completed_at timestamptz
+- expires_at timestamptz
+- created_at timestamptz
+- updated_at timestamptz
+
+Status values:
+- queued
+- resolving
+- downloading
+- validating
+- thumbnailing
+- uploading_to_ai
+- analyzing
+- saving_result
+- completed
+- failed
+- needs_caption
+
+`progress` is constrained to `0-100`.
+
+### media_job_events
+- id uuid primary key
+- media_job_id uuid references media_jobs(id)
+- event_type text not null
+- message text
+- metadata jsonb
+- created_at timestamptz
+
 ### support_tickets
 - id uuid primary key
 - user_id uuid references auth.users(id)
@@ -142,6 +191,18 @@ Service role can:
 - update usage counters
 - insert metadata logs
 - support account deletion
+- create and update media jobs and media job events
+
+## M14G-1 Media Job Security
+
+- `media_jobs` and `media_job_events` have RLS enabled.
+- Authenticated users receive Data API `SELECT` grants only.
+- Users can select only their own jobs.
+- Users can select events only when the parent job belongs to them.
+- Mobile clients cannot insert or update media job rows directly.
+- `create-media-job` verifies the user JWT and recipe ownership with a caller-scoped client, then inserts the queued job with a server-only key.
+- Future workers use a server/service role to update status and append events.
+- No raw video is stored in M14G-1. Storage path and Gemini file columns are nullable future-worker placeholders.
 
 ## Indexes
 Add indexes on:

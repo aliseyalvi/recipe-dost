@@ -135,6 +135,137 @@ export type Database = {
         }
         Relationships: []
       }
+      media_job_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          media_job_id: string
+          message: string | null
+          metadata: Json
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          media_job_id: string
+          message?: string | null
+          metadata?: Json
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          media_job_id?: string
+          message?: string | null
+          metadata?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_job_events_media_job_id_fkey"
+            columns: ["media_job_id"]
+            isOneToOne: false
+            referencedRelation: "media_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_jobs: {
+        Row: {
+          ai_model: string | null
+          ai_provider: string | null
+          completed_at: string | null
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          expires_at: string
+          gemini_file_name: string | null
+          id: string
+          media_duration_seconds: number | null
+          media_size_bytes: number | null
+          platform: string
+          progress: number
+          raw_media_storage_path: string | null
+          recipe_item_id: string | null
+          resolver_provider: string | null
+          result_recipe_card_id: string | null
+          source_mode: string
+          source_url: string
+          started_at: string | null
+          status: string
+          thumbnail_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_model?: string | null
+          ai_provider?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          expires_at?: string
+          gemini_file_name?: string | null
+          id?: string
+          media_duration_seconds?: number | null
+          media_size_bytes?: number | null
+          platform: string
+          progress?: number
+          raw_media_storage_path?: string | null
+          recipe_item_id?: string | null
+          resolver_provider?: string | null
+          result_recipe_card_id?: string | null
+          source_mode?: string
+          source_url: string
+          started_at?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_model?: string | null
+          ai_provider?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          expires_at?: string
+          gemini_file_name?: string | null
+          id?: string
+          media_duration_seconds?: number | null
+          media_size_bytes?: number | null
+          platform?: string
+          progress?: number
+          raw_media_storage_path?: string | null
+          recipe_item_id?: string | null
+          resolver_provider?: string | null
+          result_recipe_card_id?: string | null
+          source_mode?: string
+          source_url?: string
+          started_at?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_jobs_recipe_item_id_user_id_fkey"
+            columns: ["recipe_item_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "recipe_items"
+            referencedColumns: ["id", "user_id"]
+          },
+          {
+            foreignKeyName: "media_jobs_result_recipe_card_id_user_id_fkey"
+            columns: ["result_recipe_card_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "recipe_cards"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
+      }
       metadata_fetch_logs: {
         Row: {
           error_code: string | null

@@ -45,8 +45,8 @@
     "semantic_hash": ""
   },
   "app/(tabs)/home.tsx": {
-    "mtime": 1782146654.1985338,
-    "ast_hash": "f34c6093401b68ae0a74e899ac7eed13",
+    "mtime": 1782361687.0930173,
+    "ast_hash": "2d0d66bab93bbdd3bec9a7e0432dacab",
     "semantic_hash": ""
   },
   "app/(tabs)/index.tsx": {
@@ -55,8 +55,8 @@
     "semantic_hash": "0bfc61821c23777c95c990e1a44ff1a1"
   },
   "app/(tabs)/library.tsx": {
-    "mtime": 1782146659.3770769,
-    "ast_hash": "0f5ee82a8a7d80ab5771b8bdcaf0ce38",
+    "mtime": 1782361687.304241,
+    "ast_hash": "17c76fb8e130c0175dc93fd28c5354eb",
     "semantic_hash": ""
   },
   "app/(tabs)/settings.tsx": {
@@ -95,8 +95,8 @@
     "semantic_hash": ""
   },
   "app/recipe/[id].tsx": {
-    "mtime": 1782274180.0564072,
-    "ast_hash": "2b5bd37880ad9dff445eaeddc54c3815",
+    "mtime": 1782361644.8037827,
+    "ast_hash": "b0606810d878ca6301bc4e282e02db0b",
     "semantic_hash": ""
   },
   "app/recipe/preview.tsx": {
@@ -135,9 +135,9 @@
     "semantic_hash": "28a40de9e008207bf40bb5e9e0d37695"
   },
   "package.json": {
-    "mtime": 1782046484.955783,
-    "ast_hash": "966cf096826eb8ed07177574f5f20217",
-    "semantic_hash": "966cf096826eb8ed07177574f5f20217"
+    "mtime": 1782361440.8919368,
+    "ast_hash": "85feeb170788e9533d4a5ea0a95f7ed8",
+    "semantic_hash": ""
   },
   "skills-lock.json": {
     "mtime": 1781970839.6972704,
@@ -285,8 +285,8 @@
     "semantic_hash": "f582c09c320bde8371bd999feab5a632"
   },
   "src/lib/api/recipes.ts": {
-    "mtime": 1782274119.1286867,
-    "ast_hash": "b396ec7a0b99d0f692e2e65c68199a11",
+    "mtime": 1782361554.159095,
+    "ast_hash": "4410876d0ca87419d0ac859c0ba335f3",
     "semantic_hash": ""
   },
   "src/lib/api/usage.ts": {
@@ -345,9 +345,9 @@
     "semantic_hash": "8554bce76ca644acae1bef628e2e0d9e"
   },
   "src/types/supabase.ts": {
-    "mtime": 1782026975.323252,
-    "ast_hash": "d5a5c6af39bd2e232f7adffcc5c305f8",
-    "semantic_hash": "d5a5c6af39bd2e232f7adffcc5c305f8"
+    "mtime": 1782361813.5011644,
+    "ast_hash": "8d8f7e7b1fad634ae4716cb1e3ede271",
+    "semantic_hash": ""
   },
   "src/ui/app-badge.tsx": {
     "mtime": 1782107795.0104673,
@@ -415,8 +415,8 @@
     "semantic_hash": "f00bc76f3a89f3a12e36328e1a0ee1b7"
   },
   "src/ui/visual-recipe-card.tsx": {
-    "mtime": 1782146676.3209078,
-    "ast_hash": "55260aa3499aa671e8f7da3940691e7e",
+    "mtime": 1782361686.8776953,
+    "ast_hash": "54cca4edfe48cfac841dca3777a41b65",
     "semantic_hash": ""
   },
   "supabase/.temp/linked-project.json": {
@@ -640,18 +640,18 @@
     "semantic_hash": ""
   },
   "docs/api-contract.md": {
-    "mtime": 1782296068.2915072,
-    "ast_hash": "96170eb747dc41a7e57ad2d2485ae05f",
+    "mtime": 1782361751.4871883,
+    "ast_hash": "0045ab1bae8fe63cd35493c53a3b308b",
     "semantic_hash": ""
   },
   "docs/database-schema.md": {
-    "mtime": 1782026263.1989553,
-    "ast_hash": "6261b5dac07d9c4ac92161cc046b839b",
+    "mtime": 1782361751.2702508,
+    "ast_hash": "c241b5024438cb8dc0dc9a69d938e98e",
     "semantic_hash": ""
   },
   "docs/decision-log.md": {
-    "mtime": 1782296068.7168016,
-    "ast_hash": "83ad458042d4cb0cd5270b40241af9e6",
+    "mtime": 1782361751.907057,
+    "ast_hash": "b7377c15f39d91f999736c1d7f8ab5ac",
     "semantic_hash": ""
   },
   "docs/launch-checklist.md": {
@@ -670,8 +670,8 @@
     "semantic_hash": ""
   },
   "docs/screen-spec.md": {
-    "mtime": 1782296068.4975808,
-    "ast_hash": "a54bfb6057acb7ff130d2170f3893380",
+    "mtime": 1782361751.6993265,
+    "ast_hash": "7218776e101ffa999128ab4f5a3fb3e1",
     "semantic_hash": ""
   },
   "posthog-setup-report.md": {
@@ -742,6 +742,26 @@
   "docs/design-reference/recipe-dost-settings.png": {
     "mtime": 1782108960.0,
     "ast_hash": "b37dc877de3b202782c0cf19441e60fd",
+    "semantic_hash": ""
+  },
+  "src/features/media-jobs/media-job-card.tsx": {
+    "mtime": 1782361592.8143427,
+    "ast_hash": "eddb4df0bc0607641d774cc3318861ae",
+    "semantic_hash": ""
+  },
+  "supabase/functions/create-media-job/deno.json": {
+    "mtime": 1782361440.231724,
+    "ast_hash": "c1250a55f68468cbdf156e4e765d87ce",
+    "semantic_hash": ""
+  },
+  "supabase/functions/create-media-job/index.ts": {
+    "mtime": 1782361440.4525552,
+    "ast_hash": "cf4137fc400071a658c04c53a93ed55f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260625042032_media_job_foundation.sql": {
+    "mtime": 1782361828.0152688,
+    "ast_hash": "ef152f4a56c48dbd56e2d75b63a6d0ef",
     "semantic_hash": ""
   }
 }

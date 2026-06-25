@@ -140,3 +140,14 @@
 - Provider prompts and server guardrails prevent URL/platform-only inputs from producing a confident specific recipe.
 - Future user-owned/authorized video support is deferred to a temporary Supabase Storage upload plus media worker or Gemini Files API flow that deletes raw video after analysis.
 - Video-frame thumbnail extraction is deferred to that worker; Edge Functions continue using derived YouTube thumbnails, safe Open Graph image URLs, or visual fallbacks and never fetch video files.
+- Milestone M14G-1 Media Job Foundation added `media_jobs` and `media_job_events` with server-controlled writes and user-owned read policies.
+- Supabase Edge Functions create media jobs but do not process, download, transcode, thumbnail, upload, or analyze video.
+- The worker/downloader is not implemented yet; without `MEDIA_WORKER_URL`, new jobs remain safely queued.
+- Raw media is not stored in M14G-1. Storage path, Gemini file, duration, and size columns are future-worker placeholders only.
+- Media jobs support a future Cloud Run media worker that receives only a job ID, uses server credentials, writes progress/events, and deletes temporary authorized media after processing.
+- Saved-recipe detail polls active media jobs every 6 seconds and stops on completed, failed, or needs-caption states.
+- Home and Library show latest processing state through existing visual recipe cards without changing the save or AI generation flows.
+- M14G-2 hardened `create-media-job` worker triggering with an awaited 8-second Cloud Run request to `/process-job` using the server-only `MEDIA_WORKER_SECRET`.
+- Media job creation now records `media_job_created`, worker trigger start, success, failure, timeout, or skipped-config events so queued jobs are debuggable from `media_job_events`.
+- Worker configuration or invocation failures do not fail the mobile request after a job is created; the response reports `worker_triggered: false` and leaves the job queued.
+- No video download, Gemini call, FFmpeg, yt-dlp, Apify, auth, paywall, or mobile behavior changes were added in this worker-trigger reliability patch.
