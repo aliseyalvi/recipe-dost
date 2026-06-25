@@ -161,7 +161,8 @@ Rules:
   - `MAX_INPUT_CHARS`
 - Gemini env:
   - `GEMINI_API_KEY`
-  - `GEMINI_MODEL`, default `gemini-2.5-flash-lite`
+  - `GEMINI_MODEL`, default `gemini-3.5-flash`
+  - `GEMINI_VIDEO_MODEL`, default to `GEMINI_MODEL`
 - OpenAI env:
   - `OPENAI_API_KEY`
   - `OPENAI_MODEL`, default `gpt-4o-mini`
@@ -180,12 +181,12 @@ Rules:
 - Require structured JSON output matching `docs/ai-prompt-contract.md`; invalid output returns `invalid_ai_output`.
 - Insert a `recipe_cards` row with provider-specific `model_used`, provider-specific `prompt_version`, token counts when available, and estimated cost `0`.
 - Provider prompt versions:
-  - mock: `mock-v1`
-  - gemini: `recipe-card-v1-gemini`
-  - openai: `recipe-card-v1-openai`
-  - openrouter: `recipe-card-v1-openrouter`
-  - kimi: `recipe-card-v1-kimi`
-  - anthropic: `recipe-card-v1-anthropic`
+  - mock: `mock-v2-source-aware`
+  - gemini: `recipe-card-v2-gemini-source-aware`
+  - openai: `recipe-card-v2-openai-source-aware`
+  - openrouter: `recipe-card-v2-openrouter-source-aware`
+  - kimi: `recipe-card-v2-kimi-source-aware`
+  - anthropic: `recipe-card-v2-anthropic-source-aware`
 - If an existing card exists for the same user, recipe, and provider prompt version, update it instead of creating duplicate tap-spam rows.
 - Free users can generate up to `FREE_RECIPE_CARD_LIMIT`, default `3`, enforced by counting the user's `recipe_cards` rows.
 - When the limit is reached, return `free_limit_reached` with message "You have used your free recipe cards." and usage `{ free_recipe_cards_remaining: 0, should_show_paywall: true }`.
@@ -202,6 +203,48 @@ Rules:
   - `grocery_list_json` may be an array of old strings or objects shaped like `{ "name_en": "string", "name_ur": "string", "quantity": "string" }`.
   - Urdu must be Urdu script, not Roman Urdu, for new provider output.
   - If caption, manual ingredients, and useful description are missing, set confidence low and include missing info telling the user to paste caption/ingredients and verify the original video.
+
+### M14F AI Source Accuracy
+
+Successful generation data also returns:
+
+```json
+{
+  "source_mode": "text_only | youtube_url | uploaded_video | unsupported_video_link",
+  "model_used": "actual provider model",
+  "missing_info": ["string"]
+}
+```
+
+Source-mode rules:
+
+- Valid public HTTPS YouTube links use `youtube_url`.
+- Gemini sends `youtube_url` recipes to the Gemini Interactions API as a video URI input, uses `GEMINI_VIDEO_MODEL`, keeps structured JSON output, and sets `store: false`.
+- Non-Gemini providers do not claim YouTube video analysis; they receive text fields only.
+- Instagram, TikTok, and Facebook links without caption/manual ingredients use `unsupported_video_link`.
+- Other inputs use `text_only`.
+- `uploaded_video` is a type and architecture placeholder only; `recipe_items` has no upload field in M14F.
+- `source_mode` is stored in the existing `recipe_cards.missing_info_json` object.
+
+New error:
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "insufficient_recipe_input",
+    "message": "Paste the caption or visible ingredients so AI can create an accurate recipe card."
+  }
+}
+```
+
+This error is returned before provider invocation when an unsupported social-video link has no title, description, note, caption, or manual ingredients.
+
+Media and thumbnail boundary:
+
+- `parse-url` may derive a public YouTube thumbnail URL and may retain a safe Open Graph image URL.
+- Edge Functions do not fetch video files or extract frames.
+- A future worker may process only user-owned/authorized temporary uploads, store a static thumbnail, and delete raw video after analysis.
 
 ## Android Share Intake
 

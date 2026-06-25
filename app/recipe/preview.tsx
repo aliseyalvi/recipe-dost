@@ -111,6 +111,10 @@ export default function RecipePreviewRoute() {
   const thumbnailUrl = isValidHttpUrl(draft.thumbnail_url)
     ? draft.thumbnail_url
     : null
+  const needsAccuracyInput =
+    isUnsupportedVideoPlatform(draft.platform) &&
+    !pastedCaption.trim() &&
+    !manualIngredients.trim()
 
   const saveDraft = async () => {
     if (!hasValidDraftUrl) {
@@ -286,15 +290,23 @@ export default function RecipePreviewRoute() {
         />
       ) : null}
 
-      <Card>
-        <TextArea
-          label="Your note"
-          onChangeText={setUserNote}
-          placeholder="Example: make it less spicy, good for dinner."
-          value={userNote}
-        />
-      </Card>
-      <Card>
+      {needsAccuracyInput ? (
+        <Card tone="muted">
+          <Text selectable style={[typography.heading, { color: colors.warning }]}>
+            Help AI identify the recipe
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.text }]}>
+            AI accuracy improves when you paste the caption or visible
+            ingredients.
+          </Text>
+          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+            Recipe Dost does not download or analyze Instagram, TikTok, or
+            Facebook videos from their links.
+          </Text>
+        </Card>
+      ) : null}
+
+      <Card tone="warm">
         <TextArea
           label="Paste caption for better accuracy"
           onChangeText={setPastedCaption}
@@ -305,12 +317,20 @@ export default function RecipePreviewRoute() {
           Captions usually give AI the best ingredient and step clues.
         </Text>
       </Card>
-      <Card>
+      <Card tone="warm">
         <TextArea
           label="Add visible ingredients if the caption is missing"
           onChangeText={setManualIngredients}
           placeholder="Example: chicken, pasta, cream, garlic..."
           value={manualIngredients}
+        />
+      </Card>
+      <Card>
+        <TextArea
+          label="Your note"
+          onChangeText={setUserNote}
+          placeholder="Example: make it less spicy, good for dinner."
+          value={userNote}
         />
       </Card>
 
@@ -389,4 +409,12 @@ export default function RecipePreviewRoute() {
 function sanitizeOptionalText(value: string) {
   const trimmedValue = value.trim()
   return trimmedValue.length > 0 ? trimmedValue : undefined
+}
+
+function isUnsupportedVideoPlatform(platform: string) {
+  return (
+    platform === 'instagram' ||
+    platform === 'tiktok' ||
+    platform === 'facebook'
+  )
 }

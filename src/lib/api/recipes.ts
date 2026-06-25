@@ -36,7 +36,16 @@ export type GeneratedRecipeCard = {
   recipe_id: string
   recipe_title: string
   confidence: 'high' | 'medium' | 'low'
+  source_mode?: AiSourceMode
+  model_used?: string
+  missing_info?: string[]
 }
+
+export type AiSourceMode =
+  | 'text_only'
+  | 'youtube_url'
+  | 'uploaded_video'
+  | 'unsupported_video_link'
 
 type GenerateRecipeCardResponse =
   | {
@@ -143,6 +152,7 @@ export type RecipeCard = Omit<
   | 'substitutions_json'
   | 'missing_info_json'
 > & {
+  source_mode?: AiSourceMode
   recipe_title_en?: string
   recipe_title_ur?: string
   short_summary_en?: string
@@ -512,6 +522,7 @@ function normalizeRecipeCard(row: RecipeCardRow): RecipeCard {
 
   return {
     ...row,
+    source_mode: localizedMeta.source_mode,
     recipe_title_en: localizedMeta.recipe_title_en ?? row.recipe_title ?? undefined,
     recipe_title_ur: localizedMeta.recipe_title_ur ?? undefined,
     short_summary_en: localizedMeta.short_summary_en ?? row.short_summary ?? undefined,
@@ -544,6 +555,7 @@ function getLocalizedRecipeMeta(value: Json) {
   const missingInfoUr = getStringArray(record?.missing_info_ur)
 
   return {
+    source_mode: getAiSourceMode(record?.source_mode),
     recipe_title_en: getString(record?.recipe_title_en),
     recipe_title_ur: getString(record?.recipe_title_ur),
     short_summary_en: getString(record?.short_summary_en),
@@ -555,6 +567,21 @@ function getLocalizedRecipeMeta(value: Json) {
     missing_info_en: missingInfoEn,
     missing_info_ur: missingInfoUr,
   }
+}
+
+function getAiSourceMode(value: unknown): AiSourceMode | undefined {
+  const sourceMode = getString(value)
+
+  if (
+    sourceMode === 'text_only' ||
+    sourceMode === 'youtube_url' ||
+    sourceMode === 'uploaded_video' ||
+    sourceMode === 'unsupported_video_link'
+  ) {
+    return sourceMode
+  }
+
+  return undefined
 }
 
 function normalizeRecipeGroceryList(row: RecipeGroceryListRow): RecipeGroceryList {

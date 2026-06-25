@@ -14,6 +14,7 @@ import {
 } from '@/features/recipe-draft/platform'
 import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import {
+  AiSourceMode,
   RecipeCard,
   GroceryItem,
   RecipeCardIngredient,
@@ -206,6 +207,9 @@ export default function RecipeCardResultRoute() {
           {sourcePlatform ? <PlatformBadge platform={sourcePlatform} /> : null}
           <AppBadge label="AI Card" tone="accent" />
           <AppBadge label={getConfidenceLabel(recipeCard.confidence)} />
+          {recipeCard.source_mode ? (
+            <AppBadge label={getSourceModeLabel(recipeCard.source_mode)} />
+          ) : null}
         </View>
         <AppHeader
           eyebrow="AI recipe card"
@@ -227,6 +231,29 @@ export default function RecipeCardResultRoute() {
           onChange={setScreenLanguage}
         />
       </Card>
+
+      {recipeCard.source_mode === 'unsupported_video_link' ? (
+        <Card tone="muted">
+          <Text selectable style={[typography.heading, { color: colors.warning }]}>
+            Low-confidence draft
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.text }]}>
+            This card was created without access to the social video. Verify the
+            ingredients and steps in the original video.
+          </Text>
+        </Card>
+      ) : null}
+
+      {canOpenSource ? (
+        <Button
+          label="Open Original Video"
+          fullWidth
+          variant="accent"
+          onPress={() => {
+            void openOriginalSource()
+          }}
+        />
+      ) : null}
 
       <Card tone="warm">
         <Text selectable style={[typography.heading, { color: colors.text }]}>
@@ -263,17 +290,6 @@ export default function RecipeCardResultRoute() {
       <SubstitutionsSection substitutions={recipeCard.substitutions} />
       <StorageSafetySection recipeCard={recipeCard} language={contentLanguage} />
       <MissingInfoSection recipeCard={recipeCard} language={contentLanguage} />
-
-      {canOpenSource ? (
-        <Button
-          label="Open Original Recipe"
-          fullWidth
-          variant="secondary"
-          onPress={() => {
-            void openOriginalSource()
-          }}
-        />
-      ) : null}
 
       <View style={{ gap: spacing.md }}>
         <Button
@@ -712,8 +728,22 @@ function getAnalyticsProperties(recipeCard: RecipeCard) {
   return {
     confidence: recipeCard.confidence,
     model_used: recipeCard.model_used,
+    source_mode: recipeCard.source_mode ?? 'legacy_unknown',
     has_grocery_list: recipeCard.grocery_items.length > 0,
     has_missing_info: recipeCard.missing_info.length > 0,
+  }
+}
+
+function getSourceModeLabel(sourceMode: AiSourceMode) {
+  switch (sourceMode) {
+    case 'youtube_url':
+      return 'YouTube video source'
+    case 'uploaded_video':
+      return 'Uploaded video source'
+    case 'unsupported_video_link':
+      return 'Link-only source'
+    case 'text_only':
+      return 'Text source'
   }
 }
 

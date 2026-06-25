@@ -1295,3 +1295,30 @@ Do not send source URLs, notes, captions, ingredients, instructions, generated r
 - Recipe result and Grocery detail use English, Urdu, or Both modes. Urdu mode uses RTL Urdu script only; older cards without Urdu script fall back gracefully and do not present Roman Urdu as Urdu script.
 - Existing old cards must not crash if bilingual fields are missing.
 - No WebView, autoplay, video download, deleted-video backup, private-folder scraping, auth, or RevenueCat/paywall behavior is added in M14E.
+
+## M14F AI Source Accuracy UX
+
+### Preview
+
+- Caption and visible-ingredient fields appear before the optional note.
+- Instagram, TikTok, and Facebook drafts without caption/manual ingredients show:
+  - `AI accuracy improves when you paste the caption or visible ingredients.`
+  - A clear note that Recipe Dost does not download or analyze those videos from their links.
+
+### Saved Recipe Detail
+
+- Unsupported social links without caption/manual ingredients show a prominent accuracy warning.
+- `Open Original Video` remains prominent.
+- Generate remains available, but the server may return `insufficient_recipe_input` before spending model tokens.
+- Mobile recovery copy is:
+  - `Paste the caption or visible ingredients so AI can create an accurate recipe card.`
+- Analytics may track source mode, platform, confidence, model name, and warning visibility. It must not send URLs, captions, notes, ingredient text, or generated recipe content.
+
+### Recipe Result
+
+- New cards display a source-mode badge.
+- `unsupported_video_link` cards display a visible low-confidence warning and verification instruction.
+- `Open Original Video` is placed near the top as the primary verification action.
+- Missing-info and confidence remain visible.
+
+No upload UI, video downloader, video backup, private-content access, medical/diet claims, auth, or paywall work is included in M14F.

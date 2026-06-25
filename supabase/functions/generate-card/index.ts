@@ -9,6 +9,11 @@ type RecipePlatform =
 
 type Difficulty = "easy" | "medium" | "hard";
 type Confidence = "high" | "medium" | "low";
+type AiSourceMode =
+  | "text_only"
+  | "youtube_url"
+  | "uploaded_video"
+  | "unsupported_video_link";
 type AiProvider =
   | "mock"
   | "gemini"
@@ -210,6 +215,9 @@ type GenerateCardSuccess = {
     recipe_id: string;
     recipe_title: string;
     confidence: Confidence;
+    source_mode: AiSourceMode;
+    model_used: string;
+    missing_info: string[];
   };
   usage: GenerateCardUsage;
 };
@@ -219,6 +227,7 @@ type GenerateCardErrorCode =
   | "unauthorized"
   | "unsupported_ai_provider"
   | "recipe_not_found"
+  | "insufficient_recipe_input"
   | "free_limit_reached"
   | "missing_gemini_key"
   | "gemini_rate_limited"
@@ -266,7 +275,9 @@ type EdgeSupabaseClient = SupabaseClient<Database>;
 
 type RecipeGenerationInput = {
   source_link: string;
+  source_mode: AiSourceMode;
   platform: RecipePlatform;
+  uploaded_media_url: string | null;
   title: string | null;
   description: string | null;
   user_note: string | null;
@@ -279,7 +290,7 @@ type RecipeGenerationInput = {
 
 type RecipeGenerationTextKey = Exclude<
   keyof RecipeGenerationInput,
-  "source_link" | "platform"
+  "source_link" | "source_mode" | "platform" | "uploaded_media_url"
 >;
 
 type TokenUsage = {
@@ -317,6 +328,7 @@ type SafeLogExtra = {
 type ProviderConfig = {
   provider: AiProvider;
   model: string;
+  videoModel?: string;
   promptVersion: string;
   apiKey?: string;
   baseUrl?: string;
@@ -334,7 +346,7 @@ declare const Deno: {
 const defaultFreeRecipeCardLimit = 3;
 const defaultProvider: AiProvider = "gemini";
 const defaultMaxInputChars = 6000;
-const defaultGeminiModel = "gemini-2.5-flash-lite";
+const defaultGeminiModel = "gemini-3.5-flash";
 const defaultOpenAiModel = "gpt-4o-mini";
 const defaultKimiBaseUrl = "https://api.moonshot.ai/v1";
 
@@ -394,7 +406,15 @@ const openAiRecipeCardJsonSchema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["name", "name_en", "name_ur", "quantity", "notes", "notes_en", "notes_ur"],
+        required: [
+          "name",
+          "name_en",
+          "name_ur",
+          "quantity",
+          "notes",
+          "notes_en",
+          "notes_ur",
+        ],
         properties: {
           name: { type: "string" },
           name_en: { type: "string" },
@@ -494,7 +514,15 @@ const geminiRecipeCardSchema = {
       type: "ARRAY",
       items: {
         type: "OBJECT",
-        required: ["name", "name_en", "name_ur", "quantity", "notes", "notes_en", "notes_ur"],
+        required: [
+          "name",
+          "name_en",
+          "name_ur",
+          "quantity",
+          "notes",
+          "notes_en",
+          "notes_ur",
+        ],
         properties: {
           name: { type: "STRING" },
           name_en: { type: "STRING" },
@@ -752,6 +780,16 @@ async function handleGenerateCardRequest(request: Request) {
     recipeResult.data,
     maxInputChars,
   );
+
+  if (shouldRejectInsufficientInput(recipeInput)) {
+    return errorResponse(
+      "source_input",
+      "insufficient_recipe_input",
+      "Paste the caption or visible ingredients so AI can create an accurate recipe card.",
+      422,
+    );
+  }
+
   const providerResult = await generateWithProvider(
     providerConfig,
     recipeInput,
@@ -768,8 +806,15 @@ async function handleGenerateCardRequest(request: Request) {
     );
   }
 
-  const normalizedCard = {
-    ...providerResult.card,
+  const normalizedCard = applySourceModeGuardrails({
+    card: providerResult.card,
+    sourceMode: recipeInput.source_mode,
+    hasStrongTextInput: hasStrongTextInput(recipeInput),
+    mediaInputAnalyzed: providerResult.provider === "gemini" &&
+      recipeInput.source_mode === "youtube_url",
+  });
+  const sourceNormalizedCard = {
+    ...normalizedCard,
     source_platform: recipeInput.platform,
     source_link: recipeInput.source_link,
   };
@@ -778,7 +823,8 @@ async function handleGenerateCardRequest(request: Request) {
     existingCardId: existingCard?.id ?? null,
     recipeId: recipeResult.data.id,
     userId: user.id,
-    card: normalizedCard,
+    card: sourceNormalizedCard,
+    sourceMode: recipeInput.source_mode,
     modelUsed: providerResult.modelUsed,
     promptVersion: providerResult.promptVersion,
     usage: providerResult.usage,
@@ -813,8 +859,11 @@ async function handleGenerateCardRequest(request: Request) {
     data: {
       recipe_card_id: savedCardResult.data.id,
       recipe_id: recipeResult.data.id,
-      recipe_title: normalizedCard.recipe_title_en,
-      confidence: normalizedCard.confidence,
+      recipe_title: sourceNormalizedCard.recipe_title_en,
+      confidence: sourceNormalizedCard.confidence,
+      source_mode: recipeInput.source_mode,
+      model_used: providerResult.modelUsed,
+      missing_info: sourceNormalizedCard.missing_info_en,
     },
     usage: {
       free_recipe_cards_remaining: freeRecipeCardsRemaining,
@@ -849,12 +898,13 @@ function getProviderConfig():
         config: {
           provider: "mock",
           model: "mock",
-          promptVersion: "mock-v1",
+          promptVersion: "mock-v2-source-aware",
         },
       };
     case "gemini": {
       const apiKey = Deno.env.get("GEMINI_API_KEY");
       const model = Deno.env.get("GEMINI_MODEL")?.trim() || defaultGeminiModel;
+      const videoModel = Deno.env.get("GEMINI_VIDEO_MODEL")?.trim() || model;
 
       if (!apiKey) {
         return providerConfigError(
@@ -871,7 +921,8 @@ function getProviderConfig():
           provider: "gemini",
           apiKey,
           model,
-          promptVersion: "recipe-card-v1-gemini",
+          videoModel,
+          promptVersion: "recipe-card-v2-gemini-source-aware",
         },
       };
     }
@@ -894,7 +945,7 @@ function getProviderConfig():
           provider: "openai",
           apiKey,
           model,
-          promptVersion: "recipe-card-v1-openai",
+          promptVersion: "recipe-card-v2-openai-source-aware",
         },
       };
     }
@@ -925,7 +976,7 @@ function getProviderConfig():
           provider: "openrouter",
           apiKey,
           model,
-          promptVersion: "recipe-card-v1-openrouter",
+          promptVersion: "recipe-card-v2-openrouter-source-aware",
           baseUrl: "https://openrouter.ai/api/v1",
         },
       };
@@ -959,7 +1010,7 @@ function getProviderConfig():
           provider: "kimi",
           apiKey,
           model,
-          promptVersion: "recipe-card-v1-kimi",
+          promptVersion: "recipe-card-v2-kimi-source-aware",
           baseUrl,
         },
       };
@@ -991,7 +1042,7 @@ function getProviderConfig():
           provider: "anthropic",
           apiKey,
           model,
-          promptVersion: "recipe-card-v1-anthropic",
+          promptVersion: "recipe-card-v2-anthropic-source-aware",
         },
       };
     }
@@ -1100,8 +1151,7 @@ function generateWithMock(
           "Cook carefully using your saved details as the source reference.",
         instruction_en:
           "Cook carefully using your saved details as the source reference.",
-        instruction_ur:
-          "محفوظ تفصیلات کو حوالہ بنا کر احتیاط سے پکائیں۔",
+        instruction_ur: "محفوظ تفصیلات کو حوالہ بنا کر احتیاط سے پکائیں۔",
         tip_en: "Cook chicken, meat, or eggs fully before serving.",
         tip_ur: "چکن، گوشت، یا انڈے پیش کرنے سے پہلے اچھی طرح پکائیں۔",
         urdu_or_roman_urdu_tip:
@@ -1159,6 +1209,10 @@ async function generateWithGemini(
   config: ProviderConfig,
   recipeInput: RecipeGenerationInput,
 ): Promise<ProviderResult> {
+  if (recipeInput.source_mode === "youtube_url") {
+    return generateWithGeminiYouTube(config, recipeInput);
+  }
+
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${
     encodeURIComponent(config.model)
   }:generateContent`;
@@ -1174,7 +1228,7 @@ async function generateWithGemini(
           role: "user",
           parts: [
             {
-              text: buildProviderPrompt(recipeInput),
+              text: buildProviderPrompt(recipeInput, false),
             },
           ],
         },
@@ -1207,6 +1261,77 @@ async function generateWithGemini(
   return parseProviderCard(config, "gemini_parse", parseJson(text), body);
 }
 
+async function generateWithGeminiYouTube(
+  config: ProviderConfig,
+  recipeInput: RecipeGenerationInput,
+): Promise<ProviderResult> {
+  const videoConfig = {
+    ...config,
+    model: config.videoModel || config.model,
+  };
+  const responseResult = await safeFetch(
+    "https://generativelanguage.googleapis.com/v1beta/interactions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": config.apiKey ?? "",
+      },
+      body: JSON.stringify({
+        model: videoConfig.model,
+        input: [
+          {
+            type: "video",
+            uri: recipeInput.source_link,
+          },
+          {
+            type: "text",
+            text: buildProviderPrompt(recipeInput, true),
+          },
+        ],
+        response_format: {
+          type: "text",
+          mime_type: "application/json",
+          schema: openAiRecipeCardJsonSchema,
+        },
+        generation_config: {
+          temperature: 0.3,
+        },
+        store: false,
+      }),
+    },
+  );
+
+  if (!responseResult.ok) {
+    return providerRequestFailure(
+      videoConfig,
+      "gemini_youtube_fetch",
+      "gemini_request_failed",
+      "Gemini could not analyze the public YouTube video.",
+      502,
+    );
+  }
+
+  const { response, body } = responseResult;
+
+  if (!response.ok) {
+    return providerHttpFailure(
+      videoConfig,
+      "gemini_youtube_response",
+      response.status,
+      body,
+    );
+  }
+
+  const text = extractGeminiInteractionText(body);
+  return parseProviderCard(
+    videoConfig,
+    "gemini_youtube_parse",
+    parseJson(text),
+    body,
+  );
+}
+
 async function generateWithOpenAI(
   config: ProviderConfig,
   recipeInput: RecipeGenerationInput,
@@ -1236,7 +1361,7 @@ async function generateWithOpenAI(
             content: [
               {
                 type: "input_text",
-                text: buildUserPrompt(recipeInput),
+                text: buildUserPrompt(recipeInput, false),
               },
             ],
           },
@@ -1304,7 +1429,7 @@ async function generateWithOpenAiCompatibleChat(
         },
         {
           role: "user",
-          content: buildUserPrompt(recipeInput),
+          content: buildUserPrompt(recipeInput, false),
         },
       ],
       temperature: 0.3,
@@ -1367,7 +1492,7 @@ async function generateWithAnthropic(
         messages: [
           {
             role: "user",
-            content: buildUserPrompt(recipeInput),
+            content: buildUserPrompt(recipeInput, false),
           },
         ],
       }),
@@ -1505,27 +1630,44 @@ async function safeFetch(input: string, init: RequestInit) {
 function getSystemPrompt() {
   return [
     "You are Recipe Dost, an AI recipe organizer for Pakistani and Urdu-English home cooks.",
-    "Create a practical recipe card only from the saved link metadata, user notes, pasted caption, and manual ingredients provided.",
-    "Do not fetch, open, scrape, download, summarize, or claim to have watched the source video.",
+    "Create a practical recipe card only from the source material explicitly included in this request.",
+    "Never infer a specific recipe confidently from a URL or platform name alone.",
+    "Only say you analyzed or watched a video when this request explicitly says media_input_attached is true.",
+    "Never fetch, scrape, download, or bypass access controls for Instagram, TikTok, Facebook, or other social video links.",
     "If details are missing, use estimated quantities and add clear missing_info instead of pretending certainty.",
     "Keep steps simple and home-cook friendly.",
     "Produce Urdu in Urdu script, not Roman Urdu. Use simple Pakistani household Urdu.",
     "Include English and Urdu script fields wherever the schema asks for *_en and *_ur fields.",
     "For recipe_title_ur, short_summary_ur, storage_tip_ur, safety_note_ur, missing_info_ur, ingredients[].name_ur, steps[].instruction_ur, and grocery_list[].name_ur, use Urdu script only.",
-    "If the only input is a source URL or weak metadata, set confidence to low and include missing_info_en/missing_info_ur explaining that caption or ingredients were not provided and the original video should be verified.",
+    "If the only usable input is weak metadata, set confidence to low and clearly say what the user must verify.",
     "Do not make medical, allergy, calorie, macro, diet, weight-loss, diagnosis, or disease claims.",
     "Return valid JSON only, matching the requested recipe card shape.",
   ].join("\n");
 }
 
-function buildProviderPrompt(recipeInput: RecipeGenerationInput) {
-  return `${getSystemPrompt()}\n\n${buildUserPrompt(recipeInput)}`;
+function buildProviderPrompt(
+  recipeInput: RecipeGenerationInput,
+  mediaInputAttached: boolean,
+) {
+  return `${getSystemPrompt()}\n\n${
+    buildUserPrompt(recipeInput, mediaInputAttached)
+  }`;
 }
 
-function buildUserPrompt(recipeInput: RecipeGenerationInput) {
+function buildUserPrompt(
+  recipeInput: RecipeGenerationInput,
+  mediaInputAttached: boolean,
+) {
+  const sourceModeRules = getSourceModePromptRules(
+    recipeInput.source_mode,
+    mediaInputAttached,
+  );
+
   return JSON.stringify({
     request_type: "generate_recipe_card",
-    prompt_version: "recipe-card-v1",
+    prompt_version: "recipe-card-v2-source-aware",
+    source_mode: recipeInput.source_mode,
+    media_input_attached: mediaInputAttached,
     output_rules: {
       response_format: "JSON object only",
       substitutions_field: "Use local_substitutions[].note, not reason.",
@@ -1535,18 +1677,78 @@ function buildUserPrompt(recipeInput: RecipeGenerationInput) {
         "Use estimated quantities where needed. If caption/manual ingredients/description are missing, set confidence low and include Caption or ingredients were not provided plus Open the original video to verify steps in missing_info_en and Urdu equivalents in missing_info_ur.",
       platform_boundary:
         "Do not claim to watch or analyze Instagram, TikTok, Facebook, or other source videos from URL alone.",
+      source_mode_rules: sourceModeRules,
     },
-    recipe_source: recipeInput,
+    recipe_source: {
+      platform: recipeInput.platform,
+      title: recipeInput.title,
+      description: recipeInput.description,
+      user_note: recipeInput.user_note,
+      pasted_caption: recipeInput.pasted_caption,
+      manual_ingredients: recipeInput.manual_ingredients,
+      meal_type: recipeInput.meal_type,
+      cuisine: recipeInput.cuisine,
+      metadata_status: recipeInput.metadata_status,
+    },
+    source_reference: {
+      source_link: recipeInput.source_link,
+      rule:
+        "Copy this exact link to source_link in the response. Do not infer recipe facts from the URL text.",
+    },
   });
+}
+
+function getSourceModePromptRules(
+  sourceMode: AiSourceMode,
+  mediaInputAttached: boolean,
+) {
+  switch (sourceMode) {
+    case "youtube_url":
+      return mediaInputAttached
+        ? [
+          "Analyze the attached public YouTube video input, including useful audio and visible cooking details.",
+          "Extract only details supported by the video or provided text.",
+          "Add missing_info for unclear quantities, timing, ingredients, or steps.",
+        ]
+        : [
+          "The YouTube video was not attached to this provider request.",
+          "Use text fields only and keep confidence low when details are weak.",
+          "Do not claim the video was analyzed.",
+        ];
+    case "uploaded_video":
+      return mediaInputAttached
+        ? [
+          "Analyze only the attached user-owned or authorized uploaded video.",
+          "Add missing_info for unclear details.",
+        ]
+        : [
+          "Uploaded-video analysis is not connected in this milestone.",
+          "Use text fields only and do not claim media analysis.",
+        ];
+    case "unsupported_video_link":
+      return [
+        "The social video itself is unavailable and must not be downloaded or scraped.",
+        "Use only title, description, user_note, pasted_caption, and manual_ingredients.",
+        "Return a low-confidence generic draft rather than a detailed confident recipe.",
+        'missing_info_en must include "Caption or visible ingredients were not provided." and "Open the original video to verify the recipe."',
+      ];
+    case "text_only":
+      return [
+        "Use only title, description, user_note, pasted_caption, and manual_ingredients.",
+        "Do not infer recipe facts from the URL or platform alone.",
+        "Keep confidence low when pasted caption, manual ingredients, and useful notes are absent.",
+      ];
+  }
 }
 
 function buildRecipeGenerationInput(
   recipe: RecipeItem,
   maxInputChars: number,
 ): RecipeGenerationInput {
-  const sourceInput: RecipeGenerationInput = {
+  const sourceInput = {
     source_link: recipe.source_url,
     platform: getRecipePlatform(recipe.platform),
+    uploaded_media_url: null,
     title: cleanOptionalText(recipe.title),
     description: cleanOptionalText(recipe.description),
     user_note: cleanOptionalText(recipe.user_note),
@@ -1556,8 +1758,169 @@ function buildRecipeGenerationInput(
     cuisine: cleanOptionalText(recipe.cuisine),
     metadata_status: cleanOptionalText(recipe.metadata_status),
   };
+  const sourceMode = getAiSourceMode(sourceInput);
 
-  return truncateRecipeGenerationInput(sourceInput, maxInputChars);
+  return truncateRecipeGenerationInput(
+    {
+      ...sourceInput,
+      source_mode: sourceMode,
+    },
+    maxInputChars,
+  );
+}
+
+function getAiSourceMode(input: {
+  source_link: string;
+  platform: RecipePlatform;
+  uploaded_media_url: string | null;
+  pasted_caption: string | null;
+  manual_ingredients: string | null;
+}): AiSourceMode {
+  if (input.uploaded_media_url) {
+    return "uploaded_video";
+  }
+
+  if (
+    input.platform === "youtube" &&
+    isValidPublicYouTubeUrl(input.source_link)
+  ) {
+    return "youtube_url";
+  }
+
+  if (
+    isUnsupportedVideoPlatform(input.platform) &&
+    !input.pasted_caption &&
+    !input.manual_ingredients
+  ) {
+    return "unsupported_video_link";
+  }
+
+  return "text_only";
+}
+
+function isUnsupportedVideoPlatform(platform: RecipePlatform) {
+  return platform === "instagram" ||
+    platform === "tiktok" ||
+    platform === "facebook";
+}
+
+function isValidPublicYouTubeUrl(value: string) {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase().replace(/^www\./, "");
+
+    return url.protocol === "https:" &&
+      (host === "youtube.com" ||
+        host.endsWith(".youtube.com") ||
+        host === "youtu.be");
+  } catch {
+    return false;
+  }
+}
+
+function shouldRejectInsufficientInput(input: RecipeGenerationInput) {
+  if (input.source_mode !== "unsupported_video_link") {
+    return false;
+  }
+
+  return !input.pasted_caption &&
+    !input.manual_ingredients &&
+    !input.user_note &&
+    !input.title &&
+    !input.description;
+}
+
+function hasStrongTextInput(input: RecipeGenerationInput) {
+  return Boolean(
+    input.pasted_caption ||
+      input.manual_ingredients ||
+      input.user_note,
+  );
+}
+
+function applySourceModeGuardrails({
+  card,
+  sourceMode,
+  hasStrongTextInput,
+  mediaInputAnalyzed,
+}: {
+  card: GeneratedRecipeCard;
+  sourceMode: AiSourceMode;
+  hasStrongTextInput: boolean;
+  mediaInputAnalyzed: boolean;
+}): GeneratedRecipeCard {
+  if (sourceMode === "unsupported_video_link") {
+    return {
+      ...card,
+      confidence: "low",
+      missing_info: appendUniqueStrings(card.missing_info, [
+        "Caption or visible ingredients were not provided.",
+        "Open the original video to verify the recipe.",
+      ]),
+      missing_info_en: appendUniqueStrings(card.missing_info_en, [
+        "Caption or visible ingredients were not provided.",
+        "Open the original video to verify the recipe.",
+      ]),
+      missing_info_ur: appendUniqueStrings(card.missing_info_ur, [
+        "کیپشن یا نظر آنے والے اجزاء فراہم نہیں کیے گئے۔",
+        "ترکیب کی تصدیق کے لیے اصل ویڈیو کھولیں۔",
+      ]),
+    };
+  }
+
+  if (sourceMode === "text_only" && !hasStrongTextInput) {
+    return {
+      ...card,
+      confidence: "low",
+      missing_info: appendUniqueStrings(card.missing_info, [
+        "Caption or visible ingredients were not provided.",
+        "Open the original source to verify the recipe.",
+      ]),
+      missing_info_en: appendUniqueStrings(card.missing_info_en, [
+        "Caption or visible ingredients were not provided.",
+        "Open the original source to verify the recipe.",
+      ]),
+      missing_info_ur: appendUniqueStrings(card.missing_info_ur, [
+        "کیپشن یا نظر آنے والے اجزاء فراہم نہیں کیے گئے۔",
+        "ترکیب کی تصدیق کے لیے اصل ماخذ کھولیں۔",
+      ]),
+    };
+  }
+
+  if (
+    sourceMode === "youtube_url" &&
+    !mediaInputAnalyzed &&
+    !hasStrongTextInput
+  ) {
+    return {
+      ...card,
+      confidence: "low",
+      missing_info: appendUniqueStrings(card.missing_info, [
+        "This provider did not receive the YouTube video as media input.",
+        "Open the original video to verify the recipe.",
+      ]),
+      missing_info_en: appendUniqueStrings(card.missing_info_en, [
+        "This provider did not receive the YouTube video as media input.",
+        "Open the original video to verify the recipe.",
+      ]),
+      missing_info_ur: appendUniqueStrings(card.missing_info_ur, [
+        "اس فراہم کنندہ کو یوٹیوب ویڈیو بطور میڈیا موصول نہیں ہوئی۔",
+        "ترکیب کی تصدیق کے لیے اصل ویڈیو کھولیں۔",
+      ]),
+    };
+  }
+
+  return card;
+}
+
+function appendUniqueStrings(current: string[], required: string[]) {
+  const values = new Set(current.map((item) => item.trim()).filter(Boolean));
+
+  for (const item of required) {
+    values.add(item);
+  }
+
+  return [...values];
 }
 
 function truncateRecipeGenerationInput(
@@ -1700,6 +2063,7 @@ async function saveRecipeCard({
   recipeId,
   userId,
   card,
+  sourceMode,
   modelUsed,
   promptVersion,
   usage,
@@ -1709,6 +2073,7 @@ async function saveRecipeCard({
   recipeId: string;
   userId: string;
   card: GeneratedRecipeCard;
+  sourceMode: AiSourceMode;
   modelUsed: string;
   promptVersion: string;
   usage: TokenUsage;
@@ -1733,6 +2098,7 @@ async function saveRecipeCard({
     safety_note: card.safety_note_en,
     confidence: card.confidence,
     missing_info_json: {
+      source_mode: sourceMode,
       recipe_title_en: card.recipe_title_en,
       recipe_title_ur: card.recipe_title_ur,
       short_summary_en: card.short_summary_en,
@@ -1820,7 +2186,8 @@ function validateGeneratedRecipeCard(
   }
 
   const recipeTitle = getRequiredString(record.recipe_title);
-  const recipeTitleEn = getRequiredString(record.recipe_title_en) ?? recipeTitle;
+  const recipeTitleEn = getRequiredString(record.recipe_title_en) ??
+    recipeTitle;
   const recipeTitleUr = getRequiredString(record.recipe_title_ur) ?? "";
   const sourcePlatform = getRecipePlatform(
     getRequiredString(record.source_platform),
@@ -2068,6 +2435,55 @@ function extractGeminiText(value: unknown) {
   return getRequiredString(firstPart?.text);
 }
 
+function extractGeminiInteractionText(value: unknown) {
+  const record = isRecord(value) ? value : null;
+  const directOutput = getRequiredString(record?.output_text);
+
+  if (directOutput) {
+    return directOutput;
+  }
+
+  const texts: string[] = [];
+  collectTextValues(record?.steps, texts);
+  collectTextValues(record?.output, texts);
+
+  for (let index = texts.length - 1; index >= 0; index -= 1) {
+    if (parseJson(texts[index])) {
+      return texts[index];
+    }
+  }
+
+  return texts.at(-1) ?? null;
+}
+
+function collectTextValues(value: unknown, texts: string[]) {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectTextValues(item, texts);
+    }
+
+    return;
+  }
+
+  const record = isRecord(value) ? value : null;
+
+  if (!record) {
+    return;
+  }
+
+  const text = getRequiredString(record.text);
+
+  if (text) {
+    texts.push(text);
+  }
+
+  for (const nestedValue of Object.values(record)) {
+    if (nestedValue !== record.text) {
+      collectTextValues(nestedValue, texts);
+    }
+  }
+}
+
 function extractChatCompletionText(value: unknown) {
   const record = isRecord(value) ? value : null;
   const choices = Array.isArray(record?.choices) ? record.choices : [];
@@ -2188,10 +2604,22 @@ function getProviderUsage(provider: AiProvider, value: unknown): TokenUsage {
   const record = isRecord(value) ? value : null;
 
   if (provider === "gemini") {
-    const usage = isRecord(record?.usageMetadata) ? record.usageMetadata : null;
+    const usage = isRecord(record?.usageMetadata)
+      ? record.usageMetadata
+      : isRecord(record?.usage_metadata)
+      ? record.usage_metadata
+      : isRecord(record?.usage)
+      ? record.usage
+      : null;
     return {
-      inputTokens: getOptionalNumber(usage?.promptTokenCount) ?? 0,
-      outputTokens: getOptionalNumber(usage?.candidatesTokenCount) ?? 0,
+      inputTokens: getOptionalNumber(usage?.promptTokenCount) ??
+        getOptionalNumber(usage?.input_tokens) ??
+        getOptionalNumber(usage?.inputTokens) ??
+        0,
+      outputTokens: getOptionalNumber(usage?.candidatesTokenCount) ??
+        getOptionalNumber(usage?.output_tokens) ??
+        getOptionalNumber(usage?.outputTokens) ??
+        0,
     };
   }
 
@@ -2483,7 +2911,8 @@ function getPositiveInteger(value: string | undefined, fallback: number) {
 
 function getFreeRecipeCardLimit() {
   return getPositiveInteger(
-    Deno.env.get("FREE_RECIPE_CARD_LIMIT") ?? String(defaultFreeRecipeCardLimit),
+    Deno.env.get("FREE_RECIPE_CARD_LIMIT") ??
+      String(defaultFreeRecipeCardLimit),
     defaultFreeRecipeCardLimit,
   );
 }

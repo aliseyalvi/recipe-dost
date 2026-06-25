@@ -131,3 +131,12 @@
 - Existing old cards may need regeneration for full Urdu script support.
 - AI accuracy depends on caption/manual ingredients and safe public metadata; URL-only inputs should be low-confidence with missing-info warnings.
 - Public YouTube video understanding with Gemini remains a future AI accuracy milestone; no Instagram/TikTok/Facebook video download or scraping was added.
+- Milestone M14F AI Source Accuracy + Model Selection completed.
+- Gemini model selection is controlled by Supabase Edge Function secrets: `GEMINI_MODEL` defaults to `gemini-3.5-flash`, and `GEMINI_VIDEO_MODEL` defaults to `GEMINI_MODEL`.
+- AI generation now classifies and stores `text_only`, `youtube_url`, `uploaded_video`, or `unsupported_video_link` source mode in the existing recipe-card metadata JSON.
+- Public HTTPS YouTube URLs may use Gemini video understanding through the Gemini Interactions API with `store: false`; `model_used` records the actual text or video model called.
+- Instagram, TikTok, and Facebook links are never downloaded, scraped, or treated as watched-video input.
+- Accurate non-YouTube social recipe generation requires user-provided caption, visible ingredients, or useful notes; empty unsupported links return `insufficient_recipe_input` before model tokens are spent.
+- Provider prompts and server guardrails prevent URL/platform-only inputs from producing a confident specific recipe.
+- Future user-owned/authorized video support is deferred to a temporary Supabase Storage upload plus media worker or Gemini Files API flow that deletes raw video after analysis.
+- Video-frame thumbnail extraction is deferred to that worker; Edge Functions continue using derived YouTube thumbnails, safe Open Graph image URLs, or visual fallbacks and never fetch video files.

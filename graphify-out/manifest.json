@@ -90,18 +90,18 @@
     "semantic_hash": "8c9bde803533286f89b6d79c731dd1f1"
   },
   "app/recipe-card/[id].tsx": {
-    "mtime": 1782146666.4034579,
-    "ast_hash": "eaeb0b94e3f274c151dd425596cb96ad",
+    "mtime": 1782274180.507882,
+    "ast_hash": "7e574b5eb0c54f064660de1654a916bd",
     "semantic_hash": ""
   },
   "app/recipe/[id].tsx": {
-    "mtime": 1782146361.0975785,
-    "ast_hash": "9f528f12657c31eae12ef0846f5e34c4",
+    "mtime": 1782274180.0564072,
+    "ast_hash": "2b5bd37880ad9dff445eaeddc54c3815",
     "semantic_hash": ""
   },
   "app/recipe/preview.tsx": {
-    "mtime": 1782146368.1862943,
-    "ast_hash": "c54a8e77b706a0b6188efb7c09c105e6",
+    "mtime": 1782274180.2635853,
+    "ast_hash": "8b7c193ebece119acce541ec2a4370f6",
     "semantic_hash": ""
   },
   "app/recipe/ready.tsx": {
@@ -285,8 +285,8 @@
     "semantic_hash": "f582c09c320bde8371bd999feab5a632"
   },
   "src/lib/api/recipes.ts": {
-    "mtime": 1782146671.9779499,
-    "ast_hash": "d9bfbafc3bc3a42d7c5f1edd6dfd9731",
+    "mtime": 1782274119.1286867,
+    "ast_hash": "b396ec7a0b99d0f692e2e65c68199a11",
     "semantic_hash": ""
   },
   "src/lib/api/usage.ts": {
@@ -435,8 +435,8 @@
     "semantic_hash": "c1250a55f68468cbdf156e4e765d87ce"
   },
   "supabase/functions/generate-card/index.ts": {
-    "mtime": 1782146520.2565372,
-    "ast_hash": "a8667f893fe4b4edfdefae215d3b2ae6",
+    "mtime": 1782296136.906423,
+    "ast_hash": "2fd19eba653382a89539941a0047cca3",
     "semantic_hash": ""
   },
   "supabase/functions/parse-url/deno.json": {
@@ -635,13 +635,13 @@
     "semantic_hash": ""
   },
   "docs/ai-prompt-contract.md": {
-    "mtime": 1782146548.2438488,
-    "ast_hash": "809645f0d6eb2a8e250532e789eb16e3",
+    "mtime": 1782296068.0785387,
+    "ast_hash": "6129f7c00c8fc568326eb6663e452413",
     "semantic_hash": ""
   },
   "docs/api-contract.md": {
-    "mtime": 1782146592.0193317,
-    "ast_hash": "81e1e6349fc13b8b43ae7099e62e4bf4",
+    "mtime": 1782296068.2915072,
+    "ast_hash": "96170eb747dc41a7e57ad2d2485ae05f",
     "semantic_hash": ""
   },
   "docs/database-schema.md": {
@@ -650,8 +650,8 @@
     "semantic_hash": ""
   },
   "docs/decision-log.md": {
-    "mtime": 1782146621.2994788,
-    "ast_hash": "7d59af83bc6f79157ca8071b1834c9ec",
+    "mtime": 1782296068.7168016,
+    "ast_hash": "83ad458042d4cb0cd5270b40241af9e6",
     "semantic_hash": ""
   },
   "docs/launch-checklist.md": {
@@ -670,8 +670,8 @@
     "semantic_hash": ""
   },
   "docs/screen-spec.md": {
-    "mtime": 1782146610.1667817,
-    "ast_hash": "3d4f85ebff6281bd113dfd8a288626a2",
+    "mtime": 1782296068.4975808,
+    "ast_hash": "a54bfb6057acb7ff130d2170f3893380",
     "semantic_hash": ""
   },
   "posthog-setup-report.md": {

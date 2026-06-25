@@ -34,6 +34,7 @@ export default function SavedRecipeRoute() {
   const [generationError, setGenerationError] = useState<Error | null>(null)
   const didTrackUsageSummary = useRef(false)
   const didTrackLimitReached = useRef(false)
+  const didTrackAccuracyWarning = useRef(false)
   const recipeQuery = useQuery({
     enabled: Boolean(recipeId),
     queryKey: ['recipe-item', recipeId],
@@ -57,6 +58,30 @@ export default function SavedRecipeRoute() {
       limit: usageSummary.limits.recipeCards,
     })
   }, [track, usageSummary])
+
+  useEffect(() => {
+    const recipe = recipeQuery.data
+
+    if (!recipe || didTrackAccuracyWarning.current) {
+      return
+    }
+
+    const platform = getRecipePlatform(recipe.platform)
+    const needsAccuracyInput =
+      isUnsupportedVideoPlatform(platform) &&
+      !recipe.pasted_caption &&
+      !recipe.manual_ingredients
+
+    if (!needsAccuracyInput) {
+      return
+    }
+
+    didTrackAccuracyWarning.current = true
+    track('ai_accuracy_warning_viewed', {
+      platform,
+      source: 'saved_recipe_detail',
+    })
+  }, [recipeQuery.data, track])
 
   useEffect(() => {
     if (
@@ -131,7 +156,12 @@ export default function SavedRecipeRoute() {
   const hasNote = Boolean(recipe.user_note)
   const hasCaption = Boolean(recipe.pasted_caption)
   const hasManualIngredients = Boolean(recipe.manual_ingredients)
-  const needsAccuracyContext = !hasCaption && !hasManualIngredients
+  const sourceModeHint = getSourceModeHint(
+    platform,
+    hasCaption,
+    hasManualIngredients
+  )
+  const needsAccuracyInput = sourceModeHint === 'unsupported_video_link'
 
   const openOriginalVideo = async () => {
     const canOpenUrl = await Linking.canOpenURL(recipe.source_url)
@@ -158,6 +188,7 @@ export default function SavedRecipeRoute() {
     setGenerationError(null)
     track('ai_recipe_started', {
       platform,
+      source_mode: sourceModeHint,
     })
 
     try {
@@ -166,6 +197,8 @@ export default function SavedRecipeRoute() {
       track('ai_recipe_completed', {
         platform,
         confidence: response.data.confidence,
+        source_mode: response.data.source_mode ?? sourceModeHint,
+        model_used: response.data.model_used ?? 'unknown',
       })
       void queryClient.invalidateQueries({
         queryKey: ['usage-summary'],
@@ -277,11 +310,6 @@ export default function SavedRecipeRoute() {
             {getPlatformLabel(platform)}
           </Text>
         </View>
-        {needsAccuracyContext ? (
-          <Text selectable style={[typography.caption, { color: colors.warning }]}>
-            Add or paste the caption for better AI accuracy.
-          </Text>
-        ) : null}
         <View style={{ gap: spacing.xs }}>
           <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
             Source link
@@ -304,6 +332,23 @@ export default function SavedRecipeRoute() {
           {hasManualIngredients ? <AppBadge label="Ingredients added" /> : null}
         </View>
       </Card>
+
+      {needsAccuracyInput ? (
+        <Card tone="muted">
+          <Text selectable style={[typography.heading, { color: colors.warning }]}>
+            More recipe details needed
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.text }]}>
+            For accurate AI results, paste the recipe caption or visible
+            ingredients before generating.
+          </Text>
+          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+            Recipe Dost cannot watch or download this social video from its link.
+            A generated card will stay low-confidence, and generation may ask for
+            more input.
+          </Text>
+        </Card>
+      ) : null}
 
       {usageSummary ? (
         <UsagePill
@@ -491,6 +536,8 @@ function getFriendlyGenerateCardErrorMessage(code: string) {
       return 'AI provider is not supported.'
     case 'invalid_ai_output':
       return 'Recipe card could not be generated. Please add more details and try again.'
+    case 'insufficient_recipe_input':
+      return 'Paste the caption or visible ingredients so AI can create an accurate recipe card.'
     case 'db_insert_failed':
       return 'Recipe card was created but could not be saved.'
     case 'recipe_not_found':
@@ -502,4 +549,32 @@ function getFriendlyGenerateCardErrorMessage(code: string) {
     default:
       return 'Something went wrong while creating your recipe card.'
   }
+}
+
+function isUnsupportedVideoPlatform(platform: RecipePlatform) {
+  return (
+    platform === 'instagram' ||
+    platform === 'tiktok' ||
+    platform === 'facebook'
+  )
+}
+
+function getSourceModeHint(
+  platform: RecipePlatform,
+  hasCaption: boolean,
+  hasManualIngredients: boolean
+) {
+  if (platform === 'youtube') {
+    return 'youtube_url'
+  }
+
+  if (
+    isUnsupportedVideoPlatform(platform) &&
+    !hasCaption &&
+    !hasManualIngredients
+  ) {
+    return 'unsupported_video_link'
+  }
+
+  return 'text_only'
 }

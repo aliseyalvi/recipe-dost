@@ -126,7 +126,7 @@ The function selects a provider with `AI_PROVIDER`:
 If `AI_PROVIDER` is missing, it defaults to `gemini` for development and testing.
 
 Provider secrets are Supabase Edge Function secrets only:
-- Gemini: `GEMINI_API_KEY`, `GEMINI_MODEL`
+- Gemini: `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_VIDEO_MODEL`
 - OpenAI: `OPENAI_API_KEY`, `OPENAI_MODEL`
 - OpenRouter: `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`
 - Kimi: `KIMI_API_KEY`, `KIMI_MODEL`, `KIMI_BASE_URL`
@@ -217,9 +217,47 @@ Generated cards are stored with:
 - Extra top-level bilingual fields are stored in `missing_info_json` alongside `missing_info_en` and `missing_info_ur`.
 
 Provider prompt versions:
-- `mock-v1`
-- `recipe-card-v1-gemini`
-- `recipe-card-v1-openai`
-- `recipe-card-v1-openrouter`
-- `recipe-card-v1-kimi`
-- `recipe-card-v1-anthropic`
+- `mock-v2-source-aware`
+- `recipe-card-v2-gemini-source-aware`
+- `recipe-card-v2-openai-source-aware`
+- `recipe-card-v2-openrouter-source-aware`
+- `recipe-card-v2-kimi-source-aware`
+- `recipe-card-v2-anthropic-source-aware`
+
+## M14F Source-Aware Generation
+
+Generation classifies each saved recipe into one internal source mode:
+
+- `text_only`: use only title, description, pasted caption, manual ingredients, and user note. The source URL and platform are references, not recipe evidence.
+- `youtube_url`: a valid public HTTPS YouTube URL. Gemini receives the URL as video input through the Gemini Interactions API and uses `GEMINI_VIDEO_MODEL`.
+- `uploaded_video`: reserved for a future user-owned/authorized upload pipeline. No upload or media storage is implemented in M14F.
+- `unsupported_video_link`: Instagram, TikTok, or Facebook without pasted caption or manual ingredients. The video is not downloaded, scraped, or analyzed.
+
+Prompt rules:
+
+- Never infer a specific recipe confidently from a URL or platform alone.
+- Never claim a video was analyzed unless media input was actually attached to the provider request.
+- Public YouTube video understanding is used only by the Gemini adapter.
+- Other providers treat a YouTube recipe as text-only evidence and receive server-enforced low-confidence guardrails when strong text input is absent.
+- Unsupported social links must remain low confidence and include:
+  - `Caption or visible ingredients were not provided.`
+  - `Open the original video to verify the recipe.`
+- An unsupported social link with no title, description, note, caption, or manual ingredients returns `insufficient_recipe_input` before model tokens are spent.
+
+Gemini model selection:
+
+- `GEMINI_MODEL` defaults to `gemini-3.5-flash`.
+- `GEMINI_VIDEO_MODEL` defaults to `GEMINI_MODEL`.
+- `model_used` stores the model actually called.
+- YouTube requests set `store: false` and retain the same structured recipe-card schema.
+
+The saved `missing_info_json` object includes `source_mode` alongside localized metadata and missing-info arrays. No schema migration is required.
+
+Future uploaded-video architecture is deliberately deferred:
+
+1. Mobile uploads a user-owned or authorized video to temporary Supabase Storage.
+2. A media worker or Gemini Files API analyzes it.
+3. The raw video is deleted after analysis.
+4. A worker may extract one authorized thumbnail frame, store the static image, save `thumbnail_url`, and delete the raw video.
+
+Third-party social video download, deleted-video backup, private-folder scraping, and permanent raw-video storage remain prohibited.
