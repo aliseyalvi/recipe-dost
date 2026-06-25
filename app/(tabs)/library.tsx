@@ -68,6 +68,12 @@ export default function LibraryRoute() {
     enabled: Boolean(user?.id),
     queryKey: ['recipe-library', user?.id],
     queryFn: () => getRecipeLibrary(),
+    refetchInterval: (query) =>
+      query.state.data?.some((item) =>
+          isMediaJobActive(item.latest_media_job)
+        )
+        ? 5000
+        : false,
   })
   const libraryItems = libraryQuery.data ?? []
   const filteredItems = useMemo(
@@ -427,6 +433,10 @@ function getLibrarySubtitle(item: RecipeLibraryItem) {
     return `${source} · AI ready`
   }
 
+  if (item.latest_media_job?.result_recipe_card_id) {
+    return `${source} · recipe card ready`
+  }
+
   if (isMediaJobActive(item.latest_media_job)) {
     return `${source} · analysis queued`
   }
@@ -478,7 +488,10 @@ function getSavedLinkStatus(recipe: RecipeLibraryItem) {
 function getRecipeVisualStatus(
   recipe: RecipeLibraryItem
 ): VisualRecipeStatus {
-  if (recipe.latest_card) {
+  if (
+    recipe.latest_card ||
+    recipe.latest_media_job?.result_recipe_card_id
+  ) {
     return 'ai_card'
   }
 

@@ -151,3 +151,10 @@
 - Media job creation now records `media_job_created`, worker trigger start, success, failure, timeout, or skipped-config events so queued jobs are debuggable from `media_job_events`.
 - Worker configuration or invocation failures do not fail the mobile request after a job is created; the response reports `worker_triggered: false` and leaves the job queued.
 - No video download, Gemini call, FFmpeg, yt-dlp, Apify, auth, paywall, or mobile behavior changes were added in this worker-trigger reliability patch.
+- M14G-3 app integration completed.
+- YouTube media jobs can now become recipe cards in the app when the worker publishes `result_recipe_card_id`.
+- Completed jobs show "Recipe card ready" and open the generated recipe result.
+- Active job views poll every 5 seconds and stop for completed, failed, or needs-caption states.
+- Home and Library prefer worker thumbnails, refresh while jobs are active, and recognize completed worker results as AI cards.
+- Non-YouTube jobs still need caption or manual ingredient input when the public link cannot provide accurate recipe content.
+- No raw video download, mobile video storage, scraping, auth, or paywall behavior was added.

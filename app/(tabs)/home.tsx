@@ -60,6 +60,12 @@ export default function HomeRoute() {
     enabled: Boolean(user?.id),
     queryKey: ['recent-recipes', user?.id],
     queryFn: () => getRecipeLibrary({ limit: 6 }),
+    refetchInterval: (query) =>
+      query.state.data?.some((recipe) =>
+          isMediaJobActive(recipe.latest_media_job)
+        )
+        ? 5000
+        : false,
   })
   const usageSummaryQuery = useQuery({
     enabled: Boolean(user?.id),
@@ -436,7 +442,10 @@ function getSavedLinkStatus(recipe: RecipeLibraryItem) {
 function getRecipeVisualStatus(
   recipe: RecipeLibraryItem
 ): VisualRecipeStatus {
-  if (recipe.latest_card) {
+  if (
+    recipe.latest_card ||
+    recipe.latest_media_job?.result_recipe_card_id
+  ) {
     return 'ai_card'
   }
 
@@ -454,6 +463,10 @@ function getRecipeVisualStatus(
 function getHomeRecipeSubtitle(recipe: RecipeLibraryItem) {
   if (recipe.latest_card) {
     return 'Recipe card'
+  }
+
+  if (recipe.latest_media_job?.result_recipe_card_id) {
+    return 'Recipe card ready'
   }
 
   if (isMediaJobActive(recipe.latest_media_job)) {

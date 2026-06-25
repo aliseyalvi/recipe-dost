@@ -87,6 +87,7 @@ type CreateMediaJobResponse =
         media_job_id: string
         status: MediaJobStatus
         progress: number
+        worker_triggered: boolean
       }
     }
   | {
@@ -687,6 +688,15 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
     return []
   }
 
+  const { data: mediaJobs } = await supabase
+    .from('media_jobs')
+    .select(MEDIA_JOB_SELECT)
+    .eq('user_id', user.id)
+    .in('recipe_item_id', recipeIds)
+    .order('created_at', { ascending: false })
+
+  // Read jobs first so a newly published result_recipe_card_id is followed by
+  // a fresh recipe_cards query instead of leaving a completed job without its card.
   const { data: recipeCards, error: recipeCardsError } = await supabase
     .from('recipe_cards')
     .select(
@@ -699,13 +709,6 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
   if (recipeCardsError) {
     throw new Error('Could not load your recipe library.')
   }
-
-  const { data: mediaJobs } = await supabase
-    .from('media_jobs')
-    .select(MEDIA_JOB_SELECT)
-    .eq('user_id', user.id)
-    .in('recipe_item_id', recipeIds)
-    .order('created_at', { ascending: false })
 
   const latestCardByRecipeId = new Map<string, RecipeLibraryCard>()
   const latestJobByRecipeId = new Map<string, MediaJob>()

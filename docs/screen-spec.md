@@ -1356,3 +1356,30 @@ No upload UI, video downloader, video backup, private-content access, medical/di
 - Never sends source URLs, captions, ingredient text, error messages, raw media paths, or generated recipe content.
 
 M14G-1 does not implement a downloader, worker, FFmpeg, raw media Storage, Gemini media upload, RevenueCat, or new auth UI.
+
+## M14G-3 Completed Media Job Integration
+
+### Processing Card
+
+- Active media jobs poll every 5 seconds.
+- Polling stops for `completed`, `failed`, and `needs_caption`.
+- Status copy:
+  - `queued`: "Waiting to start..."
+  - `resolving`: "Finding recipe video..."
+  - `analyzing`: "Reading recipe steps..."
+  - `saving_result`: "Saving recipe card..."
+  - `completed`: "Recipe card ready"
+  - `needs_caption`: "Paste caption or visible ingredients for accurate AI results."
+  - `failed`: "Video analysis failed. Paste caption manually."
+- Completed jobs show the worker thumbnail when available and an "Open Recipe Card" button.
+- "Open Recipe Card" navigates to `/recipe-card/[result_recipe_card_id]`.
+- When `result_recipe_card_id` appears, the related recipe-card query is prefetched and Home/Library data is invalidated.
+
+### Home And Library
+
+- Home recent recipes and Library poll every 5 seconds only while at least one visible media job is active.
+- Completed jobs are treated as ready AI cards and open the generated recipe result.
+- Visual cards prefer `media_jobs.thumbnail_url`, then `recipe_items.thumbnail_url`, then the existing fallback visual.
+- Non-YouTube jobs that cannot be analyzed from the public link continue to require caption or visible ingredient input.
+
+M14G-3 adds no raw video download, mobile video storage, scraping, auth, or paywall behavior.

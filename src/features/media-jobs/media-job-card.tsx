@@ -22,6 +22,7 @@ export function MediaJobCard({
 }: Props) {
   const thumbnailUrl = job.thumbnail_url ?? fallbackThumbnailUrl
   const needsAttention = job.status === 'failed' || job.status === 'needs_caption'
+  const isCompleted = job.status === 'completed'
 
   return (
     <Card tone={needsAttention ? 'muted' : 'warm'}>
@@ -64,15 +65,15 @@ export function MediaJobCard({
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
             <AppBadge
               label={getMediaJobStatusLabel(job.status)}
-              tone={needsAttention ? 'warning' : 'primary'}
+              tone={needsAttention ? 'warning' : isCompleted ? 'accent' : 'primary'}
             />
             <AppBadge label={`${job.progress}%`} />
           </View>
           <Text selectable style={[typography.heading, { color: colors.text }]}>
-            Video analysis
+            {isCompleted ? 'Recipe card ready' : 'Video analysis'}
           </Text>
           <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-            {job.error_message || getMediaJobMessage(job)}
+            {getMediaJobMessage(job)}
           </Text>
         </View>
       </View>
@@ -122,23 +123,23 @@ export function MediaJobCard({
 function getMediaJobStatusLabel(status: MediaJob['status']) {
   switch (status) {
     case 'queued':
-      return 'Queued'
+      return 'Waiting'
     case 'resolving':
-      return 'Resolving source'
+      return 'Finding video'
     case 'downloading':
-      return 'Downloading'
+      return 'Finding video'
     case 'validating':
-      return 'Validating'
+      return 'Finding video'
     case 'thumbnailing':
-      return 'Creating thumbnail'
+      return 'Reading recipe'
     case 'uploading_to_ai':
-      return 'Preparing AI'
+      return 'Reading recipe'
     case 'analyzing':
-      return 'Analyzing'
+      return 'Reading recipe'
     case 'saving_result':
-      return 'Saving result'
+      return 'Saving'
     case 'completed':
-      return 'Completed'
+      return 'Ready'
     case 'failed':
       return 'Failed'
     case 'needs_caption':
@@ -149,26 +150,26 @@ function getMediaJobStatusLabel(status: MediaJob['status']) {
 function getMediaJobMessage(job: MediaJob) {
   switch (job.status) {
     case 'queued':
-      return 'Waiting for the media worker. No video has been downloaded.'
+      return 'Waiting to start...'
     case 'resolving':
-      return 'Checking how this source can be processed.'
+      return 'Finding recipe video...'
     case 'downloading':
-      return 'A future authorized worker is retrieving temporary media.'
+      return 'Finding recipe video...'
     case 'validating':
-      return 'Checking the temporary media before analysis.'
+      return 'Finding recipe video...'
     case 'thumbnailing':
-      return 'Preparing a static thumbnail.'
+      return 'Reading recipe steps...'
     case 'uploading_to_ai':
-      return 'Preparing authorized media for AI analysis.'
+      return 'Reading recipe steps...'
     case 'analyzing':
-      return 'Extracting recipe details from the authorized media.'
+      return 'Reading recipe steps...'
     case 'saving_result':
-      return 'Saving the recipe card.'
+      return 'Saving recipe card...'
     case 'completed':
-      return 'Video analysis finished.'
+      return 'Recipe card ready'
     case 'failed':
-      return 'Video analysis could not finish.'
+      return 'Video analysis failed. Paste caption manually.'
     case 'needs_caption':
-      return 'Paste the recipe caption or visible ingredients to continue.'
+      return 'Paste caption or visible ingredients for accurate AI results.'
   }
 }

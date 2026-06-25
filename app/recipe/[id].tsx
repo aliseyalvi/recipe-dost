@@ -9,6 +9,7 @@ import {
   createMediaJob,
   generateRecipeCard,
   getLatestMediaJobForRecipe,
+  getRecipeCard,
   getSavedRecipeItem,
   isMediaJobActive,
   updateSavedRecipeCaption,
@@ -61,7 +62,7 @@ export default function SavedRecipeRoute() {
     queryKey: ['media-job', 'recipe', recipeId],
     queryFn: () => getLatestMediaJobForRecipe(recipeId ?? ''),
     refetchInterval: (query) =>
-      isMediaJobActive(query.state.data) ? 6000 : false,
+      isMediaJobActive(query.state.data) ? 5000 : false,
   })
   const usageSummary = usageSummaryQuery.data
 
@@ -99,6 +100,25 @@ export default function SavedRecipeRoute() {
       progress: mediaJob.progress,
     })
   }, [mediaJobQuery.data, track])
+
+  useEffect(() => {
+    const recipeCardId = mediaJobQuery.data?.result_recipe_card_id
+
+    if (!recipeCardId) {
+      return
+    }
+
+    void queryClient.prefetchQuery({
+      queryKey: ['recipe-card', recipeCardId],
+      queryFn: () => getRecipeCard(recipeCardId),
+    })
+    void queryClient.invalidateQueries({
+      queryKey: ['recent-recipes'],
+    })
+    void queryClient.invalidateQueries({
+      queryKey: ['recipe-library'],
+    })
+  }, [mediaJobQuery.data?.result_recipe_card_id, queryClient])
 
   useEffect(() => {
     const recipe = recipeQuery.data
