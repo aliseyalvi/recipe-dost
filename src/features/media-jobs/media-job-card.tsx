@@ -4,6 +4,7 @@ import { AppBadge } from '@/ui/app-badge'
 import { Button } from '@/ui/button'
 import { Card } from '@/ui/card'
 import { Image, Text, View } from 'react-native'
+import { MediaJobSourceMetadataSummary } from './media-job-source-metadata'
 
 type Props = {
   job: MediaJob
@@ -20,7 +21,10 @@ export function MediaJobCard({
   onPasteCaption,
   onRetry,
 }: Props) {
-  const thumbnailUrl = job.thumbnail_url ?? fallbackThumbnailUrl
+  const thumbnailUrl =
+    job.thumbnail_url ??
+    job.source_metadata.uploaded_thumbnail_url ??
+    fallbackThumbnailUrl
   const needsAttention = job.status === 'failed' || job.status === 'needs_caption'
   const isCompleted = job.status === 'completed'
 
@@ -75,6 +79,11 @@ export function MediaJobCard({
           <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
             {getMediaJobMessage(job)}
           </Text>
+          <MediaJobSourceMetadataSummary
+            metadata={job.source_metadata}
+            fallbackPlatform={job.platform}
+            isMockResult={isMockMediaJob(job)}
+          />
         </View>
       </View>
 
@@ -117,6 +126,13 @@ export function MediaJobCard({
         </View>
       ) : null}
     </Card>
+  )
+}
+
+function isMockMediaJob(job: MediaJob) {
+  return (
+    job.ai_provider?.toLowerCase() === 'mock' ||
+    job.source_metadata.resolver?.toLowerCase().includes('mock') === true
   )
 }
 

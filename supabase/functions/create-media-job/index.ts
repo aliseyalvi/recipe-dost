@@ -20,6 +20,8 @@ type MediaSourceMode =
   | "youtube_url"
   | "unsupported_video_link";
 
+type MediaProcessorMode = "worker" | "queue" | "manual" | "disabled";
+
 type RecipeItem = {
   id: string;
   user_id: string;
@@ -265,9 +267,11 @@ async function handleCreateMediaJobRequest(request: Request) {
     "Media job created.",
   );
 
-  const workerTriggered = await triggerWorker(
+  const processorMode = getMediaProcessorMode();
+  const workerTriggered = await handleMediaProcessorMode(
     clients.adminClient,
     jobResult.data.id,
+    processorMode,
   );
 
   return jsonResponse({
@@ -277,8 +281,158 @@ async function handleCreateMediaJobRequest(request: Request) {
       status: jobResult.data.status,
       progress: jobResult.data.progress,
       worker_triggered: workerTriggered,
+      processor_mode: processorMode,
     },
   });
+}
+
+function getMediaProcessorMode(): MediaProcessorMode {
+  const value = Deno.env.get("MEDIA_PROCESSOR_MODE")?.trim().toLowerCase();
+
+  return value === "queue" || value === "manual" || value === "disabled"
+    ? value
+    : "worker";
+}
+
+async function handleMediaProcessorMode(
+  adminClient: EdgeSupabaseClient,
+  mediaJobId: string,
+  processorMode: MediaProcessorMode,
+) {
+  if (processorMode === "worker") {
+    return await triggerWorker(adminClient, mediaJobId);
+  }
+
+  if (processorMode === "queue") {
+    return await queueForQueueWorker(adminClient, mediaJobId);
+  }
+
+  return await skipWorkerTriggerForProcessorMode(
+    adminClient,
+    mediaJobId,
+    processorMode,
+  );
+}
+
+async function queueForQueueWorker(
+  adminClient: EdgeSupabaseClient,
+  mediaJobId: string,
+) {
+  try {
+    await insertMediaJobEvent(
+      adminClient,
+      mediaJobId,
+      "queued_for_queue_worker",
+      "Media job queued for queue worker.",
+      {
+        processor_mode: "queue",
+      },
+    );
+  } catch {
+    // Do not fail job creation when queue bookkeeping fails.
+  }
+
+  return await requestQueueWorkerWake(adminClient, mediaJobId);
+}
+
+async function requestQueueWorkerWake(
+  adminClient: EdgeSupabaseClient,
+  mediaJobId: string,
+) {
+  const workerUrl = Deno.env.get("MEDIA_WORKER_URL")?.trim();
+  const timeoutMs = getWorkerWakeTimeoutMs();
+
+  if (!workerUrl) {
+    return false;
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const endpoint = `${workerUrl.replace(/\/+$/, "")}/wake`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "GET",
+      signal: controller.signal,
+    });
+
+    await insertQueueWakeEvent(
+      adminClient,
+      mediaJobId,
+      response.ok ? "queue_worker_wake_requested" : "queue_worker_wake_failed",
+      response.ok
+        ? "Queue worker wake requested."
+        : "Queue worker wake request failed.",
+      {
+        processor_mode: "queue",
+        status_code: response.status,
+        timeout_ms: timeoutMs,
+      },
+    );
+    return response.ok;
+  } catch {
+    await insertQueueWakeEvent(
+      adminClient,
+      mediaJobId,
+      "queue_worker_wake_failed",
+      "Queue worker wake request failed.",
+      {
+        processor_mode: "queue",
+        timeout_ms: timeoutMs,
+      },
+    );
+    return false;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function insertQueueWakeEvent(
+  adminClient: EdgeSupabaseClient,
+  mediaJobId: string,
+  eventType: "queue_worker_wake_requested" | "queue_worker_wake_failed",
+  message: string,
+  metadata: Json,
+) {
+  try {
+    await insertMediaJobEvent(
+      adminClient,
+      mediaJobId,
+      eventType,
+      message,
+      metadata,
+    );
+  } catch {
+    // Queue mode wake attempts must never fail media job creation.
+  }
+}
+
+function getWorkerWakeTimeoutMs() {
+  const value = Number(Deno.env.get("WORKER_WAKE_TIMEOUT_MS"));
+
+  return Number.isFinite(value) && value > 0 ? Math.round(value) : 2_500;
+}
+
+async function skipWorkerTriggerForProcessorMode(
+  adminClient: EdgeSupabaseClient,
+  mediaJobId: string,
+  processorMode: Exclude<MediaProcessorMode, "worker">,
+) {
+  try {
+    await insertMediaJobEvent(
+      adminClient,
+      mediaJobId,
+      "worker_trigger_skipped",
+      "Worker trigger skipped by MEDIA_PROCESSOR_MODE.",
+      {
+        processor_mode: processorMode,
+      },
+    );
+  } catch {
+    // Do not fail job creation when manual/disabled mode only skips triggering.
+  }
+
+  return false;
 }
 
 function createSupabaseClients(authHeader: string) {

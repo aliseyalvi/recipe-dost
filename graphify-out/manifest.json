@@ -45,8 +45,8 @@
     "semantic_hash": ""
   },
   "app/(tabs)/home.tsx": {
-    "mtime": 1782361687.0930173,
-    "ast_hash": "2d0d66bab93bbdd3bec9a7e0432dacab",
+    "mtime": 1782564520.7437546,
+    "ast_hash": "0309babd9da7a8698bdfc58f40e62b4c",
     "semantic_hash": ""
   },
   "app/(tabs)/index.tsx": {
@@ -55,8 +55,8 @@
     "semantic_hash": "0bfc61821c23777c95c990e1a44ff1a1"
   },
   "app/(tabs)/library.tsx": {
-    "mtime": 1782361687.304241,
-    "ast_hash": "17c76fb8e130c0175dc93fd28c5354eb",
+    "mtime": 1782564520.8800545,
+    "ast_hash": "2ec0f25d8c840ccad430d596767e9ed4",
     "semantic_hash": ""
   },
   "app/(tabs)/settings.tsx": {
@@ -90,13 +90,13 @@
     "semantic_hash": "8c9bde803533286f89b6d79c731dd1f1"
   },
   "app/recipe-card/[id].tsx": {
-    "mtime": 1782274180.507882,
-    "ast_hash": "7e574b5eb0c54f064660de1654a916bd",
+    "mtime": 1782564520.6079383,
+    "ast_hash": "3908fdf1ba555d9af6408740e58a6d40",
     "semantic_hash": ""
   },
   "app/recipe/[id].tsx": {
-    "mtime": 1782361644.8037827,
-    "ast_hash": "b0606810d878ca6301bc4e282e02db0b",
+    "mtime": 1782387036.5536938,
+    "ast_hash": "aa82d66658cb8021aff8fd69e9c20744",
     "semantic_hash": ""
   },
   "app/recipe/preview.tsx": {
@@ -285,8 +285,8 @@
     "semantic_hash": "f582c09c320bde8371bd999feab5a632"
   },
   "src/lib/api/recipes.ts": {
-    "mtime": 1782361554.159095,
-    "ast_hash": "4410876d0ca87419d0ac859c0ba335f3",
+    "mtime": 1782564520.175247,
+    "ast_hash": "752a8dd4df1f95c31046285e768f35af",
     "semantic_hash": ""
   },
   "src/lib/api/usage.ts": {
@@ -345,8 +345,8 @@
     "semantic_hash": "8554bce76ca644acae1bef628e2e0d9e"
   },
   "src/types/supabase.ts": {
-    "mtime": 1782361813.5011644,
-    "ast_hash": "8d8f7e7b1fad634ae4716cb1e3ede271",
+    "mtime": 1782564520.0316665,
+    "ast_hash": "74e2dad806b2e43cd976083fc25f3c75",
     "semantic_hash": ""
   },
   "src/ui/app-badge.tsx": {
@@ -640,8 +640,8 @@
     "semantic_hash": ""
   },
   "docs/api-contract.md": {
-    "mtime": 1782361751.4871883,
-    "ast_hash": "0045ab1bae8fe63cd35493c53a3b308b",
+    "mtime": 1782537732.9289994,
+    "ast_hash": "ef005c10bc18ed173d6d962e6fbe960a",
     "semantic_hash": ""
   },
   "docs/database-schema.md": {
@@ -650,8 +650,8 @@
     "semantic_hash": ""
   },
   "docs/decision-log.md": {
-    "mtime": 1782361751.907057,
-    "ast_hash": "b7377c15f39d91f999736c1d7f8ab5ac",
+    "mtime": 1782798370.6652534,
+    "ast_hash": "ad2a47d5df70be9ce7688fc98ccc85b5",
     "semantic_hash": ""
   },
   "docs/launch-checklist.md": {
@@ -670,8 +670,8 @@
     "semantic_hash": ""
   },
   "docs/screen-spec.md": {
-    "mtime": 1782361751.6993265,
-    "ast_hash": "7218776e101ffa999128ab4f5a3fb3e1",
+    "mtime": 1782387036.6840825,
+    "ast_hash": "3ca6349f46fa8c4e4739b9b209300f1a",
     "semantic_hash": ""
   },
   "posthog-setup-report.md": {
@@ -745,8 +745,8 @@
     "semantic_hash": ""
   },
   "src/features/media-jobs/media-job-card.tsx": {
-    "mtime": 1782361592.8143427,
-    "ast_hash": "eddb4df0bc0607641d774cc3318861ae",
+    "mtime": 1782564520.4711883,
+    "ast_hash": "166df62530d9af495e93da5867711545",
     "semantic_hash": ""
   },
   "supabase/functions/create-media-job/deno.json": {
@@ -755,13 +755,28 @@
     "semantic_hash": ""
   },
   "supabase/functions/create-media-job/index.ts": {
-    "mtime": 1782361440.4525552,
-    "ast_hash": "cf4137fc400071a658c04c53a93ed55f",
+    "mtime": 1782798386.0453103,
+    "ast_hash": "89ae9ce71c3f3178cd0a6273d44ea894",
     "semantic_hash": ""
   },
   "supabase/migrations/20260625042032_media_job_foundation.sql": {
     "mtime": 1782361828.0152688,
     "ast_hash": "ef152f4a56c48dbd56e2d75b63a6d0ef",
+    "semantic_hash": ""
+  },
+  "docs/milestones.md": {
+    "mtime": 1782798370.4287188,
+    "ast_hash": "f55ce330082a58edcfdfc5efae1c84d9",
+    "semantic_hash": ""
+  },
+  "src/features/media-jobs/media-job-source-metadata.tsx": {
+    "mtime": 1782564520.319936,
+    "ast_hash": "cb71059f4cc3149c3a46ce01e48dbebd",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260627090000_add_media_job_metadata_storage.sql": {
+    "mtime": 1782563801.1489248,
+    "ast_hash": "dd2834e512f135e4a0f2b8f6ea150e61",
     "semantic_hash": ""
   }
 }

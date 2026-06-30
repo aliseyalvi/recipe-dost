@@ -21,7 +21,9 @@ import {
   RecipeCardStep,
   RecipeCardSubstitution,
   getRecipeCard,
+  getLatestMediaJobForRecipe,
 } from '@/lib/api/recipes'
+import { MediaJobSourceMetadataSummary } from '@/features/media-jobs/media-job-source-metadata'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, radius, spacing, typography } from '@/theme'
 import { AppBadge } from '@/ui/app-badge'
@@ -51,6 +53,11 @@ export default function RecipeCardResultRoute() {
     enabled: Boolean(recipeCardId),
     queryKey: ['recipe-card', recipeCardId],
     queryFn: () => getRecipeCard(recipeCardId ?? ''),
+  })
+  const mediaJobQuery = useQuery({
+    enabled: Boolean(recipeCardQuery.data?.recipe_id),
+    queryKey: ['media-job', 'recipe', recipeCardQuery.data?.recipe_id],
+    queryFn: () => getLatestMediaJobForRecipe(recipeCardQuery.data?.recipe_id ?? ''),
   })
 
   useEffect(() => {
@@ -226,6 +233,11 @@ export default function RecipeCardResultRoute() {
         {__DEV__ && recipeCard.model_used ? (
           <AppBadge label={`Model: ${recipeCard.model_used}`} />
         ) : null}
+        <MediaJobSourceMetadataSummary
+          metadata={mediaJobQuery.data?.source_metadata}
+          fallbackPlatform={sourcePlatform}
+          isMockResult={isMockRecipeResult(recipeCard, mediaJobQuery.data)}
+        />
         <ContentLanguageControl
           value={contentLanguage}
           onChange={setScreenLanguage}
@@ -305,6 +317,17 @@ export default function RecipeCardResultRoute() {
         />
       </View>
     </Screen>
+  )
+}
+
+function isMockRecipeResult(
+  recipeCard: RecipeCard,
+  mediaJob: { ai_provider: string | null } | null | undefined
+) {
+  return (
+    recipeCard.model_used?.toLowerCase() === 'mock' ||
+    recipeCard.prompt_version?.toLowerCase().startsWith('mock') === true ||
+    mediaJob?.ai_provider?.toLowerCase() === 'mock'
   )
 }
 

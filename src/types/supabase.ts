@@ -190,6 +190,7 @@ export type Database = {
           resolver_provider: string | null
           result_recipe_card_id: string | null
           source_mode: string
+          source_metadata: Json
           source_url: string
           started_at: string | null
           status: string
@@ -216,6 +217,7 @@ export type Database = {
           resolver_provider?: string | null
           result_recipe_card_id?: string | null
           source_mode?: string
+          source_metadata?: Json
           source_url: string
           started_at?: string | null
           status?: string
@@ -242,6 +244,7 @@ export type Database = {
           resolver_provider?: string | null
           result_recipe_card_id?: string | null
           source_mode?: string
+          source_metadata?: Json
           source_url?: string
           started_at?: string | null
           status?: string

@@ -212,6 +212,7 @@ export default function LibraryRoute() {
             <VisualRecipeCard
               title={
                 item.latest_card?.recipe_title?.trim() ||
+                item.latest_media_job?.source_metadata.title?.trim() ||
                 item.title?.trim() ||
                 'Untitled recipe'
               }
@@ -219,7 +220,9 @@ export default function LibraryRoute() {
               platform={getRecipePlatform(item.platform)}
               status={getRecipeVisualStatus(item)}
               thumbnailUrl={
-                item.latest_media_job?.thumbnail_url ?? item.thumbnail_url
+                item.latest_media_job?.thumbnail_url ??
+                item.latest_media_job?.source_metadata.uploaded_thumbnail_url ??
+                item.thumbnail_url
               }
               sourceUrl={item.source_url}
               hasGroceryList={Boolean(item.latest_card)}

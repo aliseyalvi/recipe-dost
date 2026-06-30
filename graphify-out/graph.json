@@ -79,7 +79,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tabs_layout",
-      "community": 38,
+      "community": 43,
       "norm_label": "_layout.tsx"
     },
     {
@@ -89,7 +89,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "tabs_layout_tabicons",
-      "community": 38,
+      "community": 43,
       "norm_label": "tabicons"
     },
     {
@@ -99,7 +99,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "tabs_layout_tabslayout",
-      "community": 38,
+      "community": 43,
       "norm_label": "tabslayout()"
     },
     {
@@ -109,7 +109,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "tabs_layout_recipedosttabbar",
-      "community": 38,
+      "community": 43,
       "norm_label": "recipedosttabbar()"
     },
     {
@@ -119,7 +119,7 @@
       "source_location": "L99",
       "_origin": "ast",
       "id": "tabs_layout_tabbutton",
-      "community": 38,
+      "community": 43,
       "norm_label": "tabbutton()"
     },
     {
@@ -129,7 +129,7 @@
       "source_location": "L178",
       "_origin": "ast",
       "id": "tabs_layout_istabroute",
-      "community": 38,
+      "community": 43,
       "norm_label": "istabroute()"
     },
     {
@@ -139,7 +139,7 @@
       "source_location": "L184",
       "_origin": "ast",
       "id": "tabs_layout_centersavebutton",
-      "community": 38,
+      "community": 43,
       "norm_label": "centersavebutton()"
     },
     {
@@ -149,7 +149,7 @@
       "source_location": "L219",
       "_origin": "ast",
       "id": "tabs_layout_gettablabel",
-      "community": 38,
+      "community": 43,
       "norm_label": "gettablabel()"
     },
     {
@@ -159,7 +159,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tabs_grocery",
-      "community": 3,
+      "community": 108,
       "norm_label": "grocery.tsx"
     },
     {
@@ -169,7 +169,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "tabs_grocery_groceryroute",
-      "community": 3,
+      "community": 108,
       "norm_label": "groceryroute()"
     },
     {
@@ -179,7 +179,7 @@
       "source_location": "L350",
       "_origin": "ast",
       "id": "tabs_grocery_checklistitem",
-      "community": 3,
+      "community": 108,
       "norm_label": "checklistitem()"
     },
     {
@@ -199,7 +199,7 @@
       "source_location": "L470",
       "_origin": "ast",
       "id": "tabs_grocery_getrecipetitle",
-      "community": 3,
+      "community": 108,
       "norm_label": "getrecipetitle()"
     },
     {
@@ -209,7 +209,7 @@
       "source_location": "L474",
       "_origin": "ast",
       "id": "tabs_grocery_formatgrocerylistcopy",
-      "community": 3,
+      "community": 108,
       "norm_label": "formatgrocerylistcopy()"
     },
     {
@@ -229,7 +229,7 @@
       "source_location": "L503",
       "_origin": "ast",
       "id": "tabs_grocery_getgroceryanalyticsproperties",
-      "community": 3,
+      "community": 108,
       "norm_label": "getgroceryanalyticsproperties()"
     },
     {
@@ -239,7 +239,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tabs_home",
-      "community": 45,
+      "community": 0,
       "norm_label": "home.tsx"
     },
     {
@@ -249,7 +249,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "tabs_home_homefilter",
-      "community": 45,
+      "community": 0,
       "norm_label": "homefilter"
     },
     {
@@ -259,7 +259,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "tabs_home_homechip",
-      "community": 45,
+      "community": 0,
       "norm_label": "homechip"
     },
     {
@@ -269,7 +269,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "tabs_home_homechips",
-      "community": 45,
+      "community": 0,
       "norm_label": "homechips"
     },
     {
@@ -279,64 +279,64 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "tabs_home_homeroute",
-      "community": 45,
+      "community": 0,
       "norm_label": "homeroute()"
     },
     {
       "label": "ProgressItem()",
       "file_type": "code",
       "source_file": "app/(tabs)/home.tsx",
-      "source_location": "L299",
+      "source_location": "L308",
       "_origin": "ast",
       "id": "tabs_home_progressitem",
-      "community": 45,
+      "community": 0,
       "norm_label": "progressitem()"
     },
     {
       "label": "UsageStat()",
       "file_type": "code",
       "source_file": "app/(tabs)/home.tsx",
-      "source_location": "L341",
+      "source_location": "L350",
       "_origin": "ast",
       "id": "tabs_home_usagestat",
-      "community": 45,
+      "community": 0,
       "norm_label": "usagestat()"
     },
     {
       "label": "getCompletedSteps()",
       "file_type": "code",
       "source_file": "app/(tabs)/home.tsx",
-      "source_location": "L370",
+      "source_location": "L379",
       "_origin": "ast",
       "id": "tabs_home_getcompletedsteps",
-      "community": 45,
+      "community": 0,
       "norm_label": "getcompletedsteps()"
     },
     {
       "label": "filterHomeRecipes()",
       "file_type": "code",
       "source_file": "app/(tabs)/home.tsx",
-      "source_location": "L391",
+      "source_location": "L400",
       "_origin": "ast",
       "id": "tabs_home_filterhomerecipes",
-      "community": 45,
+      "community": 0,
       "norm_label": "filterhomerecipes()"
     },
     {
       "label": "getRecipePlatform()",
       "file_type": "code",
       "source_file": "app/(tabs)/home.tsx",
-      "source_location": "L418",
+      "source_location": "L427",
       "_origin": "ast",
       "id": "tabs_home_getrecipeplatform",
-      "community": 45,
+      "community": 0,
       "norm_label": "getrecipeplatform()"
     },
     {
       "label": "getSavedLinkStatus()",
       "file_type": "code",
       "source_file": "app/(tabs)/home.tsx",
-      "source_location": "L432",
+      "source_location": "L441",
       "_origin": "ast",
       "id": "tabs_home_getsavedlinkstatus",
       "community": 8,
@@ -346,7 +346,7 @@
       "label": "getRecipeVisualStatus()",
       "file_type": "code",
       "source_file": "app/(tabs)/home.tsx",
-      "source_location": "L436",
+      "source_location": "L445",
       "_origin": "ast",
       "id": "tabs_home_getrecipevisualstatus",
       "community": 8,
@@ -356,7 +356,7 @@
       "label": "getHomeRecipeSubtitle()",
       "file_type": "code",
       "source_file": "app/(tabs)/home.tsx",
-      "source_location": "L454",
+      "source_location": "L466",
       "_origin": "ast",
       "id": "tabs_home_gethomerecipesubtitle",
       "community": 8,
@@ -366,10 +366,10 @@
       "label": "hasNotes()",
       "file_type": "code",
       "source_file": "app/(tabs)/home.tsx",
-      "source_location": "L474",
+      "source_location": "L490",
       "_origin": "ast",
       "id": "tabs_home_hasnotes",
-      "community": 45,
+      "community": 0,
       "norm_label": "hasnotes()"
     },
     {
@@ -459,14 +459,14 @@
       "source_location": "L57",
       "_origin": "ast",
       "id": "tabs_library_libraryroute",
-      "community": 9,
+      "community": 108,
       "norm_label": "libraryroute()"
     },
     {
       "label": "LibraryHeader()",
       "file_type": "code",
       "source_file": "app/(tabs)/library.tsx",
-      "source_location": "L233",
+      "source_location": "L242",
       "_origin": "ast",
       "id": "tabs_library_libraryheader",
       "community": 8,
@@ -476,7 +476,7 @@
       "label": "LibraryEmptyState()",
       "file_type": "code",
       "source_file": "app/(tabs)/library.tsx",
-      "source_location": "L310",
+      "source_location": "L319",
       "_origin": "ast",
       "id": "tabs_library_libraryemptystate",
       "community": 8,
@@ -486,7 +486,7 @@
       "label": "getFilteredLibraryItems()",
       "file_type": "code",
       "source_file": "app/(tabs)/library.tsx",
-      "source_location": "L357",
+      "source_location": "L366",
       "_origin": "ast",
       "id": "tabs_library_getfilteredlibraryitems",
       "community": 8,
@@ -496,7 +496,7 @@
       "label": "itemMatchesFilter()",
       "file_type": "code",
       "source_file": "app/(tabs)/library.tsx",
-      "source_location": "L405",
+      "source_location": "L414",
       "_origin": "ast",
       "id": "tabs_library_itemmatchesfilter",
       "community": 8,
@@ -506,7 +506,7 @@
       "label": "getLibrarySubtitle()",
       "file_type": "code",
       "source_file": "app/(tabs)/library.tsx",
-      "source_location": "L422",
+      "source_location": "L431",
       "_origin": "ast",
       "id": "tabs_library_getlibrarysubtitle",
       "community": 8,
@@ -516,7 +516,7 @@
       "label": "getRecipePlatform()",
       "file_type": "code",
       "source_file": "app/(tabs)/library.tsx",
-      "source_location": "L445",
+      "source_location": "L458",
       "_origin": "ast",
       "id": "tabs_library_getrecipeplatform",
       "community": 8,
@@ -526,7 +526,7 @@
       "label": "getPlatformLabel()",
       "file_type": "code",
       "source_file": "app/(tabs)/library.tsx",
-      "source_location": "L459",
+      "source_location": "L472",
       "_origin": "ast",
       "id": "tabs_library_getplatformlabel",
       "community": 8,
@@ -536,7 +536,7 @@
       "label": "getSavedLinkStatus()",
       "file_type": "code",
       "source_file": "app/(tabs)/library.tsx",
-      "source_location": "L474",
+      "source_location": "L487",
       "_origin": "ast",
       "id": "tabs_library_getsavedlinkstatus",
       "community": 8,
@@ -546,7 +546,7 @@
       "label": "getRecipeVisualStatus()",
       "file_type": "code",
       "source_file": "app/(tabs)/library.tsx",
-      "source_location": "L478",
+      "source_location": "L491",
       "_origin": "ast",
       "id": "tabs_library_getrecipevisualstatus",
       "community": 8,
@@ -556,7 +556,7 @@
       "label": "hasNotes()",
       "file_type": "code",
       "source_file": "app/(tabs)/library.tsx",
-      "source_location": "L496",
+      "source_location": "L512",
       "_origin": "ast",
       "id": "tabs_library_hasnotes",
       "community": 8,
@@ -569,7 +569,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tabs_settings",
-      "community": 9,
+      "community": 45,
       "norm_label": "settings.tsx"
     },
     {
@@ -579,7 +579,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "tabs_settings_settingsroute",
-      "community": 9,
+      "community": 109,
       "norm_label": "settingsroute()"
     },
     {
@@ -589,7 +589,7 @@
       "source_location": "L125",
       "_origin": "ast",
       "id": "tabs_settings_settingsrow",
-      "community": 9,
+      "community": 45,
       "norm_label": "settingsrow()"
     },
     {
@@ -599,7 +599,7 @@
       "source_location": "L148",
       "_origin": "ast",
       "id": "tabs_settings_shortid",
-      "community": 9,
+      "community": 109,
       "norm_label": "shortid()"
     },
     {
@@ -659,7 +659,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_index",
-      "community": 45,
+      "community": 109,
       "norm_label": "index.tsx"
     },
     {
@@ -669,7 +669,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "app_index_indexroute",
-      "community": 45,
+      "community": 109,
       "norm_label": "indexroute()"
     },
     {
@@ -709,7 +709,7 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "app_onboarding_onboardingroute",
-      "community": 3,
+      "community": 109,
       "norm_label": "onboardingroute()"
     },
     {
@@ -766,17 +766,27 @@
       "label": "RecipeCardResultRoute()",
       "file_type": "code",
       "source_file": "app/recipe-card/[id].tsx",
-      "source_location": "L42",
+      "source_location": "L44",
       "_origin": "ast",
       "id": "recipe_card_id_recipecardresultroute",
       "community": 3,
       "norm_label": "recipecardresultroute()"
     },
     {
+      "label": "isMockRecipeResult()",
+      "file_type": "code",
+      "source_file": "app/recipe-card/[id].tsx",
+      "source_location": "L323",
+      "_origin": "ast",
+      "id": "recipe_card_id_ismockreciperesult",
+      "community": 3,
+      "norm_label": "ismockreciperesult()"
+    },
+    {
       "label": "InfoGrid()",
       "file_type": "code",
       "source_file": "app/recipe-card/[id].tsx",
-      "source_location": "L311",
+      "source_location": "L334",
       "_origin": "ast",
       "id": "recipe_card_id_infogrid",
       "community": 3,
@@ -786,7 +796,7 @@
       "label": "IngredientsSection()",
       "file_type": "code",
       "source_file": "app/recipe-card/[id].tsx",
-      "source_location": "L330",
+      "source_location": "L353",
       "_origin": "ast",
       "id": "recipe_card_id_ingredientssection",
       "community": 3,
@@ -796,7 +806,7 @@
       "label": "StepsSection()",
       "file_type": "code",
       "source_file": "app/recipe-card/[id].tsx",
-      "source_location": "L381",
+      "source_location": "L404",
       "_origin": "ast",
       "id": "recipe_card_id_stepssection",
       "community": 3,
@@ -806,7 +816,7 @@
       "label": "GroceryListSection()",
       "file_type": "code",
       "source_file": "app/recipe-card/[id].tsx",
-      "source_location": "L459",
+      "source_location": "L482",
       "_origin": "ast",
       "id": "recipe_card_id_grocerylistsection",
       "community": 3,
@@ -816,7 +826,7 @@
       "label": "SubstitutionsSection()",
       "file_type": "code",
       "source_file": "app/recipe-card/[id].tsx",
-      "source_location": "L505",
+      "source_location": "L528",
       "_origin": "ast",
       "id": "recipe_card_id_substitutionssection",
       "community": 3,
@@ -826,7 +836,7 @@
       "label": "StorageSafetySection()",
       "file_type": "code",
       "source_file": "app/recipe-card/[id].tsx",
-      "source_location": "L542",
+      "source_location": "L565",
       "_origin": "ast",
       "id": "recipe_card_id_storagesafetysection",
       "community": 3,
@@ -836,7 +846,7 @@
       "label": "MissingInfoSection()",
       "file_type": "code",
       "source_file": "app/recipe-card/[id].tsx",
-      "source_location": "L578",
+      "source_location": "L601",
       "_origin": "ast",
       "id": "recipe_card_id_missinginfosection",
       "community": 3,
@@ -846,7 +856,7 @@
       "label": "LanguageTextBlock()",
       "file_type": "code",
       "source_file": "app/recipe-card/[id].tsx",
-      "source_location": "L621",
+      "source_location": "L644",
       "_origin": "ast",
       "id": "recipe_card_id_languagetextblock",
       "community": 3,
@@ -856,7 +866,7 @@
       "label": "formatGroceryItemsCopy()",
       "file_type": "code",
       "source_file": "app/recipe-card/[id].tsx",
-      "source_location": "L703",
+      "source_location": "L726",
       "_origin": "ast",
       "id": "recipe_card_id_formatgroceryitemscopy",
       "community": 3,
@@ -866,7 +876,7 @@
       "label": "formatGroceryCopyItem()",
       "file_type": "code",
       "source_file": "app/recipe-card/[id].tsx",
-      "source_location": "L710",
+      "source_location": "L733",
       "_origin": "ast",
       "id": "recipe_card_id_formatgrocerycopyitem",
       "community": 3,
@@ -876,7 +886,7 @@
       "label": "getAnalyticsProperties()",
       "file_type": "code",
       "source_file": "app/recipe-card/[id].tsx",
-      "source_location": "L727",
+      "source_location": "L750",
       "_origin": "ast",
       "id": "recipe_card_id_getanalyticsproperties",
       "community": 3,
@@ -886,7 +896,7 @@
       "label": "getSourceModeLabel()",
       "file_type": "code",
       "source_file": "app/recipe-card/[id].tsx",
-      "source_location": "L737",
+      "source_location": "L760",
       "_origin": "ast",
       "id": "recipe_card_id_getsourcemodelabel",
       "community": 3,
@@ -896,7 +906,7 @@
       "label": "getConfidenceLabel()",
       "file_type": "code",
       "source_file": "app/recipe-card/[id].tsx",
-      "source_location": "L750",
+      "source_location": "L773",
       "_origin": "ast",
       "id": "recipe_card_id_getconfidencelabel",
       "community": 3,
@@ -906,7 +916,7 @@
       "label": "formatMinutes()",
       "file_type": "code",
       "source_file": "app/recipe-card/[id].tsx",
-      "source_location": "L764",
+      "source_location": "L787",
       "_origin": "ast",
       "id": "recipe_card_id_formatminutes",
       "community": 3,
@@ -916,7 +926,7 @@
       "label": "titleCase()",
       "file_type": "code",
       "source_file": "app/recipe-card/[id].tsx",
-      "source_location": "L768",
+      "source_location": "L791",
       "_origin": "ast",
       "id": "recipe_card_id_titlecase",
       "community": 3,
@@ -936,7 +946,7 @@
       "label": "SavedRecipeRoute()",
       "file_type": "code",
       "source_file": "app/recipe/[id].tsx",
-      "source_location": "L33",
+      "source_location": "L34",
       "_origin": "ast",
       "id": "recipe_id_savedreciperoute",
       "community": 1,
@@ -946,7 +956,7 @@
       "label": "getRecipeInputSummary()",
       "file_type": "code",
       "source_file": "app/recipe/[id].tsx",
-      "source_location": "L649",
+      "source_location": "L669",
       "_origin": "ast",
       "id": "recipe_id_getrecipeinputsummary",
       "community": 1,
@@ -956,7 +966,7 @@
       "label": "getRecipePlatform()",
       "file_type": "code",
       "source_file": "app/recipe/[id].tsx",
-      "source_location": "L677",
+      "source_location": "L697",
       "_origin": "ast",
       "id": "recipe_id_getrecipeplatform",
       "community": 1,
@@ -966,7 +976,7 @@
       "label": "getGenerationErrorMessage()",
       "file_type": "code",
       "source_file": "app/recipe/[id].tsx",
-      "source_location": "L691",
+      "source_location": "L711",
       "_origin": "ast",
       "id": "recipe_id_getgenerationerrormessage",
       "community": 1,
@@ -976,7 +986,7 @@
       "label": "getFriendlyGenerateCardErrorMessage()",
       "file_type": "code",
       "source_file": "app/recipe/[id].tsx",
-      "source_location": "L705",
+      "source_location": "L725",
       "_origin": "ast",
       "id": "recipe_id_getfriendlygeneratecarderrormessage",
       "community": 1,
@@ -986,7 +996,7 @@
       "label": "isUnsupportedVideoPlatform()",
       "file_type": "code",
       "source_file": "app/recipe/[id].tsx",
-      "source_location": "L784",
+      "source_location": "L804",
       "_origin": "ast",
       "id": "recipe_id_isunsupportedvideoplatform",
       "community": 1,
@@ -996,7 +1006,7 @@
       "label": "getSourceModeHint()",
       "file_type": "code",
       "source_file": "app/recipe/[id].tsx",
-      "source_location": "L792",
+      "source_location": "L812",
       "_origin": "ast",
       "id": "recipe_id_getsourcemodehint",
       "community": 1,
@@ -1049,7 +1059,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "recipe_ready",
-      "community": 9,
+      "community": 45,
       "norm_label": "ready.tsx"
     },
     {
@@ -1059,7 +1069,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "recipe_ready_recipereadyroute",
-      "community": 9,
+      "community": 45,
       "norm_label": "recipereadyroute()"
     },
     {
@@ -1069,7 +1079,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_save_recipe",
-      "community": 9,
+      "community": 45,
       "norm_label": "save-recipe.tsx"
     },
     {
@@ -1079,7 +1089,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "app_save_recipe_savereciperoute",
-      "community": 9,
+      "community": 45,
       "norm_label": "savereciperoute()"
     },
     {
@@ -1089,7 +1099,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_share_recipe",
-      "community": 9,
+      "community": 45,
       "norm_label": "share-recipe.tsx"
     },
     {
@@ -1099,7 +1109,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "app_share_recipe_sharereciperoute",
-      "community": 9,
+      "community": 45,
       "norm_label": "sharereciperoute()"
     },
     {
@@ -1119,7 +1129,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "app_welcome_welcomeroute",
-      "community": 45,
+      "community": 108,
       "norm_label": "welcomeroute()"
     },
     {
@@ -1769,7 +1779,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "home_metadata_status_badge",
-      "community": 0,
+      "community": 104,
       "norm_label": "metadata-status-badge.tsx"
     },
     {
@@ -1779,7 +1789,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "home_metadata_status_badge_props",
-      "community": 0,
+      "community": 104,
       "norm_label": "props"
     },
     {
@@ -1789,7 +1799,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "home_metadata_status_badge_metadatastatusbadge",
-      "community": 0,
+      "community": 104,
       "norm_label": "metadatastatusbadge()"
     },
     {
@@ -1799,7 +1809,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "home_metadata_status_badge_titlecase",
-      "community": 0,
+      "community": 104,
       "norm_label": "titlecase()"
     },
     {
@@ -1839,7 +1849,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "home_recent_recipe_card",
-      "community": 0,
+      "community": 104,
       "norm_label": "recent-recipe-card.tsx"
     },
     {
@@ -1849,7 +1859,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "home_recent_recipe_card_props",
-      "community": 0,
+      "community": 104,
       "norm_label": "props"
     },
     {
@@ -1859,7 +1869,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "home_recent_recipe_card_recentrecipecard",
-      "community": 0,
+      "community": 104,
       "norm_label": "recentrecipecard()"
     },
     {
@@ -1869,7 +1879,7 @@
       "source_location": "L84",
       "_origin": "ast",
       "id": "home_recent_recipe_card_formatdate",
-      "community": 0,
+      "community": 104,
       "norm_label": "formatdate()"
     },
     {
@@ -1879,7 +1889,7 @@
       "source_location": "L97",
       "_origin": "ast",
       "id": "home_recent_recipe_card_getrecipeplatform",
-      "community": 0,
+      "community": 104,
       "norm_label": "getrecipeplatform()"
     },
     {
@@ -1889,7 +1899,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "home_recent_recipes_api",
-      "community": 104,
+      "community": 105,
       "norm_label": "recent-recipes-api.ts"
     },
     {
@@ -1899,7 +1909,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "home_recent_recipes_api_recentrecipeitem",
-      "community": 104,
+      "community": 105,
       "norm_label": "recentrecipeitem"
     },
     {
@@ -1909,7 +1919,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "home_recent_recipes_api_getrecentrecipes",
-      "community": 104,
+      "community": 105,
       "norm_label": "getrecentrecipes()"
     },
     {
@@ -1949,7 +1959,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "language_content_language",
-      "community": 105,
+      "community": 3,
       "norm_label": "content-language.ts"
     },
     {
@@ -1969,7 +1979,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "language_content_language_contentlanguagestate",
-      "community": 105,
+      "community": 3,
       "norm_label": "contentlanguagestate"
     },
     {
@@ -1979,7 +1989,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "language_content_language_usecontentlanguagestore",
-      "community": 105,
+      "community": 3,
       "norm_label": "usecontentlanguagestore"
     },
     {
@@ -1989,7 +1999,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "language_content_language_userecipecontentlanguage",
-      "community": 105,
+      "community": 3,
       "norm_label": "userecipecontentlanguage()"
     },
     {
@@ -1999,7 +2009,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "language_content_language_getdefaultcontentlanguage",
-      "community": 105,
+      "community": 3,
       "norm_label": "getdefaultcontentlanguage()"
     },
     {
@@ -2049,48 +2059,128 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "media_jobs_media_job_card",
-      "community": 0,
+      "community": 9,
       "norm_label": "media-job-card.tsx"
     },
     {
       "label": "Props",
       "file_type": "code",
       "source_file": "src/features/media-jobs/media-job-card.tsx",
-      "source_location": "L8",
+      "source_location": "L9",
       "_origin": "ast",
       "id": "media_jobs_media_job_card_props",
-      "community": 0,
+      "community": 9,
       "norm_label": "props"
     },
     {
       "label": "MediaJobCard()",
       "file_type": "code",
       "source_file": "src/features/media-jobs/media-job-card.tsx",
-      "source_location": "L16",
+      "source_location": "L17",
       "_origin": "ast",
       "id": "media_jobs_media_job_card_mediajobcard",
-      "community": 0,
+      "community": 9,
       "norm_label": "mediajobcard()"
+    },
+    {
+      "label": "isMockMediaJob()",
+      "file_type": "code",
+      "source_file": "src/features/media-jobs/media-job-card.tsx",
+      "source_location": "L132",
+      "_origin": "ast",
+      "id": "media_jobs_media_job_card_ismockmediajob",
+      "community": 9,
+      "norm_label": "ismockmediajob()"
     },
     {
       "label": "getMediaJobStatusLabel()",
       "file_type": "code",
       "source_file": "src/features/media-jobs/media-job-card.tsx",
-      "source_location": "L122",
+      "source_location": "L139",
       "_origin": "ast",
       "id": "media_jobs_media_job_card_getmediajobstatuslabel",
-      "community": 0,
+      "community": 9,
       "norm_label": "getmediajobstatuslabel()"
     },
     {
       "label": "getMediaJobMessage()",
       "file_type": "code",
       "source_file": "src/features/media-jobs/media-job-card.tsx",
-      "source_location": "L149",
+      "source_location": "L166",
       "_origin": "ast",
       "id": "media_jobs_media_job_card_getmediajobmessage",
-      "community": 0,
+      "community": 9,
       "norm_label": "getmediajobmessage()"
+    },
+    {
+      "label": "media-job-source-metadata.tsx",
+      "file_type": "code",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "media_jobs_media_job_source_metadata",
+      "community": 3,
+      "norm_label": "media-job-source-metadata.tsx"
+    },
+    {
+      "label": "Props",
+      "file_type": "code",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "media_jobs_media_job_source_metadata_props",
+      "community": 3,
+      "norm_label": "props"
+    },
+    {
+      "label": "MediaJobSourceMetadataSummary()",
+      "file_type": "code",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L13",
+      "_origin": "ast",
+      "id": "media_jobs_media_job_source_metadata_mediajobsourcemetadatasummary",
+      "community": 3,
+      "norm_label": "mediajobsourcemetadatasummary()"
+    },
+    {
+      "label": "getSourcePlatform()",
+      "file_type": "code",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L75",
+      "_origin": "ast",
+      "id": "media_jobs_media_job_source_metadata_getsourceplatform",
+      "community": 3,
+      "norm_label": "getsourceplatform()"
+    },
+    {
+      "label": "getPlatformLabel()",
+      "file_type": "code",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L89",
+      "_origin": "ast",
+      "id": "media_jobs_media_job_source_metadata_getplatformlabel",
+      "community": 3,
+      "norm_label": "getplatformlabel()"
+    },
+    {
+      "label": "formatDuration()",
+      "file_type": "code",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L106",
+      "_origin": "ast",
+      "id": "media_jobs_media_job_source_metadata_formatduration",
+      "community": 3,
+      "norm_label": "formatduration()"
+    },
+    {
+      "label": "formatBytes()",
+      "file_type": "code",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L114",
+      "_origin": "ast",
+      "id": "media_jobs_media_job_source_metadata_formatbytes",
+      "community": 3,
+      "norm_label": "formatbytes()"
     },
     {
       "label": "choice-card.tsx",
@@ -2119,7 +2209,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "onboarding_choice_card_choicecard",
-      "community": 33,
+      "community": 1,
       "norm_label": "choicecard()"
     },
     {
@@ -2429,7 +2519,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "onboarding_use_user_profile_query",
-      "community": 107,
+      "community": 109,
       "norm_label": "use-user-profile-query.ts"
     },
     {
@@ -2439,7 +2529,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "onboarding_use_user_profile_query_useuserprofilequery",
-      "community": 45,
+      "community": 109,
       "norm_label": "useuserprofilequery()"
     },
     {
@@ -2529,7 +2619,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "recipe_draft_platform_detectrecipeplatform",
-      "community": 9,
+      "community": 1,
       "norm_label": "detectrecipeplatform()"
     },
     {
@@ -2579,7 +2669,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "recipe_draft_recipe_draft_store",
-      "community": 9,
+      "community": 1,
       "norm_label": "recipe-draft-store.ts"
     },
     {
@@ -2589,7 +2679,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "recipe_draft_recipe_draft_store_recipedraftstate",
-      "community": 9,
+      "community": 1,
       "norm_label": "recipedraftstate"
     },
     {
@@ -2599,7 +2689,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "recipe_draft_recipe_draft_store_userecipedraftstore",
-      "community": 9,
+      "community": 45,
       "norm_label": "userecipedraftstore"
     },
     {
@@ -2659,7 +2749,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "recipe_draft_validation",
-      "community": 44,
+      "community": 45,
       "norm_label": "validation.ts"
     },
     {
@@ -2669,7 +2759,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "recipe_draft_validation_recipeurlschema",
-      "community": 44,
+      "community": 45,
       "norm_label": "recipeurlschema"
     },
     {
@@ -2679,7 +2769,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "recipe_draft_validation_validaterecipeurl",
-      "community": 44,
+      "community": 45,
       "norm_label": "validaterecipeurl()"
     },
     {
@@ -2759,7 +2849,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "usage_upgrade_placeholder",
-      "community": 3,
+      "community": 108,
       "norm_label": "upgrade-placeholder.tsx"
     },
     {
@@ -2769,7 +2859,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "usage_upgrade_placeholder_props",
-      "community": 3,
+      "community": 108,
       "norm_label": "props"
     },
     {
@@ -2779,7 +2869,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "usage_upgrade_placeholder_upgradeplaceholder",
-      "community": 3,
+      "community": 108,
       "norm_label": "upgradeplaceholder()"
     },
     {
@@ -2789,7 +2879,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "usage_usage_limit_card",
-      "community": 1,
+      "community": 108,
       "norm_label": "usage-limit-card.tsx"
     },
     {
@@ -2799,7 +2889,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "usage_usage_limit_card_usagelimitrow",
-      "community": 1,
+      "community": 108,
       "norm_label": "usagelimitrow"
     },
     {
@@ -2809,7 +2899,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "usage_usage_limit_card_props",
-      "community": 1,
+      "community": 108,
       "norm_label": "props"
     },
     {
@@ -2819,7 +2909,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "usage_usage_limit_card_usagelimitcard",
-      "community": 1,
+      "community": 108,
       "norm_label": "usagelimitcard()"
     },
     {
@@ -2829,7 +2919,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "usage_usage_limit_card_usagepill",
-      "community": 1,
+      "community": 108,
       "norm_label": "usagepill()"
     },
     {
@@ -2913,10 +3003,20 @@
       "norm_label": "mediajobstatus"
     },
     {
-      "label": "MediaJobRow",
+      "label": "MediaJobSourceMetadata",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L63",
+      "_origin": "ast",
+      "id": "api_recipes_mediajobsourcemetadata",
+      "community": 3,
+      "norm_label": "mediajobsourcemetadata"
+    },
+    {
+      "label": "MediaJobRow",
+      "file_type": "code",
+      "source_file": "src/lib/api/recipes.ts",
+      "source_location": "L78",
       "_origin": "ast",
       "id": "api_recipes_mediajobrow",
       "community": 2,
@@ -2926,7 +3026,7 @@
       "label": "MediaJob",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L79",
+      "source_location": "L96",
       "_origin": "ast",
       "id": "api_recipes_mediajob",
       "community": 2,
@@ -2936,7 +3036,7 @@
       "label": "CreateMediaJobResponse",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L83",
+      "source_location": "L101",
       "_origin": "ast",
       "id": "api_recipes_createmediajobresponse",
       "community": 2,
@@ -2946,7 +3046,7 @@
       "label": "GenerateRecipeCardResponse",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L100",
+      "source_location": "L120",
       "_origin": "ast",
       "id": "api_recipes_generaterecipecardresponse",
       "community": 2,
@@ -2956,7 +3056,7 @@
       "label": "SavedRecipeItem",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L121",
+      "source_location": "L141",
       "_origin": "ast",
       "id": "api_recipes_savedrecipeitem",
       "community": 2,
@@ -2966,7 +3066,7 @@
       "label": "RecipeCardRow",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L138",
+      "source_location": "L158",
       "_origin": "ast",
       "id": "api_recipes_recipecardrow",
       "community": 2,
@@ -2976,7 +3076,7 @@
       "label": "RecipeCardIngredient",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L164",
+      "source_location": "L184",
       "_origin": "ast",
       "id": "api_recipes_recipecardingredient",
       "community": 3,
@@ -2986,7 +3086,7 @@
       "label": "RecipeCardStep",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L174",
+      "source_location": "L194",
       "_origin": "ast",
       "id": "api_recipes_recipecardstep",
       "community": 3,
@@ -2996,7 +3096,7 @@
       "label": "RecipeCardSubstitution",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L184",
+      "source_location": "L204",
       "_origin": "ast",
       "id": "api_recipes_recipecardsubstitution",
       "community": 3,
@@ -3006,7 +3106,7 @@
       "label": "RecipeCardTime",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L190",
+      "source_location": "L210",
       "_origin": "ast",
       "id": "api_recipes_recipecardtime",
       "community": 2,
@@ -3016,7 +3116,7 @@
       "label": "RecipeCard",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L195",
+      "source_location": "L215",
       "_origin": "ast",
       "id": "api_recipes_recipecard",
       "community": 3,
@@ -3026,7 +3126,7 @@
       "label": "RecipeGroceryListRow",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L226",
+      "source_location": "L246",
       "_origin": "ast",
       "id": "api_recipes_recipegrocerylistrow",
       "community": 2,
@@ -3036,7 +3136,7 @@
       "label": "GroceryItem",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L239",
+      "source_location": "L259",
       "_origin": "ast",
       "id": "api_recipes_groceryitem",
       "community": 3,
@@ -3046,7 +3146,7 @@
       "label": "RecipeGroceryList",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L248",
+      "source_location": "L268",
       "_origin": "ast",
       "id": "api_recipes_recipegrocerylist",
       "community": 2,
@@ -3056,7 +3156,7 @@
       "label": "RecipeLibraryItemRow",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L255",
+      "source_location": "L275",
       "_origin": "ast",
       "id": "api_recipes_recipelibraryitemrow",
       "community": 2,
@@ -3066,7 +3166,7 @@
       "label": "RecipeLibraryCard",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L272",
+      "source_location": "L292",
       "_origin": "ast",
       "id": "api_recipes_recipelibrarycard",
       "community": 2,
@@ -3076,7 +3176,7 @@
       "label": "RecipeLibraryItem",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L284",
+      "source_location": "L304",
       "_origin": "ast",
       "id": "api_recipes_recipelibraryitem",
       "community": 8,
@@ -3086,7 +3186,7 @@
       "label": "RecipeLibraryParams",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L289",
+      "source_location": "L309",
       "_origin": "ast",
       "id": "api_recipes_recipelibraryparams",
       "community": 2,
@@ -3096,17 +3196,17 @@
       "label": "parseRecipeUrl()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L293",
+      "source_location": "L313",
       "_origin": "ast",
       "id": "api_recipes_parserecipeurl",
-      "community": 9,
+      "community": 45,
       "norm_label": "parserecipeurl()"
     },
     {
       "label": "RecipeApiError",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L316",
+      "source_location": "L336",
       "_origin": "ast",
       "id": "api_recipes_recipeapierror",
       "community": 2,
@@ -3116,7 +3216,7 @@
       "label": ".constructor()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L322",
+      "source_location": "L342",
       "_origin": "ast",
       "id": "api_recipes_recipeapierror_constructor",
       "community": 2,
@@ -3126,7 +3226,7 @@
       "label": "generateRecipeCard()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L344",
+      "source_location": "L364",
       "_origin": "ast",
       "id": "api_recipes_generaterecipecard",
       "community": 2,
@@ -3136,7 +3236,7 @@
       "label": "createMediaJob()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L389",
+      "source_location": "L409",
       "_origin": "ast",
       "id": "api_recipes_createmediajob",
       "community": 2,
@@ -3146,7 +3246,7 @@
       "label": "getMediaJob()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L443",
+      "source_location": "L463",
       "_origin": "ast",
       "id": "api_recipes_getmediajob",
       "community": 2,
@@ -3156,7 +3256,7 @@
       "label": "getLatestMediaJobForRecipe()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L467",
+      "source_location": "L487",
       "_origin": "ast",
       "id": "api_recipes_getlatestmediajobforrecipe",
       "community": 2,
@@ -3166,7 +3266,7 @@
       "label": "updateSavedRecipeCaption()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L493",
+      "source_location": "L513",
       "_origin": "ast",
       "id": "api_recipes_updatesavedrecipecaption",
       "community": 2,
@@ -3176,7 +3276,7 @@
       "label": "isMediaJobActive()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L522",
+      "source_location": "L542",
       "_origin": "ast",
       "id": "api_recipes_ismediajobactive",
       "community": 8,
@@ -3186,7 +3286,7 @@
       "label": "isMediaJobAttentionRequired()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L531",
+      "source_location": "L551",
       "_origin": "ast",
       "id": "api_recipes_ismediajobattentionrequired",
       "community": 8,
@@ -3196,7 +3296,7 @@
       "label": "saveRecipeItem()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L535",
+      "source_location": "L555",
       "_origin": "ast",
       "id": "api_recipes_saverecipeitem",
       "community": 2,
@@ -3206,7 +3306,7 @@
       "label": "getRecipeCard()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L570",
+      "source_location": "L590",
       "_origin": "ast",
       "id": "api_recipes_getrecipecard",
       "community": 2,
@@ -3216,7 +3316,7 @@
       "label": "getRecipeGroceryList()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L586",
+      "source_location": "L606",
       "_origin": "ast",
       "id": "api_recipes_getrecipegrocerylist",
       "community": 2,
@@ -3226,7 +3326,7 @@
       "label": "getRecipeGroceryLists()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L612",
+      "source_location": "L632",
       "_origin": "ast",
       "id": "api_recipes_getrecipegrocerylists",
       "community": 2,
@@ -3236,7 +3336,7 @@
       "label": "getSavedRecipeItem()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L639",
+      "source_location": "L659",
       "_origin": "ast",
       "id": "api_recipes_getsavedrecipeitem",
       "community": 2,
@@ -3246,7 +3346,7 @@
       "label": "getRecipeLibrary()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L655",
+      "source_location": "L675",
       "_origin": "ast",
       "id": "api_recipes_getrecipelibrary",
       "community": 2,
@@ -3256,17 +3356,67 @@
       "label": "normalizeMediaJob()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L735",
+      "source_location": "L757",
       "_origin": "ast",
       "id": "api_recipes_normalizemediajob",
       "community": 2,
       "norm_label": "normalizemediajob()"
     },
     {
+      "label": "normalizeMediaJobSourceMetadata()",
+      "file_type": "code",
+      "source_file": "src/lib/api/recipes.ts",
+      "source_location": "L766",
+      "_origin": "ast",
+      "id": "api_recipes_normalizemediajobsourcemetadata",
+      "community": 2,
+      "norm_label": "normalizemediajobsourcemetadata()"
+    },
+    {
+      "label": "isRecord()",
+      "file_type": "code",
+      "source_file": "src/lib/api/recipes.ts",
+      "source_location": "L795",
+      "_origin": "ast",
+      "id": "api_recipes_isrecord",
+      "community": 2,
+      "norm_label": "isrecord()"
+    },
+    {
+      "label": "getStringValue()",
+      "file_type": "code",
+      "source_file": "src/lib/api/recipes.ts",
+      "source_location": "L799",
+      "_origin": "ast",
+      "id": "api_recipes_getstringvalue",
+      "community": 2,
+      "norm_label": "getstringvalue()"
+    },
+    {
+      "label": "getNumberValue()",
+      "file_type": "code",
+      "source_file": "src/lib/api/recipes.ts",
+      "source_location": "L805",
+      "_origin": "ast",
+      "id": "api_recipes_getnumbervalue",
+      "community": 2,
+      "norm_label": "getnumbervalue()"
+    },
+    {
+      "label": "getBooleanValue()",
+      "file_type": "code",
+      "source_file": "src/lib/api/recipes.ts",
+      "source_location": "L811",
+      "_origin": "ast",
+      "id": "api_recipes_getbooleanvalue",
+      "community": 2,
+      "norm_label": "getbooleanvalue()"
+    },
+    {
       "label": "getMediaJobStatus()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L743",
+      "source_location": "L815",
       "_origin": "ast",
       "id": "api_recipes_getmediajobstatus",
       "community": 2,
@@ -3276,7 +3426,7 @@
       "label": "normalizeRecipeCard()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L763",
+      "source_location": "L835",
       "_origin": "ast",
       "id": "api_recipes_normalizerecipecard",
       "community": 2,
@@ -3286,7 +3436,7 @@
       "label": "getLocalizedRecipeMeta()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L790",
+      "source_location": "L862",
       "_origin": "ast",
       "id": "api_recipes_getlocalizedrecipemeta",
       "community": 2,
@@ -3296,7 +3446,7 @@
       "label": "getAiSourceMode()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L815",
+      "source_location": "L887",
       "_origin": "ast",
       "id": "api_recipes_getaisourcemode",
       "community": 2,
@@ -3306,7 +3456,7 @@
       "label": "normalizeRecipeGroceryList()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L830",
+      "source_location": "L902",
       "_origin": "ast",
       "id": "api_recipes_normalizerecipegrocerylist",
       "community": 2,
@@ -3316,7 +3466,7 @@
       "label": "getGroceryItems()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L843",
+      "source_location": "L915",
       "_origin": "ast",
       "id": "api_recipes_getgroceryitems",
       "community": 2,
@@ -3326,7 +3476,7 @@
       "label": "getGroceryItemFromUnknown()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L873",
+      "source_location": "L945",
       "_origin": "ast",
       "id": "api_recipes_getgroceryitemfromunknown",
       "community": 2,
@@ -3336,7 +3486,7 @@
       "label": "getIngredients()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L929",
+      "source_location": "L1001",
       "_origin": "ast",
       "id": "api_recipes_getingredients",
       "community": 2,
@@ -3346,7 +3496,7 @@
       "label": "getSteps()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L971",
+      "source_location": "L1043",
       "_origin": "ast",
       "id": "api_recipes_getsteps",
       "community": 2,
@@ -3356,7 +3506,7 @@
       "label": "getSubstitutions()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L1013",
+      "source_location": "L1085",
       "_origin": "ast",
       "id": "api_recipes_getsubstitutions",
       "community": 2,
@@ -3366,7 +3516,7 @@
       "label": "getRecipeCardTime()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L1040",
+      "source_location": "L1112",
       "_origin": "ast",
       "id": "api_recipes_getrecipecardtime",
       "community": 2,
@@ -3376,7 +3526,7 @@
       "label": "firstNonEmptyArray()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L1049",
+      "source_location": "L1121",
       "_origin": "ast",
       "id": "api_recipes_firstnonemptyarray",
       "community": 2,
@@ -3386,7 +3536,7 @@
       "label": "getStringArray()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L1053",
+      "source_location": "L1125",
       "_origin": "ast",
       "id": "api_recipes_getstringarray",
       "community": 2,
@@ -3396,7 +3546,7 @@
       "label": "hasUrduScript()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L1066",
+      "source_location": "L1138",
       "_origin": "ast",
       "id": "api_recipes_hasurduscript",
       "community": 2,
@@ -3406,7 +3556,7 @@
       "label": "getArray()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L1070",
+      "source_location": "L1142",
       "_origin": "ast",
       "id": "api_recipes_getarray",
       "community": 2,
@@ -3416,7 +3566,7 @@
       "label": "getRecord()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L1076",
+      "source_location": "L1148",
       "_origin": "ast",
       "id": "api_recipes_getrecord",
       "community": 2,
@@ -3426,7 +3576,7 @@
       "label": "parseMaybeJson()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L1090",
+      "source_location": "L1162",
       "_origin": "ast",
       "id": "api_recipes_parsemaybejson",
       "community": 2,
@@ -3436,7 +3586,7 @@
       "label": "getString()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L1102",
+      "source_location": "L1174",
       "_origin": "ast",
       "id": "api_recipes_getstring",
       "community": 2,
@@ -3446,7 +3596,7 @@
       "label": "getNumber()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L1108",
+      "source_location": "L1180",
       "_origin": "ast",
       "id": "api_recipes_getnumber",
       "community": 2,
@@ -3456,7 +3606,7 @@
       "label": "getGenerateRecipeCardErrorMessage()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L1112",
+      "source_location": "L1184",
       "_origin": "ast",
       "id": "api_recipes_getgeneraterecipecarderrormessage",
       "community": 2,
@@ -3466,7 +3616,7 @@
       "label": "getFunctionInvokeErrorDetails()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L1191",
+      "source_location": "L1263",
       "_origin": "ast",
       "id": "api_recipes_getfunctioninvokeerrordetails",
       "community": 2,
@@ -3476,7 +3626,7 @@
       "label": "getResponseBody()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L1232",
+      "source_location": "L1304",
       "_origin": "ast",
       "id": "api_recipes_getresponsebody",
       "community": 2,
@@ -3486,7 +3636,7 @@
       "label": "getResponseLike()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L1249",
+      "source_location": "L1321",
       "_origin": "ast",
       "id": "api_recipes_getresponselike",
       "community": 2,
@@ -3496,7 +3646,7 @@
       "label": "getFunctionResponseError()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L1253",
+      "source_location": "L1325",
       "_origin": "ast",
       "id": "api_recipes_getfunctionresponseerror",
       "community": 2,
@@ -3506,7 +3656,7 @@
       "label": "getCodeFromStatus()",
       "file_type": "code",
       "source_file": "src/lib/api/recipes.ts",
-      "source_location": "L1269",
+      "source_location": "L1341",
       "_origin": "ast",
       "id": "api_recipes_getcodefromstatus",
       "community": 2,
@@ -3549,7 +3699,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "api_usage_getusagesummary",
-      "community": 9,
+      "community": 45,
       "norm_label": "getusagesummary()"
     },
     {
@@ -3619,7 +3769,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "supabase_auth",
-      "community": 104,
+      "community": 110,
       "norm_label": "auth.ts"
     },
     {
@@ -3629,7 +3779,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "supabase_auth_assertsupabaseconfigured",
-      "community": 104,
+      "community": 110,
       "norm_label": "assertsupabaseconfigured()"
     },
     {
@@ -3639,7 +3789,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "supabase_auth_getsession",
-      "community": 104,
+      "community": 110,
       "norm_label": "getsession()"
     },
     {
@@ -3649,7 +3799,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "supabase_auth_signinanonymously",
-      "community": 104,
+      "community": 110,
       "norm_label": "signinanonymously()"
     },
     {
@@ -3659,7 +3809,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "supabase_auth_signout",
-      "community": 104,
+      "community": 110,
       "norm_label": "signout()"
     },
     {
@@ -3669,7 +3819,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "supabase_client",
-      "community": 104,
+      "community": 105,
       "norm_label": "client.ts"
     },
     {
@@ -3679,7 +3829,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "supabase_client_issupabaseconfigured",
-      "community": 104,
+      "community": 105,
       "norm_label": "issupabaseconfigured"
     },
     {
@@ -3689,7 +3839,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "supabase_client_supabase",
-      "community": 104,
+      "community": 110,
       "norm_label": "supabase"
     },
     {
@@ -3729,7 +3879,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "providers_auth_provider",
-      "community": 104,
+      "community": 110,
       "norm_label": "auth-provider.tsx"
     },
     {
@@ -3739,7 +3889,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "providers_auth_provider_authcontextvalue",
-      "community": 104,
+      "community": 110,
       "norm_label": "authcontextvalue"
     },
     {
@@ -3749,7 +3899,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "providers_auth_provider_authcontext",
-      "community": 104,
+      "community": 110,
       "norm_label": "authcontext"
     },
     {
@@ -3759,7 +3909,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "providers_auth_provider_props",
-      "community": 104,
+      "community": 110,
       "norm_label": "props"
     },
     {
@@ -3779,7 +3929,7 @@
       "source_location": "L110",
       "_origin": "ast",
       "id": "providers_auth_provider_useauth",
-      "community": 9,
+      "community": 109,
       "norm_label": "useauth()"
     },
     {
@@ -3789,7 +3939,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "providers_posthog_placeholder_provider",
-      "community": 3,
+      "community": 43,
       "norm_label": "posthog-placeholder-provider.tsx"
     },
     {
@@ -3799,7 +3949,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "providers_posthog_placeholder_provider_analyticsproperties",
-      "community": 3,
+      "community": 43,
       "norm_label": "analyticsproperties"
     },
     {
@@ -3809,7 +3959,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "providers_posthog_placeholder_provider_posthogplaceholderclient",
-      "community": 3,
+      "community": 43,
       "norm_label": "posthogplaceholderclient"
     },
     {
@@ -3819,7 +3969,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "providers_posthog_placeholder_provider_noop",
-      "community": 3,
+      "community": 43,
       "norm_label": "noop()"
     },
     {
@@ -3829,7 +3979,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "providers_posthog_placeholder_provider_defaultclient",
-      "community": 3,
+      "community": 43,
       "norm_label": "defaultclient"
     },
     {
@@ -3839,7 +3989,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "providers_posthog_placeholder_provider_posthogplaceholdercontext",
-      "community": 3,
+      "community": 43,
       "norm_label": "posthogplaceholdercontext"
     },
     {
@@ -3859,7 +4009,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "providers_posthog_placeholder_provider_useposthog",
-      "community": 3,
+      "community": 108,
       "norm_label": "useposthog()"
     },
     {
@@ -4009,7 +4159,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "theme_index_typography",
-      "community": 45,
+      "community": 33,
       "norm_label": "typography"
     },
     {
@@ -4029,7 +4179,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "types_supabase",
-      "community": 5,
+      "community": 107,
       "norm_label": "supabase.ts"
     },
     {
@@ -4049,34 +4199,34 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "types_supabase_database",
-      "community": 5,
+      "community": 107,
       "norm_label": "database"
     },
     {
       "label": "DatabaseWithoutInternals",
       "file_type": "code",
       "source_file": "src/types/supabase.ts",
-      "source_location": "L616",
+      "source_location": "L619",
       "_origin": "ast",
       "id": "types_supabase_databasewithoutinternals",
-      "community": 5,
+      "community": 107,
       "norm_label": "databasewithoutinternals"
     },
     {
       "label": "DefaultSchema",
       "file_type": "code",
       "source_file": "src/types/supabase.ts",
-      "source_location": "L618",
+      "source_location": "L621",
       "_origin": "ast",
       "id": "types_supabase_defaultschema",
-      "community": 5,
+      "community": 107,
       "norm_label": "defaultschema"
     },
     {
       "label": "Tables",
       "file_type": "code",
       "source_file": "src/types/supabase.ts",
-      "source_location": "L620",
+      "source_location": "L623",
       "_origin": "ast",
       "id": "types_supabase_tables",
       "community": 107,
@@ -4086,50 +4236,50 @@
       "label": "TablesInsert",
       "file_type": "code",
       "source_file": "src/types/supabase.ts",
-      "source_location": "L649",
+      "source_location": "L652",
       "_origin": "ast",
       "id": "types_supabase_tablesinsert",
-      "community": 5,
+      "community": 107,
       "norm_label": "tablesinsert"
     },
     {
       "label": "TablesUpdate",
       "file_type": "code",
       "source_file": "src/types/supabase.ts",
-      "source_location": "L674",
+      "source_location": "L677",
       "_origin": "ast",
       "id": "types_supabase_tablesupdate",
-      "community": 5,
+      "community": 107,
       "norm_label": "tablesupdate"
     },
     {
       "label": "Enums",
       "file_type": "code",
       "source_file": "src/types/supabase.ts",
-      "source_location": "L699",
+      "source_location": "L702",
       "_origin": "ast",
       "id": "types_supabase_enums",
-      "community": 5,
+      "community": 107,
       "norm_label": "enums"
     },
     {
       "label": "CompositeTypes",
       "file_type": "code",
       "source_file": "src/types/supabase.ts",
-      "source_location": "L716",
+      "source_location": "L719",
       "_origin": "ast",
       "id": "types_supabase_compositetypes",
-      "community": 5,
+      "community": 107,
       "norm_label": "compositetypes"
     },
     {
       "label": "Constants",
       "file_type": "code",
       "source_file": "src/types/supabase.ts",
-      "source_location": "L733",
+      "source_location": "L736",
       "_origin": "ast",
       "id": "types_supabase_constants",
-      "community": 5,
+      "community": 107,
       "norm_label": "constants"
     },
     {
@@ -4139,7 +4289,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_app_badge",
-      "community": 0,
+      "community": 104,
       "norm_label": "app-badge.tsx"
     },
     {
@@ -4149,7 +4299,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "ui_app_badge_badgetone",
-      "community": 0,
+      "community": 104,
       "norm_label": "badgetone"
     },
     {
@@ -4159,7 +4309,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "ui_app_badge_props",
-      "community": 0,
+      "community": 104,
       "norm_label": "props"
     },
     {
@@ -4169,7 +4319,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "ui_app_badge_tonestyles",
-      "community": 0,
+      "community": 104,
       "norm_label": "tonestyles"
     },
     {
@@ -4179,7 +4329,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "ui_app_badge_appbadge",
-      "community": 0,
+      "community": 1,
       "norm_label": "appbadge()"
     },
     {
@@ -4189,7 +4339,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_app_header",
-      "community": 9,
+      "community": 45,
       "norm_label": "app-header.tsx"
     },
     {
@@ -4199,7 +4349,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "ui_app_header_props",
-      "community": 9,
+      "community": 45,
       "norm_label": "props"
     },
     {
@@ -4209,7 +4359,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "ui_app_header_appheader",
-      "community": 9,
+      "community": 45,
       "norm_label": "appheader()"
     },
     {
@@ -4219,7 +4369,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_button",
-      "community": 45,
+      "community": 33,
       "norm_label": "button.tsx"
     },
     {
@@ -4229,7 +4379,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "ui_button_buttonvariant",
-      "community": 45,
+      "community": 33,
       "norm_label": "buttonvariant"
     },
     {
@@ -4239,7 +4389,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "ui_button_props",
-      "community": 45,
+      "community": 33,
       "norm_label": "props"
     },
     {
@@ -4249,7 +4399,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "ui_button_variantstyles",
-      "community": 45,
+      "community": 33,
       "norm_label": "variantstyles"
     },
     {
@@ -4259,7 +4409,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "ui_button_button",
-      "community": 9,
+      "community": 45,
       "norm_label": "button()"
     },
     {
@@ -4269,7 +4419,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_card",
-      "community": 33,
+      "community": 45,
       "norm_label": "card.tsx"
     },
     {
@@ -4279,7 +4429,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "ui_card_props",
-      "community": 33,
+      "community": 45,
       "norm_label": "props"
     },
     {
@@ -4289,7 +4439,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "ui_card_tonestyles",
-      "community": 33,
+      "community": 45,
       "norm_label": "tonestyles"
     },
     {
@@ -4299,7 +4449,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "ui_card_card",
-      "community": 9,
+      "community": 45,
       "norm_label": "card()"
     },
     {
@@ -4309,7 +4459,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_empty_state",
-      "community": 3,
+      "community": 33,
       "norm_label": "empty-state.tsx"
     },
     {
@@ -4319,7 +4469,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "ui_empty_state_props",
-      "community": 3,
+      "community": 33,
       "norm_label": "props"
     },
     {
@@ -4329,7 +4479,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "ui_empty_state_emptystate",
-      "community": 3,
+      "community": 108,
       "norm_label": "emptystate()"
     },
     {
@@ -4389,7 +4539,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "ui_filter_chip_filterchip",
-      "community": 33,
+      "community": 0,
       "norm_label": "filterchip()"
     },
     {
@@ -4419,7 +4569,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "ui_input_input",
-      "community": 33,
+      "community": 1,
       "norm_label": "input()"
     },
     {
@@ -4459,7 +4609,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_screen",
-      "community": 9,
+      "community": 45,
       "norm_label": "screen.tsx"
     },
     {
@@ -4469,7 +4619,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "ui_screen_props",
-      "community": 9,
+      "community": 45,
       "norm_label": "props"
     },
     {
@@ -4479,7 +4629,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "ui_screen_screen",
-      "community": 9,
+      "community": 45,
       "norm_label": "screen()"
     },
     {
@@ -4489,7 +4639,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_section_header",
-      "community": 45,
+      "community": 33,
       "norm_label": "section-header.tsx"
     },
     {
@@ -4499,7 +4649,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "ui_section_header_props",
-      "community": 45,
+      "community": 33,
       "norm_label": "props"
     },
     {
@@ -4509,7 +4659,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "ui_section_header_sectionheader",
-      "community": 45,
+      "community": 0,
       "norm_label": "sectionheader()"
     },
     {
@@ -4519,7 +4669,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_text_area",
-      "community": 33,
+      "community": 1,
       "norm_label": "text-area.tsx"
     },
     {
@@ -4529,7 +4679,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "ui_text_area_props",
-      "community": 33,
+      "community": 1,
       "norm_label": "props"
     },
     {
@@ -4539,7 +4689,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "ui_text_area_textarea",
-      "community": 33,
+      "community": 1,
       "norm_label": "textarea()"
     },
     {
@@ -4549,7 +4699,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_urdu_text",
-      "community": 3,
+      "community": 33,
       "norm_label": "urdu-text.tsx"
     },
     {
@@ -4559,7 +4709,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "ui_urdu_text_urdutext",
-      "community": 3,
+      "community": 108,
       "norm_label": "urdutext()"
     },
     {
@@ -4773,10 +4923,20 @@
       "norm_label": "index.ts"
     },
     {
-      "label": "RecipePlatform",
+      "label": "Json",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L3",
+      "_origin": "ast",
+      "id": "create_media_job_index_json",
+      "community": 22,
+      "norm_label": "json"
+    },
+    {
+      "label": "RecipePlatform",
+      "file_type": "code",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L11",
       "_origin": "ast",
       "id": "create_media_job_index_recipeplatform",
       "community": 22,
@@ -4786,17 +4946,27 @@
       "label": "MediaSourceMode",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L10",
+      "source_location": "L18",
       "_origin": "ast",
       "id": "create_media_job_index_mediasourcemode",
       "community": 22,
       "norm_label": "mediasourcemode"
     },
     {
+      "label": "MediaProcessorMode",
+      "file_type": "code",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L23",
+      "_origin": "ast",
+      "id": "create_media_job_index_mediaprocessormode",
+      "community": 22,
+      "norm_label": "mediaprocessormode"
+    },
+    {
       "label": "RecipeItem",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L15",
+      "source_location": "L25",
       "_origin": "ast",
       "id": "create_media_job_index_recipeitem",
       "community": 22,
@@ -4806,7 +4976,7 @@
       "label": "MediaJob",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L24",
+      "source_location": "L34",
       "_origin": "ast",
       "id": "create_media_job_index_mediajob",
       "community": 22,
@@ -4816,7 +4986,7 @@
       "label": "Database",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L36",
+      "source_location": "L46",
       "_origin": "ast",
       "id": "create_media_job_index_database",
       "community": 22,
@@ -4826,7 +4996,7 @@
       "label": "EdgeSupabaseClient",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L79",
+      "source_location": "L89",
       "_origin": "ast",
       "id": "create_media_job_index_edgesupabaseclient",
       "community": 22,
@@ -4836,7 +5006,7 @@
       "label": "CreateMediaJobRequest",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L81",
+      "source_location": "L91",
       "_origin": "ast",
       "id": "create_media_job_index_createmediajobrequest",
       "community": 22,
@@ -4846,7 +5016,7 @@
       "label": "CreateMediaJobErrorCode",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L87",
+      "source_location": "L97",
       "_origin": "ast",
       "id": "create_media_job_index_createmediajoberrorcode",
       "community": 22,
@@ -4856,7 +5026,7 @@
       "label": "corsHeaders",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L109",
+      "source_location": "L115",
       "_origin": "ast",
       "id": "create_media_job_index_corsheaders",
       "community": 22,
@@ -4866,17 +5036,87 @@
       "label": "handleCreateMediaJobRequest()",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L127",
+      "source_location": "L133",
       "_origin": "ast",
       "id": "create_media_job_index_handlecreatemediajobrequest",
       "community": 22,
       "norm_label": "handlecreatemediajobrequest()"
     },
     {
+      "label": "getMediaProcessorMode()",
+      "file_type": "code",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L289",
+      "_origin": "ast",
+      "id": "create_media_job_index_getmediaprocessormode",
+      "community": 22,
+      "norm_label": "getmediaprocessormode()"
+    },
+    {
+      "label": "handleMediaProcessorMode()",
+      "file_type": "code",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L297",
+      "_origin": "ast",
+      "id": "create_media_job_index_handlemediaprocessormode",
+      "community": 22,
+      "norm_label": "handlemediaprocessormode()"
+    },
+    {
+      "label": "queueForQueueWorker()",
+      "file_type": "code",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L317",
+      "_origin": "ast",
+      "id": "create_media_job_index_queueforqueueworker",
+      "community": 22,
+      "norm_label": "queueforqueueworker()"
+    },
+    {
+      "label": "requestQueueWorkerWake()",
+      "file_type": "code",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L338",
+      "_origin": "ast",
+      "id": "create_media_job_index_requestqueueworkerwake",
+      "community": 22,
+      "norm_label": "requestqueueworkerwake()"
+    },
+    {
+      "label": "insertQueueWakeEvent()",
+      "file_type": "code",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L390",
+      "_origin": "ast",
+      "id": "create_media_job_index_insertqueuewakeevent",
+      "community": 22,
+      "norm_label": "insertqueuewakeevent()"
+    },
+    {
+      "label": "getWorkerWakeTimeoutMs()",
+      "file_type": "code",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L410",
+      "_origin": "ast",
+      "id": "create_media_job_index_getworkerwaketimeoutms",
+      "community": 22,
+      "norm_label": "getworkerwaketimeoutms()"
+    },
+    {
+      "label": "skipWorkerTriggerForProcessorMode()",
+      "file_type": "code",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L416",
+      "_origin": "ast",
+      "id": "create_media_job_index_skipworkertriggerforprocessormode",
+      "community": 22,
+      "norm_label": "skipworkertriggerforprocessormode()"
+    },
+    {
       "label": "createSupabaseClients()",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L278",
+      "source_location": "L438",
       "_origin": "ast",
       "id": "create_media_job_index_createsupabaseclients",
       "community": 22,
@@ -4886,7 +5126,7 @@
       "label": "validateCreateMediaJobRequest()",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L316",
+      "source_location": "L476",
       "_origin": "ast",
       "id": "create_media_job_index_validatecreatemediajobrequest",
       "community": 22,
@@ -4896,7 +5136,7 @@
       "label": "normalizeUrl()",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L356",
+      "source_location": "L516",
       "_origin": "ast",
       "id": "create_media_job_index_normalizeurl",
       "community": 22,
@@ -4906,7 +5146,7 @@
       "label": "normalizePlatform()",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L375",
+      "source_location": "L535",
       "_origin": "ast",
       "id": "create_media_job_index_normalizeplatform",
       "community": 22,
@@ -4916,27 +5156,47 @@
       "label": "getSourceMode()",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L385",
+      "source_location": "L545",
       "_origin": "ast",
       "id": "create_media_job_index_getsourcemode",
       "community": 22,
       "norm_label": "getsourcemode()"
     },
     {
-      "label": "notifyWorker()",
+      "label": "triggerWorker()",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L406",
+      "source_location": "L566",
       "_origin": "ast",
-      "id": "create_media_job_index_notifyworker",
+      "id": "create_media_job_index_triggerworker",
       "community": 22,
-      "norm_label": "notifyworker()"
+      "norm_label": "triggerworker()"
+    },
+    {
+      "label": "insertMediaJobEvent()",
+      "file_type": "code",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L665",
+      "_origin": "ast",
+      "id": "create_media_job_index_insertmediajobevent",
+      "community": 22,
+      "norm_label": "insertmediajobevent()"
+    },
+    {
+      "label": "sanitizeWorkerError()",
+      "file_type": "code",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L682",
+      "_origin": "ast",
+      "id": "create_media_job_index_sanitizeworkererror",
+      "community": 22,
+      "norm_label": "sanitizeworkererror()"
     },
     {
       "label": "isUuid()",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L433",
+      "source_location": "L699",
       "_origin": "ast",
       "id": "create_media_job_index_isuuid",
       "community": 22,
@@ -4946,7 +5206,7 @@
       "label": "isRecord()",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L438",
+      "source_location": "L704",
       "_origin": "ast",
       "id": "create_media_job_index_isrecord",
       "community": 22,
@@ -4956,7 +5216,7 @@
       "label": "errorResponse()",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L442",
+      "source_location": "L708",
       "_origin": "ast",
       "id": "create_media_job_index_errorresponse",
       "community": 22,
@@ -4966,7 +5226,7 @@
       "label": "jsonResponse()",
       "file_type": "code",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L459",
+      "source_location": "L725",
       "_origin": "ast",
       "id": "create_media_job_index_jsonresponse",
       "community": 22,
@@ -10526,7 +10786,7 @@
       "label": "Android Share Intake",
       "file_type": "document",
       "source_file": "docs/api-contract.md",
-      "source_location": "L299",
+      "source_location": "L307",
       "_origin": "ast",
       "id": "docs_api_contract_android_share_intake",
       "community": 37,
@@ -10536,7 +10796,7 @@
       "label": "POST /functions/v1/grocery-list",
       "file_type": "document",
       "source_file": "docs/api-contract.md",
-      "source_location": "L322",
+      "source_location": "L330",
       "_origin": "ast",
       "id": "docs_api_contract_post_functions_v1_grocery_list",
       "community": 37,
@@ -10546,7 +10806,7 @@
       "label": "GET /functions/v1/subscription-status",
       "file_type": "document",
       "source_file": "docs/api-contract.md",
-      "source_location": "L338",
+      "source_location": "L346",
       "_origin": "ast",
       "id": "docs_api_contract_get_functions_v1_subscription_status",
       "community": 37,
@@ -10556,7 +10816,7 @@
       "label": "POST /functions/v1/revenuecat-webhook",
       "file_type": "document",
       "source_file": "docs/api-contract.md",
-      "source_location": "L348",
+      "source_location": "L356",
       "_origin": "ast",
       "id": "docs_api_contract_post_functions_v1_revenuecat_webhook",
       "community": 37,
@@ -10566,7 +10826,7 @@
       "label": "POST /functions/v1/support",
       "file_type": "document",
       "source_file": "docs/api-contract.md",
-      "source_location": "L353",
+      "source_location": "L361",
       "_origin": "ast",
       "id": "docs_api_contract_post_functions_v1_support",
       "community": 37,
@@ -10576,7 +10836,7 @@
       "label": "DELETE /functions/v1/account",
       "file_type": "document",
       "source_file": "docs/api-contract.md",
-      "source_location": "L357",
+      "source_location": "L365",
       "_origin": "ast",
       "id": "docs_api_contract_delete_functions_v1_account",
       "community": 37,
@@ -10586,7 +10846,7 @@
       "label": "Mobile direct DB access",
       "file_type": "document",
       "source_file": "docs/api-contract.md",
-      "source_location": "L361",
+      "source_location": "L369",
       "_origin": "ast",
       "id": "docs_api_contract_mobile_direct_db_access",
       "community": 37,
@@ -10596,7 +10856,7 @@
       "label": "M9 Mobile Recipe Card Read",
       "file_type": "document",
       "source_file": "docs/api-contract.md",
-      "source_location": "L376",
+      "source_location": "L384",
       "_origin": "ast",
       "id": "docs_api_contract_m9_mobile_recipe_card_read",
       "community": 37,
@@ -10606,7 +10866,7 @@
       "label": "M11 Mobile Recipe Library Read",
       "file_type": "document",
       "source_file": "docs/api-contract.md",
-      "source_location": "L413",
+      "source_location": "L421",
       "_origin": "ast",
       "id": "docs_api_contract_m11_mobile_recipe_library_read",
       "community": 37,
@@ -10616,7 +10876,7 @@
       "label": "M12 Mobile Grocery List Read",
       "file_type": "document",
       "source_file": "docs/api-contract.md",
-      "source_location": "L457",
+      "source_location": "L465",
       "_origin": "ast",
       "id": "docs_api_contract_m12_mobile_grocery_list_read",
       "community": 37,
@@ -10626,7 +10886,7 @@
       "label": "M13 Mobile Usage Summary",
       "file_type": "document",
       "source_file": "docs/api-contract.md",
-      "source_location": "L497",
+      "source_location": "L505",
       "_origin": "ast",
       "id": "docs_api_contract_m13_mobile_usage_summary",
       "community": 37,
@@ -10833,10 +11093,20 @@
       "norm_label": "recipe dost decision log"
     },
     {
-      "label": "2026-06-20",
+      "label": "2026-06-27",
       "file_type": "document",
       "source_file": "docs/decision-log.md",
       "source_location": "L3",
+      "_origin": "ast",
+      "id": "docs_decision_log_2026_06_27",
+      "community": 76,
+      "norm_label": "2026-06-27"
+    },
+    {
+      "label": "2026-06-20",
+      "file_type": "document",
+      "source_file": "docs/decision-log.md",
+      "source_location": "L17",
       "_origin": "ast",
       "id": "docs_decision_log_2026_06_20",
       "community": 76,
@@ -10846,7 +11116,7 @@
       "label": "2026-06-21",
       "file_type": "document",
       "source_file": "docs/decision-log.md",
-      "source_location": "L14",
+      "source_location": "L28",
       "_origin": "ast",
       "id": "docs_decision_log_2026_06_21",
       "community": 76,
@@ -10856,7 +11126,7 @@
       "label": "Current Build Plan Alignment",
       "file_type": "document",
       "source_file": "docs/decision-log.md",
-      "source_location": "L28",
+      "source_location": "L42",
       "_origin": "ast",
       "id": "docs_decision_log_current_build_plan_alignment",
       "community": 76,
@@ -10931,6 +11201,66 @@
       "id": "docs_launch_checklist_qa",
       "community": 66,
       "norm_label": "qa"
+    },
+    {
+      "label": "milestones.md",
+      "file_type": "document",
+      "source_file": "docs/milestones.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_milestones",
+      "community": 112,
+      "norm_label": "milestones.md"
+    },
+    {
+      "label": "Recipe Dost Milestones",
+      "file_type": "document",
+      "source_file": "docs/milestones.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_milestones_recipe_dost_milestones",
+      "community": 112,
+      "norm_label": "recipe dost milestones"
+    },
+    {
+      "label": "M17B - Explicit Queue Processor Mode with Render Wake",
+      "file_type": "document",
+      "source_file": "docs/milestones.md",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "docs_milestones_m17b_explicit_queue_processor_mode_with_render_wake",
+      "community": 112,
+      "norm_label": "m17b - explicit queue processor mode with render wake"
+    },
+    {
+      "label": "A-M15C - Real Source Metadata Display",
+      "file_type": "document",
+      "source_file": "docs/milestones.md",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "docs_milestones_a_m15c_real_source_metadata_display",
+      "community": 112,
+      "norm_label": "a-m15c - real source metadata display"
+    },
+    {
+      "label": "A-M15B - Public Source Metadata + Private Processing Metadata Schema",
+      "file_type": "document",
+      "source_file": "docs/milestones.md",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "docs_milestones_a_m15b_public_source_metadata_private_processing_metadata_schema",
+      "community": 112,
+      "norm_label": "a-m15b - public source metadata + private processing metadata schema"
+    },
+    {
+      "label": "Current Worker Testing",
+      "file_type": "document",
+      "source_file": "docs/milestones.md",
+      "source_location": "L24",
+      "_origin": "ast",
+      "id": "docs_milestones_current_worker_testing",
+      "community": 112,
+      "norm_label": "current worker testing"
     },
     {
       "label": "prd.md",
@@ -11999,7 +12329,7 @@
       "source_location": "L754",
       "_origin": "ast",
       "id": "docs_screen_spec_m12_grocery_list",
-      "community": 108,
+      "community": 38,
       "norm_label": "m12 grocery list"
     },
     {
@@ -12009,7 +12339,7 @@
       "source_location": "L758",
       "_origin": "ast",
       "id": "docs_screen_spec_route_758",
-      "community": 108,
+      "community": 38,
       "norm_label": "route"
     },
     {
@@ -12019,7 +12349,7 @@
       "source_location": "L764",
       "_origin": "ast",
       "id": "docs_screen_spec_data_764",
-      "community": 108,
+      "community": 38,
       "norm_label": "data"
     },
     {
@@ -12029,7 +12359,7 @@
       "source_location": "L787",
       "_origin": "ast",
       "id": "docs_screen_spec_screen",
-      "community": 108,
+      "community": 38,
       "norm_label": "screen"
     },
     {
@@ -12039,7 +12369,7 @@
       "source_location": "L810",
       "_origin": "ast",
       "id": "docs_screen_spec_analytics_810",
-      "community": 108,
+      "community": 38,
       "norm_label": "analytics"
     },
     {
@@ -12509,7 +12839,7 @@
       "source_location": "L1326",
       "_origin": "ast",
       "id": "docs_screen_spec_m14g_1_media_job_foundation",
-      "community": 77,
+      "community": 111,
       "norm_label": "m14g-1 media job foundation"
     },
     {
@@ -12519,7 +12849,7 @@
       "source_location": "L1328",
       "_origin": "ast",
       "id": "docs_screen_spec_saved_recipe_detail_1328",
-      "community": 77,
+      "community": 111,
       "norm_label": "saved recipe detail"
     },
     {
@@ -12529,7 +12859,7 @@
       "source_location": "L1346",
       "_origin": "ast",
       "id": "docs_screen_spec_home_and_library",
-      "community": 77,
+      "community": 111,
       "norm_label": "home and library"
     },
     {
@@ -12539,8 +12869,38 @@
       "source_location": "L1353",
       "_origin": "ast",
       "id": "docs_screen_spec_analytics_1353",
-      "community": 77,
+      "community": 111,
       "norm_label": "analytics"
+    },
+    {
+      "label": "M14G-3 Completed Media Job Integration",
+      "file_type": "document",
+      "source_file": "docs/screen-spec.md",
+      "source_location": "L1360",
+      "_origin": "ast",
+      "id": "docs_screen_spec_m14g_3_completed_media_job_integration",
+      "community": 77,
+      "norm_label": "m14g-3 completed media job integration"
+    },
+    {
+      "label": "Processing Card",
+      "file_type": "document",
+      "source_file": "docs/screen-spec.md",
+      "source_location": "L1362",
+      "_origin": "ast",
+      "id": "docs_screen_spec_processing_card",
+      "community": 77,
+      "norm_label": "processing card"
+    },
+    {
+      "label": "Home And Library",
+      "file_type": "document",
+      "source_file": "docs/screen-spec.md",
+      "source_location": "L1378",
+      "_origin": "ast",
+      "id": "docs_screen_spec_home_and_library_1378",
+      "community": 77,
+      "norm_label": "home and library"
     },
     {
       "label": "posthog-setup-report.md",
@@ -13517,9 +13877,9 @@
       "source_file": "app/(tabs)/home.tsx",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tabs_home",
-      "target": "api_recipes_ismediajobactive",
-      "confidence_score": 1.0
+      "target": "api_recipes_ismediajobactive"
     },
     {
       "relation": "imports",
@@ -13528,9 +13888,9 @@
       "source_file": "app/(tabs)/home.tsx",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tabs_home",
-      "target": "api_recipes_ismediajobattentionrequired",
-      "confidence_score": 1.0
+      "target": "api_recipes_ismediajobattentionrequired"
     },
     {
       "relation": "imports",
@@ -13657,9 +14017,9 @@
       "source_file": "app/(tabs)/home.tsx",
       "source_location": "L454",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tabs_home",
-      "target": "tabs_home_gethomerecipesubtitle",
-      "confidence_score": 1.0
+      "target": "tabs_home_gethomerecipesubtitle"
     },
     {
       "relation": "contains",
@@ -13677,9 +14037,9 @@
       "source_file": "app/(tabs)/home.tsx",
       "source_location": "L436",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tabs_home",
-      "target": "tabs_home_getrecipevisualstatus",
-      "confidence_score": 1.0
+      "target": "tabs_home_getrecipevisualstatus"
     },
     {
       "relation": "contains",
@@ -14043,9 +14403,9 @@
       "source_file": "app/(tabs)/home.tsx",
       "source_location": "L21",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tabs_home",
-      "target": "ui_visual_recipe_card_visualrecipestatus",
-      "confidence_score": 1.0
+      "target": "ui_visual_recipe_card_visualrecipestatus"
     },
     {
       "relation": "calls",
@@ -14087,9 +14447,9 @@
       "source_file": "app/(tabs)/home.tsx",
       "source_location": "L451",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tabs_home_getrecipevisualstatus",
-      "target": "tabs_home_getsavedlinkstatus",
-      "confidence_score": 1.0
+      "target": "tabs_home_getsavedlinkstatus"
     },
     {
       "relation": "calls",
@@ -14163,9 +14523,9 @@
       "source_file": "app/(tabs)/library.tsx",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tabs_library",
-      "target": "api_recipes_ismediajobactive",
-      "confidence_score": 1.0
+      "target": "api_recipes_ismediajobactive"
     },
     {
       "relation": "imports",
@@ -14174,9 +14534,9 @@
       "source_file": "app/(tabs)/library.tsx",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tabs_library",
-      "target": "api_recipes_ismediajobattentionrequired",
-      "confidence_score": 1.0
+      "target": "api_recipes_ismediajobattentionrequired"
     },
     {
       "relation": "imports",
@@ -14331,9 +14691,9 @@
       "source_file": "app/(tabs)/library.tsx",
       "source_location": "L478",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tabs_library",
-      "target": "tabs_library_getrecipevisualstatus",
-      "confidence_score": 1.0
+      "target": "tabs_library_getrecipevisualstatus"
     },
     {
       "relation": "contains",
@@ -14620,9 +14980,9 @@
       "source_file": "app/(tabs)/library.tsx",
       "source_location": "L17",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tabs_library",
-      "target": "ui_visual_recipe_card_visualrecipestatus",
-      "confidence_score": 1.0
+      "target": "ui_visual_recipe_card_visualrecipestatus"
     },
     {
       "relation": "calls",
@@ -14664,9 +15024,9 @@
       "source_file": "app/(tabs)/library.tsx",
       "source_location": "L430",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tabs_library_getlibrarysubtitle",
-      "target": "api_recipes_ismediajobactive",
-      "confidence_score": 1.0
+      "target": "api_recipes_ismediajobactive"
     },
     {
       "relation": "calls",
@@ -14697,9 +15057,9 @@
       "source_file": "app/(tabs)/library.tsx",
       "source_location": "L493",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tabs_library_getrecipevisualstatus",
-      "target": "tabs_library_getsavedlinkstatus",
-      "confidence_score": 1.0
+      "target": "tabs_library_getsavedlinkstatus"
     },
     {
       "relation": "calls",
@@ -14708,9 +15068,9 @@
       "source_file": "app/(tabs)/library.tsx",
       "source_location": "L485",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tabs_library_getrecipevisualstatus",
-      "target": "api_recipes_ismediajobactive",
-      "confidence_score": 1.0
+      "target": "api_recipes_ismediajobactive"
     },
     {
       "relation": "calls",
@@ -14719,9 +15079,9 @@
       "source_file": "app/(tabs)/library.tsx",
       "source_location": "L489",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tabs_library_getrecipevisualstatus",
-      "target": "api_recipes_ismediajobattentionrequired",
-      "confidence_score": 1.0
+      "target": "api_recipes_ismediajobattentionrequired"
     },
     {
       "relation": "imports_from",
@@ -15793,6 +16153,17 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "app/recipe-card/[id].tsx",
+      "source_location": "L16",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "recipe_card_id",
+      "target": "api_recipes_getlatestmediajobforrecipe"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/recipe-card/[id].tsx",
       "source_location": "L12",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -15947,6 +16318,28 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "app/recipe-card/[id].tsx",
+      "source_location": "L26",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "recipe_card_id",
+      "target": "media_jobs_media_job_source_metadata"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/recipe-card/[id].tsx",
+      "source_location": "L26",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "recipe_card_id",
+      "target": "media_jobs_media_job_source_metadata_mediajobsourcemetadatasummary"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/recipe-card/[id].tsx",
       "source_location": "L20",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -16053,6 +16446,16 @@
       "confidence_score": 1.0,
       "source": "recipe_card_id",
       "target": "recipe_card_id_ingredientssection"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/recipe-card/[id].tsx",
+      "source_location": "L323",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "recipe_card_id",
+      "target": "recipe_card_id_ismockreciperesult"
     },
     {
       "relation": "contains",
@@ -16502,6 +16905,17 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
+      "source_file": "app/recipe-card/[id].tsx",
+      "source_location": "L239",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "recipe_card_id_recipecardresultroute",
+      "target": "recipe_card_id_ismockreciperesult"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/recipe-card/[id].tsx",
       "source_location": "L113",
@@ -16593,9 +17007,9 @@
       "source_file": "app/recipe/[id].tsx",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "recipe_id",
-      "target": "api_recipes_createmediajob",
-      "confidence_score": 1.0
+      "target": "api_recipes_createmediajob"
     },
     {
       "relation": "imports",
@@ -16615,9 +17029,20 @@
       "source_file": "app/recipe/[id].tsx",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "recipe_id",
-      "target": "api_recipes_getlatestmediajobforrecipe",
-      "confidence_score": 1.0
+      "target": "api_recipes_getlatestmediajobforrecipe"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/recipe/[id].tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "recipe_id",
+      "target": "api_recipes_getrecipecard"
     },
     {
       "relation": "imports",
@@ -16637,9 +17062,9 @@
       "source_file": "app/recipe/[id].tsx",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "recipe_id",
-      "target": "api_recipes_ismediajobactive",
-      "confidence_score": 1.0
+      "target": "api_recipes_ismediajobactive"
     },
     {
       "relation": "imports",
@@ -16659,9 +17084,9 @@
       "source_file": "app/recipe/[id].tsx",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "recipe_id",
-      "target": "api_recipes_updatesavedrecipecaption",
-      "confidence_score": 1.0
+      "target": "api_recipes_updatesavedrecipecaption"
     },
     {
       "relation": "imports_from",
@@ -16692,9 +17117,9 @@
       "source_file": "app/recipe/[id].tsx",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "recipe_id",
-      "target": "media_jobs_media_job_card",
-      "confidence_score": 1.0
+      "target": "media_jobs_media_job_card"
     },
     {
       "relation": "imports",
@@ -16703,9 +17128,9 @@
       "source_file": "app/recipe/[id].tsx",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "recipe_id",
-      "target": "media_jobs_media_job_card_mediajobcard",
-      "confidence_score": 1.0
+      "target": "media_jobs_media_job_card_mediajobcard"
     },
     {
       "relation": "imports_from",
@@ -17114,9 +17539,9 @@
       "source_file": "app/recipe/[id].tsx",
       "source_location": "L27",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "recipe_id",
-      "target": "ui_text_area",
-      "confidence_score": 1.0
+      "target": "ui_text_area"
     },
     {
       "relation": "imports",
@@ -17125,9 +17550,9 @@
       "source_file": "app/recipe/[id].tsx",
       "source_location": "L27",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "recipe_id",
-      "target": "ui_text_area_textarea",
-      "confidence_score": 1.0
+      "target": "ui_text_area_textarea"
     },
     {
       "relation": "imports_from",
@@ -20493,9 +20918,9 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card",
-      "target": "api_recipes",
-      "confidence_score": 1.0
+      "target": "api_recipes"
     },
     {
       "relation": "imports",
@@ -20504,9 +20929,9 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card",
-      "target": "api_recipes_mediajob",
-      "confidence_score": 1.0
+      "target": "api_recipes_mediajob"
     },
     {
       "relation": "contains",
@@ -20514,9 +20939,9 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L149",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card",
-      "target": "media_jobs_media_job_card_getmediajobmessage",
-      "confidence_score": 1.0
+      "target": "media_jobs_media_job_card_getmediajobmessage"
     },
     {
       "relation": "contains",
@@ -20524,9 +20949,19 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L122",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card",
-      "target": "media_jobs_media_job_card_getmediajobstatuslabel",
-      "confidence_score": 1.0
+      "target": "media_jobs_media_job_card_getmediajobstatuslabel"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-card.tsx",
+      "source_location": "L132",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_card",
+      "target": "media_jobs_media_job_card_ismockmediajob"
     },
     {
       "relation": "contains",
@@ -20534,9 +20969,9 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L16",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card",
-      "target": "media_jobs_media_job_card_mediajobcard",
-      "confidence_score": 1.0
+      "target": "media_jobs_media_job_card_mediajobcard"
     },
     {
       "relation": "contains",
@@ -20544,9 +20979,31 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card",
-      "target": "media_jobs_media_job_card_props",
-      "confidence_score": 1.0
+      "target": "media_jobs_media_job_card_props"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-card.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_card",
+      "target": "media_jobs_media_job_source_metadata"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-card.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_card",
+      "target": "media_jobs_media_job_source_metadata_mediajobsourcemetadatasummary"
     },
     {
       "relation": "imports_from",
@@ -20555,9 +21012,9 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card",
-      "target": "theme_index",
-      "confidence_score": 1.0
+      "target": "theme_index"
     },
     {
       "relation": "imports",
@@ -20566,9 +21023,9 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card",
-      "target": "theme_index_colors",
-      "confidence_score": 1.0
+      "target": "theme_index_colors"
     },
     {
       "relation": "imports",
@@ -20577,9 +21034,9 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card",
-      "target": "theme_index_radius",
-      "confidence_score": 1.0
+      "target": "theme_index_radius"
     },
     {
       "relation": "imports",
@@ -20588,9 +21045,9 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card",
-      "target": "theme_index_spacing",
-      "confidence_score": 1.0
+      "target": "theme_index_spacing"
     },
     {
       "relation": "imports",
@@ -20599,9 +21056,9 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card",
-      "target": "theme_index_typography",
-      "confidence_score": 1.0
+      "target": "theme_index_typography"
     },
     {
       "relation": "imports_from",
@@ -20610,9 +21067,9 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card",
-      "target": "ui_app_badge",
-      "confidence_score": 1.0
+      "target": "ui_app_badge"
     },
     {
       "relation": "imports",
@@ -20621,9 +21078,9 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card",
-      "target": "ui_app_badge_appbadge",
-      "confidence_score": 1.0
+      "target": "ui_app_badge_appbadge"
     },
     {
       "relation": "imports_from",
@@ -20632,9 +21089,9 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card",
-      "target": "ui_button",
-      "confidence_score": 1.0
+      "target": "ui_button"
     },
     {
       "relation": "imports",
@@ -20643,9 +21100,9 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card",
-      "target": "ui_button_button",
-      "confidence_score": 1.0
+      "target": "ui_button_button"
     },
     {
       "relation": "imports_from",
@@ -20654,9 +21111,9 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card",
-      "target": "ui_card",
-      "confidence_score": 1.0
+      "target": "ui_card"
     },
     {
       "relation": "imports",
@@ -20665,9 +21122,9 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card",
-      "target": "ui_card_card",
-      "confidence_score": 1.0
+      "target": "ui_card_card"
     },
     {
       "relation": "calls",
@@ -20676,9 +21133,9 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L75",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card_mediajobcard",
-      "target": "media_jobs_media_job_card_getmediajobmessage",
-      "confidence_score": 1.0
+      "target": "media_jobs_media_job_card_getmediajobmessage"
     },
     {
       "relation": "calls",
@@ -20687,9 +21144,234 @@
       "source_file": "src/features/media-jobs/media-job-card.tsx",
       "source_location": "L66",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "media_jobs_media_job_card_mediajobcard",
-      "target": "media_jobs_media_job_card_getmediajobstatuslabel",
-      "confidence_score": 1.0
+      "target": "media_jobs_media_job_card_getmediajobstatuslabel"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-card.tsx",
+      "source_location": "L85",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_card_mediajobcard",
+      "target": "media_jobs_media_job_card_ismockmediajob"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata",
+      "target": "api_recipes"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata",
+      "target": "api_recipes_mediajobsourcemetadata"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L114",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata",
+      "target": "media_jobs_media_job_source_metadata_formatbytes"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L106",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata",
+      "target": "media_jobs_media_job_source_metadata_formatduration"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L89",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata",
+      "target": "media_jobs_media_job_source_metadata_getplatformlabel"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L75",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata",
+      "target": "media_jobs_media_job_source_metadata_getsourceplatform"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L13",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata",
+      "target": "media_jobs_media_job_source_metadata_mediajobsourcemetadatasummary"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata",
+      "target": "media_jobs_media_job_source_metadata_props"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata",
+      "target": "recipe_draft_types"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata",
+      "target": "recipe_draft_types_recipeplatform"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata",
+      "target": "theme_index"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata",
+      "target": "theme_index_colors"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata",
+      "target": "theme_index_spacing"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata",
+      "target": "theme_index_typography"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata",
+      "target": "ui_app_badge"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata",
+      "target": "ui_app_badge_appbadge"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L29",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata_mediajobsourcemetadatasummary",
+      "target": "media_jobs_media_job_source_metadata_formatbytes"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L25",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata_mediajobsourcemetadatasummary",
+      "target": "media_jobs_media_job_source_metadata_formatduration"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L20",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata_mediajobsourcemetadatasummary",
+      "target": "media_jobs_media_job_source_metadata_getplatformlabel"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/media-jobs/media-job-source-metadata.tsx",
+      "source_location": "L21",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "media_jobs_media_job_source_metadata_mediajobsourcemetadatasummary",
+      "target": "media_jobs_media_job_source_metadata_getsourceplatform"
     },
     {
       "relation": "contains",
@@ -22135,9 +22817,9 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L389",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes",
-      "target": "api_recipes_createmediajob",
-      "confidence_score": 1.0
+      "target": "api_recipes_createmediajob"
     },
     {
       "relation": "contains",
@@ -22145,9 +22827,9 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L83",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes",
-      "target": "api_recipes_createmediajobresponse",
-      "confidence_score": 1.0
+      "target": "api_recipes_createmediajobresponse"
     },
     {
       "relation": "contains",
@@ -22208,6 +22890,16 @@
       "confidence_score": 1.0,
       "source": "api_recipes",
       "target": "api_recipes_getarray"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/api/recipes.ts",
+      "source_location": "L811",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "api_recipes",
+      "target": "api_recipes_getbooleanvalue"
     },
     {
       "relation": "contains",
@@ -22285,9 +22977,9 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L467",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes",
-      "target": "api_recipes_getlatestmediajobforrecipe",
-      "confidence_score": 1.0
+      "target": "api_recipes_getlatestmediajobforrecipe"
     },
     {
       "relation": "contains",
@@ -22305,9 +22997,9 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L443",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes",
-      "target": "api_recipes_getmediajob",
-      "confidence_score": 1.0
+      "target": "api_recipes_getmediajob"
     },
     {
       "relation": "contains",
@@ -22315,9 +23007,9 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L743",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes",
-      "target": "api_recipes_getmediajobstatus",
-      "confidence_score": 1.0
+      "target": "api_recipes_getmediajobstatus"
     },
     {
       "relation": "contains",
@@ -22328,6 +23020,16 @@
       "confidence_score": 1.0,
       "source": "api_recipes",
       "target": "api_recipes_getnumber"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/api/recipes.ts",
+      "source_location": "L805",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "api_recipes",
+      "target": "api_recipes_getnumbervalue"
     },
     {
       "relation": "contains",
@@ -22453,6 +23155,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/api/recipes.ts",
+      "source_location": "L799",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "api_recipes",
+      "target": "api_recipes_getstringvalue"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/api/recipes.ts",
       "source_location": "L697",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -22485,9 +23197,9 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L522",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes",
-      "target": "api_recipes_ismediajobactive",
-      "confidence_score": 1.0
+      "target": "api_recipes_ismediajobactive"
     },
     {
       "relation": "contains",
@@ -22495,9 +23207,19 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L531",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes",
-      "target": "api_recipes_ismediajobattentionrequired",
-      "confidence_score": 1.0
+      "target": "api_recipes_ismediajobattentionrequired"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/api/recipes.ts",
+      "source_location": "L795",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "api_recipes",
+      "target": "api_recipes_isrecord"
     },
     {
       "relation": "contains",
@@ -22505,9 +23227,9 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L79",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes",
-      "target": "api_recipes_mediajob",
-      "confidence_score": 1.0
+      "target": "api_recipes_mediajob"
     },
     {
       "relation": "contains",
@@ -22515,9 +23237,19 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L63",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes",
-      "target": "api_recipes_mediajobrow",
-      "confidence_score": 1.0
+      "target": "api_recipes_mediajobrow"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/api/recipes.ts",
+      "source_location": "L63",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "api_recipes",
+      "target": "api_recipes_mediajobsourcemetadata"
     },
     {
       "relation": "contains",
@@ -22525,9 +23257,9 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L50",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes",
-      "target": "api_recipes_mediajobstatus",
-      "confidence_score": 1.0
+      "target": "api_recipes_mediajobstatus"
     },
     {
       "relation": "contains",
@@ -22535,9 +23267,19 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L735",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes",
-      "target": "api_recipes_normalizemediajob",
-      "confidence_score": 1.0
+      "target": "api_recipes_normalizemediajob"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/api/recipes.ts",
+      "source_location": "L766",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "api_recipes",
+      "target": "api_recipes_normalizemediajobsourcemetadata"
     },
     {
       "relation": "contains",
@@ -22755,9 +23497,9 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L493",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes",
-      "target": "api_recipes_updatesavedrecipecaption",
-      "confidence_score": 1.0
+      "target": "api_recipes_updatesavedrecipecaption"
     },
     {
       "relation": "imports_from",
@@ -22864,9 +23606,9 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L411",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes_createmediajob",
-      "target": "api_recipes_getfunctioninvokeerrordetails",
-      "confidence_score": 1.0
+      "target": "api_recipes_getfunctioninvokeerrordetails"
     },
     {
       "relation": "calls",
@@ -22875,9 +23617,9 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L412",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes_createmediajob",
-      "target": "api_recipes_getfunctionresponseerror",
-      "confidence_score": 1.0
+      "target": "api_recipes_getfunctionresponseerror"
     },
     {
       "relation": "calls",
@@ -22886,9 +23628,9 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L464",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes_getmediajob",
-      "target": "api_recipes_normalizemediajob",
-      "confidence_score": 1.0
+      "target": "api_recipes_normalizemediajob"
     },
     {
       "relation": "calls",
@@ -22897,9 +23639,9 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L490",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes_getlatestmediajobforrecipe",
-      "target": "api_recipes_normalizemediajob",
-      "confidence_score": 1.0
+      "target": "api_recipes_normalizemediajob"
     },
     {
       "relation": "calls",
@@ -22930,9 +23672,9 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L721",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes_getrecipelibrary",
-      "target": "api_recipes_normalizemediajob",
-      "confidence_score": 1.0
+      "target": "api_recipes_normalizemediajob"
     },
     {
       "relation": "calls",
@@ -22941,9 +23683,64 @@
       "source_file": "src/lib/api/recipes.ts",
       "source_location": "L738",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_recipes_normalizemediajob",
-      "target": "api_recipes_getmediajobstatus",
-      "confidence_score": 1.0
+      "target": "api_recipes_getmediajobstatus"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/api/recipes.ts",
+      "source_location": "L761",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "api_recipes_normalizemediajob",
+      "target": "api_recipes_normalizemediajobsourcemetadata"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/api/recipes.ts",
+      "source_location": "L777",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "api_recipes_normalizemediajobsourcemetadata",
+      "target": "api_recipes_getbooleanvalue"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/api/recipes.ts",
+      "source_location": "L776",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "api_recipes_normalizemediajobsourcemetadata",
+      "target": "api_recipes_getnumbervalue"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/api/recipes.ts",
+      "source_location": "L775",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "api_recipes_normalizemediajobsourcemetadata",
+      "target": "api_recipes_getstringvalue"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/api/recipes.ts",
+      "source_location": "L769",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "api_recipes_normalizemediajobsourcemetadata",
+      "target": "api_recipes_isrecord"
     },
     {
       "relation": "calls",
@@ -25586,9 +26383,9 @@
       "source_file": "supabase/functions/create-media-job/deno.json",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_deno",
-      "target": "create_media_job_deno_compileroptions",
-      "confidence_score": 1.0
+      "target": "create_media_job_deno_compileroptions"
     },
     {
       "relation": "contains",
@@ -25596,9 +26393,9 @@
       "source_file": "supabase/functions/create-media-job/deno.json",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_deno",
-      "target": "create_media_job_deno_imports",
-      "confidence_score": 1.0
+      "target": "create_media_job_deno_imports"
     },
     {
       "relation": "contains",
@@ -25606,9 +26403,9 @@
       "source_file": "supabase/functions/create-media-job/deno.json",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_deno_imports",
-      "target": "create_media_job_deno_imports_supabase_supabase_js",
-      "confidence_score": 1.0
+      "target": "create_media_job_deno_imports_supabase_supabase_js"
     },
     {
       "relation": "contains",
@@ -25616,9 +26413,9 @@
       "source_file": "supabase/functions/create-media-job/deno.json",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_deno_compileroptions",
-      "target": "create_media_job_deno_compileroptions_ignoredeprecations",
-      "confidence_score": 1.0
+      "target": "create_media_job_deno_compileroptions_ignoredeprecations"
     },
     {
       "relation": "contains",
@@ -25626,9 +26423,9 @@
       "source_file": "supabase/functions/create-media-job/deno.json",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_deno_compileroptions",
-      "target": "create_media_job_deno_compileroptions_strict",
-      "confidence_score": 1.0
+      "target": "create_media_job_deno_compileroptions_strict"
     },
     {
       "relation": "contains",
@@ -25636,9 +26433,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L109",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_corsheaders",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_corsheaders"
     },
     {
       "relation": "contains",
@@ -25646,9 +26443,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L87",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_createmediajoberrorcode",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_createmediajoberrorcode"
     },
     {
       "relation": "contains",
@@ -25656,9 +26453,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L81",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_createmediajobrequest",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_createmediajobrequest"
     },
     {
       "relation": "contains",
@@ -25666,9 +26463,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L278",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_createsupabaseclients",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_createsupabaseclients"
     },
     {
       "relation": "contains",
@@ -25676,9 +26473,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L36",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_database",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_database"
     },
     {
       "relation": "contains",
@@ -25686,9 +26483,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L79",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_edgesupabaseclient",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_edgesupabaseclient"
     },
     {
       "relation": "contains",
@@ -25696,9 +26493,19 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L442",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_errorresponse",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_errorresponse"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L294",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "create_media_job_index",
+      "target": "create_media_job_index_getmediaprocessormode"
     },
     {
       "relation": "contains",
@@ -25706,8 +26513,18 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L385",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_getsourcemode",
+      "target": "create_media_job_index_getsourcemode"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L410",
+      "weight": 1.0,
+      "source": "create_media_job_index",
+      "target": "create_media_job_index_getworkerwaketimeoutms",
       "confidence_score": 1.0
     },
     {
@@ -25716,8 +26533,38 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L127",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_handlecreatemediajobrequest",
+      "target": "create_media_job_index_handlecreatemediajobrequest"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L297",
+      "weight": 1.0,
+      "source": "create_media_job_index",
+      "target": "create_media_job_index_handlemediaprocessormode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L549",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "create_media_job_index",
+      "target": "create_media_job_index_insertmediajobevent"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L390",
+      "weight": 1.0,
+      "source": "create_media_job_index",
+      "target": "create_media_job_index_insertqueuewakeevent",
       "confidence_score": 1.0
     },
     {
@@ -25726,9 +26573,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L438",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_isrecord",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_isrecord"
     },
     {
       "relation": "contains",
@@ -25736,9 +26583,19 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L433",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_isuuid",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_isuuid"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "create_media_job_index",
+      "target": "create_media_job_index_json"
     },
     {
       "relation": "contains",
@@ -25746,9 +26603,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L459",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_jsonresponse",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_jsonresponse"
     },
     {
       "relation": "contains",
@@ -25756,9 +26613,19 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L24",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_mediajob",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_mediajob"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L23",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "create_media_job_index",
+      "target": "create_media_job_index_mediaprocessormode"
     },
     {
       "relation": "contains",
@@ -25766,9 +26633,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L10",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_mediasourcemode",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_mediasourcemode"
     },
     {
       "relation": "contains",
@@ -25776,9 +26643,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L375",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_normalizeplatform",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_normalizeplatform"
     },
     {
       "relation": "contains",
@@ -25786,18 +26653,18 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L356",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_normalizeurl",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_normalizeurl"
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L406",
+      "source_location": "L317",
       "weight": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_notifyworker",
+      "target": "create_media_job_index_queueforqueueworker",
       "confidence_score": 1.0
     },
     {
@@ -25806,9 +26673,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L15",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_recipeitem",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_recipeitem"
     },
     {
       "relation": "contains",
@@ -25816,9 +26683,49 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_recipeplatform",
+      "target": "create_media_job_index_recipeplatform"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L338",
+      "weight": 1.0,
+      "source": "create_media_job_index",
+      "target": "create_media_job_index_requestqueueworkerwake",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L566",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "create_media_job_index",
+      "target": "create_media_job_index_sanitizeworkererror"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L300",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "create_media_job_index",
+      "target": "create_media_job_index_skipworkertriggerforprocessormode"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L450",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "create_media_job_index",
+      "target": "create_media_job_index_triggerworker"
     },
     {
       "relation": "contains",
@@ -25826,9 +26733,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L316",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index",
-      "target": "create_media_job_index_validatecreatemediajobrequest",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_validatecreatemediajobrequest"
     },
     {
       "relation": "calls",
@@ -25837,9 +26744,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L153",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index_handlecreatemediajobrequest",
-      "target": "create_media_job_index_createsupabaseclients",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_createsupabaseclients"
     },
     {
       "relation": "calls",
@@ -25848,9 +26755,20 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L136",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index_handlecreatemediajobrequest",
-      "target": "create_media_job_index_errorresponse",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_errorresponse"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L270",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "create_media_job_index_handlecreatemediajobrequest",
+      "target": "create_media_job_index_getmediaprocessormode"
     },
     {
       "relation": "calls",
@@ -25859,9 +26777,31 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L233",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index_handlecreatemediajobrequest",
-      "target": "create_media_job_index_getsourcemode",
+      "target": "create_media_job_index_getsourcemode"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L271",
+      "weight": 1.0,
+      "source": "create_media_job_index_handlecreatemediajobrequest",
+      "target": "create_media_job_index_handlemediaprocessormode",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L263",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "create_media_job_index_handlecreatemediajobrequest",
+      "target": "create_media_job_index_insertmediajobevent"
     },
     {
       "relation": "calls",
@@ -25870,9 +26810,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L268",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index_handlecreatemediajobrequest",
-      "target": "create_media_job_index_jsonresponse",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_jsonresponse"
     },
     {
       "relation": "calls",
@@ -25881,9 +26821,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L223",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index_handlecreatemediajobrequest",
-      "target": "create_media_job_index_normalizeplatform",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_normalizeplatform"
     },
     {
       "relation": "calls",
@@ -25892,20 +26832,31 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L222",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index_handlecreatemediajobrequest",
-      "target": "create_media_job_index_normalizeurl",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_normalizeurl"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "supabase/functions/create-media-job/index.ts",
-      "source_location": "L266",
+      "source_location": "L276",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index_handlecreatemediajobrequest",
-      "target": "create_media_job_index_notifyworker",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_skipworkertriggerforprocessormode"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L272",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "create_media_job_index_handlecreatemediajobrequest",
+      "target": "create_media_job_index_triggerworker"
     },
     {
       "relation": "calls",
@@ -25914,9 +26865,108 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L188",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index_handlecreatemediajobrequest",
-      "target": "create_media_job_index_validatecreatemediajobrequest",
+      "target": "create_media_job_index_validatecreatemediajobrequest"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L307",
+      "weight": 1.0,
+      "source": "create_media_job_index_handlemediaprocessormode",
+      "target": "create_media_job_index_queueforqueueworker",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L310",
+      "weight": 1.0,
+      "source": "create_media_job_index_handlemediaprocessormode",
+      "target": "create_media_job_index_skipworkertriggerforprocessormode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L303",
+      "weight": 1.0,
+      "source": "create_media_job_index_handlemediaprocessormode",
+      "target": "create_media_job_index_triggerworker",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L322",
+      "weight": 1.0,
+      "source": "create_media_job_index_queueforqueueworker",
+      "target": "create_media_job_index_insertmediajobevent",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L335",
+      "weight": 1.0,
+      "source": "create_media_job_index_queueforqueueworker",
+      "target": "create_media_job_index_requestqueueworkerwake",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L343",
+      "weight": 1.0,
+      "source": "create_media_job_index_requestqueueworkerwake",
+      "target": "create_media_job_index_getworkerwaketimeoutms",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L359",
+      "weight": 1.0,
+      "source": "create_media_job_index_requestqueueworkerwake",
+      "target": "create_media_job_index_insertqueuewakeevent",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L398",
+      "weight": 1.0,
+      "source": "create_media_job_index_insertqueuewakeevent",
+      "target": "create_media_job_index_insertmediajobevent",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L306",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "create_media_job_index_skipworkertriggerforprocessormode",
+      "target": "create_media_job_index_insertmediajobevent"
     },
     {
       "relation": "calls",
@@ -25925,9 +26975,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L319",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index_validatecreatemediajobrequest",
-      "target": "create_media_job_index_isrecord",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_isrecord"
     },
     {
       "relation": "calls",
@@ -25936,9 +26986,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L339",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index_validatecreatemediajobrequest",
-      "target": "create_media_job_index_isuuid",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_isuuid"
     },
     {
       "relation": "calls",
@@ -25947,9 +26997,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L327",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index_validatecreatemediajobrequest",
-      "target": "create_media_job_index_normalizeplatform",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_normalizeplatform"
     },
     {
       "relation": "calls",
@@ -25958,9 +27008,31 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L326",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index_validatecreatemediajobrequest",
-      "target": "create_media_job_index_normalizeurl",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_normalizeurl"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L458",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "create_media_job_index_triggerworker",
+      "target": "create_media_job_index_insertmediajobevent"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/create-media-job/index.ts",
+      "source_location": "L540",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "create_media_job_index_triggerworker",
+      "target": "create_media_job_index_sanitizeworkererror"
     },
     {
       "relation": "calls",
@@ -25969,9 +27041,9 @@
       "source_file": "supabase/functions/create-media-job/index.ts",
       "source_location": "L447",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "create_media_job_index_errorresponse",
-      "target": "create_media_job_index_jsonresponse",
-      "confidence_score": 1.0
+      "target": "create_media_job_index_jsonresponse"
     },
     {
       "relation": "contains",
@@ -32790,9 +33862,9 @@
       "source_file": "docs/api-contract.md",
       "source_location": "L249",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_api_contract_m7_mobile_save_link_flow",
-      "target": "docs_api_contract_post_functions_v1_create_media_job",
-      "confidence_score": 1.0
+      "target": "docs_api_contract_post_functions_v1_create_media_job"
     },
     {
       "relation": "contains",
@@ -32930,9 +34002,9 @@
       "source_file": "docs/database-schema.md",
       "source_location": "L196",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_database_schema_recipe_dost_database_schema_plan",
-      "target": "docs_database_schema_m14g_1_media_job_security",
-      "confidence_score": 1.0
+      "target": "docs_database_schema_m14g_1_media_job_security"
     },
     {
       "relation": "contains",
@@ -32990,9 +34062,9 @@
       "source_file": "docs/database-schema.md",
       "source_location": "L161",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_database_schema_tables",
-      "target": "docs_database_schema_media_job_events",
-      "confidence_score": 1.0
+      "target": "docs_database_schema_media_job_events"
     },
     {
       "relation": "contains",
@@ -33000,9 +34072,9 @@
       "source_file": "docs/database-schema.md",
       "source_location": "L120",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_database_schema_tables",
-      "target": "docs_database_schema_media_jobs",
-      "confidence_score": 1.0
+      "target": "docs_database_schema_media_jobs"
     },
     {
       "relation": "contains",
@@ -33108,6 +34180,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/decision-log.md",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "docs_decision_log_recipe_dost_decision_log",
+      "target": "docs_decision_log_2026_06_27"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/decision-log.md",
       "source_location": "L28",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -33173,6 +34255,56 @@
       "confidence_score": 1.0,
       "source": "docs_launch_checklist_recipe_dost_launch_checklist",
       "target": "docs_launch_checklist_store_basics"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/milestones.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "docs_milestones",
+      "target": "docs_milestones_recipe_dost_milestones"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/milestones.md",
+      "source_location": "L10",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "docs_milestones_recipe_dost_milestones",
+      "target": "docs_milestones_a_m15b_public_source_metadata_private_processing_metadata_schema"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/milestones.md",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "docs_milestones_recipe_dost_milestones",
+      "target": "docs_milestones_a_m15c_real_source_metadata_display"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/milestones.md",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "docs_milestones_recipe_dost_milestones",
+      "target": "docs_milestones_current_worker_testing"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/milestones.md",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "docs_milestones_recipe_dost_milestones",
+      "target": "docs_milestones_m17b_explicit_queue_processor_mode_with_render_wake",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -33660,9 +34792,19 @@
       "source_file": "docs/screen-spec.md",
       "source_location": "L1326",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_screen_spec_recipe_dost_screen_spec",
-      "target": "docs_screen_spec_m14g_1_media_job_foundation",
-      "confidence_score": 1.0
+      "target": "docs_screen_spec_m14g_1_media_job_foundation"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/screen-spec.md",
+      "source_location": "L1360",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "docs_screen_spec_recipe_dost_screen_spec",
+      "target": "docs_screen_spec_m14g_3_completed_media_job_integration"
     },
     {
       "relation": "contains",
@@ -34730,9 +35872,9 @@
       "source_file": "docs/screen-spec.md",
       "source_location": "L1353",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_screen_spec_m14g_1_media_job_foundation",
-      "target": "docs_screen_spec_analytics_1353",
-      "confidence_score": 1.0
+      "target": "docs_screen_spec_analytics_1353"
     },
     {
       "relation": "contains",
@@ -34740,9 +35882,9 @@
       "source_file": "docs/screen-spec.md",
       "source_location": "L1346",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_screen_spec_m14g_1_media_job_foundation",
-      "target": "docs_screen_spec_home_and_library",
-      "confidence_score": 1.0
+      "target": "docs_screen_spec_home_and_library"
     },
     {
       "relation": "contains",
@@ -34750,9 +35892,29 @@
       "source_file": "docs/screen-spec.md",
       "source_location": "L1328",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "docs_screen_spec_m14g_1_media_job_foundation",
-      "target": "docs_screen_spec_saved_recipe_detail_1328",
-      "confidence_score": 1.0
+      "target": "docs_screen_spec_saved_recipe_detail_1328"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/screen-spec.md",
+      "source_location": "L1378",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "docs_screen_spec_m14g_3_completed_media_job_integration",
+      "target": "docs_screen_spec_home_and_library_1378"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/screen-spec.md",
+      "source_location": "L1362",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "docs_screen_spec_m14g_3_completed_media_job_integration",
+      "target": "docs_screen_spec_processing_card"
     },
     {
       "relation": "contains",
@@ -34826,5 +35988,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "86b463f08294e8a0dcc96a2781f4e0122062ea4e"
+  "built_at_commit": "1fe1ede56a1149c765323526db87cf7c192103c7"
 }

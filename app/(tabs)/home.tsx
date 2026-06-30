@@ -272,6 +272,7 @@ export default function HomeRoute() {
                 <VisualRecipeCard
                   title={
                     recipe.latest_card?.recipe_title?.trim() ||
+                    recipe.latest_media_job?.source_metadata.title?.trim() ||
                     recipe.title?.trim() ||
                     'Untitled recipe'
                   }
@@ -279,7 +280,9 @@ export default function HomeRoute() {
                   platform={getRecipePlatform(recipe.platform)}
                   status={getRecipeVisualStatus(recipe)}
                   thumbnailUrl={
-                    recipe.latest_media_job?.thumbnail_url ?? recipe.thumbnail_url
+                    recipe.latest_media_job?.thumbnail_url ??
+                    recipe.latest_media_job?.source_metadata.uploaded_thumbnail_url ??
+                    recipe.thumbnail_url
                   }
                   sourceUrl={recipe.source_url}
                   hasGroceryList={Boolean(recipe.latest_card)}

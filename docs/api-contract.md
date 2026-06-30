@@ -249,7 +249,7 @@ Media and thumbnail boundary:
 ### POST /functions/v1/create-media-job
 
 Purpose:
-Create a server-owned media processing job for a saved recipe link and synchronously attempt to notify the configured Cloud Run worker. The Edge Function does not download, upload, or analyze media.
+Create a server-owned media processing job for a saved recipe link and optionally notify the configured worker. The Edge Function does not download, upload, or analyze media.
 
 Input:
 
@@ -270,7 +270,8 @@ Success:
     "media_job_id": "uuid",
     "status": "queued",
     "progress": 0,
-    "worker_triggered": true
+    "worker_triggered": true,
+    "processor_mode": "worker"
   }
 }
 ```
@@ -284,12 +285,14 @@ Rules:
 - Does not expose media-job insert/update permissions to the mobile client.
 - Does not fetch or download the source URL.
 - Does not use FFmpeg, Gemini, Storage, or a downloader.
-- Reads `MEDIA_WORKER_URL` and `MEDIA_WORKER_SECRET` only from Edge Function secrets.
-- When both worker secrets exist, awaits `POST {MEDIA_WORKER_URL}/process-job` for up to 8 seconds with `X-Worker-Secret` and the body `{ "media_job_id": "uuid" }`.
+- Reads `MEDIA_PROCESSOR_MODE`, `MEDIA_WORKER_URL`, and `MEDIA_WORKER_SECRET` only from Edge Function secrets.
+- `MEDIA_PROCESSOR_MODE` supports `worker`, `manual`, and `disabled`; missing or unknown values default to `worker`.
+- In `worker` mode, when both worker secrets exist, awaits `POST {MEDIA_WORKER_URL}/process-job` for up to 8 seconds with `X-Worker-Secret` and the body `{ "media_job_id": "uuid" }`.
+- In `manual` or `disabled` mode, inserts the media job only, does not call the worker, returns `processor_mode`, and records `worker_trigger_skipped` with safe mode metadata when possible.
 - Records `worker_trigger_started` followed by `worker_trigger_success` or `worker_trigger_failed`.
 - Missing worker config records `worker_trigger_skipped` with boolean config-presence metadata.
 - Worker HTTP errors, timeouts, and fetch exceptions are recorded as safe event metadata and do not fail the already-created job.
-- `worker_triggered` is true only when the worker returns a 2xx response; otherwise it is false and the job remains queued for retry/debugging.
+- `worker_triggered` is true only in `worker` mode when the worker returns a 2xx response; otherwise it is false and the job remains queued for retry/debugging.
 - The worker secret is never stored in events or returned to the mobile client.
 
 Mobile helpers:

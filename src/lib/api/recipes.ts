@@ -60,13 +60,30 @@ export type MediaJobStatus =
   | 'failed'
   | 'needs_caption'
 
+export type MediaJobSourceMetadata = {
+  title?: string
+  description?: string
+  platform?: string
+  resolver?: string
+  duration_seconds?: number
+  uploaded_thumbnail_url?: string
+  media?: {
+    mime_type?: string
+    size_bytes?: number
+    has_cdn_url?: boolean
+    cdn_url_stored_private?: boolean
+  }
+}
+
 type MediaJobRow = Pick<
   Database['public']['Tables']['media_jobs']['Row'],
   | 'id'
   | 'recipe_item_id'
   | 'platform'
+  | 'ai_provider'
   | 'status'
   | 'source_mode'
+  | 'source_metadata'
   | 'progress'
   | 'error_code'
   | 'error_message'
@@ -76,8 +93,9 @@ type MediaJobRow = Pick<
   | 'updated_at'
 >
 
-export type MediaJob = Omit<MediaJobRow, 'status'> & {
+export type MediaJob = Omit<MediaJobRow, 'status' | 'source_metadata'> & {
   status: MediaJobStatus
+  source_metadata: MediaJobSourceMetadata
 }
 
 type CreateMediaJobResponse =
@@ -88,6 +106,7 @@ type CreateMediaJobResponse =
         status: MediaJobStatus
         progress: number
         worker_triggered: boolean
+        processor_mode: 'worker' | 'manual' | 'disabled'
       }
     }
   | {
@@ -733,14 +752,64 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
 }
 
 const MEDIA_JOB_SELECT =
-  'id, recipe_item_id, platform, status, source_mode, progress, error_code, error_message, thumbnail_url, result_recipe_card_id, created_at, updated_at'
+  'id, recipe_item_id, platform, ai_provider, status, source_mode, source_metadata, progress, error_code, error_message, thumbnail_url, result_recipe_card_id, created_at, updated_at'
 
 function normalizeMediaJob(row: MediaJobRow): MediaJob {
   return {
     ...row,
     status: getMediaJobStatus(row.status),
+    source_metadata: normalizeMediaJobSourceMetadata(row.source_metadata),
     progress: Math.min(100, Math.max(0, row.progress)),
   }
+}
+
+function normalizeMediaJobSourceMetadata(
+  value: Json
+): MediaJobSourceMetadata {
+  if (!isRecord(value)) {
+    return {}
+  }
+
+  const media = isRecord(value.media)
+    ? {
+        mime_type: getStringValue(value.media.mime_type),
+        size_bytes: getNumberValue(value.media.size_bytes),
+        has_cdn_url: getBooleanValue(value.media.has_cdn_url),
+        cdn_url_stored_private: getBooleanValue(
+          value.media.cdn_url_stored_private
+        ),
+      }
+    : undefined
+
+  return {
+    title: getStringValue(value.title),
+    description: getStringValue(value.description),
+    platform: getStringValue(value.platform),
+    resolver: getStringValue(value.resolver),
+    duration_seconds: getNumberValue(value.duration_seconds),
+    uploaded_thumbnail_url: getStringValue(value.uploaded_thumbnail_url),
+    media,
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+function getStringValue(value: unknown) {
+  return typeof value === 'string' && value.trim().length > 0
+    ? value.trim()
+    : undefined
+}
+
+function getNumberValue(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? value
+    : undefined
+}
+
+function getBooleanValue(value: unknown) {
+  return typeof value === 'boolean' ? value : undefined
 }
 
 function getMediaJobStatus(value: string): MediaJobStatus {

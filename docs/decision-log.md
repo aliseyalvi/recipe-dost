@@ -1,5 +1,19 @@
 # Recipe Dost Decision Log
 
+## 2026-06-27
+- M17B explicit queue processor mode completed for `create-media-job`.
+- Decision: `MEDIA_PROCESSOR_MODE=queue` inserts queued media jobs for the Render polling worker and does not POST `/process-job`.
+- Decision: queue mode performs a best-effort short GET `{MEDIA_WORKER_URL}/wake` using `WORKER_WAKE_TIMEOUT_MS` defaulting to 2500 ms, and job creation succeeds even if wake fails.
+- Decision: queue wake events store only processor mode, status code when available, and timeout; worker URLs are not stored in job events.
+- A-M15C Real source metadata display completed for media job status cards, completed recipe results, and existing visual recipe cards.
+- Decision: The app reads only `media_jobs.source_metadata` for public source details and does not query `media_job_private_metadata`.
+- Decision: UI renders only whitelisted fields: title, description, platform, resolver, duration, uploaded thumbnail, and media size; CDN URLs and raw JSON are never displayed.
+- Decision: Mock recipe result labeling is limited to subtle dev/status context while real source metadata remains visible.
+- A-M15B Public source metadata + private processing metadata schema completed with a migration adding `media_jobs.source_metadata` and `media_job_private_metadata`.
+- Decision: `media_jobs.source_metadata` stores safe app-visible source metadata only.
+- Decision: `media_job_private_metadata` stores CDN URL and raw resolver metadata for backend worker processing only.
+- Decision: CDN URLs are not displayed in the app and are not stored in `media_jobs.source_metadata`.
+
 ## 2026-06-20
 - Project created as Expo React Native + TypeScript app.
 - Backend selected: Supabase Auth + Postgres + Edge Functions.
@@ -151,6 +165,7 @@
 - Media job creation now records `media_job_created`, worker trigger start, success, failure, timeout, or skipped-config events so queued jobs are debuggable from `media_job_events`.
 - Worker configuration or invocation failures do not fail the mobile request after a job is created; the response reports `worker_triggered: false` and leaves the job queued.
 - No video download, Gemini call, FFmpeg, yt-dlp, Apify, auth, paywall, or mobile behavior changes were added in this worker-trigger reliability patch.
+- A-M14R1 local/Render worker testing uses `MEDIA_PROCESSOR_MODE=manual` on `create-media-job` to insert media jobs without auto-triggering the old Cloud Run worker. `MEDIA_PROCESSOR_MODE=worker` remains the default and preserves the Cloud Run trigger path; `disabled` also bypasses triggering. Skipped triggers record `worker_trigger_skipped` when possible and never expose worker secrets.
 - M14G-3 app integration completed.
 - YouTube media jobs can now become recipe cards in the app when the worker publishes `result_recipe_card_id`.
 - Completed jobs show "Recipe card ready" and open the generated recipe result.
