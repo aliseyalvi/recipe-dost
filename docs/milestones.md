@@ -1,5 +1,14 @@
 # Recipe Dost Milestones
 
+## M19 - App E2E Polish
+
+- Status: Done after validation.
+- URL preview now keeps working when metadata fetch fails, and uses safe preview metadata when available: title, thumbnail, creator, platform, and duration.
+- Media job and saved-link views prefer live `source_metadata` title/thumbnail while keeping source metadata separate from generated recipe-card titles.
+- Completed jobs route only through `media_jobs.result_recipe_card_id`; missing result links show a safe unavailable state while polling can continue.
+- Recipe result rendering now handles normalized/stringified JSON more defensively, avoids blank Urdu cards, derives grocery rows from ingredients when needed, and strips old markdown markers from displayed recipe text.
+- The app clearly shows the 2-minute video analysis limit and handles over-limit duration errors with friendly copy.
+
 ## M17B - Explicit Queue Processor Mode with Render Wake
 
 - Status: Done after validation.

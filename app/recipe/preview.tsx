@@ -111,6 +111,10 @@ export default function RecipePreviewRoute() {
   const thumbnailUrl = isValidHttpUrl(draft.thumbnail_url)
     ? draft.thumbnail_url
     : null
+  const durationSeconds =
+    typeof draft.duration_seconds === 'number' ? draft.duration_seconds : null
+  const isOverDurationLimit =
+    typeof durationSeconds === 'number' && durationSeconds > 120
   const needsAccuracyInput =
     isUnsupportedVideoPlatform(draft.platform) &&
     !pastedCaption.trim() &&
@@ -261,7 +265,46 @@ export default function RecipePreviewRoute() {
           Detected as {getPlatformLabel(draft.platform)}. Recipe Dost saves the
           link and recipe card details, not the video file.
         </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          {draft.author_username ? (
+            <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+              Creator: {draft.author_username}
+            </Text>
+          ) : null}
+          {durationSeconds !== null ? (
+            <Text
+              selectable
+              style={[
+                typography.caption,
+                { color: isOverDurationLimit ? colors.warning : colors.textMuted },
+              ]}
+            >
+              Duration: {formatDuration(durationSeconds)}
+            </Text>
+          ) : null}
+        </View>
+        <Text
+          selectable
+          style={[
+            typography.caption,
+            { color: isOverDurationLimit ? colors.warning : colors.textMuted },
+          ]}
+        >
+          Video analysis supports clips up to 2 minutes.
+        </Text>
       </Card>
+
+      {isOverDurationLimit ? (
+        <Card tone="muted">
+          <Text selectable style={[typography.heading, { color: colors.warning }]}>
+            This video may be too long to analyze
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.text }]}>
+            Save the link if you want to keep it, but AI video analysis works
+            best for clips up to 2 minutes.
+          </Text>
+        </Card>
+      ) : null}
 
       {usageSummary ? (
         <UsagePill
@@ -409,6 +452,14 @@ export default function RecipePreviewRoute() {
 function sanitizeOptionalText(value: string) {
   const trimmedValue = value.trim()
   return trimmedValue.length > 0 ? trimmedValue : undefined
+}
+
+function formatDuration(value: number) {
+  const totalSeconds = Math.max(0, Math.round(value))
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+
+  return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`
 }
 
 function isUnsupportedVideoPlatform(platform: string) {

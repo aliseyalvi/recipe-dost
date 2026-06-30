@@ -9,6 +9,17 @@ declare const Deno: {
   serve: (
     handler: (request: Request) => Response | Promise<Response>,
   ) => void;
+  env: {
+    get: (key: string) => string | undefined;
+  };
+};
+
+type PreviewMetadata = {
+  title: string | null;
+  description: string | null;
+  thumbnailUrl: string | null;
+  authorUsername: string | null;
+  durationSeconds: number | null;
 };
 
 type ParseUrlSuccess = {
@@ -18,6 +29,8 @@ type ParseUrlSuccess = {
     title: string | null;
     description: string | null;
     thumbnail_url: string | null;
+    author_username: string | null;
+    duration_seconds: number | null;
     metadata_status: "partial" | "failed";
     requires_manual_caption: true;
     source_url: string;
@@ -93,20 +106,29 @@ Deno.serve(async (request) => {
 
   const { originalUrl, normalizedUrl, host, parsedUrl } = validationResult;
   const platform = detectPlatform(host);
-  const youtubeThumbnailUrl = getYouTubeThumbnailUrl(parsedUrl);
-  const ogMetadata = await fetchOpenGraphMetadata(normalizedUrl);
-  const title = ogMetadata.title;
-  const description = ogMetadata.description;
-  const thumbnailUrl = youtubeThumbnailUrl ?? ogMetadata.imageUrl;
-  const hasMetadata = Boolean(title || description || thumbnailUrl || platform !== "other");
+  const metadata = await getPreviewMetadata({
+    sourceUrl: normalizedUrl,
+    parsedUrl,
+    platform,
+  });
+  const hasMetadata = Boolean(
+    metadata.title ||
+      metadata.description ||
+      metadata.thumbnailUrl ||
+      metadata.authorUsername ||
+      metadata.durationSeconds ||
+      platform !== "other",
+  );
 
   return jsonResponse({
     ok: true,
     data: {
       platform,
-      title,
-      description,
-      thumbnail_url: thumbnailUrl,
+      title: metadata.title,
+      description: metadata.description,
+      thumbnail_url: metadata.thumbnailUrl,
+      author_username: metadata.authorUsername,
+      duration_seconds: metadata.durationSeconds,
       metadata_status: hasMetadata ? "partial" : "failed",
       requires_manual_caption: true,
       source_url: originalUrl,
@@ -228,6 +250,145 @@ function detectPlatform(host: string): RecipePlatform {
   return "other";
 }
 
+async function getPreviewMetadata({
+  sourceUrl,
+  parsedUrl,
+  platform,
+}: {
+  sourceUrl: string;
+  parsedUrl: URL;
+  platform: RecipePlatform;
+}): Promise<PreviewMetadata> {
+  const workerMetadata = await fetchWorkerPreviewMetadata(sourceUrl, platform);
+  const youtubeMetadata = platform === "youtube"
+    ? await fetchYouTubeOEmbedMetadata(sourceUrl)
+    : emptyPreviewMetadata();
+  const ogMetadata = await fetchOpenGraphMetadata(sourceUrl);
+
+  return {
+    title: workerMetadata.title ?? youtubeMetadata.title ?? ogMetadata.title,
+    description:
+      workerMetadata.description ??
+      youtubeMetadata.description ??
+      ogMetadata.description,
+    thumbnailUrl:
+      workerMetadata.thumbnailUrl ??
+      youtubeMetadata.thumbnailUrl ??
+      getYouTubeThumbnailUrl(parsedUrl) ??
+      ogMetadata.thumbnailUrl,
+    authorUsername:
+      workerMetadata.authorUsername ?? youtubeMetadata.authorUsername,
+    durationSeconds: workerMetadata.durationSeconds,
+  };
+}
+
+function emptyPreviewMetadata(): PreviewMetadata {
+  return {
+    title: null,
+    description: null,
+    thumbnailUrl: null,
+    authorUsername: null,
+    durationSeconds: null,
+  };
+}
+
+async function fetchWorkerPreviewMetadata(
+  sourceUrl: string,
+  platform: RecipePlatform,
+): Promise<PreviewMetadata> {
+  const workerUrl = Deno.env.get("MEDIA_WORKER_URL")?.trim();
+
+  if (!workerUrl) {
+    return emptyPreviewMetadata();
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 2500);
+  const endpoint = `${workerUrl.replace(/\/+$/, "")}/metadata-preview`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        source_url: sourceUrl,
+        platform,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      return emptyPreviewMetadata();
+    }
+
+    const body: unknown = await response.json();
+
+    return normalizePreviewMetadata(getRecordValue(body, "data") ?? body);
+  } catch {
+    return emptyPreviewMetadata();
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function fetchYouTubeOEmbedMetadata(
+  sourceUrl: string,
+): Promise<PreviewMetadata> {
+  const endpoint =
+    `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(sourceUrl)}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "GET",
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      return emptyPreviewMetadata();
+    }
+
+    const body: unknown = await response.json();
+
+    return normalizePreviewMetadata({
+      title: getRecordValue(body, "title"),
+      thumbnail_url: getRecordValue(body, "thumbnail_url"),
+      author_username: getRecordValue(body, "author_name"),
+    });
+  } catch {
+    return emptyPreviewMetadata();
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+function normalizePreviewMetadata(value: unknown): PreviewMetadata {
+  return {
+    title: getMetadataString(getRecordValue(value, "title")),
+    description: getMetadataString(
+      getRecordValue(value, "description") ?? getRecordValue(value, "caption"),
+    ),
+    thumbnailUrl: getMetadataUrl(
+      getRecordValue(value, "thumbnail_url") ??
+        getRecordValue(value, "thumbnailUrl") ??
+        getRecordValue(value, "uploaded_thumbnail_url"),
+    ),
+    authorUsername: getMetadataString(
+      getRecordValue(value, "author_username") ??
+        getRecordValue(value, "authorUsername") ??
+        getRecordValue(value, "author") ??
+        getRecordValue(value, "author_name"),
+    ),
+    durationSeconds: getMetadataNumber(
+      getRecordValue(value, "duration_seconds") ??
+        getRecordValue(value, "durationSeconds"),
+    ),
+  };
+}
+
 function getYouTubeThumbnailUrl(parsedUrl: URL) {
   const videoId = getYouTubeVideoId(parsedUrl);
 
@@ -264,12 +425,12 @@ async function fetchOpenGraphMetadata(
 ): Promise<{
   title: string | null;
   description: string | null;
-  imageUrl: string | null;
+  thumbnailUrl: string | null;
 }> {
   const fallback = {
     title: null,
     description: null,
-    imageUrl: null,
+    thumbnailUrl: null,
   };
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 3000);
@@ -311,7 +472,7 @@ async function fetchOpenGraphMetadata(
     return {
       title: getOpenGraphContent(html, "og:title"),
       description: getOpenGraphContent(html, "og:description"),
-      imageUrl: resolveMetadataUrl(
+      thumbnailUrl: resolveMetadataUrl(
         sourceUrl,
         getOpenGraphContent(html, "og:image"),
       ),
@@ -427,6 +588,38 @@ function cleanMetadataText(value: string | null | undefined) {
     .trim();
 
   return text ? text.slice(0, 500) : null;
+}
+
+function getRecordValue(value: unknown, key: string) {
+  return isRecord(value) ? value[key] : undefined;
+}
+
+function getMetadataString(value: unknown) {
+  return typeof value === "string" && value.trim().length > 0
+    ? cleanMetadataText(value)
+    : null;
+}
+
+function getMetadataNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : null;
+}
+
+function getMetadataUrl(value: unknown) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  try {
+    const url = new URL(value.trim());
+
+    return url.protocol === "http:" || url.protocol === "https:"
+      ? url.toString()
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

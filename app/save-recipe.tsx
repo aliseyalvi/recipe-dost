@@ -85,6 +85,8 @@ export default function SaveRecipeRoute() {
         title: parsedRecipeUrl.title,
         description: parsedRecipeUrl.description,
         thumbnail_url: parsedRecipeUrl.thumbnail_url,
+        author_username: parsedRecipeUrl.author_username,
+        duration_seconds: parsedRecipeUrl.duration_seconds,
         metadata_status: parsedRecipeUrl.metadata_status,
         requires_manual_caption: parsedRecipeUrl.requires_manual_caption,
         created_at: new Date().toISOString(),
@@ -94,19 +96,35 @@ export default function SaveRecipeRoute() {
         metadata_status: parsedRecipeUrl.metadata_status,
         requires_manual_caption: parsedRecipeUrl.requires_manual_caption,
       })
+      track('media_preview_loaded', {
+        platform: parsedRecipeUrl.platform,
+        metadata_status: parsedRecipeUrl.metadata_status,
+        has_title: Boolean(parsedRecipeUrl.title),
+        has_thumbnail: Boolean(parsedRecipeUrl.thumbnail_url),
+        has_duration: typeof parsedRecipeUrl.duration_seconds === 'number',
+      })
       router.push('/recipe/preview')
-    } catch (caughtError) {
-      const nextError =
-        caughtError instanceof Error
-          ? caughtError
-          : new Error('Could not check this recipe link. Please try again.')
-
-      setParseError(nextError)
+    } catch {
       track('metadata_fetch_failed', {
         platform,
         metadata_status: 'failed',
         requires_manual_caption: true,
       })
+      setParseError(null)
+      setDraft({
+        source_url: validationResult.data,
+        normalized_url: validationResult.data,
+        platform,
+        title: null,
+        description: null,
+        thumbnail_url: null,
+        author_username: null,
+        duration_seconds: null,
+        metadata_status: 'failed',
+        requires_manual_caption: true,
+        created_at: new Date().toISOString(),
+      })
+      router.push('/recipe/preview')
     } finally {
       setIsParsing(false)
     }

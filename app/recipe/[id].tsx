@@ -224,6 +224,15 @@ export default function SavedRecipeRoute() {
   )
   const needsAccuracyInput = sourceModeHint === 'unsupported_video_link'
   const mediaJob = mediaJobQuery.data
+  const liveSourceTitle =
+    mediaJob?.source_metadata.title?.trim() || recipe.title?.trim()
+  const liveThumbnailUrl =
+    mediaJob?.thumbnail_url ??
+    mediaJob?.source_metadata.uploaded_thumbnail_url ??
+    recipe.thumbnail_url
+  const liveDurationSeconds = mediaJob?.source_metadata.duration_seconds
+  const isOverDurationLimit =
+    typeof liveDurationSeconds === 'number' && liveDurationSeconds > 120
 
   const openOriginalVideo = async () => {
     const canOpenUrl = await Linking.canOpenURL(recipe.source_url)
@@ -319,7 +328,7 @@ export default function SavedRecipeRoute() {
           ? caughtError
           : new Error('Could not queue video analysis. Please try again.')
 
-      setMediaJobError(nextError)
+      setMediaJobError(getFriendlyMediaJobError(caughtError, nextError))
       track('media_job_create_failed', {
         platform,
         source,
@@ -383,9 +392,9 @@ export default function SavedRecipeRoute() {
             backgroundColor: colors.surfaceMuted,
           }}
         >
-          {recipe.thumbnail_url ? (
+          {liveThumbnailUrl ? (
             <Image
-              source={{ uri: recipe.thumbnail_url }}
+              source={{ uri: liveThumbnailUrl }}
               style={{ width: '100%', height: '100%' }}
             />
           ) : (
@@ -432,7 +441,7 @@ export default function SavedRecipeRoute() {
           <AppBadge label="Saved Link" />
         </View>
         <Text selectable style={[typography.heading, { color: colors.text }]}>
-          {recipe.title ?? 'Untitled recipe link'}
+          {liveSourceTitle ?? 'Saved recipe link'}
         </Text>
         <Button
           label="Open Original Video"
@@ -444,6 +453,15 @@ export default function SavedRecipeRoute() {
         />
         <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
           Recipe Dost saves the link and recipe card, not the video file.
+        </Text>
+        <Text
+          selectable
+          style={[
+            typography.caption,
+            { color: isOverDurationLimit ? colors.warning : colors.textMuted },
+          ]}
+        >
+          Video analysis supports clips up to 2 minutes.
         </Text>
         <View style={{ gap: spacing.xs }}>
           <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
@@ -542,11 +560,17 @@ export default function SavedRecipeRoute() {
           <Button
             label="Analyze Video"
             fullWidth
-            disabled={isCreatingMediaJob}
+            disabled={isCreatingMediaJob || isOverDurationLimit}
             onPress={() => {
               void handleCreateMediaJob('new')
             }}
           />
+          {isOverDurationLimit ? (
+            <Text selectable style={[typography.caption, { color: colors.warning }]}>
+              This source appears longer than 2 minutes. Save the link or paste
+              the caption instead.
+            </Text>
+          ) : null}
         </Card>
       ) : null}
 
@@ -799,6 +823,19 @@ function getFriendlyGenerateCardErrorMessage(code: string) {
     default:
       return 'Something went wrong while creating your recipe card.'
   }
+}
+
+function getFriendlyMediaJobError(caughtError: unknown, fallback: Error) {
+  if (
+    caughtError instanceof RecipeApiError &&
+    caughtError.code === 'video_duration_exceeded'
+  ) {
+    return new Error(
+      'This video is over the 2-minute analysis limit. Save the link or paste the caption instead.'
+    )
+  }
+
+  return fallback
 }
 
 function isUnsupportedVideoPlatform(platform: RecipePlatform) {

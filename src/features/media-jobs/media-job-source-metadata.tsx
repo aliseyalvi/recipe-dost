@@ -24,14 +24,19 @@ export function MediaJobSourceMetadataSummary({
     typeof metadata?.duration_seconds === 'number'
       ? formatDuration(metadata.duration_seconds)
       : null
+  const isOverDurationLimit =
+    typeof metadata?.duration_seconds === 'number' &&
+    metadata.duration_seconds > 120
   const sizeLabel =
     typeof metadata?.media?.size_bytes === 'number'
       ? formatBytes(metadata.media.size_bytes)
       : null
   const resolverLabel = metadata?.resolver?.trim()
+  const authorLabel = metadata?.author_username?.trim()
   const hasContent = Boolean(
     sourceTitle ||
       sourceDescription ||
+      authorLabel ||
       platformLabel ||
       durationLabel ||
       sizeLabel ||
@@ -48,6 +53,7 @@ export function MediaJobSourceMetadataSummary({
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
         {platformLabel ? <AppBadge label={platformLabel} /> : null}
         {durationLabel ? <AppBadge label={durationLabel} /> : null}
+        {authorLabel ? <AppBadge label={`Creator: ${authorLabel}`} /> : null}
         {sizeLabel ? <AppBadge label={sizeLabel} /> : null}
         {resolverLabel ? <AppBadge label={`Resolver: ${resolverLabel}`} /> : null}
         {isMockResult && __DEV__ ? <AppBadge label="Mock recipe result" /> : null}
@@ -66,6 +72,12 @@ export function MediaJobSourceMetadataSummary({
           style={[typography.caption, { color: colors.textMuted }]}
         >
           {sourceDescription}
+        </Text>
+      ) : null}
+
+      {isOverDurationLimit ? (
+        <Text selectable style={[typography.caption, { color: colors.warning }]}>
+          Video analysis supports clips up to 2 minutes.
         </Text>
       ) : null}
     </View>

@@ -38,7 +38,7 @@ import { UrduText } from '@/ui/urdu-text'
 import { useQuery } from '@tanstack/react-query'
 import * as Clipboard from 'expo-clipboard'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Linking, Text, View } from 'react-native'
 
 export default function RecipeCardResultRoute() {
@@ -47,6 +47,7 @@ export default function RecipeCardResultRoute() {
   const { language: globalLanguage } = useRecipeContentLanguage()
   const [screenLanguage, setScreenLanguage] =
     useState<RecipeContentLanguage | null>(null)
+  const didTrackResultOpened = useRef(false)
   const { id } = useLocalSearchParams<{ id?: string }>()
   const recipeCardId = Array.isArray(id) ? id[0] : id
   const recipeCardQuery = useQuery({
@@ -65,7 +66,14 @@ export default function RecipeCardResultRoute() {
       return
     }
 
-    track('recipe_result_viewed', getAnalyticsProperties(recipeCardQuery.data))
+    const analyticsProperties = getAnalyticsProperties(recipeCardQuery.data)
+
+    track('recipe_result_viewed', analyticsProperties)
+
+    if (!didTrackResultOpened.current) {
+      didTrackResultOpened.current = true
+      track('recipe_result_opened', analyticsProperties)
+    }
   }, [recipeCardQuery.data, track])
 
   if (!recipeCardId) {

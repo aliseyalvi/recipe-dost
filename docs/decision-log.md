@@ -1,6 +1,11 @@
 # Recipe Dost Decision Log
 
 ## 2026-06-27
+- M19 App E2E polish completed for preview metadata, live media-job metadata, completed result routing, Urdu display, and recipe-card consistency.
+- Decision: URL preview remains best-effort; failed metadata fetches fall back to platform + URL placeholders and do not block saving.
+- Decision: App preview metadata comes through Supabase Edge Functions only; the mobile app does not call worker endpoints directly or handle secrets.
+- Decision: Recipe result screens render normalized recipe JSON defensively, derive grocery rows from ingredients when grocery JSON is empty, and use only `missing_info_json` for Missing details.
+- Decision: Video analysis is presented as limited to 2 minutes; over-limit previews/errors show friendly guidance instead of raw backend codes.
 - M17B explicit queue processor mode completed for `create-media-job`.
 - Decision: `MEDIA_PROCESSOR_MODE=queue` inserts queued media jobs for the Render polling worker and does not POST `/process-job`.
 - Decision: queue mode performs a best-effort short GET `{MEDIA_WORKER_URL}/wake` using `WORKER_WAKE_TIMEOUT_MS` defaulting to 2500 ms, and job creation succeeds even if wake fails.

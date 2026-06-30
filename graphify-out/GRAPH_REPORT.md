@@ -1,16 +1,16 @@
 # Graph Report - recipe-dost  (2026-06-30)
 
 ## Corpus Check
-- 143 files · ~203,015 words
+- 143 files · ~204,322 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1298 nodes · 2195 edges · 112 communities (97 shown, 15 thin omitted)
+- 1312 nodes · 2228 edges · 112 communities (96 shown, 16 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 3 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `1fe1ede5`
+- Built from commit: `89f494d5`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -57,6 +57,7 @@
 - [[_COMMUNITY_Community 41|Community 41]]
 - [[_COMMUNITY_Community 42|Community 42]]
 - [[_COMMUNITY_Community 43|Community 43]]
+- [[_COMMUNITY_Community 44|Community 44]]
 - [[_COMMUNITY_Community 45|Community 45]]
 - [[_COMMUNITY_Community 46|Community 46]]
 - [[_COMMUNITY_Community 47|Community 47]]
@@ -119,7 +120,6 @@
 - [[_COMMUNITY_Community 106|Community 106]]
 - [[_COMMUNITY_Community 107|Community 107]]
 - [[_COMMUNITY_Community 108|Community 108]]
-- [[_COMMUNITY_Community 109|Community 109]]
 - [[_COMMUNITY_Community 110|Community 110]]
 - [[_COMMUNITY_Community 111|Community 111]]
 - [[_COMMUNITY_Community 112|Community 112]]
@@ -151,31 +151,31 @@
 ## Import Cycles
 - 1-file cycle: `metro.config.js -> metro.config.js`
 
-## Communities (112 total, 15 thin omitted)
+## Communities (112 total, 16 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.17
-Nodes (7): getCompletedSteps(), HomeChip, homeChips, HomeFilter, HomeRoute(), FilterChip(), SectionHeader()
+Cohesion: 0.13
+Nodes (10): getUsageSummary(), getCompletedSteps(), HomeChip, homeChips, HomeFilter, HomeRoute(), FilterChip(), Props (+2 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.11
-Nodes (29): ChoiceCard(), cuisineOptions, mealTypeOptions, Option, PlatformBadge(), Props, detectRecipePlatform(), getPlatformLabel() (+21 more)
+Cohesion: 0.13
+Nodes (20): SaveRecipeRoute(), ShareRecipeRoute(), ChoiceCard(), Props, cuisineOptions, mealTypeOptions, Option, detectRecipePlatform() (+12 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.06
-Nodes (58): createMediaJob(), CreateMediaJobResponse, firstNonEmptyArray(), GeneratedRecipeCard, generateRecipeCard(), GenerateRecipeCardResponse, getAiSourceMode(), getArray() (+50 more)
+Cohesion: 0.05
+Nodes (64): AiSourceMode, cleanRecipeDisplayText(), createMediaJob(), CreateMediaJobResponse, firstNonEmptyArray(), GeneratedRecipeCard, generateRecipeCard(), GenerateRecipeCardResponse (+56 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.07
-Nodes (34): AiSourceMode, GroceryItem, MediaJobSourceMetadata, RecipeCard, RecipeCardIngredient, RecipeCardStep, RecipeCardSubstitution, ContentLanguageState (+26 more)
+Nodes (32): useTrackScreen(), GroceryItem, WelcomeRoute(), ContentLanguageControl(), languageOptions, RecipeContentLanguage, hasUrduScript(), LocalizedTextSelection (+24 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.15
-Nodes (17): StepId, stepIds, cookingLevelOptions, cookingPreferenceOptions, cuisineOptions, householdSizeOptions, languageOptions, mainUseOptions (+9 more)
+Cohesion: 0.07
+Nodes (38): IndexRoute(), OnboardingRoute(), StepId, stepIds, ContentLanguageState, getDefaultContentLanguage(), useContentLanguageStore, useRecipeContentLanguage() (+30 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.23
-Nodes (10): buildUsageSummary(), GroceryListCountRow, hasGroceryListItems(), parseMaybeJson(), UsageSummary, Json, defaultUsageLimits, getPositiveLimit() (+2 more)
+Cohesion: 0.25
+Nodes (9): buildUsageSummary(), GroceryListCountRow, hasGroceryListItems(), parseMaybeJson(), UsageSummary, defaultUsageLimits, getPositiveLimit(), getUsageLimits() (+1 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.06
@@ -190,8 +190,8 @@ Cohesion: 0.09
 Nodes (28): isMediaJobActive(), isMediaJobAttentionRequired(), RecipeLibraryItem, getHomeRecipeSubtitle(), getRecipeVisualStatus(), getSavedLinkStatus(), ContentChip, ContentFilter (+20 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.53
-Nodes (5): getMediaJobMessage(), getMediaJobStatusLabel(), isMockMediaJob(), MediaJobCard(), Props
+Cohesion: 0.23
+Nodes (12): MediaJobSourceMetadata, getMediaJobMessage(), getMediaJobStatusLabel(), isMockMediaJob(), MediaJobCard(), Props, formatBytes(), formatDuration() (+4 more)
 
 ### Community 10 - "Community 10"
 Cohesion: 0.27
@@ -210,8 +210,8 @@ Cohesion: 0.06
 Nodes (35): app/burrito.tsx, app.config.js, app/index.tsx, app/_layout.tsx, app/profile.tsx, babel.config.js, Building for Production, Burrito Consideration App (Expo) (+27 more)
 
 ### Community 14 - "Community 14"
-Cohesion: 0.15
-Nodes (19): cleanMetadataText(), cleanYouTubeVideoId(), concatChunks(), corsHeaders, fetchOpenGraphMetadata(), getOpenGraphContent(), getRedirectUrl(), getYouTubeThumbnailUrl() (+11 more)
+Cohesion: 0.12
+Nodes (29): cleanMetadataText(), cleanYouTubeVideoId(), concatChunks(), corsHeaders, emptyPreviewMetadata(), fetchOpenGraphMetadata(), fetchWorkerPreviewMetadata(), fetchYouTubeOEmbedMetadata() (+21 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.20
@@ -258,8 +258,8 @@ Cohesion: 0.06
 Nodes (30): 0. Product Decision, 10. MVP Screens, 11. Onboarding Flow, 12.1 Home Dashboard, 12.2 Save Link + Preview Flow, 12. Input Fields, 13. AI Output Format, 14. Safe Platform Strategy (+22 more)
 
 ### Community 33 - "Community 33"
-Cohesion: 0.13
-Nodes (20): useTrackScreen(), benefits, Props, Props, Props, Props, Action, PlaceholderScreen() (+12 more)
+Cohesion: 0.22
+Nodes (6): Props, radius, Input(), Props, Props, TextArea()
 
 ### Community 34 - "Community 34"
 Cohesion: 0.08
@@ -278,8 +278,8 @@ Cohesion: 0.09
 Nodes (21): Android Share Intake, Architecture, Auth model, DELETE /functions/v1/account, Edge Functions / Backend endpoints, GET /functions/v1/subscription-status, M11 Mobile Recipe Library Read, M12 Mobile Grocery List Read (+13 more)
 
 ### Community 38 - "Community 38"
-Cohesion: 0.40
-Nodes (5): Analytics, Data, M12 Grocery List, Route, Screen
+Cohesion: 0.29
+Nodes (3): getTabLabel(), TabButton(), tabIcons
 
 ### Community 39 - "Community 39"
 Cohesion: 0.12
@@ -298,12 +298,16 @@ Cohesion: 0.11
 Nodes (17): collection_items, collections, grocery_lists, Indexes, M14G-1 Media Job Security, media_job_events, media_jobs, metadata_fetch_logs (+9 more)
 
 ### Community 43 - "Community 43"
-Cohesion: 0.08
-Nodes (16): resources, AppProviders(), Props, AuthProvider(), AnalyticsProperties, defaultClient, PostHogPlaceholderClient, PostHogPlaceholderContext (+8 more)
+Cohesion: 0.18
+Nodes (7): resources, AppProviders(), Props, AppQueryProvider(), Props, Props, SentryPlaceholderProvider()
+
+### Community 44 - "Community 44"
+Cohesion: 0.29
+Nodes (5): AnalyticsProperties, defaultClient, PostHogPlaceholderClient, PostHogPlaceholderContext, PostHogPlaceholderProvider()
 
 ### Community 45 - "Community 45"
-Cohesion: 0.15
-Nodes (20): parseRecipeUrl(), getUsageSummary(), SaveRecipeRoute(), ShareRecipeRoute(), useRecipeDraftStore, recipeUrlSchema, validateRecipeUrl(), RecipeReadyRoute() (+12 more)
+Cohesion: 0.17
+Nodes (24): parseRecipeUrl(), benefits, Props, Props, Action, Props, colors, spacing (+16 more)
 
 ### Community 46 - "Community 46"
 Cohesion: 0.15
@@ -430,8 +434,8 @@ Cohesion: 0.33
 Nodes (5): 2026-06-20, 2026-06-21, 2026-06-27, Current Build Plan Alignment, Recipe Dost Decision Log
 
 ### Community 77 - "Community 77"
-Cohesion: 0.18
-Nodes (10): Home And Library, M14B Competitor-Inspired UI Upgrade, M14E Language, Metadata, Filters, and Safe Areas, M14F AI Source Accuracy UX, M14G-3 Completed Media Job Integration, Preview, Processing Card, Recipe Dost Screen Spec (+2 more)
+Cohesion: 0.12
+Nodes (15): Analytics, Data, Home And Library, M12 Grocery List, M14B Competitor-Inspired UI Upgrade, M14E Language, Metadata, Filters, and Safe Areas, M14F AI Source Accuracy UX, M14G-3 Completed Media Job Integration (+7 more)
 
 ### Community 78 - "Community 78"
 Cohesion: 0.40
@@ -490,60 +494,52 @@ Cohesion: 0.67
 Nodes (3): $set, $set\_once, Setting person properties
 
 ### Community 104 - "Community 104"
-Cohesion: 0.22
-Nodes (10): MetadataStatusBadge(), Props, titleCase(), formatDate(), getRecipePlatform(), Props, RecentRecipeCard(), BadgeTone (+2 more)
+Cohesion: 0.13
+Nodes (22): MetadataStatusBadge(), Props, titleCase(), formatDate(), getRecipePlatform(), Props, RecentRecipeCard(), PlatformBadge() (+14 more)
 
 ### Community 105 - "Community 105"
-Cohesion: 0.18
-Nodes (8): RecentRecipeItem, initialProfile, OnboardingState, useOnboardingStore, OnboardingProfile, fallbackStorage, secureStoreStorage, isSupabaseConfigured
+Cohesion: 0.33
+Nodes (4): RecentRecipeItem, isSupabaseConfigured, supabase, Database
 
 ### Community 106 - "Community 106"
 Cohesion: 0.33
 Nodes (5): compilerOptions, ignoreDeprecations, strict, imports, @supabase/supabase-js
 
 ### Community 107 - "Community 107"
-Cohesion: 0.15
-Nodes (12): getUserProfile(), saveOnboardingProfile(), UserProfileRow, CompositeTypes, Constants, Database, DatabaseWithoutInternals, DefaultSchema (+4 more)
-
-### Community 108 - "Community 108"
-Cohesion: 0.15
-Nodes (12): WelcomeRoute(), usePostHog(), getRecipeTitle(), GroceryRoute(), LibraryRoute(), EmptyState(), UrduText(), Props (+4 more)
-
-### Community 109 - "Community 109"
-Cohesion: 0.39
-Nodes (6): IndexRoute(), OnboardingRoute(), useUserProfileQuery(), useAuth(), SettingsRoute(), shortId()
+Cohesion: 0.22
+Nodes (8): CompositeTypes, Constants, DatabaseWithoutInternals, DefaultSchema, Enums, Json, TablesInsert, TablesUpdate
 
 ### Community 110 - "Community 110"
-Cohesion: 0.36
-Nodes (8): AuthContext, AuthContextValue, Props, assertSupabaseConfigured(), getSession(), signInAnonymously(), signOut(), supabase
+Cohesion: 0.33
+Nodes (8): AuthContext, AuthContextValue, AuthProvider(), Props, assertSupabaseConfigured(), getSession(), signInAnonymously(), signOut()
 
 ### Community 111 - "Community 111"
 Cohesion: 0.50
 Nodes (4): Analytics, Home And Library, M14G-1 Media Job Foundation, Saved Recipe Detail
 
 ### Community 112 - "Community 112"
-Cohesion: 0.33
-Nodes (5): A-M15B - Public Source Metadata + Private Processing Metadata Schema, A-M15C - Real Source Metadata Display, Current Worker Testing, M17B - Explicit Queue Processor Mode with Render Wake, Recipe Dost Milestones
+Cohesion: 0.29
+Nodes (6): A-M15B - Public Source Metadata + Private Processing Metadata Schema, A-M15C - Real Source Metadata Display, Current Worker Testing, M17B - Explicit Queue Processor Mode with Render Wake, M19 - App E2E Polish, Recipe Dost Milestones
 
 ## Knowledge Gaps
-- **687 isolated node(s):** `codegraph`, `tabIcons`, `HomeFilter`, `HomeChip`, `homeChips` (+682 more)
+- **689 isolated node(s):** `/Users/sadaqatali/.nvm/versions/node/v24.17.0/bin/codegraph`, `tabIcons`, `HomeFilter`, `HomeChip`, `homeChips` (+684 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **15 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **16 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Recipe Dost Screen Spec` connect `Community 77` to `Community 67`, `Community 68`, `Community 69`, `Community 38`, `Community 70`, `Community 73`, `Community 111`, `Community 48`, `Community 49`, `Community 52`, `Community 53`, `Community 54`, `Community 55`, `Community 61`, `Community 62`?**
-  _High betweenness centrality (0.009) - this node is a cross-community bridge._
-- **Why does `colors` connect `Community 33` to `Community 0`, `Community 1`, `Community 3`, `Community 4`, `Community 104`, `Community 9`, `Community 8`, `Community 43`, `Community 108`, `Community 45`?**
+- **Why does `Recipe Dost Screen Spec` connect `Community 77` to `Community 67`, `Community 68`, `Community 69`, `Community 70`, `Community 73`, `Community 111`, `Community 48`, `Community 49`, `Community 52`, `Community 53`, `Community 54`, `Community 55`, `Community 61`, `Community 62`?**
+  _High betweenness centrality (0.010) - this node is a cross-community bridge._
+- **Why does `usePostHog()` connect `Community 3` to `Community 0`, `Community 1`, `Community 4`, `Community 38`, `Community 104`, `Community 8`, `Community 44`, `Community 45`, `Community 110`?**
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+- **Why does `colors` connect `Community 45` to `Community 0`, `Community 33`, `Community 1`, `Community 3`, `Community 4`, `Community 38`, `Community 104`, `Community 9`, `Community 8`, `Community 43`?**
   _High betweenness centrality (0.006) - this node is a cross-community bridge._
-- **Why does `usePostHog()` connect `Community 108` to `Community 0`, `Community 33`, `Community 1`, `Community 3`, `Community 4`, `Community 8`, `Community 43`, `Community 45`, `Community 109`, `Community 110`?**
-  _High betweenness centrality (0.006) - this node is a cross-community bridge._
-- **What connects `codegraph`, `tabIcons`, `HomeFilter` to the rest of the system?**
-  _687 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **What connects `/Users/sadaqatali/.nvm/versions/node/v24.17.0/bin/codegraph`, `tabIcons`, `HomeFilter` to the rest of the system?**
+  _689 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Community 0` be split into smaller, more focused modules?**
+  _Cohesion score 0.13071895424836602 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.11379800853485064 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.1339031339031339 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.06174863387978142 - nodes in this community are weakly interconnected._
-- **Should `Community 3` be split into smaller, more focused modules?**
-  _Cohesion score 0.06845513413506013 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.054274084124830396 - nodes in this community are weakly interconnected._

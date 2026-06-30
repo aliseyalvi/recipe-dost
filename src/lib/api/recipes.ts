@@ -11,6 +11,8 @@ export type ParsedRecipeUrl = {
   title: string | null
   description: string | null
   thumbnail_url: string | null
+  author_username: string | null
+  duration_seconds: number | null
   metadata_status: RecipeMetadataStatus
   requires_manual_caption: boolean
   source_url: string
@@ -65,6 +67,7 @@ export type MediaJobSourceMetadata = {
   description?: string
   platform?: string
   resolver?: string
+  author_username?: string
   duration_seconds?: number
   uploaded_thumbnail_url?: string
   media?: {
@@ -106,7 +109,7 @@ type CreateMediaJobResponse =
         status: MediaJobStatus
         progress: number
         worker_triggered: boolean
-        processor_mode: 'worker' | 'manual' | 'disabled'
+        processor_mode: 'worker' | 'queue' | 'manual' | 'disabled'
       }
     }
   | {
@@ -540,6 +543,10 @@ export async function updateSavedRecipeCaption({
 }
 
 export function isMediaJobActive(job: MediaJob | null | undefined) {
+  if (job?.status === 'completed' && !job.result_recipe_card_id) {
+    return true
+  }
+
   return Boolean(
     job &&
       job.status !== 'completed' &&
@@ -786,6 +793,9 @@ function normalizeMediaJobSourceMetadata(
     description: getStringValue(value.description),
     platform: getStringValue(value.platform),
     resolver: getStringValue(value.resolver),
+    author_username: getStringValue(
+      value.author_username ?? value.authorUsername ?? value.author
+    ),
     duration_seconds: getNumberValue(value.duration_seconds),
     uploaded_thumbnail_url: getStringValue(value.uploaded_thumbnail_url),
     media,
@@ -962,12 +972,15 @@ function getGroceryItemFromUnknown(
   }
 
   const record = getRecord(value)
+  const labelUr = getString(record?.name_ur) || getString(record?.label_ur)
   const label =
     getString(record?.name_en) ||
+    getString(record?.label_en) ||
     getString(record?.label) ||
     getString(record?.name) ||
     getString(record?.item) ||
-    getString(record?.ingredient)
+    getString(record?.ingredient) ||
+    labelUr
 
   if (!label) {
     return null
@@ -983,7 +996,6 @@ function getGroceryItemFromUnknown(
     checked: false,
   }
   const labelEn = getString(record?.name_en) || getString(record?.label_en)
-  const labelUr = getString(record?.name_ur) || getString(record?.label_ur)
 
   if (quantity) {
     item.quantity = quantity
@@ -1004,7 +1016,7 @@ function getIngredients(value: Json): RecipeCardIngredient[] {
       const record = getRecord(item)
       const nameEn = getString(record?.name_en)
       const nameUr = getString(record?.name_ur)
-      const name = nameEn || getString(record?.name)
+      const name = nameEn || getString(record?.name) || nameUr
 
       if (!name) {
         return null
@@ -1023,7 +1035,7 @@ function getIngredients(value: Json): RecipeCardIngredient[] {
 
       const notesEn = getString(record?.notes_en)
       const notesUr = getString(record?.notes_ur)
-      const notes = notesEn || getString(record?.notes)
+      const notes = notesEn || getString(record?.notes) || notesUr
 
       if (notes) {
         ingredient.notes = notes
@@ -1046,7 +1058,11 @@ function getSteps(value: Json): RecipeCardStep[] {
       const record = getRecord(item)
       const instructionEn = getString(record?.instruction_en)
       const instructionUr = getString(record?.instruction_ur)
-      const instruction = instructionEn || getString(record?.instruction)
+      const instruction =
+        instructionEn ||
+        getString(record?.instruction) ||
+        getString(record?.step) ||
+        instructionUr
 
       if (!instruction) {
         return null
@@ -1065,7 +1081,7 @@ function getSteps(value: Json): RecipeCardStep[] {
 
       const tipEn = getString(record?.tip_en)
       const tipUr = getString(record?.tip_ur)
-      const tip = getString(record?.urdu_or_roman_urdu_tip)
+      const tip = getString(record?.urdu_or_roman_urdu_tip) || tipUr
 
       if (tip) {
         step.urdu_or_roman_urdu_tip = tip
@@ -1142,7 +1158,24 @@ function hasUrduScript(value: string | null | undefined) {
 function getArray(value: unknown): unknown[] {
   const parsedValue = parseMaybeJson(value)
 
-  return Array.isArray(parsedValue) ? parsedValue : []
+  if (Array.isArray(parsedValue)) {
+    return parsedValue
+  }
+
+  if (typeof parsedValue === 'object' && parsedValue !== null) {
+    const record = parsedValue as Record<string, unknown>
+    const nestedArray =
+      record.items ??
+      record.ingredients ??
+      record.steps ??
+      record.grocery_list ??
+      record.grocery_items ??
+      record.missing_info
+
+    return Array.isArray(nestedArray) ? nestedArray : []
+  }
+
+  return []
 }
 
 function getRecord(value: unknown): Record<string, unknown> | null {
@@ -1172,13 +1205,39 @@ function parseMaybeJson(value: unknown): unknown {
 }
 
 function getString(value: unknown): string | null {
-  return typeof value === 'string' && value.trim().length > 0
-    ? value.trim()
-    : null
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const text = cleanRecipeDisplayText(value)
+
+  return text.length > 0 ? text : null
 }
 
 function getNumber(value: unknown): number | null {
-  return typeof value === 'number' && Number.isFinite(value) ? value : null
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    const parsedValue = Number(value)
+
+    return Number.isFinite(parsedValue) ? parsedValue : null
+  }
+
+  return null
+}
+
+function cleanRecipeDisplayText(value: string) {
+  return value
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^\s*[-*]\s+/gm, '')
+    .replace(/^\s*\d+[.)]\s+/gm, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function getGenerateRecipeCardErrorMessage(code: string, fallback?: string) {

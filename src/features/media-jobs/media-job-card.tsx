@@ -27,9 +27,13 @@ export function MediaJobCard({
     fallbackThumbnailUrl
   const needsAttention = job.status === 'failed' || job.status === 'needs_caption'
   const isCompleted = job.status === 'completed'
+  const isCompletedWithoutResult = isCompleted && !job.result_recipe_card_id
+  const isOverDurationLimit =
+    typeof job.source_metadata.duration_seconds === 'number' &&
+    job.source_metadata.duration_seconds > 120
 
   return (
-    <Card tone={needsAttention ? 'muted' : 'warm'}>
+    <Card tone={needsAttention || isCompletedWithoutResult ? 'muted' : 'warm'}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
         <View
           style={{
@@ -69,12 +73,22 @@ export function MediaJobCard({
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
             <AppBadge
               label={getMediaJobStatusLabel(job.status)}
-              tone={needsAttention ? 'warning' : isCompleted ? 'accent' : 'primary'}
+              tone={
+                needsAttention || isCompletedWithoutResult
+                  ? 'warning'
+                  : isCompleted
+                    ? 'accent'
+                    : 'primary'
+              }
             />
             <AppBadge label={`${job.progress}%`} />
           </View>
           <Text selectable style={[typography.heading, { color: colors.text }]}>
-            {isCompleted ? 'Recipe card ready' : 'Video analysis'}
+            {isCompleted
+              ? job.result_recipe_card_id
+                ? 'Recipe card ready'
+                : 'Recipe card unavailable'
+              : 'Video analysis'}
           </Text>
           <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
             {getMediaJobMessage(job)}
@@ -110,10 +124,22 @@ export function MediaJobCard({
         <Button label="Open Recipe Card" fullWidth onPress={onOpenResult} />
       ) : null}
 
+      {isCompletedWithoutResult ? (
+        <Text selectable style={[typography.caption, { color: colors.warning }]}>
+          Analysis finished, but the recipe card is not linked yet. Pull to refresh
+          or try again in a moment.
+        </Text>
+      ) : null}
+
       {needsAttention ? (
         <View style={{ gap: spacing.sm }}>
           {onRetry ? (
-            <Button label="Retry Analysis" fullWidth onPress={onRetry} />
+            <Button
+              label="Retry Analysis"
+              fullWidth
+              disabled={isOverDurationLimit}
+              onPress={onRetry}
+            />
           ) : null}
           {onPasteCaption ? (
             <Button
@@ -164,6 +190,14 @@ function getMediaJobStatusLabel(status: MediaJob['status']) {
 }
 
 function getMediaJobMessage(job: MediaJob) {
+  if (job.error_code === 'video_duration_exceeded') {
+    return 'This video is over the 2-minute analysis limit. Save the link or paste the caption instead.'
+  }
+
+  if (job.status === 'completed' && !job.result_recipe_card_id) {
+    return 'Analysis completed, but the recipe card link is missing.'
+  }
+
   switch (job.status) {
     case 'queued':
       return 'Waiting to start...'

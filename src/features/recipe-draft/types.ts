@@ -24,6 +24,8 @@ export type RecipeLinkDraft = {
   title?: string | null
   description?: string | null
   thumbnail_url?: string | null
+  author_username?: string | null
+  duration_seconds?: number | null
   metadata_status?: RecipeMetadataStatus
   requires_manual_caption?: boolean
   user_note?: string
