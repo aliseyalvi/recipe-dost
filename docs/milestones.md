@@ -1,5 +1,14 @@
 # Recipe Dost Milestones
 
+## M21.5 - Dev Identity Switcher and AI Access QA
+
+- Status: Implemented pending validation/deploy.
+- Added a dev-only Settings panel gated by `__DEV__` or `EXPO_PUBLIC_DEV_TOOLS_ENABLED=true`.
+- Dev tools show current Supabase anonymous user ID, anonymous status, saved local identity status, and safe AI access state.
+- Developers can copy the current user ID, refresh access state, create a fresh anonymous test user, and switch to anonymous users previously saved on the same device.
+- Added `get-ai-access` Edge Function using the same server-side access helper as `create-media-job` without creating jobs or exposing source URLs/secrets.
+- Mobile dev tools do not allow role changes; admin/tester/premium simulation remains SQL-only.
+
 ## M21 - Monetization / Account Foundation
 
 - Status: Done after validation and deployment.

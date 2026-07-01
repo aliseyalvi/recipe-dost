@@ -38,6 +38,8 @@ export type AiGenerationAccess = {
   monthlyLimit: number | null;
   remaining: number | null;
   role: string;
+  premiumActive: boolean;
+  isTestUser: boolean;
 };
 
 type AccessSupabaseClient = SupabaseClient<Record<string, never>>;
@@ -78,6 +80,8 @@ export async function getAiGenerationAccess(
   const usedSuccessfulGenerations = lifetimeCountResult.count ?? 0;
   const usedThisMonth = monthlyCountResult.count ?? 0;
   const override = getMonthlyLimitOverride(profile);
+  const premiumActive = isPremiumActive(profile, role);
+  const isTestUser = role === "tester" || profile?.is_test_user === true;
 
   if (role === "admin") {
     return buildMonthlyAccess({
@@ -86,26 +90,32 @@ export async function getAiGenerationAccess(
       monthlyLimit: override ?? ADMIN_MONTHLY_AI_LIMIT,
       usedThisMonth,
       usedSuccessfulGenerations,
+      premiumActive,
+      isTestUser,
     });
   }
 
-  if (role === "tester" || profile?.is_test_user === true) {
+  if (isTestUser) {
     return buildMonthlyAccess({
       reason: "tester_override",
       role,
       monthlyLimit: override ?? TESTER_MONTHLY_AI_LIMIT,
       usedThisMonth,
       usedSuccessfulGenerations,
+      premiumActive,
+      isTestUser,
     });
   }
 
-  if (isPremiumActive(profile, role)) {
+  if (premiumActive) {
     return buildMonthlyAccess({
       reason: "premium_active",
       role,
       monthlyLimit: override ?? PREMIUM_MONTHLY_AI_LIMIT,
       usedThisMonth,
       usedSuccessfulGenerations,
+      premiumActive,
+      isTestUser,
     });
   }
 
@@ -122,6 +132,8 @@ export async function getAiGenerationAccess(
     monthlyLimit: null,
     remaining: freeRemaining,
     role,
+    premiumActive,
+    isTestUser,
   };
 }
 
@@ -134,6 +146,8 @@ export function toSafeAiGenerationAccessMetadata(access: AiGenerationAccess) {
     monthly_limit: access.monthlyLimit,
     remaining: access.remaining,
     role: access.role,
+    premium_active: access.premiumActive,
+    is_test_user: access.isTestUser,
   } satisfies Json;
 }
 
@@ -156,12 +170,16 @@ function buildMonthlyAccess({
   monthlyLimit,
   usedThisMonth,
   usedSuccessfulGenerations,
+  premiumActive,
+  isTestUser,
 }: {
   reason: Exclude<AiGenerationAccessReason, "free_credit_available">;
   role: string;
   monthlyLimit: number;
   usedThisMonth: number;
   usedSuccessfulGenerations: number;
+  premiumActive: boolean;
+  isTestUser: boolean;
 }): AiGenerationAccess {
   const remaining = Math.max(0, monthlyLimit - usedThisMonth);
 
@@ -173,6 +191,8 @@ function buildMonthlyAccess({
     monthlyLimit,
     remaining,
     role,
+    premiumActive,
+    isTestUser,
   };
 }
 

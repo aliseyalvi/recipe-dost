@@ -1,4 +1,8 @@
 import { ContentLanguageControl } from '@/features/language/content-language-control'
+import {
+  DevIdentityPanel,
+  shouldShowDevIdentityPanel,
+} from '@/features/dev-tools/dev-identity-panel'
 import { getUsageSummary } from '@/lib/api/usage'
 import { useAuth } from '@/providers/auth-provider'
 import { colors, spacing, typography } from '@/theme'
@@ -93,6 +97,10 @@ export default function SettingsRoute() {
         </Text>
         <ContentLanguageControl />
       </Card>
+
+      {shouldShowDevIdentityPanel() ? (
+        <DevIdentityPanel />
+      ) : null}
 
       {__DEV__ ? (
         <Card>

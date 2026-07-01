@@ -5,6 +5,7 @@ declare namespace NodeJS {
     EXPO_PUBLIC_FREE_SAVED_LINK_LIMIT?: string
     EXPO_PUBLIC_FREE_RECIPE_CARD_LIMIT?: string
     EXPO_PUBLIC_FREE_GROCERY_LIST_LIMIT?: string
+    EXPO_PUBLIC_DEV_TOOLS_ENABLED?: string
   }
 }
 

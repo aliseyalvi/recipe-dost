@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
   getAiGenerationAccess,
   toSafeAiGenerationAccessMetadata,
-} from "../_shared/ai-generation-access.ts";
+} from "../_shared/ai-access.ts";
 
 type Json =
   | string
@@ -344,6 +344,8 @@ async function handleCreateMediaJobRequest(request: Request) {
         monthly_limit: access.monthlyLimit,
         remaining: access.remaining,
         role: access.role,
+        premium_active: access.premiumActive,
+        is_test_user: access.isTestUser,
       },
     },
   });

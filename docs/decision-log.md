@@ -1,6 +1,10 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-01
+- M21.5 dev identity switcher and AI access QA tools added without full paywall, signup UI, token bundles, or mobile role mutation.
+- Decision: Dev identity switching is limited to anonymous Supabase sessions saved locally on the device; the app cannot impersonate arbitrary user IDs.
+- Decision: Role, tester, and premium simulation stays SQL-only. The mobile dev panel only copies IDs, creates fresh anonymous users, switches saved local sessions, and reads safe access state.
+- Decision: `get-ai-access` shares the server-side access helper with `create-media-job` and returns only safe entitlement/usage fields.
 - M21 monetization/account foundation added without full paywall, signup UI, token bundles, or Play Store release changes.
 - Decision: Recipe Dost remains anonymous-first; Supabase anonymous `user_id` is the primary app user ID and the future RevenueCat `appUserID`.
 - Decision: The premium entitlement key is `premium`, mirrored on `user_profiles` for server-side access decisions.

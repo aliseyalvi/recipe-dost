@@ -21,7 +21,20 @@
 
 Use placeholder IDs only in docs and tickets. Replace the UUID locally with the current Supabase anonymous user ID from the app session.
 
+In development, open Settings -> Dev Identity and tap **Copy User ID**. The panel is visible only in `__DEV__` builds or when `EXPO_PUBLIC_DEV_TOOLS_ENABLED=true`.
+
 ```sql
+-- Reset a development user to normal free behavior.
+update public.user_profiles
+set role = 'free',
+    is_test_user = false,
+    ai_monthly_limit_override = null,
+    revenuecat_app_user_id = null,
+    revenuecat_entitlement = null,
+    revenuecat_entitlement_active = false,
+    revenuecat_updated_at = null
+where user_id = '00000000-0000-0000-0000-000000000000';
+
 -- Make a development user an admin.
 update public.user_profiles
 set role = 'admin',
@@ -42,7 +55,36 @@ set role = 'tester',
     is_test_user = true,
     ai_monthly_limit_override = 250
 where user_id = '00000000-0000-0000-0000-000000000000';
+
+-- Simulate active premium from the RevenueCat mirror.
+update public.user_profiles
+set role = 'free',
+    is_test_user = false,
+    ai_monthly_limit_override = null,
+    revenuecat_app_user_id = user_id::text,
+    revenuecat_entitlement = 'premium',
+    revenuecat_entitlement_active = true,
+    revenuecat_updated_at = now()
+where user_id = '00000000-0000-0000-0000-000000000000';
 ```
+
+Role, tester, override, and RevenueCat mirror fields are protected from mobile-client updates by a database trigger; update them only from service/admin contexts.
+
+## Dev Identity QA
+
+- Use **Create Fresh Anonymous Test User** in Settings -> Dev Identity to locally sign out and create a new anonymous Supabase user. This does not delete remote data.
+- Tap **Copy User ID**, run one of the SQL snippets above, then tap **Refresh Access State**.
+- To switch between test users on the same device, paste a user ID that appears in the panel's saved anonymous users list and tap **Switch User**.
+- Switching by arbitrary UUID is intentionally unsupported because the app has no service role key and no mandatory login credentials.
+
+## Free Credit Limit QA
+
+1. Create or switch to a free anonymous user.
+2. Confirm **Refresh Access State** shows `role = free`, `freeLimit = 3`, and the expected `usedSuccessfulGenerations`.
+3. Run three successful AI video analyses that complete with `media_jobs.status = 'completed'`, `result_recipe_card_id is not null`, and `ai_provider is not null`.
+4. Tap **Refresh Access State** and confirm `remaining = 0` and `reason = limit_reached`.
+5. Try another video analysis and confirm `create-media-job` returns `ai_credit_limit_reached` without creating a new `media_jobs` row.
+6. Failed jobs do not count toward the limit.
 
 ## Paywall Trigger
 
