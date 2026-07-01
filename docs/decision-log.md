@@ -1,5 +1,14 @@
 # Recipe Dost Decision Log
 
+## 2026-07-01
+- M21 monetization/account foundation added without full paywall, signup UI, token bundles, or Play Store release changes.
+- Decision: Recipe Dost remains anonymous-first; Supabase anonymous `user_id` is the primary app user ID and the future RevenueCat `appUserID`.
+- Decision: The premium entitlement key is `premium`, mirrored on `user_profiles` for server-side access decisions.
+- Decision: Free users get 3 lifetime successful AI media generations; failed jobs and non-AI jobs do not consume credits.
+- Decision: Premium users get 60 successful AI recipes per month for MVP fair use, testers default to 100/month unless overridden, and admins use a high operational limit.
+- Decision: `create-media-job` enforces AI generation access before inserting a queued job, preserving queue wake behavior only after access is allowed.
+- Decision: Monetization role, tester, override, and RevenueCat mirror fields on `user_profiles` are protected from mobile-client mutation by a database trigger.
+
 ## 2026-06-27
 - M19 App E2E polish completed for preview metadata, live media-job metadata, completed result routing, Urdu display, and recipe-card consistency.
 - Decision: URL preview remains best-effort; failed metadata fetches fall back to platform + URL placeholders and do not block saving.

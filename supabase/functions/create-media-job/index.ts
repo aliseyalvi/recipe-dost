@@ -1,4 +1,8 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import {
+  getAiGenerationAccess,
+  toSafeAiGenerationAccessMetadata,
+} from "../_shared/ai-generation-access.ts";
 
 type Json =
   | string
@@ -41,6 +45,31 @@ type MediaJob = {
   source_mode: string;
   progress: number;
   thumbnail_url: string | null;
+  result_recipe_card_id: string | null;
+  ai_provider: string | null;
+  completed_at: string | null;
+  created_at: string;
+};
+
+type MediaJobInsert = {
+  id?: string;
+  user_id: string;
+  recipe_item_id: string | null;
+  source_url: string;
+  platform: string;
+  status?: string;
+  source_mode?: string;
+  progress?: number;
+  thumbnail_url?: string | null;
+};
+
+type UserProfile = {
+  user_id: string;
+  role: string | null;
+  is_test_user: boolean | null;
+  ai_monthly_limit_override: number | null;
+  revenuecat_entitlement: string | null;
+  revenuecat_entitlement_active: boolean | null;
 };
 
 type Database = {
@@ -54,8 +83,14 @@ type Database = {
       };
       media_jobs: {
         Row: MediaJob;
-        Insert: Omit<MediaJob, "id"> & { id?: string };
+        Insert: MediaJobInsert;
         Update: Partial<MediaJob>;
+        Relationships: [];
+      };
+      user_profiles: {
+        Row: UserProfile;
+        Insert: never;
+        Update: never;
         Relationships: [];
       };
       media_job_events: {
@@ -95,6 +130,7 @@ type CreateMediaJobRequest = {
 };
 
 type CreateMediaJobErrorCode =
+  | "ai_credit_limit_reached"
   | "invalid_request"
   | "unauthorized"
   | "recipe_not_found"
@@ -237,6 +273,22 @@ async function handleCreateMediaJobRequest(request: Request) {
   }
 
   const sourceMode = getSourceMode(input.platform, recipeItem);
+  const access = await getAiGenerationAccess(clients.adminClient, user.id);
+
+  if (!access.allowed) {
+    return errorResponse(
+      "ai_credit_limit_reached",
+      "You have used your free AI recipe generations.",
+      402,
+      {
+        freeLimit: access.freeLimit,
+        usedSuccessfulGenerations: access.usedSuccessfulGenerations,
+        remaining: access.remaining,
+        role: access.role,
+      },
+    );
+  }
+
   const jobResult = await clients.adminClient
     .from("media_jobs")
     .insert({
@@ -265,6 +317,9 @@ async function handleCreateMediaJobRequest(request: Request) {
     jobResult.data.id,
     "media_job_created",
     "Media job created.",
+    {
+      ai_generation_access: toSafeAiGenerationAccessMetadata(access),
+    },
   );
 
   const processorMode = getMediaProcessorMode();
@@ -282,6 +337,14 @@ async function handleCreateMediaJobRequest(request: Request) {
       progress: jobResult.data.progress,
       worker_triggered: workerTriggered,
       processor_mode: processorMode,
+      ai_generation_access: {
+        reason: access.reason,
+        free_limit: access.freeLimit,
+        used_successful_generations: access.usedSuccessfulGenerations,
+        monthly_limit: access.monthlyLimit,
+        remaining: access.remaining,
+        role: access.role,
+      },
     },
   });
 }
@@ -709,6 +772,7 @@ function errorResponse(
   code: CreateMediaJobErrorCode,
   message: string,
   status: number,
+  details?: Json,
 ) {
   return jsonResponse(
     {
@@ -716,6 +780,7 @@ function errorResponse(
       error: {
         code,
         message,
+        ...(details === undefined ? {} : { details }),
       },
     },
     status,

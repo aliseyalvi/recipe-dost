@@ -4,9 +4,13 @@ export type UsageLimits = {
   groceryLists: number
 }
 
+export const REVENUECAT_ENTITLEMENT_PREMIUM = 'premium'
+export const FREE_AI_GENERATION_LIMIT = 3
+export const PREMIUM_MONTHLY_AI_LIMIT = 60
+
 const defaultUsageLimits: UsageLimits = {
   savedLinks: 20,
-  recipeCards: 3,
+  recipeCards: FREE_AI_GENERATION_LIMIT,
   groceryLists: 3,
 }
 

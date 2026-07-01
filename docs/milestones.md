@@ -1,5 +1,14 @@
 # Recipe Dost Milestones
 
+## M21 - Monetization / Account Foundation
+
+- Status: Done after validation and deployment.
+- Added anonymous-first account and entitlement foundation on `user_profiles` for roles, tester flags, AI monthly overrides, and RevenueCat premium entitlement mirror fields.
+- Added server-side AI generation access checks before `create-media-job` inserts queued jobs.
+- Free users can create jobs while under 3 lifetime successful AI media generations; failed jobs do not count.
+- Premium, tester, and admin users use monthly fair-use limits without adding full paywall or signup UI.
+- Queue processor behavior remains unchanged after access is granted.
+
 ## M19 - App E2E Polish
 
 - Status: Done after validation.

@@ -563,38 +563,59 @@ export type Database = {
       }
       user_profiles: {
         Row: {
+          ai_monthly_limit_override: number | null
           cooking_level: string | null
           cooking_preferences: string[]
           created_at: string
           cuisine_preference: string | null
           household_size: string | null
+          is_test_user: boolean
           language: string | null
           main_use: string | null
           onboarding_completed: boolean
+          revenuecat_app_user_id: string | null
+          revenuecat_entitlement: string | null
+          revenuecat_entitlement_active: boolean
+          revenuecat_updated_at: string | null
+          role: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          ai_monthly_limit_override?: number | null
           cooking_level?: string | null
           cooking_preferences?: string[]
           created_at?: string
           cuisine_preference?: string | null
           household_size?: string | null
+          is_test_user?: boolean
           language?: string | null
           main_use?: string | null
           onboarding_completed?: boolean
+          revenuecat_app_user_id?: string | null
+          revenuecat_entitlement?: string | null
+          revenuecat_entitlement_active?: boolean
+          revenuecat_updated_at?: string | null
+          role?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          ai_monthly_limit_override?: number | null
           cooking_level?: string | null
           cooking_preferences?: string[]
           created_at?: string
           cuisine_preference?: string | null
           household_size?: string | null
+          is_test_user?: boolean
           language?: string | null
           main_use?: string | null
           onboarding_completed?: boolean
+          revenuecat_app_user_id?: string | null
+          revenuecat_entitlement?: string | null
+          revenuecat_entitlement_active?: boolean
+          revenuecat_updated_at?: string | null
+          role?: string
           updated_at?: string
           user_id?: string
         }
