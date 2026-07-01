@@ -55,3 +55,8 @@ graphify-out/cost.json
 # Supabase production secrets
 supabase/.env.production
 supabase/.env.local
+
+# Graphify & AST CodeGraph exclusions
+graphify-out/
+.code-review-graph/
+.mcp.json

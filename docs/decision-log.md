@@ -214,3 +214,9 @@
 - Home and Library prefer worker thumbnails, refresh while jobs are active, and recognize completed worker results as AI cards.
 - Non-YouTube jobs still need caption or manual ingredient input when the public link cannot provide accurate recipe content.
 - No raw video download, mobile video storage, scraping, auth, or paywall behavior was added.
+
+## [2026-07-01] Architectural Decision: Graph Indexer Removal
+
+- **Context:** Automated AST graph generators (Graphify/CodeGraph) were causing infinite self-correction loops due to macOS sandbox permission conflicts (`Errno 1`). This was expanding the active context window with 40k+ line JSON data logs, exhausting session limits inside a single task block.
+- **Decision:** Completely uninstalled Graphify, wiped `graphify-out/` and `.code-review-graph/`, and removed the MCP server configuration.
+- **Consequence:** Project context tracking is now 100% shifted back to lightweight, cost-free, explicit markdown files (`agents.md`, `todo.md`, `decision_log.md`). Codex must rely purely on target file blocks provided directly in user prompts.
