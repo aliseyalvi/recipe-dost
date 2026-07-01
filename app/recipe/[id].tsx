@@ -392,11 +392,11 @@ export default function SavedRecipeRoute() {
 
       {recipe.metadata_status === 'failed' ? (
         <Card tone="muted">
-          <Text selectable style={[typography.heading, { color: colors.warning }]}>
+          <Text selectable style={[typography.heading, { color: colors.text }]}>
             Details unavailable
           </Text>
           <Text selectable style={[typography.body, { color: colors.text }]}>
-            Details unavailable, but you can still generate AI recipe.
+            Details unavailable. You can retry details or generate the AI recipe.
           </Text>
           <Button
             label={isRefreshingMetadata ? 'Retrying details...' : 'Retry details'}
@@ -407,6 +407,14 @@ export default function SavedRecipeRoute() {
               void handleRetryMetadata()
             }}
           />
+        </Card>
+      ) : null}
+
+      {recipe.metadata_status === 'pending' ? (
+        <Card tone="muted">
+          <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+            Fetching details...
+          </Text>
         </Card>
       ) : null}
 

@@ -20,7 +20,9 @@ type MetadataStatus = "pending" | "completed" | "partial" | "failed";
 type RecipeItem = {
   id: string;
   user_id: string;
-  source_url: string;
+  source_url: string | null;
+  url?: string | null;
+  link?: string | null;
   platform: string | null;
   title: string | null;
   description: string | null;
@@ -35,6 +37,7 @@ type RecipeItem = {
 type RecipeItemUpdate = {
   platform?: RecipePlatform;
   title?: string | null;
+  description?: string | null;
   thumbnail_url?: string | null;
   duration_seconds?: number | null;
   metadata_status?: MetadataStatus;
@@ -67,6 +70,10 @@ type RefreshRecipeMetadataErrorCode =
   | "server_not_configured"
   | "worker_url_missing"
   | "worker_secret_missing"
+  | "source_url_missing"
+  | "worker_auth_failed"
+  | "worker_unavailable"
+  | "worker_validation_error"
   | "worker_timeout"
   | "worker_http_error"
   | "worker_invalid_json"
@@ -94,12 +101,14 @@ type WorkerAttemptResult =
     workerStatus: number;
     metadata: PreviewMetadata;
     elapsedMs: number;
+    attempts: number;
   }
   | {
     ok: false;
     workerStatus: number | null;
     errorCode: RefreshRecipeMetadataErrorCode;
     elapsedMs: number;
+    attempts: number;
     exceptionType?: string;
   };
 
@@ -229,8 +238,10 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
   }
 
   const recipeItem = recipeResult.data;
+  const sourceUrl = getRecipeSourceUrl(recipeItem);
+  const sourceUrlInfo = getSafeSourceUrlInfo(sourceUrl);
   const platform = normalizePlatform(recipeItem.platform) ??
-    detectPlatformFromUrl(recipeItem.source_url);
+    (sourceUrlInfo.ok ? detectPlatformFromUrl(sourceUrlInfo.sourceUrl) : "other");
 
   logRefreshEvent("recipe_item_loaded", {
     recipe_item_id: recipeItem.id,
@@ -238,6 +249,32 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
     platform,
     metadata_status: normalizeMetadataStatus(recipeItem.metadata_status),
   });
+
+  if (!sourceUrlInfo.ok) {
+    const failedItem = await markMetadataFailed(
+      clients.adminClient,
+      recipeItem,
+      {
+        errorCode: "source_url_missing",
+        workerStatus: null,
+        elapsedMs: 0,
+        attempts: 0,
+      },
+    );
+
+    return jsonResponse({
+      ok: true,
+      data: buildSafeRefreshResponse({
+        recipeItem: failedItem,
+        metadataStatus: "failed",
+        workerStatus: null,
+        errorCode: "source_url_missing",
+        titlePresent: Boolean(failedItem.title?.trim()),
+        thumbnailPresent: Boolean(failedItem.thumbnail_url),
+        durationSeconds: failedItem.duration_seconds,
+      }),
+    });
+  }
 
   const workerConfig = getWorkerConfig();
 
@@ -249,6 +286,7 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
         errorCode: workerConfig.errorCode,
         workerStatus: null,
         elapsedMs: 0,
+        attempts: 0,
       },
     );
 
@@ -266,14 +304,11 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
     });
   }
 
-  logRefreshEvent("worker_call_started", {
-    recipe_item_id: recipeItem.id,
-    user_id: user.id,
-    platform,
-  });
-
   const workerResult = await fetchWorkerMetadataPreviewWithRetry({
-    sourceUrl: recipeItem.source_url,
+    recipeItemId: recipeItem.id,
+    userId: user.id,
+    sourceUrl: sourceUrlInfo.sourceUrl,
+    sourceUrlHost: sourceUrlInfo.host,
     platform,
     workerUrl: workerConfig.workerUrl,
     workerSecret: workerConfig.workerSecret,
@@ -282,15 +317,14 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
 
   if (!workerResult.ok) {
     logRefreshEvent(
-      workerResult.errorCode === "worker_timeout"
-        ? "worker_call_timeout"
-        : "worker_call_failed",
+      "worker_call_failed",
       {
         recipe_item_id: recipeItem.id,
         user_id: user.id,
         platform,
         worker_status: workerResult.workerStatus,
         elapsed_ms: workerResult.elapsedMs,
+        attempts: workerResult.attempts,
         error_code: workerResult.errorCode,
         exception_type: workerResult.exceptionType,
       },
@@ -303,6 +337,7 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
         errorCode: workerResult.errorCode,
         workerStatus: workerResult.workerStatus,
         elapsedMs: workerResult.elapsedMs,
+        attempts: workerResult.attempts,
       },
     );
 
@@ -332,6 +367,7 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
     metadata_status: nextStatus,
     worker_status: workerResult.workerStatus,
     elapsed_ms: workerResult.elapsedMs,
+    attempts: workerResult.attempts,
     title_present: titlePresent,
     thumbnail_present: thumbnailPresent,
   });
@@ -343,6 +379,7 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
     metadata_status: nextStatus,
     worker_status: workerResult.workerStatus,
     elapsed_ms: workerResult.elapsedMs,
+    attempts: workerResult.attempts,
     title_present: titlePresent,
     thumbnail_present: thumbnailPresent,
   });
@@ -352,6 +389,7 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
     .update({
       platform: nextPlatform,
       title: workerResult.metadata.title ?? recipeItem.title,
+      description: workerResult.metadata.description ?? recipeItem.description,
       thumbnail_url: workerResult.metadata.thumbnailUrl ??
         recipeItem.thumbnail_url,
       duration_seconds: workerResult.metadata.durationSeconds ??
@@ -374,6 +412,7 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
       metadata_status: nextStatus,
       worker_status: workerResult.workerStatus,
       elapsed_ms: workerResult.elapsedMs,
+      attempts: workerResult.attempts,
       error_code: "db_update_failed",
       title_present: titlePresent,
       thumbnail_present: thumbnailPresent,
@@ -386,6 +425,7 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
         errorCode: "db_update_failed",
         workerStatus: workerResult.workerStatus,
         elapsedMs: workerResult.elapsedMs,
+        attempts: workerResult.attempts,
       },
     );
 
@@ -410,6 +450,7 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
     metadata_status: nextStatus,
     worker_status: workerResult.workerStatus,
     elapsed_ms: workerResult.elapsedMs,
+    attempts: workerResult.attempts,
     title_present: Boolean(updateResult.data.title?.trim()),
     thumbnail_present: Boolean(updateResult.data.thumbnail_url),
   });
@@ -469,11 +510,24 @@ function createSupabaseClients(authHeader: string) {
 function getWorkerConfig():
   | { ok: true; workerUrl: string; workerSecret: string }
   | { ok: false; errorCode: "worker_url_missing" | "worker_secret_missing" } {
-  const workerUrl = Deno.env.get("MEDIA_WORKER_URL")?.trim();
-  const workerSecret = Deno.env.get("WORKER_API_SECRET")?.trim() ??
-    Deno.env.get("MEDIA_WORKER_SECRET")?.trim();
+  const rawWorkerUrl = Deno.env.get("MEDIA_WORKER_URL")?.trim();
+  const workerSecret = getFirstPresentEnvValue([
+    "WORKER_API_SECRET",
+    "MEDIA_WORKER_SECRET",
+  ]);
 
-  if (!workerUrl) {
+  if (!rawWorkerUrl) {
+    return {
+      ok: false,
+      errorCode: "worker_url_missing",
+    };
+  }
+
+  let workerUrl: string;
+
+  try {
+    workerUrl = new URL(rawWorkerUrl).toString().replace(/\/+$/, "");
+  } catch {
     return {
       ok: false,
       errorCode: "worker_url_missing",
@@ -495,49 +549,98 @@ function getWorkerConfig():
 }
 
 async function fetchWorkerMetadataPreviewWithRetry({
+  recipeItemId,
+  userId,
   sourceUrl,
+  sourceUrlHost,
   platform,
   workerUrl,
   workerSecret,
   timeoutMs,
 }: {
+  recipeItemId: string;
+  userId: string;
   sourceUrl: string;
+  sourceUrlHost: string;
   platform: RecipePlatform;
   workerUrl: string;
   workerSecret: string;
   timeoutMs: number;
 }) {
-  const firstResult = await fetchWorkerMetadataPreview({
-    sourceUrl,
+  const workerHost = getWorkerHost(workerUrl);
+
+  logRefreshEvent("worker_payload_prepared", {
+    recipe_item_id: recipeItemId,
+    user_id: userId,
+    platform,
+    url_present: true,
+    url_length: sourceUrl.length,
+    url_host: sourceUrlHost,
+  });
+
+  await warmWorker({
+    recipeItemId,
+    userId,
     platform,
     workerUrl,
     workerSecret,
-    timeoutMs,
+    workerHost,
   });
 
-  if (!shouldRetryWorkerResult(firstResult)) {
-    return firstResult;
+  const maxAttempts = 2;
+  let elapsedMs = 0;
+  let lastResult: WorkerAttemptResult | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    logRefreshEvent("worker_call_started", {
+      recipe_item_id: recipeItemId,
+      user_id: userId,
+      platform,
+      worker_host: workerHost,
+      attempts: attempt,
+    });
+
+    const result = await fetchWorkerMetadataPreview({
+      sourceUrl,
+      platform,
+      workerUrl,
+      workerSecret,
+      timeoutMs,
+      attempt,
+    });
+
+    elapsedMs += result.elapsedMs;
+
+    if (result.ok) {
+      return {
+        ...result,
+        elapsedMs,
+        attempts: attempt,
+      };
+    }
+
+    lastResult = result;
+
+    if (!shouldRetryWorkerResult(result) || attempt === maxAttempts) {
+      break;
+    }
+
+    logRefreshEvent("worker_call_retrying", {
+      recipe_item_id: recipeItemId,
+      user_id: userId,
+      platform,
+      worker_host: workerHost,
+      worker_status: result.workerStatus,
+      elapsed_ms: elapsedMs,
+      attempts: attempt,
+      error_code: result.errorCode,
+      exception_type: result.exceptionType,
+    });
+
+    await wait(1_800);
   }
 
-  const secondResult = await fetchWorkerMetadataPreview({
-    sourceUrl,
-    platform,
-    workerUrl,
-    workerSecret,
-    timeoutMs,
-  });
-
-  if (!secondResult.ok) {
-    return {
-      ...secondResult,
-      elapsedMs: firstResult.elapsedMs + secondResult.elapsedMs,
-    };
-  }
-
-  return {
-    ...secondResult,
-    elapsedMs: firstResult.elapsedMs + secondResult.elapsedMs,
-  };
+  return normalizeFinalWorkerFailure(lastResult, elapsedMs);
 }
 
 async function fetchWorkerMetadataPreview({
@@ -546,12 +649,14 @@ async function fetchWorkerMetadataPreview({
   workerUrl,
   workerSecret,
   timeoutMs,
+  attempt,
 }: {
   sourceUrl: string;
   platform: RecipePlatform;
   workerUrl: string;
   workerSecret: string;
   timeoutMs: number;
+  attempt: number;
 }): Promise<WorkerAttemptResult> {
   const startedAt = Date.now();
   const controller = new AbortController();
@@ -566,7 +671,7 @@ async function fetchWorkerMetadataPreview({
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        source_url: sourceUrl,
+        url: sourceUrl,
         platform,
       }),
       signal: controller.signal,
@@ -574,11 +679,17 @@ async function fetchWorkerMetadataPreview({
     const elapsedMs = Date.now() - startedAt;
 
     if (!response.ok) {
+      const exceptionType = response.status === 422
+        ? await getWorkerValidationExceptionType(response)
+        : undefined;
+
       return {
         ok: false,
         workerStatus: response.status,
-        errorCode: "worker_http_error",
+        errorCode: getWorkerHttpErrorCode(response.status),
         elapsedMs,
+        attempts: attempt,
+        exceptionType,
       };
     }
 
@@ -592,6 +703,7 @@ async function fetchWorkerMetadataPreview({
         workerStatus: response.status,
         errorCode: "worker_invalid_json",
         elapsedMs,
+        attempts: attempt,
       };
     }
 
@@ -602,6 +714,7 @@ async function fetchWorkerMetadataPreview({
         getRecordValue(responseBody, "data") ?? responseBody,
       ),
       elapsedMs,
+      attempts: attempt,
     };
   } catch (error) {
     const elapsedMs = Date.now() - startedAt;
@@ -613,6 +726,7 @@ async function fetchWorkerMetadataPreview({
         ? "worker_timeout"
         : "metadata_refresh_failed",
       elapsedMs,
+      attempts: attempt,
       exceptionType: getExceptionType(error),
     };
   } finally {
@@ -631,6 +745,98 @@ function shouldRetryWorkerResult(result: WorkerAttemptResult) {
     result.workerStatus === 504;
 }
 
+async function warmWorker({
+  recipeItemId,
+  userId,
+  platform,
+  workerUrl,
+  workerSecret,
+  workerHost,
+}: {
+  recipeItemId: string;
+  userId: string;
+  platform: RecipePlatform;
+  workerUrl: string;
+  workerSecret: string;
+  workerHost: string | null;
+}) {
+  const startedAt = Date.now();
+
+  logRefreshEvent("worker_warmup_started", {
+    recipe_item_id: recipeItemId,
+    user_id: userId,
+    platform,
+    worker_host: workerHost,
+  });
+
+  try {
+    const response = await fetch(`${workerUrl}/ping`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${workerSecret}`,
+      },
+    });
+
+    logRefreshEvent("worker_warmup_completed", {
+      recipe_item_id: recipeItemId,
+      user_id: userId,
+      platform,
+      worker_host: workerHost,
+      worker_status: response.status,
+      elapsed_ms: Date.now() - startedAt,
+    });
+  } catch (error) {
+    logRefreshEvent("worker_warmup_completed", {
+      recipe_item_id: recipeItemId,
+      user_id: userId,
+      platform,
+      worker_host: workerHost,
+      elapsed_ms: Date.now() - startedAt,
+      error_code: "metadata_refresh_failed",
+      exception_type: getExceptionType(error),
+    });
+  }
+}
+
+function normalizeFinalWorkerFailure(
+  result: WorkerAttemptResult | null,
+  elapsedMs: number,
+): WorkerAttemptResult {
+  if (!result || result.ok) {
+    return {
+      ok: false,
+      workerStatus: null,
+      errorCode: "metadata_refresh_failed",
+      elapsedMs,
+      attempts: 0,
+    };
+  }
+
+  return {
+    ...result,
+    elapsedMs,
+    errorCode: result.workerStatus === 503
+      ? "worker_unavailable"
+      : result.errorCode,
+  };
+}
+
+function getWorkerHttpErrorCode(status: number): RefreshRecipeMetadataErrorCode {
+  if (status === 401 || status === 403) {
+    return "worker_auth_failed";
+  }
+
+  if (status === 422) {
+    return "worker_validation_error";
+  }
+
+  if (status === 503) {
+    return "worker_unavailable";
+  }
+
+  return "worker_http_error";
+}
+
 async function markMetadataFailed(
   adminClient: EdgeSupabaseClient,
   recipeItem: RecipeItem,
@@ -638,21 +844,29 @@ async function markMetadataFailed(
     errorCode: RefreshRecipeMetadataErrorCode;
     workerStatus: number | null;
     elapsedMs: number;
+    attempts: number;
   },
 ) {
+  const sourceUrl = getRecipeSourceUrl(recipeItem);
+  const platform = normalizePlatform(recipeItem.platform) ??
+    (sourceUrl ? detectPlatformFromUrl(sourceUrl) : "other");
+
   logRefreshEvent("db_update_started", {
     recipe_item_id: recipeItem.id,
     user_id: recipeItem.user_id,
-    platform: normalizePlatform(recipeItem.platform),
+    platform,
     metadata_status: "failed",
     worker_status: error.workerStatus,
     elapsed_ms: error.elapsedMs,
+    attempts: error.attempts,
     error_code: error.errorCode,
   });
 
   const updateResult = await adminClient
     .from("recipe_items")
     .update({
+      platform,
+      title: recipeItem.title?.trim() || getFallbackTitle(platform),
       metadata_status: "failed",
       source_metadata: buildFailedSourceMetadata(error),
     })
@@ -667,15 +881,18 @@ async function markMetadataFailed(
     logRefreshEvent("db_update_failed", {
       recipe_item_id: recipeItem.id,
       user_id: recipeItem.user_id,
-      platform: normalizePlatform(recipeItem.platform),
+      platform,
       metadata_status: "failed",
       worker_status: error.workerStatus,
       elapsed_ms: error.elapsedMs,
+      attempts: error.attempts,
       error_code: "db_update_failed",
     });
 
     return {
       ...recipeItem,
+      platform,
+      title: recipeItem.title?.trim() || getFallbackTitle(platform),
       metadata_status: "failed",
     };
   }
@@ -683,10 +900,11 @@ async function markMetadataFailed(
   logRefreshEvent("db_update_completed", {
     recipe_item_id: recipeItem.id,
     user_id: recipeItem.user_id,
-    platform: normalizePlatform(recipeItem.platform),
+    platform,
     metadata_status: "failed",
     worker_status: error.workerStatus,
     elapsed_ms: error.elapsedMs,
+    attempts: error.attempts,
     error_code: error.errorCode,
   });
 
@@ -748,10 +966,12 @@ function buildFailedSourceMetadata({
   errorCode,
   workerStatus,
   elapsedMs,
+  attempts,
 }: {
   errorCode: RefreshRecipeMetadataErrorCode;
   workerStatus: number | null;
   elapsedMs: number;
+  attempts: number;
 }) {
   return {
     metadata_status: "failed",
@@ -759,6 +979,7 @@ function buildFailedSourceMetadata({
       error_code: errorCode,
       worker_status: workerStatus,
       elapsed_ms: elapsedMs,
+      attempts,
       updated_at: new Date().toISOString(),
     },
   } satisfies Json;
@@ -805,21 +1026,41 @@ function getMetadataStatus(metadata: PreviewMetadata): MetadataStatus {
     return "completed";
   }
 
-  if (
-    metadata.metadataStatus === "completed" ||
-    metadata.metadataStatus === "partial"
-  ) {
-    return metadata.metadataStatus;
+  return "partial";
+}
+
+function getRecipeSourceUrl(recipeItem: RecipeItem) {
+  const value = recipeItem.source_url ?? recipeItem.url ?? recipeItem.link;
+
+  return typeof value === "string" ? value.trim() : null;
+}
+
+function getSafeSourceUrlInfo(sourceUrl: string | null):
+  | {
+    ok: true;
+    sourceUrl: string;
+    host: string;
+  }
+  | { ok: false } {
+  if (!sourceUrl) {
+    return { ok: false };
   }
 
-  return metadata.description ||
-      metadata.authorUsername ||
-      metadata.durationSeconds ||
-      metadata.platform ||
-      metadata.resolver ||
-      metadata.tags.length > 0
-    ? "partial"
-    : "failed";
+  try {
+    const parsedUrl = new URL(sourceUrl);
+
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+      return { ok: false };
+    }
+
+    return {
+      ok: true,
+      sourceUrl,
+      host: parsedUrl.hostname.toLowerCase().replace(/^www\./, ""),
+    };
+  } catch {
+    return { ok: false };
+  }
 }
 
 function getRecipeItemId(body: unknown) {
@@ -933,10 +1174,40 @@ function getRecordValue(value: unknown, key: string) {
   return isRecord(value) ? value[key] : undefined;
 }
 
+async function getWorkerValidationExceptionType(response: Response) {
+  try {
+    return `worker_response_${getSanitizedWorkerErrorClass(await response.text())}`;
+  } catch {
+    return "worker_response_unreadable";
+  }
+}
+
+function getSanitizedWorkerErrorClass(value: string) {
+  const lowerValue = value.toLowerCase();
+
+  if (lowerValue.includes("url")) {
+    return "url_validation_error";
+  }
+
+  if (lowerValue.includes("platform")) {
+    return "platform_validation_error";
+  }
+
+  if (lowerValue.includes("json") || lowerValue.includes("parse")) {
+    return "json_validation_error";
+  }
+
+  if (lowerValue.trim()) {
+    return "validation_error";
+  }
+
+  return "empty_validation_error";
+}
+
 function getMetadataPreviewTimeoutMs() {
   const value = Number(Deno.env.get("METADATA_PREVIEW_TIMEOUT_MS"));
 
-  return Number.isFinite(value) && value > 0 ? Math.round(value) : 25_000;
+  return Number.isFinite(value) && value > 0 ? Math.round(value) : 30_000;
 }
 
 function logRefreshEvent(
@@ -947,7 +1218,12 @@ function logRefreshEvent(
     platform?: RecipePlatform | null;
     metadata_status?: MetadataStatus | null;
     worker_status?: number | null;
+    worker_host?: string | null;
     elapsed_ms?: number;
+    attempts?: number;
+    url_present?: boolean;
+    url_length?: number;
+    url_host?: string;
     error_code?: RefreshRecipeMetadataErrorCode;
     exception_type?: string;
     title_present?: boolean;
@@ -955,6 +1231,45 @@ function logRefreshEvent(
   } = {},
 ) {
   console.log(JSON.stringify({ event, ...fields }));
+}
+
+function getFirstPresentEnvValue(keys: string[]) {
+  for (const key of keys) {
+    const value = Deno.env.get(key)?.trim();
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function getWorkerHost(workerUrl: string) {
+  try {
+    return new URL(workerUrl).host;
+  } catch {
+    return null;
+  }
+}
+
+function getFallbackTitle(platform: RecipePlatform) {
+  switch (platform) {
+    case "instagram":
+      return "Instagram recipe link";
+    case "tiktok":
+      return "TikTok recipe link";
+    case "youtube":
+      return "YouTube recipe link";
+    case "facebook":
+      return "Facebook recipe link";
+    case "other":
+      return "Recipe link";
+  }
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function getExceptionType(error: unknown) {

@@ -1,5 +1,23 @@
 # Recipe Dost Milestones
 
+## M21.7G - Metadata Preview Payload Contract Fix
+
+- Status: Done after validation.
+- Direct production worker curl to `/metadata-preview` worked with `{ "url": "...", "platform": "instagram" }`, while the Edge Function reached the worker but received `worker_status = 422` from an invalid payload contract.
+- `refresh-recipe-metadata` now validates the saved source URL before calling the worker, logs only safe payload proof fields (`url_present`, `url_length`, `url_host`), and sends the worker body as `{ url, platform }`.
+- Worker 422 responses are classified as `worker_validation_error` without retrying or logging raw response text; missing/invalid saved URLs fail locally with `source_url_missing`.
+- Saved link metadata failure remains non-blocking: no `media_jobs` are created, cards show `Saved Link` with `Details unavailable`, and Source Detail keeps `Retry details` plus `Generate AI Recipe`.
+
+## M21.7F - Metadata Bridge Warmup and Saved-Link State Polish
+
+- Status: Done after validation.
+- Direct production worker curl to `/metadata-preview` works for the known Instagram URL, but the Supabase Edge metadata bridge had previously marked refreshes failed with `worker_status = 503`.
+- `refresh-recipe-metadata` now warms the worker with best-effort `GET /ping`, uses a 30-second default metadata timeout, retries once with backoff for timeout/502/503/504, and classifies auth, unavailable, timeout, and config failures with safe error codes.
+- Successful worker title, description, thumbnail, duration, platform, and safe metadata now persist back to `recipe_items`; partial useful metadata remains `partial`, and failed metadata remains a usable saved link without creating `media_jobs`.
+- Home and Library cards now avoid overlapping/repeated pills and use a clean RD fallback thumbnail with one top status pill.
+- Source Detail shows a calm metadata failure message with `Retry details` while keeping `Generate AI Recipe` available through backend access checks.
+- The Android share route now saves through `save-recipe-link` and refreshes details through `refresh-recipe-metadata`, avoiding the old visible parse-preview flow.
+
 ## M21.7E - Metadata Bridge Fix and Saved-Link UI Cleanup
 
 - Status: Done after validation.

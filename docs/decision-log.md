@@ -1,6 +1,15 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-01
+- M21.7G metadata-preview payload contract fix completed.
+- Decision: The worker `/metadata-preview` contract is `{ url, platform }`; `refresh-recipe-metadata` must never send `source_url` to the worker or call it with a missing/invalid URL.
+- Decision: Edge 422 responses from the worker are treated as `worker_validation_error`, are not retried, and store only safe metadata error fields. Safe logs may include URL presence, length, and host, but never the full source URL or query string.
+- Decision: Saved-link metadata failure remains non-blocking and does not create a `media_job`; failed metadata renders as a usable Saved Link with retry details and AI generation still available through backend access checks.
+- M21.7F metadata bridge warmup and saved-link state polish completed.
+- Decision: Direct worker `/metadata-preview` success means Edge Function 503s should be handled as bridge/cold-start conditions; the bridge now performs best-effort `/ping`, retries timeout/502/503/504 once with backoff, and records safe `attempts` metadata.
+- Decision: Metadata refresh failure remains separate from AI generation failure. Failed metadata keeps the saved link usable, keeps `Generate AI Recipe` available behind `get-ai-access`/`create-media-job`, and stores only safe `metadata_error` fields.
+- Decision: Home/Library saved-link cards show one top status pill and a clean RD placeholder; platform appears in the card metadata row instead of competing with the status pill.
+- Decision: The share-intent route now uses `save-recipe-link` plus `refresh-recipe-metadata`; old `parse-url`/preview remains legacy/internal and is not part of the current visible saved-link flow.
 - M21.7E metadata bridge fix and saved-link UI cleanup completed.
 - Decision: `refresh-recipe-metadata` uses `MEDIA_WORKER_URL` plus `Authorization: Bearer WORKER_API_SECRET`; `MEDIA_WORKER_SECRET` remains a temporary fallback only.
 - Decision: Metadata preview timeout defaults to `25000` ms and retries once only for timeout/502/503/504. Client errors such as 400/401/403/404 are not retried.

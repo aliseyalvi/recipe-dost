@@ -1,7 +1,6 @@
 import { detectRecipePlatform } from '@/features/recipe-draft/platform'
-import { useRecipeDraftStore } from '@/features/recipe-draft/recipe-draft-store'
 import { extractFirstHttpUrl } from '@/features/share-intent/extract-url'
-import { parseRecipeUrl } from '@/lib/api/recipes'
+import { refreshRecipeMetadata, saveRecipeLink } from '@/lib/api/recipes'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, spacing, typography } from '@/theme'
 import { AppHeader } from '@/ui/app-header'
@@ -11,16 +10,18 @@ import { EmptyState } from '@/ui/empty-state'
 import { ErrorState } from '@/ui/error-state'
 import { LoadingState } from '@/ui/loading-state'
 import { Screen } from '@/ui/screen'
+import { useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Text } from 'react-native'
 
 export default function ShareRecipeRoute() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { track } = usePostHog()
-  const { setDraft } = useRecipeDraftStore()
   const { url, text } = useLocalSearchParams<{ url?: string; text?: string }>()
   const [error, setError] = useState<Error | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
   const didStartRef = useRef(false)
   const sharedUrl = useMemo(() => {
     const rawUrl = Array.isArray(url) ? url[0] : url
@@ -45,35 +46,58 @@ export default function ShareRecipeRoute() {
     const platform = detectRecipePlatform(sourceUrl)
     track('share_intent_received', { platform })
 
-    async function parseSharedRecipe() {
+    async function saveSharedRecipe() {
       try {
-        const parsedRecipeUrl = await parseRecipeUrl(sourceUrl)
+        const savedRecipe = await saveRecipeLink(sourceUrl)
 
-        setDraft({
-          source_url: parsedRecipeUrl.source_url,
-          normalized_url: parsedRecipeUrl.normalized_url,
-          host: parsedRecipeUrl.host,
-          platform: parsedRecipeUrl.platform,
-          title: parsedRecipeUrl.title,
-          description: parsedRecipeUrl.description,
-          thumbnail_url: parsedRecipeUrl.thumbnail_url,
-          metadata_status: parsedRecipeUrl.metadata_status,
-          requires_manual_caption: parsedRecipeUrl.requires_manual_caption,
-          created_at: new Date().toISOString(),
+        track('recipe_link_saved', {
+          source: 'share_intent',
+          platform: savedRecipe.platform ?? platform,
+          metadata_status: savedRecipe.metadata_status ?? 'pending',
         })
-        router.replace('/recipe/preview')
+        void queryClient.invalidateQueries({ queryKey: ['recent-recipes'] })
+        void queryClient.invalidateQueries({ queryKey: ['recipe-library'] })
+        router.replace(`/recipe/${savedRecipe.id}`)
+
+        try {
+          track('metadata_refresh_started', {
+            source: 'share_intent',
+            platform: savedRecipe.platform ?? platform,
+          })
+          const refreshResult = await refreshRecipeMetadata(savedRecipe.id)
+
+          track('metadata_refresh_completed', {
+            source: 'share_intent',
+            metadata_status: refreshResult.metadata_status,
+            worker_status: refreshResult.worker_status,
+            error_code: refreshResult.error_code,
+            title_present: refreshResult.title_present,
+            thumbnail_present: refreshResult.thumbnail_present,
+          })
+          void queryClient.invalidateQueries({ queryKey: ['recent-recipes'] })
+          void queryClient.invalidateQueries({ queryKey: ['recipe-library'] })
+          void queryClient.invalidateQueries({
+            queryKey: ['recipe-item', savedRecipe.id],
+          })
+        } catch {
+          track('metadata_refresh_completed', {
+            source: 'share_intent',
+            metadata_status: 'failed',
+            error_code: 'client_error',
+          })
+        }
       } catch (caughtError) {
         setError(
           caughtError instanceof Error
             ? caughtError
-            : new Error('Could not check this shared recipe link.')
+            : new Error('Could not save this shared recipe link.')
         )
-        track('share_intent_failed', { reason: 'parse_failed' })
+        track('share_intent_failed', { reason: 'save_failed' })
       }
     }
 
-    void parseSharedRecipe()
-  }, [router, setDraft, sharedUrl, track])
+    void saveSharedRecipe()
+  }, [queryClient, retryCount, router, sharedUrl, track])
 
   if (!sharedUrl) {
     return (
@@ -93,7 +117,7 @@ export default function ShareRecipeRoute() {
       <AppHeader
         eyebrow="Shared"
         title="Saving shared recipe"
-        subtitle="Checking the link before preview."
+        subtitle="Saving the link now. Details can load in the background."
       />
 
       <Card tone="warm">
@@ -109,11 +133,17 @@ export default function ShareRecipeRoute() {
         <ErrorState
           title="Could not open shared link"
           message={error.message}
-          retryLabel="Paste Manually"
-          onRetry={() => router.replace('/save-recipe')}
+          retryLabel="Retry"
+          onRetry={() => {
+            didStartRef.current = false
+            setError(null)
+            setRetryCount((currentCount) => currentCount + 1)
+          }}
+          secondaryActionLabel="Paste Manually"
+          onSecondaryAction={() => router.replace('/save-recipe')}
         />
       ) : (
-        <LoadingState message="Preparing preview..." />
+        <LoadingState message="Saving shared recipe..." />
       )}
 
       <Button

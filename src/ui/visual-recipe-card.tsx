@@ -60,12 +60,7 @@ export function VisualRecipeCard({
             style={{ width: '100%', height: '100%' }}
           />
         ) : (
-          <RecipeFallback
-            platform={platform}
-            status={status}
-            title={title}
-            subtitle={subtitle}
-          />
+          <RecipeFallback />
         )}
         <View
           style={{
@@ -113,88 +108,27 @@ export function VisualRecipeCard({
   )
 }
 
-function RecipeFallback({
-  platform,
-  status,
-  title,
-  subtitle,
-}: {
-  platform: RecipePlatform
-  status: VisualRecipeStatus
-  title: string
-  subtitle: string
-}) {
+function RecipeFallback() {
   return (
     <View
       style={{
         flex: 1,
-        justifyContent: 'space-between',
-        backgroundColor: colors.surfaceMuted,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.surface,
         padding: spacing.md,
       }}
     >
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-        <FallbackPill label={getPlatformLabel(platform)} />
-      </View>
-      <View style={{ gap: spacing.sm }}>
-        <Text
-          selectable={false}
-          style={{
-            color: colors.text,
-            fontSize: 40,
-            lineHeight: 44,
-            fontWeight: '900',
-          }}
-        >
-          RD
-        </Text>
-        <Text
-          selectable={false}
-          numberOfLines={2}
-          style={[typography.heading, { color: colors.text }]}
-        >
-          {title}
-        </Text>
-        <Text
-          selectable={false}
-          numberOfLines={1}
-          style={[typography.caption, { color: colors.textMuted }]}
-        >
-          {subtitle}
-        </Text>
-        <View
-          style={{
-            width: '68%',
-            height: 8,
-            borderRadius: radius.pill,
-            backgroundColor: colors.primary,
-          }}
-        />
-        <View
-          style={{
-            width: '46%',
-            height: 8,
-            borderRadius: radius.pill,
-            backgroundColor: colors.accent,
-          }}
-        />
-      </View>
-    </View>
-  )
-}
-
-function FallbackPill({ label }: { label: string }) {
-  return (
-    <View
-      style={{
-        borderRadius: radius.pill,
-        backgroundColor: colors.primarySoft,
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 3,
-      }}
-    >
-      <Text selectable={false} style={[typography.caption, { color: colors.primary }]}>
-        {label}
+      <Text
+        selectable={false}
+        style={{
+          color: colors.textMuted,
+          fontSize: 40,
+          lineHeight: 44,
+          fontWeight: '900',
+        }}
+      >
+        RD
       </Text>
     </View>
   )
@@ -228,7 +162,7 @@ function getStatusLabel(status: VisualRecipeStatus) {
     case 'ai_failed':
       return 'AI failed'
     case 'failed':
-      return 'Failed'
+      return 'Saved Link'
     case 'saved_link':
       return 'Saved Link'
   }
