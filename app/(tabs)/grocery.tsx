@@ -8,7 +8,6 @@ import { detectRecipePlatform } from '@/features/recipe-draft/platform'
 import { getRecipeGroceryList, getRecipeGroceryLists } from '@/lib/api/recipes'
 import type { GroceryItem, RecipeGroceryList } from '@/lib/api/recipes'
 import { getUsageSummary } from '@/lib/api/usage'
-import { UpgradePlaceholder } from '@/features/usage/upgrade-placeholder'
 import { UsagePill } from '@/features/usage/usage-limit-card'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, radius, spacing, typography } from '@/theme'
@@ -104,7 +103,6 @@ export default function GroceryRoute() {
     track('usage_summary_viewed', {
       limit_type: 'grocery_lists',
       used: usageSummary.groceryListsUsed,
-      limit: usageSummary.limits.groceryLists,
     })
   }, [track, usageSummary])
 
@@ -268,17 +266,7 @@ export default function GroceryRoute() {
       {usageSummary ? (
         <UsagePill
           label="Grocery lists used"
-          value={`${usageSummary.groceryListsUsed} / ${usageSummary.limits.groceryLists}`}
-        />
-      ) : null}
-
-      {usageSummary && !usageSummary.canOpenGroceryList ? (
-        <UpgradePlaceholder
-          limitType="grocery_lists"
-          used={usageSummary.groceryListsUsed}
-          limit={usageSummary.limits.groceryLists}
-          actionLabel="View Library"
-          onActionPress={() => router.replace('/library')}
+          value={`${usageSummary.groceryListsUsed}`}
         />
       ) : null}
 

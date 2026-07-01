@@ -5,6 +5,7 @@ import {
   isMediaJobActive,
   isMediaJobAttentionRequired,
 } from '@/lib/api/recipes'
+import { getAiAccessState } from '@/lib/api/ai-access'
 import { getUsageSummary } from '@/lib/api/usage'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
@@ -72,6 +73,11 @@ export default function HomeRoute() {
     queryKey: ['usage-summary', user?.id],
     queryFn: getUsageSummary,
   })
+  const aiAccessQuery = useQuery({
+    enabled: Boolean(user?.id),
+    queryKey: ['ai-access-state', user?.id, 'home'],
+    queryFn: getAiAccessState,
+  })
   const filteredRecipes = useMemo(
     () => filterHomeRecipes(recentRecipesQuery.data ?? [], selectedFilters),
     [recentRecipesQuery.data, selectedFilters]
@@ -82,7 +88,7 @@ export default function HomeRoute() {
   }, [track])
 
   useEffect(() => {
-    if (!usageSummaryQuery.data || didTrackUsageSummary.current) {
+    if (!usageSummaryQuery.data || !aiAccessQuery.data || didTrackUsageSummary.current) {
       return
     }
 
@@ -90,19 +96,17 @@ export default function HomeRoute() {
     track('usage_summary_viewed', {
       limit_type: 'saved_links',
       used: usageSummaryQuery.data.savedLinksUsed,
-      limit: usageSummaryQuery.data.limits.savedLinks,
     })
     track('usage_summary_viewed', {
-      limit_type: 'recipe_cards',
-      used: usageSummaryQuery.data.recipeCardsUsed,
-      limit: usageSummaryQuery.data.limits.recipeCards,
+      limit_type: 'ai_recipe_cards',
+      used: aiAccessQuery.data?.usedSuccessfulGenerations,
+      limit: aiAccessQuery.data?.freeLimit,
     })
     track('usage_summary_viewed', {
       limit_type: 'grocery_lists',
       used: usageSummaryQuery.data.groceryListsUsed,
-      limit: usageSummaryQuery.data.limits.groceryLists,
     })
-  }, [track, usageSummaryQuery.data])
+  }, [aiAccessQuery.data, track, usageSummaryQuery.data])
 
   const openSaveRecipe = () => {
     track('home_primary_cta_clicked')
@@ -228,8 +232,8 @@ export default function HomeRoute() {
           <UsageStat label="Saved" value={`${usageSummaryQuery.data.savedLinksUsed}`} />
           <UsageStat label="AI Cards" value={`${usageSummaryQuery.data.recipeCardsUsed}`} />
           <UsageStat
-            label="AI tries left"
-            value={`${usageSummaryQuery.data.recipeCardsRemaining}`}
+            label="AI recipes left"
+            value={getAiRecipesLeftValue(aiAccessQuery)}
           />
         </View>
       ) : null}
@@ -287,7 +291,6 @@ export default function HomeRoute() {
                   sourceUrl={recipe.source_url}
                   hasGroceryList={Boolean(recipe.latest_card)}
                   hasNotes={hasNotes(recipe)}
-                  confidence={recipe.latest_card?.confidence}
                   progress={recipe.latest_media_job?.progress}
                   createdAt={recipe.created_at}
                   onPress={() => openRecipe(recipe)}
@@ -303,6 +306,39 @@ export default function HomeRoute() {
       </Text>
     </Screen>
   )
+}
+
+function getAiRecipesLeftValue(query: {
+  isLoading: boolean
+  data?: {
+    role: string
+    isTestUser: boolean
+    premiumActive: boolean
+    remaining: number | null
+    reason: string
+  }
+}) {
+  if (query.isLoading || !query.data) {
+    return '-'
+  }
+
+  if (query.data.role === 'admin') {
+    return 'Admin'
+  }
+
+  if (query.data.isTestUser || query.data.role === 'tester') {
+    return 'Tester'
+  }
+
+  if (query.data.premiumActive) {
+    return 'Pro'
+  }
+
+  if (query.data.reason === 'limit_reached') {
+    return '0'
+  }
+
+  return query.data.remaining === null ? '-' : `${query.data.remaining}`
 }
 
 function ProgressItem({

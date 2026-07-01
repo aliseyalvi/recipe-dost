@@ -6,8 +6,6 @@ import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { useRecipeDraftStore } from '@/features/recipe-draft/recipe-draft-store'
 import { validateRecipeUrl } from '@/features/recipe-draft/validation'
 import { parseRecipeUrl } from '@/lib/api/recipes'
-import { getUsageSummary } from '@/lib/api/usage'
-import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, spacing, typography } from '@/theme'
 import { AppBadge } from '@/ui/app-badge'
@@ -18,14 +16,12 @@ import { ErrorState } from '@/ui/error-state'
 import { Input } from '@/ui/input'
 import { LoadingState } from '@/ui/loading-state'
 import { Screen } from '@/ui/screen'
-import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 
 export default function SaveRecipeRoute() {
   const router = useRouter()
-  const { user } = useAuth()
   const { track } = usePostHog()
   const { setDraft } = useRecipeDraftStore()
   const [sourceUrl, setSourceUrl] = useState('')
@@ -43,13 +39,6 @@ export default function SaveRecipeRoute() {
     ? null
     : validationResult.error.issues[0]?.message ?? 'Enter a valid recipe link.'
   const shouldShowError = hasBlurred && !validationResult.success
-  const usageSummaryQuery = useQuery({
-    enabled: Boolean(user?.id),
-    queryKey: ['usage-summary', user?.id],
-    queryFn: getUsageSummary,
-  })
-  const savedLinksRemaining = usageSummaryQuery.data?.savedLinksRemaining
-
   const continueToPreview = async () => {
     if (isParsing) {
       return
@@ -199,12 +188,6 @@ export default function SaveRecipeRoute() {
       <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
         We save links and recipe cards, not videos.
       </Text>
-
-      {typeof savedLinksRemaining === 'number' ? (
-        <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-          Saved recipe links left: {savedLinksRemaining}
-        </Text>
-      ) : null}
 
       {isParsing ? <LoadingState message="Checking recipe link..." /> : null}
       {parseError ? (

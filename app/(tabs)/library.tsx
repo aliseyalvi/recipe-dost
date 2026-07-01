@@ -227,7 +227,6 @@ export default function LibraryRoute() {
               sourceUrl={item.source_url}
               hasGroceryList={Boolean(item.latest_card)}
               hasNotes={hasNotes(item)}
-              confidence={item.latest_card?.confidence}
               progress={item.latest_media_job?.progress}
               createdAt={item.created_at}
               onPress={() => openLibraryItem(item)}

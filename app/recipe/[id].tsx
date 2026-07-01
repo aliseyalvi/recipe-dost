@@ -2,19 +2,17 @@ import { getPlatformLabel, getReadableSource } from '@/features/recipe-draft/pla
 import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { RecipePlatform } from '@/features/recipe-draft/types'
 import { MediaJobCard } from '@/features/media-jobs/media-job-card'
-import { UpgradePlaceholder } from '@/features/usage/upgrade-placeholder'
 import { UsagePill } from '@/features/usage/usage-limit-card'
+import { getAiAccessState } from '@/lib/api/ai-access'
 import {
   RecipeApiError,
   createMediaJob,
-  generateRecipeCard,
   getLatestMediaJobForRecipe,
   getRecipeCard,
   getSavedRecipeItem,
   isMediaJobActive,
   updateSavedRecipeCaption,
 } from '@/lib/api/recipes'
-import { getUsageSummary } from '@/lib/api/usage'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, radius, spacing, typography } from '@/theme'
 import { AppBadge } from '@/ui/app-badge'
@@ -37,15 +35,13 @@ export default function SavedRecipeRoute() {
   const { track } = usePostHog()
   const { id } = useLocalSearchParams<{ id?: string }>()
   const recipeId = Array.isArray(id) ? id[0] : id
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [generationError, setGenerationError] = useState<Error | null>(null)
   const [isCreatingMediaJob, setIsCreatingMediaJob] = useState(false)
   const [mediaJobError, setMediaJobError] = useState<Error | null>(null)
+  const [showCreditLimitState, setShowCreditLimitState] = useState(false)
   const [isCaptionEditorOpen, setIsCaptionEditorOpen] = useState(false)
   const [captionDraft, setCaptionDraft] = useState('')
   const [isSavingCaption, setIsSavingCaption] = useState(false)
   const didTrackUsageSummary = useRef(false)
-  const didTrackLimitReached = useRef(false)
   const didTrackAccuracyWarning = useRef(false)
   const lastTrackedMediaJobStatus = useRef<string | null>(null)
   const recipeQuery = useQuery({
@@ -53,9 +49,9 @@ export default function SavedRecipeRoute() {
     queryKey: ['recipe-item', recipeId],
     queryFn: () => getSavedRecipeItem(recipeId ?? ''),
   })
-  const usageSummaryQuery = useQuery({
-    queryKey: ['usage-summary', 'recipe-detail'],
-    queryFn: getUsageSummary,
+  const aiAccessQuery = useQuery({
+    queryKey: ['ai-access-state', 'recipe-detail'],
+    queryFn: getAiAccessState,
   })
   const mediaJobQuery = useQuery({
     enabled: Boolean(recipeId),
@@ -64,20 +60,22 @@ export default function SavedRecipeRoute() {
     refetchInterval: (query) =>
       isMediaJobActive(query.state.data) ? 5000 : false,
   })
-  const usageSummary = usageSummaryQuery.data
+  const aiAccess = aiAccessQuery.data
 
   useEffect(() => {
-    if (!usageSummary || didTrackUsageSummary.current) {
+    if (!aiAccess || didTrackUsageSummary.current) {
       return
     }
 
     didTrackUsageSummary.current = true
     track('usage_summary_viewed', {
-      limit_type: 'recipe_cards',
-      used: usageSummary.recipeCardsUsed,
-      limit: usageSummary.limits.recipeCards,
+      limit_type: 'ai_recipe_cards',
+      used: aiAccess.usedSuccessfulGenerations,
+      limit: aiAccess.freeLimit,
+      role: aiAccess.role,
+      reason: aiAccess.reason,
     })
-  }, [track, usageSummary])
+  }, [aiAccess, track])
 
   useEffect(() => {
     setCaptionDraft(recipeQuery.data?.pasted_caption ?? '')
@@ -99,6 +97,12 @@ export default function SavedRecipeRoute() {
       status: mediaJob.status,
       progress: mediaJob.progress,
     })
+    if (mediaJob.status === 'failed') {
+      track('media_job_failed', {
+        platform: getRecipePlatform(mediaJob.platform),
+        error_code: mediaJob.error_code ?? 'unknown',
+      })
+    }
   }, [mediaJobQuery.data, track])
 
   useEffect(() => {
@@ -143,23 +147,6 @@ export default function SavedRecipeRoute() {
       source: 'saved_recipe_detail',
     })
   }, [recipeQuery.data, track])
-
-  useEffect(() => {
-    if (
-      !usageSummary ||
-      usageSummary.canGenerateRecipeCard ||
-      didTrackLimitReached.current
-    ) {
-      return
-    }
-
-    didTrackLimitReached.current = true
-    track('usage_limit_reached', {
-      limit_type: 'recipe_cards',
-      used: usageSummary.recipeCardsUsed,
-      limit: usageSummary.limits.recipeCards,
-    })
-  }, [track, usageSummary])
 
   if (!recipeId) {
     return (
@@ -246,54 +233,6 @@ export default function SavedRecipeRoute() {
     }
   }
 
-  const handleGenerateRecipeCard = async () => {
-    if (!recipeId || isGenerating) {
-      return
-    }
-
-    if (usageSummary && !usageSummary.canGenerateRecipeCard) {
-      return
-    }
-
-    setIsGenerating(true)
-    setGenerationError(null)
-    track('ai_recipe_started', {
-      platform,
-      source_mode: sourceModeHint,
-    })
-
-    try {
-      const response = await generateRecipeCard(recipeId)
-
-      track('ai_recipe_completed', {
-        platform,
-        confidence: response.data.confidence,
-        source_mode: response.data.source_mode ?? sourceModeHint,
-        model_used: response.data.model_used ?? 'unknown',
-      })
-      void queryClient.invalidateQueries({
-        queryKey: ['usage-summary'],
-      })
-      router.push(`/recipe-card/${response.data.recipe_card_id}`)
-    } catch (caughtError) {
-      const nextError =
-        caughtError instanceof Error
-          ? caughtError
-          : new Error('Something went wrong while creating your recipe card.')
-
-      setGenerationError(nextError)
-      track('ai_recipe_failed', {
-        platform,
-        error_code:
-          caughtError instanceof RecipeApiError
-            ? caughtError.code
-            : 'generation_failed',
-      })
-    } finally {
-      setIsGenerating(false)
-    }
-  }
-
   const handleCreateMediaJob = async (source: 'new' | 'retry') => {
     if (isCreatingMediaJob) {
       return
@@ -301,6 +240,13 @@ export default function SavedRecipeRoute() {
 
     setIsCreatingMediaJob(true)
     setMediaJobError(null)
+    setShowCreditLimitState(false)
+
+    track('generate_ai_recipe_tapped', {
+      platform,
+      source,
+      source_mode: sourceModeHint,
+    })
 
     if (source === 'retry') {
       track('media_job_retry_clicked', {
@@ -321,14 +267,39 @@ export default function SavedRecipeRoute() {
         status: createdJob.status,
         source,
       })
+      await aiAccessQuery.refetch()
       await mediaJobQuery.refetch()
     } catch (caughtError) {
+      if (
+        caughtError instanceof RecipeApiError &&
+        caughtError.code === 'ai_credit_limit_reached'
+      ) {
+        setShowCreditLimitState(true)
+        track('ai_credit_limit_reached', {
+          platform,
+          source,
+        })
+        track('upgrade_placeholder_shown', {
+          limit_type: 'ai_recipe_cards',
+          source: 'saved_recipe_detail',
+        })
+        return
+      }
+
       const nextError =
         caughtError instanceof Error
           ? caughtError
           : new Error('Could not queue video analysis. Please try again.')
 
       setMediaJobError(getFriendlyMediaJobError(caughtError, nextError))
+      track('media_job_failed', {
+        platform,
+        source,
+        error_code:
+          caughtError instanceof RecipeApiError
+            ? caughtError.code
+            : 'media_job_failed',
+      })
       track('media_job_create_failed', {
         platform,
         source,
@@ -550,15 +521,15 @@ export default function SavedRecipeRoute() {
         <Card tone="warm">
           <View style={{ gap: spacing.xs }}>
             <Text selectable style={[typography.heading, { color: colors.text }]}>
-              Analyze the video
+              Generate AI Recipe
             </Text>
             <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-              Create a media job for future worker processing. This milestone only
-              queues the job and does not download or store the video.
+              AI turns this saved link and any caption or notes into a recipe
+              card. Recipe Dost saves links and recipe cards, not videos.
             </Text>
           </View>
           <Button
-            label="Analyze Video"
+            label="Generate AI Recipe"
             fullWidth
             disabled={isCreatingMediaJob || isOverDurationLimit}
             onPress={() => {
@@ -615,7 +586,7 @@ export default function SavedRecipeRoute() {
 
       {mediaJobError ? (
         <ErrorState
-          title="Could not update video analysis"
+          title="Could not generate AI recipe"
           message={mediaJobError.message}
           retryLabel="Retry"
           onRetry={() => {
@@ -624,61 +595,37 @@ export default function SavedRecipeRoute() {
         />
       ) : null}
 
-      {usageSummary ? (
+      {showCreditLimitState ? (
+        <Card tone="muted">
+          <Text selectable style={[typography.heading, { color: colors.warning }]}>
+            Free AI recipes used
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.text }]}>
+            You have used your 3 free AI recipe generations. Upgrade to generate
+            more recipe cards.
+          </Text>
+          <Button
+            label="Unlock Pro"
+            fullWidth
+            variant="accent"
+            onPress={() => router.push('/paywall')}
+          />
+          <Button
+            label="Maybe later"
+            fullWidth
+            variant="secondary"
+            onPress={() => setShowCreditLimitState(false)}
+          />
+        </Card>
+      ) : null}
+
+      {aiAccess ? (
         <UsagePill
-          label="Free AI tries remaining"
-          value={`${usageSummary.recipeCardsRemaining}`}
+          label="AI recipes left"
+          value={getAiRecipesLeftValue(aiAccess)}
         />
-      ) : null}
-
-      <Card tone="warm">
-        <View style={{ gap: spacing.xs }}>
-          <Text selectable style={[typography.heading, { color: colors.text }]}>
-            AI uses your saved details
-          </Text>
-          <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-            For best accuracy, paste the recipe caption or ingredients before
-            generating. If only the source link exists, Recipe Dost can try, but
-            confidence should stay low.
-          </Text>
-        </View>
-        <Button
-          label="Generate Recipe Card"
-          fullWidth
-          disabled={
-            isGenerating ||
-            usageSummaryQuery.isLoading ||
-            Boolean(usageSummary && !usageSummary.canGenerateRecipeCard)
-          }
-          onPress={() => {
-            void handleGenerateRecipeCard()
-          }}
-        />
-      </Card>
-
-      {isGenerating ? (
-        <LoadingState message="Creating your recipe card..." />
-      ) : null}
-
-      {usageSummary && !usageSummary.canGenerateRecipeCard ? (
-        <UpgradePlaceholder
-          limitType="recipe_cards"
-          used={usageSummary.recipeCardsUsed}
-          limit={usageSummary.limits.recipeCards}
-          actionLabel="View Library"
-          onActionPress={() => router.replace('/library')}
-        />
-      ) : null}
-
-      {generationError ? (
-        <ErrorState
-          title="Could not create recipe card"
-          message={getGenerationErrorMessage(generationError)}
-          retryLabel="Retry"
-          onRetry={() => {
-            void handleGenerateRecipeCard()
-          }}
-        />
+      ) : aiAccessQuery.isLoading ? (
+        <UsagePill label="AI recipes left" value="-" />
       ) : null}
 
       <Button
@@ -732,99 +679,6 @@ function getRecipePlatform(platform: string | null): RecipePlatform {
   return 'other'
 }
 
-function getGenerationErrorMessage(error: Error) {
-  const code =
-    error instanceof RecipeApiError
-      ? error.code
-      : 'unexpected_generate_card_error'
-  const message = getFriendlyGenerateCardErrorMessage(code)
-
-  if (__DEV__) {
-    return `${message}\nDebug code: ${code}`
-  }
-
-  return message
-}
-
-function getFriendlyGenerateCardErrorMessage(code: string) {
-  switch (code) {
-    case 'missing_openai_key':
-      return 'AI generation is not configured yet.'
-    case 'missing_gemini_key':
-      return 'Gemini generation is not configured yet.'
-    case 'gemini_request_failed':
-      return 'Gemini could not create the recipe card right now.'
-    case 'gemini_rate_limited':
-      return 'Gemini is busy right now. Please try again in a few minutes.'
-    case 'gemini_bad_request':
-      return 'Gemini could not use this request. Please try again.'
-    case 'gemini_invalid_key_or_forbidden':
-      return 'Gemini generation is not allowed with the current key.'
-    case 'gemini_model_not_found':
-      return 'Gemini model is not available.'
-    case 'openai_request_failed':
-      return 'AI service could not create the recipe card right now.'
-    case 'openai_rate_limited':
-      return 'AI service is busy right now. Please try again in a few minutes.'
-    case 'openai_insufficient_quota':
-      return 'OpenAI quota is not available for this project.'
-    case 'openai_invalid_api_key':
-      return 'OpenAI key is invalid or unavailable.'
-    case 'openai_model_forbidden':
-      return 'OpenAI model is not allowed for this key.'
-    case 'openai_model_not_found':
-      return 'OpenAI model is not available.'
-    case 'openai_bad_request':
-      return 'OpenAI could not use this request. Please try again.'
-    case 'missing_openrouter_key':
-      return 'OpenRouter generation is not configured yet.'
-    case 'openrouter_request_failed':
-      return 'OpenRouter could not create the recipe card right now.'
-    case 'openrouter_rate_limited':
-      return 'OpenRouter is busy right now. Please try again in a few minutes.'
-    case 'openrouter_bad_request':
-      return 'OpenRouter could not use this request. Please try again.'
-    case 'openrouter_invalid_key_or_forbidden':
-      return 'OpenRouter generation is not allowed with the current key.'
-    case 'openrouter_model_not_found':
-      return 'OpenRouter model is not available.'
-    case 'missing_kimi_key':
-      return 'Kimi generation is not configured yet.'
-    case 'kimi_request_failed':
-      return 'Kimi could not create the recipe card right now.'
-    case 'kimi_rate_limited':
-      return 'Kimi is busy right now. Please try again in a few minutes.'
-    case 'kimi_bad_request':
-      return 'Kimi could not use this request. Please try again.'
-    case 'kimi_invalid_key_or_forbidden':
-      return 'Kimi generation is not allowed with the current key.'
-    case 'kimi_model_not_found':
-      return 'Kimi model is not available.'
-    case 'missing_anthropic_key':
-      return 'Anthropic generation is not configured yet.'
-    case 'missing_anthropic_model':
-      return 'Anthropic model is not configured yet.'
-    case 'anthropic_not_implemented':
-      return 'Anthropic generation is not available right now.'
-    case 'unsupported_ai_provider':
-      return 'AI provider is not supported.'
-    case 'invalid_ai_output':
-      return 'Recipe card could not be generated. Please add more details and try again.'
-    case 'insufficient_recipe_input':
-      return 'Paste the caption or visible ingredients so AI can create an accurate recipe card.'
-    case 'db_insert_failed':
-      return 'Recipe card was created but could not be saved.'
-    case 'recipe_not_found':
-      return 'Recipe link not found.'
-    case 'free_limit_reached':
-      return 'You have used your free recipe cards.'
-    case 'unauthorized':
-      return 'Please restart the app and try again.'
-    default:
-      return 'Something went wrong while creating your recipe card.'
-  }
-}
-
 function getFriendlyMediaJobError(caughtError: unknown, fallback: Error) {
   if (
     caughtError instanceof RecipeApiError &&
@@ -836,6 +690,32 @@ function getFriendlyMediaJobError(caughtError: unknown, fallback: Error) {
   }
 
   return fallback
+}
+
+function getAiRecipesLeftValue(access: {
+  role: string
+  isTestUser: boolean
+  premiumActive: boolean
+  remaining: number | null
+  reason: string
+}) {
+  if (access.role === 'admin') {
+    return 'Admin'
+  }
+
+  if (access.isTestUser || access.role === 'tester') {
+    return 'Tester'
+  }
+
+  if (access.premiumActive) {
+    return 'Pro'
+  }
+
+  if (access.reason === 'limit_reached') {
+    return '0'
+  }
+
+  return access.remaining === null ? '-' : `${access.remaining}`
 }
 
 function isUnsupportedVideoPlatform(platform: RecipePlatform) {

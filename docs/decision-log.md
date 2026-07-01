@@ -1,6 +1,12 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-01
+- M21.6 UX flow simplification completed with backend `get-ai-access` as the visible AI credit source of truth.
+- Decision: Saved links, metadata preview, library, and grocery viewing are unlimited for MVP; only successful AI recipe generation is limited.
+- Decision: Saved-link detail exposes one AI CTA, `Generate AI Recipe`, and it queues `create-media-job` so credit checks stay server-side.
+- Decision: The legacy direct `generate-card` helper remains internal but is no longer user-facing from saved-link detail.
+- Decision: Free-limit errors show the "Free AI recipes used" upgrade placeholder; generic media-job errors still show retry.
+- Decision: Recipe-card production UI hides model, source-mode, and confidence/debug badges; low-confidence warnings appear only for low and sparse cards.
 - M21.5 dev identity switcher and AI access QA tools added without full paywall, signup UI, token bundles, or mobile role mutation.
 - Decision: Dev identity switching is limited to anonymous Supabase sessions saved locally on the device; the app cannot impersonate arbitrary user IDs.
 - Decision: Role, tester, and premium simulation stays SQL-only. The mobile dev panel only copies IDs, creates fresh anonymous users, switches saved local sessions, and reads safe access state.

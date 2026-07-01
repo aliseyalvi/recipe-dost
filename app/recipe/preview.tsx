@@ -8,9 +8,7 @@ import {
 import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { useRecipeDraftStore } from '@/features/recipe-draft/recipe-draft-store'
 import { RecipeMealType } from '@/features/recipe-draft/types'
-import { UsagePill } from '@/features/usage/usage-limit-card'
 import { saveRecipeItem } from '@/lib/api/recipes'
-import { getUsageSummary } from '@/lib/api/usage'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, radius, spacing, typography } from '@/theme'
@@ -24,7 +22,7 @@ import { Screen } from '@/ui/screen'
 import { TextArea } from '@/ui/text-area'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Image, Text, View } from 'react-native'
 
 export default function RecipePreviewRoute() {
@@ -44,14 +42,7 @@ export default function RecipePreviewRoute() {
   const [cuisine, setCuisine] = useState(draft?.cuisine ?? '')
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<Error | null>(null)
-  const didTrackLimitReached = useRef(false)
   const hasValidDraftUrl = isValidHttpUrl(draft?.source_url)
-  const usageSummaryQuery = useQuery({
-    enabled: Boolean(user?.id),
-    queryKey: ['usage-summary', user?.id],
-    queryFn: getUsageSummary,
-  })
-  const usageSummary = usageSummaryQuery.data
 
   useEffect(() => {
     if (draft) {
@@ -62,23 +53,6 @@ export default function RecipePreviewRoute() {
       })
     }
   }, [draft, track])
-
-  useEffect(() => {
-    if (
-      !usageSummary ||
-      usageSummary.canSaveLink ||
-      didTrackLimitReached.current
-    ) {
-      return
-    }
-
-    didTrackLimitReached.current = true
-    track('usage_limit_reached', {
-      limit_type: 'saved_links',
-      used: usageSummary.savedLinksUsed,
-      limit: usageSummary.limits.savedLinks,
-    })
-  }, [track, usageSummary])
 
   if (!draft) {
     return (
@@ -148,27 +122,6 @@ export default function RecipePreviewRoute() {
       return
     }
 
-    const nextUsageSummary =
-      usageSummary ??
-      (await usageSummaryQuery.refetch()).data
-
-    if (!nextUsageSummary) {
-      const nextError = new Error('Could not check free plan usage. Please try again.')
-
-      setSaveError(nextError)
-      return
-    }
-
-    if (!nextUsageSummary.canSaveLink) {
-      track('usage_limit_reached', {
-        limit_type: 'saved_links',
-        used: nextUsageSummary.savedLinksUsed,
-        limit: nextUsageSummary.limits.savedLinks,
-      })
-      setSaveError(null)
-      return
-    }
-
     setIsSaving(true)
     setSaveError(null)
 
@@ -190,9 +143,6 @@ export default function RecipePreviewRoute() {
 
       void queryClient.invalidateQueries({
         queryKey: ['recent-recipes', user.id],
-      })
-      void queryClient.invalidateQueries({
-        queryKey: ['usage-summary', user.id],
       })
       track('recipe_link_saved', analyticsProps)
       clearDraft()
@@ -306,33 +256,6 @@ export default function RecipePreviewRoute() {
         </Card>
       ) : null}
 
-      {usageSummary ? (
-        <UsagePill
-          label="Saved recipe links left"
-          value={`${usageSummary.savedLinksRemaining}`}
-        />
-      ) : null}
-
-      {usageSummary && !usageSummary.canSaveLink ? (
-        <EmptyState
-          title="Free saved recipe limit reached"
-          message="You have used your free saved recipe links. Pro upgrade is coming next."
-          actionLabel="View Library"
-          onActionPress={() => router.replace('/library')}
-        />
-      ) : null}
-
-      {usageSummaryQuery.error ? (
-        <ErrorState
-          title="Could not check usage"
-          message={usageSummaryQuery.error.message}
-          retryLabel="Retry"
-          onRetry={() => {
-            void usageSummaryQuery.refetch()
-          }}
-        />
-      ) : null}
-
       {needsAccuracyInput ? (
         <Card tone="muted">
           <Text selectable style={[typography.heading, { color: colors.warning }]}>
@@ -429,9 +352,7 @@ export default function RecipePreviewRoute() {
           fullWidth
           disabled={
             !hasValidDraftUrl ||
-            isSaving ||
-            usageSummaryQuery.isLoading ||
-            Boolean(usageSummary && !usageSummary.canSaveLink)
+            isSaving
           }
           onPress={() => {
             void saveDraft()

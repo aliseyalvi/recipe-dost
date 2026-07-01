@@ -221,10 +221,6 @@ export default function RecipeCardResultRoute() {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           {sourcePlatform ? <PlatformBadge platform={sourcePlatform} /> : null}
           <AppBadge label="AI Card" tone="accent" />
-          <AppBadge label={getConfidenceLabel(recipeCard.confidence)} />
-          {recipeCard.source_mode ? (
-            <AppBadge label={getSourceModeLabel(recipeCard.source_mode)} />
-          ) : null}
         </View>
         <AppHeader
           eyebrow="AI recipe card"
@@ -238,28 +234,20 @@ export default function RecipeCardResultRoute() {
             Urdu script is available for newly generated cards.
           </Text>
         ) : null}
-        {__DEV__ && recipeCard.model_used ? (
-          <AppBadge label={`Model: ${recipeCard.model_used}`} />
-        ) : null}
-        <MediaJobSourceMetadataSummary
-          metadata={mediaJobQuery.data?.source_metadata}
-          fallbackPlatform={sourcePlatform}
-          isMockResult={isMockRecipeResult(recipeCard, mediaJobQuery.data)}
-        />
         <ContentLanguageControl
           value={contentLanguage}
           onChange={setScreenLanguage}
         />
       </Card>
 
-      {recipeCard.source_mode === 'unsupported_video_link' ? (
+      {shouldShowLowConfidenceWarning(recipeCard) ? (
         <Card tone="muted">
           <Text selectable style={[typography.heading, { color: colors.warning }]}>
-            Low-confidence draft
+            Review recipe details
           </Text>
           <Text selectable style={[typography.body, { color: colors.text }]}>
-            This card was created without access to the social video. Verify the
-            ingredients and steps in the original video.
+            This AI recipe may be missing details. Check the original video
+            before cooking.
           </Text>
         </Card>
       ) : null}
@@ -310,6 +298,28 @@ export default function RecipeCardResultRoute() {
       <SubstitutionsSection substitutions={recipeCard.substitutions} />
       <StorageSafetySection recipeCard={recipeCard} language={contentLanguage} />
       <MissingInfoSection recipeCard={recipeCard} language={contentLanguage} />
+
+      {__DEV__ ? (
+        <Card tone="muted">
+          <Text selectable style={[typography.heading, { color: colors.text }]}>
+            Development details
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            <AppBadge label={getConfidenceLabel(recipeCard.confidence)} />
+            {recipeCard.source_mode ? (
+              <AppBadge label={getSourceModeLabel(recipeCard.source_mode)} />
+            ) : null}
+            {recipeCard.model_used ? (
+              <AppBadge label={`Model: ${recipeCard.model_used}`} />
+            ) : null}
+          </View>
+          <MediaJobSourceMetadataSummary
+            metadata={mediaJobQuery.data?.source_metadata}
+            fallbackPlatform={sourcePlatform}
+            isMockResult={isMockRecipeResult(recipeCard, mediaJobQuery.data)}
+          />
+        </Card>
+      ) : null}
 
       <View style={{ gap: spacing.md }}>
         <Button
@@ -758,11 +768,21 @@ function formatGroceryCopyItem(item: GroceryItem, language: RecipeContentLanguag
 function getAnalyticsProperties(recipeCard: RecipeCard) {
   return {
     confidence: recipeCard.confidence,
-    model_used: recipeCard.model_used,
     source_mode: recipeCard.source_mode ?? 'legacy_unknown',
     has_grocery_list: recipeCard.grocery_items.length > 0,
     has_missing_info: recipeCard.missing_info.length > 0,
   }
+}
+
+function shouldShowLowConfidenceWarning(recipeCard: RecipeCard) {
+  return (
+    recipeCard.confidence?.trim().toLowerCase() === 'low' &&
+    (
+      recipeCard.missing_info.length > 0 ||
+      recipeCard.ingredients.length < 3 ||
+      recipeCard.steps.length < 2
+    )
+  )
 }
 
 function getSourceModeLabel(sourceMode: AiSourceMode) {

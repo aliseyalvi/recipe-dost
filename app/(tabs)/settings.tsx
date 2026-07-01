@@ -3,7 +3,7 @@ import {
   DevIdentityPanel,
   shouldShowDevIdentityPanel,
 } from '@/features/dev-tools/dev-identity-panel'
-import { getUsageSummary } from '@/lib/api/usage'
+import { getAiAccessState } from '@/lib/api/ai-access'
 import { useAuth } from '@/providers/auth-provider'
 import { colors, spacing, typography } from '@/theme'
 import { AppHeader } from '@/ui/app-header'
@@ -15,10 +15,10 @@ import { Text, View } from 'react-native'
 
 export default function SettingsRoute() {
   const { user } = useAuth()
-  const usageSummaryQuery = useQuery({
+  const aiAccessQuery = useQuery({
     enabled: Boolean(user?.id),
-    queryKey: ['usage-summary', 'settings'],
-    queryFn: getUsageSummary,
+    queryKey: ['ai-access-state', user?.id, 'settings'],
+    queryFn: getAiAccessState,
   })
 
   return (
@@ -49,11 +49,11 @@ export default function SettingsRoute() {
         </Text>
         <SettingsRow label="Plan" value="Free plan" />
         <SettingsRow
-          label="AI tries left"
+          label="AI recipes left"
           value={
-            usageSummaryQuery.data
-              ? `${usageSummaryQuery.data.recipeCardsRemaining}`
-              : usageSummaryQuery.isLoading
+            aiAccessQuery.data
+              ? getAiRecipesLeftValue(aiAccessQuery.data)
+              : aiAccessQuery.isLoading
                 ? 'Loading'
                 : 'Unavailable'
           }
@@ -62,7 +62,7 @@ export default function SettingsRoute() {
           Basic organizer features stay free. AI recipe cards will be monetized
           after free tries.
         </Text>
-        {usageSummaryQuery.error ? (
+        {aiAccessQuery.error ? (
           <View style={{ gap: spacing.sm }}>
             <Text selectable style={[typography.caption, { color: colors.danger }]}>
               Could not load plan usage.
@@ -71,7 +71,7 @@ export default function SettingsRoute() {
               label="Retry usage"
               variant="secondary"
               onPress={() => {
-                void usageSummaryQuery.refetch()
+                void aiAccessQuery.refetch()
               }}
             />
           </View>
@@ -155,4 +155,30 @@ function SettingsRow({ label, value }: { label: string; value: string }) {
 
 function shortId(value: string) {
   return `${value.slice(0, 8)}...`
+}
+
+function getAiRecipesLeftValue(access: {
+  role: string
+  isTestUser: boolean
+  premiumActive: boolean
+  remaining: number | null
+  reason: string
+}) {
+  if (access.role === 'admin') {
+    return 'Admin'
+  }
+
+  if (access.isTestUser || access.role === 'tester') {
+    return 'Tester'
+  }
+
+  if (access.premiumActive) {
+    return 'Pro'
+  }
+
+  if (access.reason === 'limit_reached') {
+    return '0'
+  }
+
+  return access.remaining === null ? '-' : `${access.remaining}`
 }

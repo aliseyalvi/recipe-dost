@@ -1,8 +1,18 @@
 # Recipe Dost Milestones
 
+## M21.6 - UX Flow Simplification and Single AI Credit Source of Truth
+
+- Status: Done after validation.
+- Saved links, metadata preview, library, and grocery viewing are unlimited for the MVP; visible saved-link and grocery quotas were removed.
+- Home, Settings, and saved-link detail now use `get-ai-access` for AI generation credit state instead of local recipe-card remaining values.
+- Saved-link detail has one user-facing AI action: `Generate AI Recipe`, which uses the backend-gated `create-media-job` flow.
+- The old user-facing manual `generate-card` path is no longer exposed from saved-link detail.
+- `ai_credit_limit_reached` now shows a clear "Free AI recipes used" upgrade placeholder with Unlock Pro and Maybe later actions.
+- Recipe result UI hides model/source-mode/confidence debug badges from production UI and keeps technical details in a dev-only section.
+
 ## M21.5 - Dev Identity Switcher and AI Access QA
 
-- Status: Implemented pending validation/deploy.
+- Status: Done after validation and deployment.
 - Added a dev-only Settings panel gated by `__DEV__` or `EXPO_PUBLIC_DEV_TOOLS_ENABLED=true`.
 - Dev tools show current Supabase anonymous user ID, anonymous status, saved local identity status, and safe AI access state.
 - Developers can copy the current user ID, refresh access state, create a fresh anonymous test user, and switch to anonymous users previously saved on the same device.
