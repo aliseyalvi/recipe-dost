@@ -28,12 +28,14 @@ Every user-owned table must include user_id uuid references auth.users(id).
 - title text
 - description text
 - thumbnail_url text
+- duration_seconds integer
 - user_note text
 - pasted_caption text
 - manual_ingredients text
 - meal_type text
 - cuisine text
 - metadata_status text
+- source_metadata jsonb
 - created_at timestamptz
 - updated_at timestamptz
 

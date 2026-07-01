@@ -33,6 +33,41 @@ type ParseRecipeUrlResponse =
       }
     }
 
+type SaveRecipeLinkResponse =
+  | {
+      ok: true
+      data: {
+        recipe_item: SavedRecipeItem
+      }
+    }
+  | {
+      ok: false
+      error: {
+        code: string
+        message: string
+      }
+    }
+
+type RefreshRecipeMetadataResponse =
+  | {
+      ok: true
+      data: {
+        recipe_item: SavedRecipeItem
+        metadata_status: string
+        metadata_preview_error?: {
+          code: string
+          message: string
+        }
+      }
+    }
+  | {
+      ok: false
+      error: {
+        code: string
+        message: string
+      }
+    }
+
 export type GeneratedRecipeCard = {
   recipe_card_id: string
   recipe_id: string
@@ -149,13 +184,16 @@ export type SavedRecipeItem = Pick<
   | 'title'
   | 'description'
   | 'thumbnail_url'
+  | 'duration_seconds'
   | 'user_note'
   | 'pasted_caption'
   | 'manual_ingredients'
   | 'meal_type'
   | 'cuisine'
   | 'metadata_status'
+  | 'source_metadata'
   | 'created_at'
+  | 'updated_at'
 >
 
 type RecipeCardRow = Pick<
@@ -336,6 +374,94 @@ export async function parseRecipeUrl(sourceUrl: string) {
   return data.data
 }
 
+export async function saveRecipeLink(url: string) {
+  const { data, error } =
+    await supabase.functions.invoke<SaveRecipeLinkResponse>(
+      'save-recipe-link',
+      {
+        body: {
+          url,
+        },
+      }
+    )
+
+  if (error) {
+    const functionError = await getFunctionInvokeErrorDetails(error)
+    const responseError = getFunctionResponseError(functionError.functionBody)
+
+    throw new RecipeApiError({
+      code: responseError?.code ?? functionError.code,
+      message:
+        responseError?.message ??
+        'Could not save this recipe link. Please try again.',
+      status: functionError.status,
+      causeName: functionError.name ?? undefined,
+      functionBody: functionError.functionBody,
+    })
+  }
+
+  if (!data) {
+    throw new RecipeApiError({
+      code: 'unexpected_save_recipe_link_error',
+      message: 'Could not save this recipe link. Please try again.',
+    })
+  }
+
+  if (!data.ok) {
+    throw new RecipeApiError({
+      code: data.error.code,
+      message: data.error.message,
+      functionBody: data,
+    })
+  }
+
+  return data.data.recipe_item
+}
+
+export async function refreshRecipeMetadata(recipeItemId: string) {
+  const { data, error } =
+    await supabase.functions.invoke<RefreshRecipeMetadataResponse>(
+      'refresh-recipe-metadata',
+      {
+        body: {
+          recipe_item_id: recipeItemId,
+        },
+      }
+    )
+
+  if (error) {
+    const functionError = await getFunctionInvokeErrorDetails(error)
+    const responseError = getFunctionResponseError(functionError.functionBody)
+
+    throw new RecipeApiError({
+      code: responseError?.code ?? functionError.code,
+      message:
+        responseError?.message ??
+        'Could not refresh recipe metadata. Please try again.',
+      status: functionError.status,
+      causeName: functionError.name ?? undefined,
+      functionBody: functionError.functionBody,
+    })
+  }
+
+  if (!data) {
+    throw new RecipeApiError({
+      code: 'unexpected_metadata_refresh_error',
+      message: 'Could not refresh recipe metadata. Please try again.',
+    })
+  }
+
+  if (!data.ok) {
+    throw new RecipeApiError({
+      code: data.error.code,
+      message: data.error.message,
+      functionBody: data,
+    })
+  }
+
+  return data.data
+}
+
 export class RecipeApiError extends Error {
   code: string
   status?: number
@@ -415,8 +541,8 @@ export async function createMediaJob({
   platform,
 }: {
   recipeItemId?: string
-  sourceUrl: string
-  platform: RecipePlatform
+  sourceUrl?: string
+  platform?: RecipePlatform
 }) {
   const { data, error } =
     await supabase.functions.invoke<CreateMediaJobResponse>(
@@ -438,7 +564,7 @@ export async function createMediaJob({
       code: responseError?.code ?? functionError.code,
       message:
         responseError?.message ??
-        'Could not queue video analysis. Please try again.',
+        'Could not start AI recipe. Please try again.',
       status: functionError.status,
       causeName: functionError.name ?? undefined,
       functionBody: functionError.functionBody,
@@ -448,7 +574,7 @@ export async function createMediaJob({
   if (!data) {
     throw new RecipeApiError({
       code: 'unexpected_media_job_error',
-      message: 'Could not queue video analysis. Please try again.',
+      message: 'Could not start AI recipe. Please try again.',
     })
   }
 
@@ -470,7 +596,7 @@ export async function getMediaJob(mediaJobId: string) {
   } = await supabase.auth.getUser()
 
   if (userError || !user) {
-    throw new Error('Could not load video analysis status.')
+    throw new Error('Could not load AI recipe status.')
   }
 
   const { data, error } = await supabase
@@ -481,7 +607,7 @@ export async function getMediaJob(mediaJobId: string) {
     .single()
 
   if (error) {
-    throw new Error('Could not load video analysis status.')
+    throw new Error('Could not load AI recipe status.')
   }
 
   return normalizeMediaJob(data satisfies MediaJobRow)
@@ -494,7 +620,7 @@ export async function getLatestMediaJobForRecipe(recipeItemId: string) {
   } = await supabase.auth.getUser()
 
   if (userError || !user) {
-    throw new Error('Could not load video analysis status.')
+    throw new Error('Could not load AI recipe status.')
   }
 
   const { data, error } = await supabase
@@ -507,7 +633,7 @@ export async function getLatestMediaJobForRecipe(recipeItemId: string) {
     .maybeSingle()
 
   if (error) {
-    throw new Error('Could not load video analysis status.')
+    throw new Error('Could not load AI recipe status.')
   }
 
   return data ? normalizeMediaJob(data satisfies MediaJobRow) : null
@@ -566,24 +692,32 @@ export async function saveRecipeItem({
   draft: RecipeLinkDraft
   userId: string
 }) {
+  const savedItem = await saveRecipeLink(draft.source_url)
+  const updateFields = {
+    user_note: draft.user_note?.trim() || null,
+    pasted_caption: draft.pasted_caption?.trim() || null,
+    manual_ingredients: draft.manual_ingredients?.trim() || null,
+    meal_type: draft.meal_type ?? null,
+    cuisine: draft.cuisine?.trim() || null,
+  }
+
+  if (
+    !updateFields.user_note &&
+    !updateFields.pasted_caption &&
+    !updateFields.manual_ingredients &&
+    !updateFields.meal_type &&
+    !updateFields.cuisine
+  ) {
+    return savedItem
+  }
+
   const { data, error } = await supabase
     .from('recipe_items')
-    .insert({
-      user_id: userId,
-      source_url: draft.source_url,
-      platform: draft.platform,
-      title: draft.title ?? null,
-      description: draft.description ?? null,
-      thumbnail_url: draft.thumbnail_url ?? null,
-      user_note: draft.user_note ?? null,
-      pasted_caption: draft.pasted_caption ?? null,
-      manual_ingredients: draft.manual_ingredients ?? null,
-      meal_type: draft.meal_type ?? null,
-      cuisine: draft.cuisine ?? null,
-      metadata_status: draft.metadata_status ?? 'failed',
-    })
+    .update(updateFields)
+    .eq('id', savedItem.id)
+    .eq('user_id', userId)
     .select(
-      'id, source_url, platform, title, description, thumbnail_url, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, metadata_status, created_at'
+      'id, source_url, platform, title, description, thumbnail_url, duration_seconds, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, metadata_status, source_metadata, created_at, updated_at'
     )
     .single()
 
@@ -667,7 +801,7 @@ export async function getSavedRecipeItem(recipeId: string) {
   const { data, error } = await supabase
     .from('recipe_items')
     .select(
-      'id, source_url, platform, title, description, thumbnail_url, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, metadata_status, created_at'
+      'id, source_url, platform, title, description, thumbnail_url, duration_seconds, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, metadata_status, source_metadata, created_at, updated_at'
     )
     .eq('id', recipeId)
     .single()

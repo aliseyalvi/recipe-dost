@@ -39,7 +39,7 @@ import { useQuery } from '@tanstack/react-query'
 import * as Clipboard from 'expo-clipboard'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
-import { Linking, Text, View } from 'react-native'
+import { Image, Linking, Text, View } from 'react-native'
 
 export default function RecipeCardResultRoute() {
   const router = useRouter()
@@ -141,6 +141,9 @@ export default function RecipeCardResultRoute() {
     language: contentLanguage,
     fallback: 'Untitled recipe',
   })
+  const thumbnailUrl =
+    mediaJobQuery.data?.thumbnail_url ??
+    mediaJobQuery.data?.source_metadata.uploaded_thumbnail_url
 
   const copyGroceryList = async () => {
     if (recipeCard.grocery_items.length === 0) {
@@ -181,42 +184,49 @@ export default function RecipeCardResultRoute() {
             backgroundColor: colors.surfaceMuted,
           }}
         >
-          <View
-            style={{
-              flex: 1,
-              justifyContent: 'flex-end',
-              gap: spacing.sm,
-              padding: spacing.lg,
-            }}
-          >
-            <Text
-              selectable={false}
+          {thumbnailUrl ? (
+            <Image
+              source={{ uri: thumbnailUrl }}
+              style={{ width: '100%', height: '100%' }}
+            />
+          ) : (
+            <View
               style={{
-                color: colors.text,
-                fontSize: 42,
-                lineHeight: 46,
-                fontWeight: '900',
+                flex: 1,
+                justifyContent: 'flex-end',
+                gap: spacing.sm,
+                padding: spacing.lg,
               }}
             >
-              Recipe Card
-            </Text>
-            <View
-              style={{
-                width: '70%',
-                height: 8,
-                borderRadius: radius.pill,
-                backgroundColor: colors.primary,
-              }}
-            />
-            <View
-              style={{
-                width: '46%',
-                height: 8,
-                borderRadius: radius.pill,
-                backgroundColor: colors.accent,
-              }}
-            />
-          </View>
+              <Text
+                selectable={false}
+                style={{
+                  color: colors.text,
+                  fontSize: 42,
+                  lineHeight: 46,
+                  fontWeight: '900',
+                }}
+              >
+                Recipe Card
+              </Text>
+              <View
+                style={{
+                  width: '70%',
+                  height: 8,
+                  borderRadius: radius.pill,
+                  backgroundColor: colors.primary,
+                }}
+              />
+              <View
+                style={{
+                  width: '46%',
+                  height: 8,
+                  borderRadius: radius.pill,
+                  backgroundColor: colors.accent,
+                }}
+              />
+            </View>
+          )}
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           {sourcePlatform ? <PlatformBadge platform={sourcePlatform} /> : null}
@@ -326,12 +336,6 @@ export default function RecipeCardResultRoute() {
           label="Back to Home"
           fullWidth
           onPress={() => router.replace('/home')}
-        />
-        <Button
-          label="Save another recipe"
-          fullWidth
-          variant="secondary"
-          onPress={() => router.push('/save-recipe')}
         />
       </View>
     </Screen>

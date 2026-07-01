@@ -1,6 +1,7 @@
+import { SaveRecipeModalProvider, useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
 import { colors, radius, spacing, typography } from '@/theme'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
-import { Tabs, useRouter } from 'expo-router'
+import { Tabs } from 'expo-router'
 import { Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -13,19 +14,21 @@ const tabIcons = {
 
 export default function TabsLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarShowLabel: false,
-      }}
-      tabBar={(props) => <RecipeDostTabBar {...props} />}
-    >
-      <Tabs.Screen name="home" options={{ title: 'Home' }} />
-      <Tabs.Screen name="library" options={{ title: 'Library' }} />
-      <Tabs.Screen name="grocery" options={{ title: 'Grocery' }} />
-      <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
-      <Tabs.Screen name="index" options={{ href: null }} />
-    </Tabs>
+    <SaveRecipeModalProvider>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarShowLabel: false,
+        }}
+        tabBar={(props) => <RecipeDostTabBar {...props} />}
+      >
+        <Tabs.Screen name="home" options={{ title: 'Home' }} />
+        <Tabs.Screen name="library" options={{ title: 'Library' }} />
+        <Tabs.Screen name="grocery" options={{ title: 'Grocery' }} />
+        <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
+        <Tabs.Screen name="index" options={{ href: null }} />
+      </Tabs>
+    </SaveRecipeModalProvider>
   )
 }
 
@@ -182,13 +185,13 @@ function isTabRoute(
 }
 
 function CenterSaveButton() {
-  const router = useRouter()
+  const { openSaveRecipeModal } = useSaveRecipeModal()
 
   return (
     <Pressable
       accessibilityLabel="Save Recipe"
       accessibilityRole="button"
-      onPress={() => router.push('/save-recipe')}
+      onPress={openSaveRecipeModal}
       style={({ pressed }) => ({
         width: 72,
         height: 72,

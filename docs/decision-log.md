@@ -1,6 +1,17 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-01
+- M21.7 Worker metadata + modal save UX completed.
+- Decision: The center plus opens a modal bottom sheet for URL-only saving; the old full add/preview flow is no longer reachable from the primary save action.
+- Decision: The modal calls `save-recipe-link`, updates Home/Library caches immediately, then starts `refresh-recipe-metadata` in the background without creating `media_jobs`.
+- Decision: Home and Library cards use plain user-facing states: Fetching details, Saved Link, Analyzing, AI Recipe, and Failed.
+- Decision: Source Detail exposes one AI creation CTA, `Generate AI Recipe`; all user-facing generation now routes through `create-media-job`.
+- Decision: Modal and card analytics use event names without source URLs, CDN URLs, worker secrets, or raw metadata.
+- M21.7B Supabase saved-link and worker metadata bridge completed.
+- Decision: `save-recipe-link` is the free saved-link creation contract and never creates `media_jobs`, calls AI, or consumes AI credits.
+- Decision: `refresh-recipe-metadata` is the only app-facing metadata refresh contract; it calls the protected worker `/metadata-preview` endpoint from Supabase Edge Functions using server-only secrets.
+- Decision: Worker metadata stored on `recipe_items.source_metadata` is limited to safe fields such as title, description, platform, thumbnail, author, duration, resolver, and source URL. CDN URLs, cookies, temp paths, Gemini file URIs, raw worker responses, and secrets are not stored.
+- Decision: `create-media-job` may accept `recipe_item_id` and uses the saved URL/platform after ownership verification, but still enforces AI generation access before inserting a job.
 - M21.6 UX flow simplification completed with backend `get-ai-access` as the visible AI credit source of truth.
 - Decision: Saved links, metadata preview, library, and grocery viewing are unlimited for MVP; only successful AI recipe generation is limited.
 - Decision: Saved-link detail exposes one AI CTA, `Generate AI Recipe`, and it queues `create-media-job` so credit checks stay server-side.

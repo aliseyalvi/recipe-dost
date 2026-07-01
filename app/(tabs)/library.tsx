@@ -7,6 +7,7 @@ import {
 } from '@/lib/api/recipes'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
+import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
 import { colors, spacing, typography } from '@/theme'
 import { Button } from '@/ui/button'
 import { EmptyState } from '@/ui/empty-state'
@@ -59,6 +60,7 @@ export default function LibraryRoute() {
   const insets = useSafeAreaInsets()
   const { user } = useAuth()
   const { track } = usePostHog()
+  const { openSaveRecipeModal } = useSaveRecipeModal()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedFilters, setSelectedFilters] = useState<ContentFilter[]>([])
   const [sortMode, setSortMode] = useState<SortMode>('newest')
@@ -133,6 +135,13 @@ export default function LibraryRoute() {
     track('library_item_opened', {
       opened_item_type: item.latest_card ? 'recipe_card' : 'saved_link',
     })
+    track('saved_recipe_card_opened', {
+      opened_item_type:
+        item.latest_card || item.latest_media_job?.result_recipe_card_id
+          ? 'recipe_card'
+          : 'saved_link',
+      platform: item.platform ?? 'other',
+    })
 
     if (item.latest_card) {
       router.push(`/recipe-card/${item.latest_card.id}`)
@@ -193,7 +202,7 @@ export default function LibraryRoute() {
               setSortMode(nextSortMode)
               trackFilterChange({})
             }}
-            onSaveRecipe={() => router.push('/save-recipe')}
+            onSaveRecipe={openSaveRecipeModal}
           />
         }
         ListEmptyComponent={
@@ -204,18 +213,13 @@ export default function LibraryRoute() {
             onRetry={() => {
               void libraryQuery.refetch()
             }}
-            onSaveRecipe={() => router.push('/save-recipe')}
+            onSaveRecipe={openSaveRecipeModal}
           />
         }
         renderItem={({ item }) => (
           <View style={{ width: '47.8%' }}>
             <VisualRecipeCard
-              title={
-                item.latest_card?.recipe_title?.trim() ||
-                item.latest_media_job?.source_metadata.title?.trim() ||
-                item.title?.trim() ||
-                'Untitled recipe'
-              }
+              title={getLibraryTitle(item)}
               subtitle={getLibrarySubtitle(item)}
               platform={getRecipePlatform(item.platform)}
               status={getRecipeVisualStatus(item)}
@@ -226,7 +230,6 @@ export default function LibraryRoute() {
               }
               sourceUrl={item.source_url}
               hasGroceryList={Boolean(item.latest_card)}
-              hasNotes={hasNotes(item)}
               progress={item.latest_media_job?.progress}
               createdAt={item.created_at}
               onPress={() => openLibraryItem(item)}
@@ -432,15 +435,15 @@ function getLibrarySubtitle(item: RecipeLibraryItem) {
   const source = getPlatformLabel(platform)
 
   if (item.latest_card) {
-    return `${source} · AI ready`
+    return `${source} · AI Recipe`
   }
 
   if (item.latest_media_job?.result_recipe_card_id) {
-    return `${source} · recipe card ready`
+    return `${source} · AI Recipe`
   }
 
   if (isMediaJobActive(item.latest_media_job)) {
-    return `${source} · analysis queued`
+    return `${source} · Analyzing`
   }
 
   if (item.latest_media_job?.status === 'needs_caption') {
@@ -448,10 +451,18 @@ function getLibrarySubtitle(item: RecipeLibraryItem) {
   }
 
   if (item.latest_media_job?.status === 'failed') {
-    return `${source} · analysis failed`
+    return `${source} · Failed`
   }
 
-  return `${source} · saved link`
+  if (item.metadata_status === 'pending') {
+    return `${source} · Fetching details`
+  }
+
+  if (item.metadata_status === 'failed') {
+    return `${source} · Saved Link`
+  }
+
+  return `${source} · Saved Link`
 }
 
 function getRecipePlatform(platform: string | null): RecipePlatform {
@@ -484,7 +495,15 @@ function getPlatformLabel(platform: RecipePlatform) {
 }
 
 function getSavedLinkStatus(recipe: RecipeLibraryItem) {
-  return recipe.metadata_status === 'failed' ? 'failed' : 'saved_link'
+  if (recipe.metadata_status === 'failed') {
+    return 'failed'
+  }
+
+  if (recipe.metadata_status === 'pending') {
+    return 'fetching_details'
+  }
+
+  return 'saved_link'
 }
 
 function getRecipeVisualStatus(
@@ -508,10 +527,18 @@ function getRecipeVisualStatus(
   return getSavedLinkStatus(recipe)
 }
 
-function hasNotes(recipe: RecipeLibraryItem) {
-  return Boolean(
-    recipe.user_note?.trim() ||
-      recipe.pasted_caption?.trim() ||
-      recipe.manual_ingredients?.trim()
-  )
+function getLibraryTitle(item: RecipeLibraryItem) {
+  if (item.latest_card?.recipe_title?.trim()) {
+    return item.latest_card.recipe_title.trim()
+  }
+
+  if (item.latest_media_job?.source_metadata.title?.trim()) {
+    return item.latest_media_job.source_metadata.title.trim()
+  }
+
+  if (item.metadata_status === 'pending') {
+    return 'Fetching details...'
+  }
+
+  return item.title?.trim() || 'Saved recipe link'
 }

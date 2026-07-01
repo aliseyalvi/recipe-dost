@@ -404,12 +404,14 @@ export type Database = {
           created_at: string
           cuisine: string | null
           description: string | null
+          duration_seconds: number | null
           id: string
           manual_ingredients: string | null
           meal_type: string | null
           metadata_status: string | null
           pasted_caption: string | null
           platform: string | null
+          source_metadata: Json
           source_url: string
           thumbnail_url: string | null
           title: string | null
@@ -421,12 +423,14 @@ export type Database = {
           created_at?: string
           cuisine?: string | null
           description?: string | null
+          duration_seconds?: number | null
           id?: string
           manual_ingredients?: string | null
           meal_type?: string | null
           metadata_status?: string | null
           pasted_caption?: string | null
           platform?: string | null
+          source_metadata?: Json
           source_url: string
           thumbnail_url?: string | null
           title?: string | null
@@ -438,12 +442,14 @@ export type Database = {
           created_at?: string
           cuisine?: string | null
           description?: string | null
+          duration_seconds?: number | null
           id?: string
           manual_ingredients?: string | null
           meal_type?: string | null
           metadata_status?: string | null
           pasted_caption?: string | null
           platform?: string | null
+          source_metadata?: Json
           source_url?: string
           thumbnail_url?: string | null
           title?: string | null

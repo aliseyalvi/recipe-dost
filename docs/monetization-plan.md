@@ -12,8 +12,9 @@
 
 - Free users get 3 lifetime successful AI recipe generations.
 - A successful AI generation is a `media_jobs` row where `status = 'completed'`, `result_recipe_card_id is not null`, and `ai_provider is not null`.
-- Failed jobs, queued jobs, preview, save, library, and grocery-list viewing do not consume AI credits.
+- Failed jobs, queued jobs, saved-link creation, worker metadata preview, library, and grocery-list viewing do not consume AI credits.
 - Saved links, metadata preview, library, and grocery viewing are unlimited for the MVP.
+- `save-recipe-link` and `refresh-recipe-metadata` are free backend contracts; only `create-media-job` is AI credit-gated.
 - The mobile app must treat `get-ai-access` and `create-media-job` as the AI credit source of truth.
 - Premium users get 60 successful AI recipes per month as MVP fair use.
 - Admin users get a high operational limit.

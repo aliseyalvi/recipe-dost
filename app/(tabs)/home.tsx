@@ -5,14 +5,10 @@ import {
   isMediaJobActive,
   isMediaJobAttentionRequired,
 } from '@/lib/api/recipes'
-import { getAiAccessState } from '@/lib/api/ai-access'
-import { getUsageSummary } from '@/lib/api/usage'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
-import { colors, radius, spacing, typography } from '@/theme'
-import { AppBadge } from '@/ui/app-badge'
-import { Button } from '@/ui/button'
-import { Card } from '@/ui/card'
+import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
+import { colors, spacing, typography } from '@/theme'
 import { EmptyState } from '@/ui/empty-state'
 import { ErrorState } from '@/ui/error-state'
 import { FilterChip } from '@/ui/filter-chip'
@@ -25,7 +21,7 @@ import {
 } from '@/ui/visual-recipe-card'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 
 type HomeFilter =
@@ -55,8 +51,8 @@ export default function HomeRoute() {
   const router = useRouter()
   const { user } = useAuth()
   const { track } = usePostHog()
+  const { openSaveRecipeModal } = useSaveRecipeModal()
   const [selectedFilters, setSelectedFilters] = useState<HomeFilter[]>([])
-  const didTrackUsageSummary = useRef(false)
   const recentRecipesQuery = useQuery({
     enabled: Boolean(user?.id),
     queryKey: ['recent-recipes', user?.id],
@@ -68,16 +64,6 @@ export default function HomeRoute() {
         ? 5000
         : false,
   })
-  const usageSummaryQuery = useQuery({
-    enabled: Boolean(user?.id),
-    queryKey: ['usage-summary', user?.id],
-    queryFn: getUsageSummary,
-  })
-  const aiAccessQuery = useQuery({
-    enabled: Boolean(user?.id),
-    queryKey: ['ai-access-state', user?.id, 'home'],
-    queryFn: getAiAccessState,
-  })
   const filteredRecipes = useMemo(
     () => filterHomeRecipes(recentRecipesQuery.data ?? [], selectedFilters),
     [recentRecipesQuery.data, selectedFilters]
@@ -87,36 +73,22 @@ export default function HomeRoute() {
     track('home_viewed')
   }, [track])
 
-  useEffect(() => {
-    if (!usageSummaryQuery.data || !aiAccessQuery.data || didTrackUsageSummary.current) {
-      return
-    }
-
-    didTrackUsageSummary.current = true
-    track('usage_summary_viewed', {
-      limit_type: 'saved_links',
-      used: usageSummaryQuery.data.savedLinksUsed,
-    })
-    track('usage_summary_viewed', {
-      limit_type: 'ai_recipe_cards',
-      used: aiAccessQuery.data?.usedSuccessfulGenerations,
-      limit: aiAccessQuery.data?.freeLimit,
-    })
-    track('usage_summary_viewed', {
-      limit_type: 'grocery_lists',
-      used: usageSummaryQuery.data.groceryListsUsed,
-    })
-  }, [aiAccessQuery.data, track, usageSummaryQuery.data])
-
   const openSaveRecipe = () => {
     track('home_primary_cta_clicked')
-    router.push('/save-recipe')
+    openSaveRecipeModal()
   }
 
   const openRecipe = (recipe: RecipeLibraryItem) => {
     track('recent_recipe_clicked', {
       platform: recipe.platform,
       metadata_status: recipe.metadata_status,
+    })
+    track('saved_recipe_card_opened', {
+      opened_item_type:
+        recipe.latest_card || recipe.latest_media_job?.result_recipe_card_id
+          ? 'recipe_card'
+          : 'saved_link',
+      platform: recipe.platform ?? 'other',
     })
 
     if (recipe.latest_card) {
@@ -179,67 +151,8 @@ export default function HomeRoute() {
         ))}
       </ScrollView>
 
-      <Card tone="muted">
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md }}>
-          <View style={{ flex: 1, gap: spacing.xs }}>
-            <Text selectable style={[typography.heading, { color: colors.text }]}>
-              Get started
-            </Text>
-            <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-              Build a useful recipe library in a few taps.
-            </Text>
-          </View>
-          <AppBadge
-            label={`${getCompletedSteps(usageSummaryQuery.data)} of 4`}
-            tone="primary"
-          />
-        </View>
-        <View
-          style={{
-            overflow: 'hidden',
-            height: 6,
-            borderRadius: radius.pill,
-            backgroundColor: colors.border,
-          }}
-        >
-          <View
-            style={{
-              width: `${(getCompletedSteps(usageSummaryQuery.data) / 4) * 100}%`,
-              height: '100%',
-              backgroundColor: colors.primary,
-            }}
-          />
-        </View>
-        <View style={{ gap: spacing.sm }}>
-          <ProgressItem
-            label="Save your first recipe link"
-            completed={Boolean(usageSummaryQuery.data?.savedLinksUsed)}
-          />
-          <ProgressItem
-            label="Generate an AI recipe card"
-            completed={Boolean(usageSummaryQuery.data?.recipeCardsUsed)}
-          />
-          <ProgressItem
-            label="Open a grocery list"
-            completed={Boolean(usageSummaryQuery.data?.groceryListsUsed)}
-          />
-          <ProgressItem label="Add notes or caption" completed={false} />
-        </View>
-      </Card>
-
-      {usageSummaryQuery.data ? (
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <UsageStat label="Saved" value={`${usageSummaryQuery.data.savedLinksUsed}`} />
-          <UsageStat label="AI Cards" value={`${usageSummaryQuery.data.recipeCardsUsed}`} />
-          <UsageStat
-            label="AI recipes left"
-            value={getAiRecipesLeftValue(aiAccessQuery)}
-          />
-        </View>
-      ) : null}
-
       <View style={{ gap: spacing.md }}>
-        <SectionHeader title="Today" subtitle="Recent saves and recipe cards." />
+        <SectionHeader title="Recent" subtitle="Saved links and AI recipes." />
         {recentRecipesQuery.isLoading || recentRecipesQuery.isFetching ? (
           <LoadingState message="Loading recent recipes..." />
         ) : null}
@@ -274,12 +187,7 @@ export default function HomeRoute() {
             {filteredRecipes.map((recipe) => (
               <View key={recipe.id} style={{ width: '47.8%' }}>
                 <VisualRecipeCard
-                  title={
-                    recipe.latest_card?.recipe_title?.trim() ||
-                    recipe.latest_media_job?.source_metadata.title?.trim() ||
-                    recipe.title?.trim() ||
-                    'Untitled recipe'
-                  }
+                  title={getHomeRecipeTitle(recipe)}
                   subtitle={getHomeRecipeSubtitle(recipe)}
                   platform={getRecipePlatform(recipe.platform)}
                   status={getRecipeVisualStatus(recipe)}
@@ -290,7 +198,6 @@ export default function HomeRoute() {
                   }
                   sourceUrl={recipe.source_url}
                   hasGroceryList={Boolean(recipe.latest_card)}
-                  hasNotes={hasNotes(recipe)}
                   progress={recipe.latest_media_job?.progress}
                   createdAt={recipe.created_at}
                   onPress={() => openRecipe(recipe)}
@@ -306,131 +213,6 @@ export default function HomeRoute() {
       </Text>
     </Screen>
   )
-}
-
-function getAiRecipesLeftValue(query: {
-  isLoading: boolean
-  data?: {
-    role: string
-    isTestUser: boolean
-    premiumActive: boolean
-    remaining: number | null
-    reason: string
-  }
-}) {
-  if (query.isLoading || !query.data) {
-    return '-'
-  }
-
-  if (query.data.role === 'admin') {
-    return 'Admin'
-  }
-
-  if (query.data.isTestUser || query.data.role === 'tester') {
-    return 'Tester'
-  }
-
-  if (query.data.premiumActive) {
-    return 'Pro'
-  }
-
-  if (query.data.reason === 'limit_reached') {
-    return '0'
-  }
-
-  return query.data.remaining === null ? '-' : `${query.data.remaining}`
-}
-
-function ProgressItem({
-  label,
-  completed,
-}: {
-  label: string
-  completed: boolean
-}) {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-      <View
-        style={{
-          width: 24,
-          height: 24,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderWidth: 1,
-          borderColor: completed ? colors.primary : colors.border,
-          borderRadius: radius.pill,
-          backgroundColor: completed ? colors.primary : 'transparent',
-        }}
-      >
-        <Text selectable={false} style={[typography.caption, { color: colors.text }]}>
-          {completed ? '✓' : ''}
-        </Text>
-      </View>
-      <Text
-        selectable
-        style={[
-          typography.body,
-          {
-            flex: 1,
-            color: completed ? colors.textMuted : colors.text,
-            textDecorationLine: completed ? 'line-through' : 'none',
-          },
-        ]}
-      >
-        {label}
-      </Text>
-    </View>
-  )
-}
-
-function UsageStat({ label, value }: { label: string; value: string }) {
-  return (
-    <View
-      style={{
-        flex: 1,
-        gap: spacing.xs,
-        borderRadius: radius.md,
-        backgroundColor: colors.surface,
-        padding: spacing.md,
-      }}
-    >
-      <Text
-        selectable
-        style={[typography.heading, { color: colors.primary, textAlign: 'center' }]}
-      >
-        {value}
-      </Text>
-      <Text
-        selectable
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        style={[typography.caption, { color: colors.textMuted, textAlign: 'center' }]}
-      >
-        {label}
-      </Text>
-    </View>
-  )
-}
-
-function getCompletedSteps(
-  usageSummary:
-    | {
-        savedLinksUsed: number
-        recipeCardsUsed: number
-        groceryListsUsed: number
-      }
-    | undefined
-) {
-  if (!usageSummary) {
-    return 0
-  }
-
-  return [
-    usageSummary.savedLinksUsed > 0,
-    usageSummary.recipeCardsUsed > 0,
-    usageSummary.groceryListsUsed > 0,
-    usageSummary.savedLinksUsed > 0,
-  ].filter(Boolean).length
 }
 
 function filterHomeRecipes(items: RecipeLibraryItem[], selectedFilters: HomeFilter[]) {
@@ -475,7 +257,15 @@ function getRecipePlatform(platform: string | null): RecipePlatform {
 }
 
 function getSavedLinkStatus(recipe: RecipeLibraryItem) {
-  return recipe.metadata_status === 'failed' ? 'failed' : 'saved_link'
+  if (recipe.metadata_status === 'failed') {
+    return 'failed'
+  }
+
+  if (recipe.metadata_status === 'pending') {
+    return 'fetching_details'
+  }
+
+  return 'saved_link'
 }
 
 function getRecipeVisualStatus(
@@ -501,15 +291,15 @@ function getRecipeVisualStatus(
 
 function getHomeRecipeSubtitle(recipe: RecipeLibraryItem) {
   if (recipe.latest_card) {
-    return 'Recipe card'
+    return 'AI Recipe'
   }
 
   if (recipe.latest_media_job?.result_recipe_card_id) {
-    return 'Recipe card ready'
+    return 'AI Recipe'
   }
 
   if (isMediaJobActive(recipe.latest_media_job)) {
-    return 'Video analysis queued'
+    return `Analyzing${typeof recipe.latest_media_job?.progress === 'number' ? ` · ${recipe.latest_media_job.progress}%` : ''}`
   }
 
   if (recipe.latest_media_job?.status === 'needs_caption') {
@@ -517,16 +307,32 @@ function getHomeRecipeSubtitle(recipe: RecipeLibraryItem) {
   }
 
   if (recipe.latest_media_job?.status === 'failed') {
-    return 'Analysis failed'
+    return 'Failed'
+  }
+
+  if (recipe.metadata_status === 'pending') {
+    return 'Fetching details'
+  }
+
+  if (recipe.metadata_status === 'failed') {
+    return 'Saved Link'
   }
 
   return 'Saved link'
 }
 
-function hasNotes(recipe: RecipeLibraryItem) {
-  return Boolean(
-    recipe.user_note?.trim() ||
-      recipe.pasted_caption?.trim() ||
-      recipe.manual_ingredients?.trim()
-  )
+function getHomeRecipeTitle(recipe: RecipeLibraryItem) {
+  if (recipe.latest_card?.recipe_title?.trim()) {
+    return recipe.latest_card.recipe_title.trim()
+  }
+
+  if (recipe.latest_media_job?.source_metadata.title?.trim()) {
+    return recipe.latest_media_job.source_metadata.title.trim()
+  }
+
+  if (recipe.metadata_status === 'pending') {
+    return 'Fetching details...'
+  }
+
+  return recipe.title?.trim() || 'Saved recipe link'
 }

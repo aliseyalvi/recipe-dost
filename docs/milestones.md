@@ -1,5 +1,26 @@
 # Recipe Dost Milestones
 
+## M21.7 - Worker Metadata + Modal Save UX
+
+- Status: Done after validation.
+- Center plus now opens a FoFo-style save modal instead of the old full add screen.
+- Saving a link is one step: paste URL, call `save-recipe-link`, show the Home card immediately, then refresh metadata in the background through `refresh-recipe-metadata`.
+- Home and Library cards now use user-facing states: Fetching details, Saved Link, Analyzing, AI Recipe, and Failed.
+- Source Detail is focused on the saved source, original video link, AI recipes left, and one primary `Generate AI Recipe` CTA.
+- `Generate AI Recipe` is the only user-facing action that calls `create-media-job`; saved links and metadata refresh do not consume AI credits.
+- AI credit limit errors show the upgrade placeholder copy instead of a generic generation failure.
+- Recipe result UI stays focused on recipe content and source actions while keeping technical details dev-only.
+
+## M21.7B - Supabase Saved-Link and Worker Metadata Bridge
+
+- Status: Done after validation.
+- Added `save-recipe-link` for authenticated/anonymous users to create saved `recipe_items` only; it does not create `media_jobs`, call AI, or consume credits.
+- Added `refresh-recipe-metadata` to call the protected worker `/metadata-preview` endpoint with server-side worker secrets and store only safe metadata on `recipe_items`.
+- Metadata preview failures mark the saved item failed without deleting it or blocking the saved-link flow.
+- `create-media-job` can now start AI analysis from `recipe_item_id`; it verifies ownership, enforces AI access, then creates the linked `media_jobs` row.
+- Edge Functions own auth and DB writes; the worker owns metadata extraction and AI analysis.
+- Saved links and metadata preview remain unlimited; AI generation remains credit-gated.
+
 ## M21.6 - UX Flow Simplification and Single AI Credit Source of Truth
 
 - Status: Done after validation.

@@ -1,7 +1,6 @@
-import { getPlatformLabel, getReadableSource } from '@/features/recipe-draft/platform'
+import { getPlatformLabel } from '@/features/recipe-draft/platform'
 import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { RecipePlatform } from '@/features/recipe-draft/types'
-import { MediaJobCard } from '@/features/media-jobs/media-job-card'
 import { UsagePill } from '@/features/usage/usage-limit-card'
 import { getAiAccessState } from '@/lib/api/ai-access'
 import {
@@ -11,7 +10,6 @@ import {
   getRecipeCard,
   getSavedRecipeItem,
   isMediaJobActive,
-  updateSavedRecipeCaption,
 } from '@/lib/api/recipes'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, radius, spacing, typography } from '@/theme'
@@ -23,7 +21,6 @@ import { EmptyState } from '@/ui/empty-state'
 import { ErrorState } from '@/ui/error-state'
 import { LoadingState } from '@/ui/loading-state'
 import { Screen } from '@/ui/screen'
-import { TextArea } from '@/ui/text-area'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
@@ -38,11 +35,7 @@ export default function SavedRecipeRoute() {
   const [isCreatingMediaJob, setIsCreatingMediaJob] = useState(false)
   const [mediaJobError, setMediaJobError] = useState<Error | null>(null)
   const [showCreditLimitState, setShowCreditLimitState] = useState(false)
-  const [isCaptionEditorOpen, setIsCaptionEditorOpen] = useState(false)
-  const [captionDraft, setCaptionDraft] = useState('')
-  const [isSavingCaption, setIsSavingCaption] = useState(false)
   const didTrackUsageSummary = useRef(false)
-  const didTrackAccuracyWarning = useRef(false)
   const lastTrackedMediaJobStatus = useRef<string | null>(null)
   const recipeQuery = useQuery({
     enabled: Boolean(recipeId),
@@ -76,10 +69,6 @@ export default function SavedRecipeRoute() {
       reason: aiAccess.reason,
     })
   }, [aiAccess, track])
-
-  useEffect(() => {
-    setCaptionDraft(recipeQuery.data?.pasted_caption ?? '')
-  }, [recipeQuery.data?.pasted_caption])
 
   useEffect(() => {
     const mediaJob = mediaJobQuery.data
@@ -123,30 +112,6 @@ export default function SavedRecipeRoute() {
       queryKey: ['recipe-library'],
     })
   }, [mediaJobQuery.data?.result_recipe_card_id, queryClient])
-
-  useEffect(() => {
-    const recipe = recipeQuery.data
-
-    if (!recipe || didTrackAccuracyWarning.current) {
-      return
-    }
-
-    const platform = getRecipePlatform(recipe.platform)
-    const needsAccuracyInput =
-      isUnsupportedVideoPlatform(platform) &&
-      !recipe.pasted_caption &&
-      !recipe.manual_ingredients
-
-    if (!needsAccuracyInput) {
-      return
-    }
-
-    didTrackAccuracyWarning.current = true
-    track('ai_accuracy_warning_viewed', {
-      platform,
-      source: 'saved_recipe_detail',
-    })
-  }, [recipeQuery.data, track])
 
   if (!recipeId) {
     return (
@@ -201,15 +166,6 @@ export default function SavedRecipeRoute() {
 
   const recipe = recipeQuery.data
   const platform = getRecipePlatform(recipe.platform)
-  const hasNote = Boolean(recipe.user_note)
-  const hasCaption = Boolean(recipe.pasted_caption)
-  const hasManualIngredients = Boolean(recipe.manual_ingredients)
-  const sourceModeHint = getSourceModeHint(
-    platform,
-    hasCaption,
-    hasManualIngredients
-  )
-  const needsAccuracyInput = sourceModeHint === 'unsupported_video_link'
   const mediaJob = mediaJobQuery.data
   const liveSourceTitle =
     mediaJob?.source_metadata.title?.trim() || recipe.title?.trim()
@@ -217,9 +173,9 @@ export default function SavedRecipeRoute() {
     mediaJob?.thumbnail_url ??
     mediaJob?.source_metadata.uploaded_thumbnail_url ??
     recipe.thumbnail_url
-  const liveDurationSeconds = mediaJob?.source_metadata.duration_seconds
-  const isOverDurationLimit =
-    typeof liveDurationSeconds === 'number' && liveDurationSeconds > 120
+  const liveDurationSeconds =
+    mediaJob?.source_metadata.duration_seconds ?? recipe.duration_seconds
+  const activeMediaJob = isMediaJobActive(mediaJob) ? mediaJob : null
 
   const openOriginalVideo = async () => {
     const canOpenUrl = await Linking.canOpenURL(recipe.source_url)
@@ -233,7 +189,7 @@ export default function SavedRecipeRoute() {
     }
   }
 
-  const handleCreateMediaJob = async (source: 'new' | 'retry') => {
+  const handleCreateMediaJob = async () => {
     if (isCreatingMediaJob) {
       return
     }
@@ -244,28 +200,16 @@ export default function SavedRecipeRoute() {
 
     track('generate_ai_recipe_tapped', {
       platform,
-      source,
-      source_mode: sourceModeHint,
     })
-
-    if (source === 'retry') {
-      track('media_job_retry_clicked', {
-        platform,
-        previous_status: mediaJob?.status ?? 'unknown',
-      })
-    }
 
     try {
       const createdJob = await createMediaJob({
         recipeItemId: recipe.id,
-        sourceUrl: recipe.source_url,
-        platform,
       })
 
       track('media_job_created', {
         platform,
         status: createdJob.status,
-        source,
       })
       await aiAccessQuery.refetch()
       await mediaJobQuery.refetch()
@@ -277,7 +221,6 @@ export default function SavedRecipeRoute() {
         setShowCreditLimitState(true)
         track('ai_credit_limit_reached', {
           platform,
-          source,
         })
         track('upgrade_placeholder_shown', {
           limit_type: 'ai_recipe_cards',
@@ -289,12 +232,11 @@ export default function SavedRecipeRoute() {
       const nextError =
         caughtError instanceof Error
           ? caughtError
-          : new Error('Could not queue video analysis. Please try again.')
+          : new Error('Could not generate AI recipe. Please try again.')
 
       setMediaJobError(getFriendlyMediaJobError(caughtError, nextError))
       track('media_job_failed', {
         platform,
-        source,
         error_code:
           caughtError instanceof RecipeApiError
             ? caughtError.code
@@ -302,7 +244,6 @@ export default function SavedRecipeRoute() {
       })
       track('media_job_create_failed', {
         platform,
-        source,
         error_code:
           caughtError instanceof RecipeApiError
             ? caughtError.code
@@ -313,45 +254,12 @@ export default function SavedRecipeRoute() {
     }
   }
 
-  const handleSaveCaptionAndRetry = async () => {
-    const nextCaption = captionDraft.trim()
-
-    if (!nextCaption || isSavingCaption) {
-      return
-    }
-
-    setIsSavingCaption(true)
-    setMediaJobError(null)
-
-    try {
-      await updateSavedRecipeCaption({
-        recipeItemId: recipe.id,
-        pastedCaption: nextCaption,
-      })
-      await recipeQuery.refetch()
-      setIsCaptionEditorOpen(false)
-      track('media_job_caption_added', {
-        platform,
-        previous_status: mediaJob?.status ?? 'unknown',
-      })
-      await handleCreateMediaJob('retry')
-    } catch (caughtError) {
-      setMediaJobError(
-        caughtError instanceof Error
-          ? caughtError
-          : new Error('Could not save the caption. Please try again.')
-      )
-    } finally {
-      setIsSavingCaption(false)
-    }
-  }
-
   return (
     <Screen compact>
       <AppHeader
         eyebrow="Saved link"
-        title="Recipe link saved"
-        subtitle="Your link, caption, and notes are saved. AI can turn them into a clean recipe card."
+        title="Recipe source"
+        subtitle="Generate an AI recipe card whenever you are ready."
       />
 
       <Card tone="warm">
@@ -414,6 +322,11 @@ export default function SavedRecipeRoute() {
         <Text selectable style={[typography.heading, { color: colors.text }]}>
           {liveSourceTitle ?? 'Saved recipe link'}
         </Text>
+        {typeof liveDurationSeconds === 'number' ? (
+          <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+            Duration: {formatDuration(liveDurationSeconds)}
+          </Text>
+        ) : null}
         <Button
           label="Open Original Video"
           fullWidth
@@ -425,15 +338,6 @@ export default function SavedRecipeRoute() {
         <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
           Recipe Dost saves the link and recipe card, not the video file.
         </Text>
-        <Text
-          selectable
-          style={[
-            typography.caption,
-            { color: isOverDurationLimit ? colors.warning : colors.textMuted },
-          ]}
-        >
-          Video analysis supports clips up to 2 minutes.
-        </Text>
         <View style={{ gap: spacing.xs }}>
           <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
             Platform
@@ -442,53 +346,26 @@ export default function SavedRecipeRoute() {
             {getPlatformLabel(platform)}
           </Text>
         </View>
-        <View style={{ gap: spacing.xs }}>
-          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-            Source link
-          </Text>
-          <Text selectable style={[typography.body, { color: colors.text }]}>
-            {getReadableSource(recipe.source_url)}
-          </Text>
-        </View>
-        <View style={{ gap: spacing.xs }}>
-          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-            Notes
-          </Text>
-          <Text selectable style={[typography.body, { color: colors.text }]}>
-            {getRecipeInputSummary(hasNote, hasCaption, hasManualIngredients)}
-          </Text>
-        </View>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          {hasNote ? <AppBadge label="Note added" /> : null}
-          {hasCaption ? <AppBadge label="Caption added" /> : null}
-          {hasManualIngredients ? <AppBadge label="Ingredients added" /> : null}
-        </View>
       </Card>
 
-      {needsAccuracyInput ? (
+      {recipe.metadata_status === 'failed' ? (
         <Card tone="muted">
           <Text selectable style={[typography.heading, { color: colors.warning }]}>
-            More recipe details needed
+            Details unavailable
           </Text>
           <Text selectable style={[typography.body, { color: colors.text }]}>
-            For accurate AI results, paste the recipe caption or visible
-            ingredients before generating.
-          </Text>
-          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-            Recipe Dost cannot watch or download this social video from its link.
-            A generated card will stay low-confidence, and generation may ask for
-            more input.
+            Details unavailable, but you can still generate AI recipe.
           </Text>
         </Card>
       ) : null}
 
       {mediaJobQuery.isLoading ? (
-        <LoadingState message="Checking video analysis status..." />
+        <LoadingState message="Checking AI recipe status..." />
       ) : null}
 
       {mediaJobQuery.error ? (
         <ErrorState
-          title="Could not load video analysis"
+          title="Could not load AI recipe status"
           message={mediaJobQuery.error.message}
           retryLabel="Retry"
           onRetry={() => {
@@ -497,26 +374,47 @@ export default function SavedRecipeRoute() {
         />
       ) : null}
 
-      {mediaJob ? (
-        <MediaJobCard
-          job={mediaJob}
-          fallbackThumbnailUrl={recipe.thumbnail_url}
-          onOpenResult={
-            mediaJob.result_recipe_card_id
-              ? () => router.push(`/recipe-card/${mediaJob.result_recipe_card_id}`)
-              : undefined
-          }
-          onRetry={() => {
-            void handleCreateMediaJob('retry')
-          }}
-          onPasteCaption={() => {
-            setIsCaptionEditorOpen(true)
-            track('media_job_caption_requested', {
-              platform,
-              status: mediaJob.status,
-            })
-          }}
-        />
+      {activeMediaJob ? (
+        <Card tone="warm">
+          <Text selectable style={[typography.heading, { color: colors.text }]}>
+            Analyzing
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+            Recipe Dost is generating your AI recipe card.
+          </Text>
+          <View
+            accessibilityRole="progressbar"
+            accessibilityValue={{ min: 0, max: 100, now: activeMediaJob.progress }}
+            style={{
+              overflow: 'hidden',
+              height: 8,
+              borderRadius: radius.pill,
+              backgroundColor: colors.border,
+            }}
+          >
+            <View
+              style={{
+                width: `${activeMediaJob.progress}%`,
+                height: '100%',
+                backgroundColor: colors.primary,
+              }}
+            />
+          </View>
+          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+            {activeMediaJob.progress}% complete
+          </Text>
+        </Card>
+      ) : mediaJob?.result_recipe_card_id ? (
+        <Card tone="warm">
+          <Text selectable style={[typography.heading, { color: colors.text }]}>
+            AI recipe ready
+          </Text>
+          <Button
+            label="Open AI Recipe"
+            fullWidth
+            onPress={() => router.push(`/recipe-card/${mediaJob.result_recipe_card_id}`)}
+          />
+        </Card>
       ) : !mediaJobQuery.isLoading && !mediaJobQuery.error ? (
         <Card tone="warm">
           <View style={{ gap: spacing.xs }}>
@@ -524,75 +422,47 @@ export default function SavedRecipeRoute() {
               Generate AI Recipe
             </Text>
             <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-              AI turns this saved link and any caption or notes into a recipe
-              card. Recipe Dost saves links and recipe cards, not videos.
+              AI turns this saved link and available details into a recipe card.
+              Recipe Dost saves links and recipe cards, not videos.
             </Text>
           </View>
           <Button
             label="Generate AI Recipe"
             fullWidth
-            disabled={isCreatingMediaJob || isOverDurationLimit}
+            disabled={isCreatingMediaJob}
             onPress={() => {
-              void handleCreateMediaJob('new')
+              void handleCreateMediaJob()
             }}
           />
-          {isOverDurationLimit ? (
+          {mediaJob?.status === 'failed' ? (
             <Text selectable style={[typography.caption, { color: colors.warning }]}>
-              This source appears longer than 2 minutes. Save the link or paste
-              the caption instead.
+              The last AI generation attempt failed. You can try generating again.
             </Text>
           ) : null}
         </Card>
       ) : null}
 
-      {isCaptionEditorOpen ? (
-        <Card>
-          <Text selectable style={[typography.heading, { color: colors.text }]}>
-            Paste recipe caption
-          </Text>
-          <TextArea
-            label="Recipe caption"
-            placeholder="Paste the recipe caption or visible ingredients."
-            value={captionDraft}
-            onChangeText={setCaptionDraft}
-          />
-          <Button
-            label="Save Caption & Retry"
-            fullWidth
-            disabled={!captionDraft.trim() || isSavingCaption}
-            onPress={() => {
-              void handleSaveCaptionAndRetry()
-            }}
-          />
-          <Button
-            label="Cancel"
-            fullWidth
-            variant="secondary"
-            disabled={isSavingCaption}
-            onPress={() => setIsCaptionEditorOpen(false)}
-          />
-        </Card>
-      ) : null}
-
-      {isCreatingMediaJob || isSavingCaption ? (
-        <LoadingState
-          message={
-            isSavingCaption
-              ? 'Saving caption...'
-              : 'Queueing video analysis...'
-          }
-        />
+      {isCreatingMediaJob ? (
+        <LoadingState message="Starting AI recipe..." />
       ) : null}
 
       {mediaJobError ? (
-        <ErrorState
-          title="Could not generate AI recipe"
-          message={mediaJobError.message}
-          retryLabel="Retry"
-          onRetry={() => {
-            void handleCreateMediaJob(mediaJob ? 'retry' : 'new')
-          }}
-        />
+        <Card tone="muted">
+          <Text selectable style={[typography.heading, { color: colors.warning }]}>
+            Could not generate AI recipe
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.text }]}>
+            {mediaJobError.message}
+          </Text>
+          <Button
+            label="Generate AI Recipe"
+            fullWidth
+            disabled={isCreatingMediaJob}
+            onPress={() => {
+              void handleCreateMediaJob()
+            }}
+          />
+        </Card>
       ) : null}
 
       {showCreditLimitState ? (
@@ -635,34 +505,6 @@ export default function SavedRecipeRoute() {
       />
     </Screen>
   )
-}
-
-function getRecipeInputSummary(
-  hasNote: boolean,
-  hasCaption: boolean,
-  hasManualIngredients: boolean
-) {
-  const detailsCount = [hasNote, hasCaption, hasManualIngredients].filter(
-    Boolean
-  ).length
-
-  if (detailsCount > 1) {
-    return 'Extra details added for better AI results'
-  }
-
-  if (hasNote) {
-    return 'Note added'
-  }
-
-  if (hasCaption) {
-    return 'Caption added'
-  }
-
-  if (hasManualIngredients) {
-    return 'Manual ingredients added'
-  }
-
-  return 'No note, caption, or ingredients added yet'
 }
 
 function getRecipePlatform(platform: string | null): RecipePlatform {
@@ -718,30 +560,13 @@ function getAiRecipesLeftValue(access: {
   return access.remaining === null ? '-' : `${access.remaining}`
 }
 
-function isUnsupportedVideoPlatform(platform: RecipePlatform) {
-  return (
-    platform === 'instagram' ||
-    platform === 'tiktok' ||
-    platform === 'facebook'
-  )
-}
+function formatDuration(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
 
-function getSourceModeHint(
-  platform: RecipePlatform,
-  hasCaption: boolean,
-  hasManualIngredients: boolean
-) {
-  if (platform === 'youtube') {
-    return 'youtube_url'
+  if (minutes === 0) {
+    return `${seconds}s`
   }
 
-  if (
-    isUnsupportedVideoPlatform(platform) &&
-    !hasCaption &&
-    !hasManualIngredients
-  ) {
-    return 'unsupported_video_link'
-  }
-
-  return 'text_only'
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }

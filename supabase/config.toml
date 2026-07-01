@@ -424,6 +424,18 @@ entrypoint = "./functions/parse-url/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/parse-url/*.html" ]
 
+[functions.save-recipe-link]
+enabled = true
+verify_jwt = true
+import_map = "./functions/save-recipe-link/deno.json"
+entrypoint = "./functions/save-recipe-link/index.ts"
+
+[functions.refresh-recipe-metadata]
+enabled = true
+verify_jwt = true
+import_map = "./functions/refresh-recipe-metadata/deno.json"
+entrypoint = "./functions/refresh-recipe-metadata/index.ts"
+
 [functions.generate-card]
 enabled = true
 verify_jwt = true

@@ -125,8 +125,8 @@ type EdgeSupabaseClient = SupabaseClient<Database>;
 
 type CreateMediaJobRequest = {
   recipe_item_id?: string;
-  source_url: string;
-  platform: RecipePlatform;
+  source_url?: string;
+  platform?: RecipePlatform;
 };
 
 type CreateMediaJobErrorCode =
@@ -240,6 +240,9 @@ async function handleCreateMediaJobRequest(request: Request) {
   const input = validation.data;
   let recipeItem: RecipeItem | null = null;
 
+  let sourceUrl = input.source_url ?? null;
+  let platform = input.platform ?? null;
+
   if (input.recipe_item_id) {
     const recipeResult = await clients.userClient
       .from("recipe_items")
@@ -259,20 +262,20 @@ async function handleCreateMediaJobRequest(request: Request) {
     }
 
     recipeItem = recipeResult.data;
-
-    if (
-      normalizeUrl(recipeItem.source_url) !== input.source_url ||
-      normalizePlatform(recipeItem.platform) !== input.platform
-    ) {
-      return errorResponse(
-        "source_mismatch",
-        "The saved recipe source does not match this analysis request.",
-        409,
-      );
-    }
+    sourceUrl = normalizeUrl(recipeItem.source_url);
+    platform = normalizePlatform(recipeItem.platform) ??
+      detectPlatformFromUrl(recipeItem.source_url);
   }
 
-  const sourceMode = getSourceMode(input.platform, recipeItem);
+  if (!sourceUrl || !platform) {
+    return errorResponse(
+      "invalid_request",
+      "Send a valid public recipe link and supported platform.",
+      400,
+    );
+  }
+
+  const sourceMode = getSourceMode(platform, recipeItem);
   const access = await getAiGenerationAccess(clients.adminClient, user.id);
 
   if (!access.allowed) {
@@ -294,8 +297,8 @@ async function handleCreateMediaJobRequest(request: Request) {
     .insert({
       user_id: user.id,
       recipe_item_id: input.recipe_item_id ?? null,
-      source_url: input.source_url,
-      platform: input.platform,
+      source_url: sourceUrl,
+      platform,
       status: "queued",
       source_mode: sourceMode,
       progress: 0,
@@ -554,13 +557,6 @@ function validateCreateMediaJobRequest(body: unknown):
     ? body.recipe_item_id.trim()
     : undefined;
 
-  if (!sourceUrl || !platform) {
-    return {
-      ok: false,
-      message: "Send a valid public recipe link and supported platform.",
-    };
-  }
-
   if (recipeItemId && !isUuid(recipeItemId)) {
     return {
       ok: false,
@@ -568,11 +564,18 @@ function validateCreateMediaJobRequest(body: unknown):
     };
   }
 
+  if (!recipeItemId && (!sourceUrl || !platform)) {
+    return {
+      ok: false,
+      message: "Send a valid public recipe link and supported platform.",
+    };
+  }
+
   return {
     ok: true,
     data: {
-      source_url: sourceUrl,
-      platform,
+      ...(sourceUrl ? { source_url: sourceUrl } : {}),
+      ...(platform ? { platform } : {}),
       ...(recipeItemId ? { recipe_item_id: recipeItemId } : {}),
     },
   };
@@ -605,6 +608,41 @@ function normalizePlatform(value: unknown): RecipePlatform | null {
       value === "other"
     ? value
     : null;
+}
+
+function detectPlatformFromUrl(sourceUrl: string): RecipePlatform {
+  try {
+    const url = new URL(sourceUrl);
+    const host = url.hostname.toLowerCase().replace(/^www\./, "");
+
+    if (host === "instagram.com" || host.endsWith(".instagram.com")) {
+      return "instagram";
+    }
+
+    if (host === "tiktok.com" || host.endsWith(".tiktok.com")) {
+      return "tiktok";
+    }
+
+    if (
+      host === "youtube.com" ||
+      host.endsWith(".youtube.com") ||
+      host === "youtu.be"
+    ) {
+      return "youtube";
+    }
+
+    if (
+      host === "facebook.com" ||
+      host.endsWith(".facebook.com") ||
+      host === "fb.watch"
+    ) {
+      return "facebook";
+    }
+  } catch {
+    return "other";
+  }
+
+  return "other";
 }
 
 function getSourceMode(
