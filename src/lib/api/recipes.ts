@@ -52,12 +52,13 @@ type RefreshRecipeMetadataResponse =
   | {
       ok: true
       data: {
-        recipe_item: SavedRecipeItem
         metadata_status: string
-        metadata_preview_error?: {
-          code: string
-          message: string
-        }
+        recipe_item_id: string
+        worker_status: number | null
+        error_code: string | null
+        title_present: boolean
+        thumbnail_present: boolean
+        duration_seconds: number | null
       }
     }
   | {

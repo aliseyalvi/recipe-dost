@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const REVENUECAT_ENTITLEMENT_PREMIUM = "premium";
-export const FREE_AI_GENERATION_LIMIT = 3;
 export const PREMIUM_MONTHLY_AI_LIMIT = 60;
 export const TESTER_MONTHLY_AI_LIMIT = 100;
 export const ADMIN_MONTHLY_AI_LIMIT = 10_000;
@@ -21,6 +20,12 @@ type UserProfile = {
   ai_monthly_limit_override: number | null;
   revenuecat_entitlement: string | null;
   revenuecat_entitlement_active: boolean | null;
+};
+
+declare const Deno: {
+  env: {
+    get: (key: string) => string | undefined;
+  };
 };
 
 export type AiGenerationAccessReason =
@@ -119,15 +124,13 @@ export async function getAiGenerationAccess(
     });
   }
 
-  const freeRemaining = Math.max(
-    0,
-    FREE_AI_GENERATION_LIMIT - usedSuccessfulGenerations,
-  );
+  const freeLimit = getFreeAiGenerationLimit();
+  const freeRemaining = Math.max(0, freeLimit - usedSuccessfulGenerations);
 
   return {
     allowed: freeRemaining > 0,
     reason: freeRemaining > 0 ? "free_credit_available" : "limit_reached",
-    freeLimit: FREE_AI_GENERATION_LIMIT,
+    freeLimit,
     usedSuccessfulGenerations,
     monthlyLimit: null,
     remaining: freeRemaining,
@@ -186,7 +189,7 @@ function buildMonthlyAccess({
   return {
     allowed: remaining > 0,
     reason: remaining > 0 ? reason : "limit_reached",
-    freeLimit: FREE_AI_GENERATION_LIMIT,
+    freeLimit: getFreeAiGenerationLimit(),
     usedSuccessfulGenerations,
     monthlyLimit,
     remaining,
@@ -194,6 +197,12 @@ function buildMonthlyAccess({
     premiumActive,
     isTestUser,
   };
+}
+
+function getFreeAiGenerationLimit() {
+  const value = Number(Deno.env.get("FREE_AI_GENERATION_LIMIT"));
+
+  return Number.isFinite(value) && value >= 0 ? Math.floor(value) : 3;
 }
 
 function normalizeRole(role: string | null | undefined) {

@@ -1,6 +1,12 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-01
+- M21.7E metadata bridge fix and saved-link UI cleanup completed.
+- Decision: `refresh-recipe-metadata` uses `MEDIA_WORKER_URL` plus `Authorization: Bearer WORKER_API_SECRET`; `MEDIA_WORKER_SECRET` remains a temporary fallback only.
+- Decision: Metadata preview timeout defaults to `25000` ms and retries once only for timeout/502/503/504. Client errors such as 400/401/403/404 are not retried.
+- Decision: Saved-link `source_metadata` stores only safe metadata fields and a sanitized `metadata_error`; full source URLs, thumbnails, CDN/video URLs, cookies, secrets, temp paths, Gemini file URIs, and raw worker responses are excluded.
+- Decision: Metadata failure is not an AI generation failure. Home/Library continue to show the saved link as usable, with `Details unavailable`; only failed `media_jobs` show AI failure.
+- Decision: AI free generation count is controlled by `FREE_AI_GENERATION_LIMIT` in Edge Function env, with fallback `3`.
 - M21.7 Worker metadata + modal save UX completed.
 - Decision: The center plus opens a modal bottom sheet for URL-only saving; the old full add/preview flow is no longer reachable from the primary save action.
 - Decision: The modal calls `save-recipe-link`, updates Home/Library caches immediately, then starts `refresh-recipe-metadata` in the background without creating `media_jobs`.

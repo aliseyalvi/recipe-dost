@@ -10,6 +10,7 @@ import {
   getRecipeCard,
   getSavedRecipeItem,
   isMediaJobActive,
+  refreshRecipeMetadata,
 } from '@/lib/api/recipes'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, radius, spacing, typography } from '@/theme'
@@ -33,6 +34,7 @@ export default function SavedRecipeRoute() {
   const { id } = useLocalSearchParams<{ id?: string }>()
   const recipeId = Array.isArray(id) ? id[0] : id
   const [isCreatingMediaJob, setIsCreatingMediaJob] = useState(false)
+  const [isRefreshingMetadata, setIsRefreshingMetadata] = useState(false)
   const [mediaJobError, setMediaJobError] = useState<Error | null>(null)
   const [showCreditLimitState, setShowCreditLimitState] = useState(false)
   const didTrackUsageSummary = useRef(false)
@@ -169,6 +171,10 @@ export default function SavedRecipeRoute() {
   const mediaJob = mediaJobQuery.data
   const liveSourceTitle =
     mediaJob?.source_metadata.title?.trim() || recipe.title?.trim()
+  const displaySourceTitle =
+    recipe.metadata_status === 'pending'
+      ? 'Fetching details...'
+      : liveSourceTitle
   const liveThumbnailUrl =
     mediaJob?.thumbnail_url ??
     mediaJob?.source_metadata.uploaded_thumbnail_url ??
@@ -254,6 +260,42 @@ export default function SavedRecipeRoute() {
     }
   }
 
+  const handleRetryMetadata = async () => {
+    if (isRefreshingMetadata) {
+      return
+    }
+
+    setIsRefreshingMetadata(true)
+    track('metadata_refresh_started', {
+      source: 'saved_recipe_detail',
+      platform,
+    })
+
+    try {
+      const result = await refreshRecipeMetadata(recipe.id)
+
+      track('metadata_refresh_completed', {
+        source: 'saved_recipe_detail',
+        metadata_status: result.metadata_status,
+        worker_status: result.worker_status,
+        error_code: result.error_code,
+        title_present: result.title_present,
+        thumbnail_present: result.thumbnail_present,
+      })
+      await recipeQuery.refetch()
+      void queryClient.invalidateQueries({ queryKey: ['recent-recipes'] })
+      void queryClient.invalidateQueries({ queryKey: ['recipe-library'] })
+    } catch {
+      track('metadata_refresh_completed', {
+        source: 'saved_recipe_detail',
+        metadata_status: 'failed',
+        error_code: 'client_error',
+      })
+    } finally {
+      setIsRefreshingMetadata(false)
+    }
+  }
+
   return (
     <Screen compact>
       <AppHeader
@@ -320,7 +362,7 @@ export default function SavedRecipeRoute() {
           <AppBadge label="Saved Link" />
         </View>
         <Text selectable style={[typography.heading, { color: colors.text }]}>
-          {liveSourceTitle ?? 'Saved recipe link'}
+          {displaySourceTitle ?? 'Saved recipe link'}
         </Text>
         {typeof liveDurationSeconds === 'number' ? (
           <Text selectable style={[typography.body, { color: colors.textMuted }]}>
@@ -356,6 +398,15 @@ export default function SavedRecipeRoute() {
           <Text selectable style={[typography.body, { color: colors.text }]}>
             Details unavailable, but you can still generate AI recipe.
           </Text>
+          <Button
+            label={isRefreshingMetadata ? 'Retrying details...' : 'Retry details'}
+            fullWidth
+            variant="secondary"
+            disabled={isRefreshingMetadata}
+            onPress={() => {
+              void handleRetryMetadata()
+            }}
+          />
         </Card>
       ) : null}
 

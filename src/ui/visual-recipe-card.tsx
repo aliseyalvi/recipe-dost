@@ -8,6 +8,7 @@ export type VisualRecipeStatus =
   | 'saved_link'
   | 'ai_card'
   | 'processing'
+  | 'ai_failed'
   | 'failed'
 
 type Props = {
@@ -134,7 +135,6 @@ function RecipeFallback({
     >
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
         <FallbackPill label={getPlatformLabel(platform)} />
-        <FallbackPill label={getStatusLabel(status)} />
       </View>
       <View style={{ gap: spacing.sm }}>
         <Text
@@ -225,6 +225,8 @@ function getStatusLabel(status: VisualRecipeStatus) {
       return 'AI Recipe'
     case 'processing':
       return 'Analyzing'
+    case 'ai_failed':
+      return 'AI failed'
     case 'failed':
       return 'Failed'
     case 'saved_link':
@@ -240,6 +242,8 @@ function getStatusTone(status: VisualRecipeStatus) {
       return 'accent'
     case 'processing':
       return 'primary'
+    case 'ai_failed':
+      return 'warning'
     case 'failed':
       return 'warning'
     case 'saved_link':

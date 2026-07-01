@@ -257,10 +257,6 @@ function getRecipePlatform(platform: string | null): RecipePlatform {
 }
 
 function getSavedLinkStatus(recipe: RecipeLibraryItem) {
-  if (recipe.metadata_status === 'failed') {
-    return 'failed'
-  }
-
   if (recipe.metadata_status === 'pending') {
     return 'fetching_details'
   }
@@ -283,7 +279,7 @@ function getRecipeVisualStatus(
   }
 
   if (isMediaJobAttentionRequired(recipe.latest_media_job)) {
-    return 'failed'
+    return 'ai_failed'
   }
 
   return getSavedLinkStatus(recipe)
@@ -307,18 +303,18 @@ function getHomeRecipeSubtitle(recipe: RecipeLibraryItem) {
   }
 
   if (recipe.latest_media_job?.status === 'failed') {
-    return 'Failed'
+    return 'AI failed'
   }
 
   if (recipe.metadata_status === 'pending') {
-    return 'Fetching details'
+    return getPlatformLabel(getRecipePlatform(recipe.platform))
   }
 
   if (recipe.metadata_status === 'failed') {
-    return 'Saved Link'
+    return 'Details unavailable'
   }
 
-  return 'Saved link'
+  return getPlatformLabel(getRecipePlatform(recipe.platform))
 }
 
 function getHomeRecipeTitle(recipe: RecipeLibraryItem) {
@@ -334,5 +330,24 @@ function getHomeRecipeTitle(recipe: RecipeLibraryItem) {
     return 'Fetching details...'
   }
 
+  if (recipe.metadata_status === 'failed') {
+    return `${getPlatformLabel(getRecipePlatform(recipe.platform))} recipe link`
+  }
+
   return recipe.title?.trim() || 'Saved recipe link'
+}
+
+function getPlatformLabel(platform: RecipePlatform) {
+  switch (platform) {
+    case 'instagram':
+      return 'Instagram'
+    case 'tiktok':
+      return 'TikTok'
+    case 'youtube':
+      return 'YouTube'
+    case 'facebook':
+      return 'Facebook'
+    case 'other':
+      return 'Link'
+  }
 }

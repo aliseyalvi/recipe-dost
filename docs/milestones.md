@@ -1,5 +1,16 @@
 # Recipe Dost Milestones
 
+## M21.7E - Metadata Bridge Fix and Saved-Link UI Cleanup
+
+- Status: Done after validation.
+- `refresh-recipe-metadata` now calls worker `/metadata-preview` with `Authorization: Bearer WORKER_API_SECRET`, a 25-second default timeout, and one retry for timeout/502/503/504 only.
+- Successful worker title or thumbnail metadata now persists to `recipe_items` with `metadata_status = completed`; partial useful metadata stores `partial`, and failures keep the saved item usable.
+- `source_metadata` on saved links is sanitized to safe fields only; full source URLs, thumbnails, CDN URLs, cookies, secrets, temp paths, Gemini URIs, and raw worker responses are excluded.
+- Safe metadata refresh logs were added without source URLs, thumbnails, worker secrets, cookies, or raw responses.
+- `create-media-job` now prefers `WORKER_API_SECRET` with `MEDIA_WORKER_SECRET` as a temporary fallback.
+- `get-ai-access` / shared AI access reads `FREE_AI_GENERATION_LIMIT` from Edge Function env with fallback `3`.
+- Home and Library now treat metadata failure as a usable Saved Link with `Details unavailable`; only AI job failures show `AI failed`.
+
 ## M21.7 - Worker Metadata + Modal Save UX
 
 - Status: Done after validation.

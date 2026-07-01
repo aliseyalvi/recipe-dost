@@ -47,6 +47,11 @@ yarn-error.*
 .env
 .env.local
 supabase/.env.local
+supabase/.env.production
 
 graphify-out/cache/
 graphify-out/cost.json
+
+# Supabase production secrets
+supabase/.env.production
+supabase/.env.local

@@ -451,18 +451,18 @@ function getLibrarySubtitle(item: RecipeLibraryItem) {
   }
 
   if (item.latest_media_job?.status === 'failed') {
-    return `${source} · Failed`
+    return 'AI failed'
   }
 
   if (item.metadata_status === 'pending') {
-    return `${source} · Fetching details`
+    return source
   }
 
   if (item.metadata_status === 'failed') {
-    return `${source} · Saved Link`
+    return 'Details unavailable'
   }
 
-  return `${source} · Saved Link`
+  return source
 }
 
 function getRecipePlatform(platform: string | null): RecipePlatform {
@@ -495,10 +495,6 @@ function getPlatformLabel(platform: RecipePlatform) {
 }
 
 function getSavedLinkStatus(recipe: RecipeLibraryItem) {
-  if (recipe.metadata_status === 'failed') {
-    return 'failed'
-  }
-
   if (recipe.metadata_status === 'pending') {
     return 'fetching_details'
   }
@@ -521,7 +517,7 @@ function getRecipeVisualStatus(
   }
 
   if (isMediaJobAttentionRequired(recipe.latest_media_job)) {
-    return 'failed'
+    return 'ai_failed'
   }
 
   return getSavedLinkStatus(recipe)
@@ -538,6 +534,10 @@ function getLibraryTitle(item: RecipeLibraryItem) {
 
   if (item.metadata_status === 'pending') {
     return 'Fetching details...'
+  }
+
+  if (item.metadata_status === 'failed') {
+    return `${getPlatformLabel(getRecipePlatform(item.platform))} recipe link`
   }
 
   return item.title?.trim() || 'Saved recipe link'

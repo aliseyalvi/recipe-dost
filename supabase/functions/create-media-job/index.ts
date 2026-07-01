@@ -671,7 +671,8 @@ async function triggerWorker(
   mediaJobId: string,
 ) {
   const workerUrl = Deno.env.get("MEDIA_WORKER_URL")?.trim();
-  const workerSecret = Deno.env.get("MEDIA_WORKER_SECRET")?.trim();
+  const workerSecret = Deno.env.get("WORKER_API_SECRET")?.trim() ??
+    Deno.env.get("MEDIA_WORKER_SECRET")?.trim();
 
   if (!workerUrl || !workerSecret) {
     await insertMediaJobEvent(
@@ -702,6 +703,7 @@ async function triggerWorker(
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
+        "Authorization": `Bearer ${workerSecret}`,
         "Content-Type": "application/json",
         "X-Worker-Secret": workerSecret,
       },

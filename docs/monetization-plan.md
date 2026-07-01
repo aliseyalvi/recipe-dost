@@ -11,6 +11,7 @@
 ## Credits Strategy
 
 - Free users get 3 lifetime successful AI recipe generations.
+- The active free AI limit is `FREE_AI_GENERATION_LIMIT` on Supabase Edge Functions, with server fallback `3`.
 - A successful AI generation is a `media_jobs` row where `status = 'completed'`, `result_recipe_card_id is not null`, and `ai_provider is not null`.
 - Failed jobs, queued jobs, saved-link creation, worker metadata preview, library, and grocery-list viewing do not consume AI credits.
 - Saved links, metadata preview, library, and grocery viewing are unlimited for the MVP.
@@ -105,6 +106,30 @@ Role, tester, override, and RevenueCat mirror fields are protected from mobile-c
   - `revenuecat_updated_at`
 - Role, tester, override, and RevenueCat mirror fields are protected from mobile-client updates by a database trigger; update them only from service/admin contexts.
 - `PREMIUM_MONTHLY_AI_LIMIT` is 60 while model costs and retention are validated.
+
+## Active Supabase Secrets
+
+- `MEDIA_PROCESSOR_MODE`
+- `MEDIA_WORKER_URL`
+- `WORKER_WAKE_TIMEOUT_MS`
+- `WORKER_API_SECRET`
+- `MEDIA_WORKER_SECRET` temporary fallback only
+- `METADATA_PREVIEW_TIMEOUT_MS`
+- `FREE_AI_GENERATION_LIMIT`
+
+## Legacy Secrets Not Used By Current App Flow
+
+- `AI_MODEL`
+- `AI_PROVIDER`
+- `GEMINI_MODEL`
+- `GEMINI_VIDEO_MODEL`
+- `OPENAI_API_KEY`
+- `MAX_INPUT_CHARS`
+- `MEDIA_PREVIEW_MODE`
+- `MEDIA_PREVIEW_TIMEOUT_MS`
+- `FREE_GROCERY_LIST_LIMIT`
+- `FREE_RECIPE_CARD_LIMIT`
+- `FREE_SAVED_LINK_LIMIT`
 
 ## Future Signup/Restore Plan
 

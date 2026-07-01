@@ -104,10 +104,12 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
 
       try {
         const result = await refreshRecipeMetadata(recipeItemId)
-        upsertSavedItemInCache(result.recipe_item)
         track('metadata_refresh_completed', {
           metadata_status: result.metadata_status,
-          has_error: Boolean(result.metadata_preview_error),
+          worker_status: result.worker_status,
+          error_code: result.error_code,
+          title_present: result.title_present,
+          thumbnail_present: result.thumbnail_present,
         })
       } catch (caughtError) {
         track('metadata_refresh_completed', {
