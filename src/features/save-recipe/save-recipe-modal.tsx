@@ -1,4 +1,5 @@
 import { validateRecipeUrl } from '@/features/recipe-draft/validation'
+import { detectRecipePlatform } from '@/features/recipe-draft/platform'
 import {
   RecipeLibraryItem,
   SavedRecipeItem,
@@ -30,7 +31,13 @@ import {
 } from 'react-native'
 
 type SaveRecipeModalContextValue = {
-  openSaveRecipeModal: () => void
+  openSaveRecipeModal: (options?: SaveRecipeModalOpenOptions) => void
+}
+
+type SaveRecipeModalOpenOptions = {
+  initialUrl?: string
+  source?: 'manual' | 'share_intent'
+  sourceHint?: string
 }
 
 const SaveRecipeModalContext =
@@ -43,6 +50,9 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
   const { track } = usePostHog()
   const [isVisible, setIsVisible] = useState(false)
   const [sourceUrl, setSourceUrl] = useState('')
+  const [modalSource, setModalSource] =
+    useState<SaveRecipeModalOpenOptions['source']>('manual')
+  const [sourceHint, setSourceHint] = useState<string | null>(null)
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -54,12 +64,34 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
     ? null
     : validationResult.error.issues[0]?.message ?? 'Enter a valid recipe link.'
 
-  const openSaveRecipeModal = useCallback(() => {
+  const openSaveRecipeModal = useCallback((options?: SaveRecipeModalOpenOptions) => {
+    const initialUrl = options?.initialUrl?.trim()
+
+    if (
+      isVisible &&
+      options?.source === 'share_intent' &&
+      initialUrl &&
+      sourceUrl === initialUrl
+    ) {
+      return
+    }
+
+    if (initialUrl) {
+      setSourceUrl(initialUrl)
+    } else {
+      setSourceUrl('')
+    }
+
+    setModalSource(options?.source ?? 'manual')
+    setSourceHint(options?.sourceHint ?? null)
     setIsVisible(true)
     setErrorMessage(null)
     setHasSubmitted(false)
-    track('save_recipe_modal_opened')
-  }, [track])
+    track('save_recipe_modal_opened', {
+      source: options?.source ?? 'manual',
+      has_initial_url: Boolean(initialUrl),
+    })
+  }, [isVisible, sourceUrl, track])
 
   const closeModal = useCallback(() => {
     if (isSaving) {
@@ -68,6 +100,8 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
 
     setIsVisible(false)
     setSourceUrl('')
+    setModalSource('manual')
+    setSourceHint(null)
     setHasSubmitted(false)
     setErrorMessage(null)
   }, [isSaving])
@@ -137,6 +171,11 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
 
     setIsSaving(true)
     track('save_recipe_link_submitted')
+    if (modalSource === 'share_intent') {
+      track('shared_recipe_save_started', {
+        platform: savedPlatformFromUrl(validationResult.data),
+      })
+    }
 
     try {
       const savedItem = await saveRecipeLink(validationResult.data)
@@ -145,10 +184,18 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
         platform: savedItem.platform ?? 'other',
         metadata_status: savedItem.metadata_status ?? 'pending',
       })
+      if (modalSource === 'share_intent') {
+        track('shared_recipe_save_completed', {
+          platform: savedItem.platform ?? savedPlatformFromUrl(validationResult.data),
+          metadata_status: savedItem.metadata_status ?? 'pending',
+        })
+      }
       upsertSavedItemInCache(savedItem)
       refetchRecipeLists()
       setIsVisible(false)
       setSourceUrl('')
+      setModalSource('manual')
+      setSourceHint(null)
       setHasSubmitted(false)
       router.navigate('/home')
       void refreshMetadataInBackground(savedItem.id)
@@ -198,6 +245,11 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
               <Text selectable style={[typography.body, { color: colors.textMuted }]}>
                 Paste a TikTok, Instagram, YouTube, or Facebook recipe link.
               </Text>
+              {sourceHint ? (
+                <Text selectable style={[typography.caption, { color: colors.primary }]}>
+                  {sourceHint}
+                </Text>
+              ) : null}
             </View>
 
             <Input
@@ -287,7 +339,9 @@ function upsertRecipeLibraryItem(
   limit?: number
 ) {
   const items = currentItems ?? []
-  const filteredItems = items.filter((item) => item.id !== nextItem.id)
+  const filteredItems = items.filter(
+    (item) => item.id !== nextItem.id && item.source_url !== nextItem.source_url
+  )
   const nextItems = [nextItem, ...filteredItems].sort(
     (firstItem, secondItem) =>
       new Date(secondItem.created_at).getTime() -
@@ -295,4 +349,8 @@ function upsertRecipeLibraryItem(
   )
 
   return typeof limit === 'number' ? nextItems.slice(0, limit) : nextItems
+}
+
+function savedPlatformFromUrl(sourceUrl: string) {
+  return detectRecipePlatform(sourceUrl)
 }

@@ -4,6 +4,7 @@ import { AppQueryProvider } from '@/providers/query-provider'
 import { AuthProvider } from '@/providers/auth-provider'
 import { PostHogPlaceholderProvider } from '@/providers/posthog-placeholder-provider'
 import { SentryPlaceholderProvider } from '@/providers/sentry-placeholder-provider'
+import { SaveRecipeModalProvider } from '@/features/save-recipe/save-recipe-modal'
 import { ReactNode } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { i18n } from '@/i18n'
@@ -18,7 +19,9 @@ export function AppProviders({ children }: Props) {
       <PostHogPlaceholderProvider>
         <I18nextProvider i18n={i18n}>
           <AppQueryProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <SaveRecipeModalProvider>{children}</SaveRecipeModalProvider>
+            </AuthProvider>
           </AppQueryProvider>
         </I18nextProvider>
       </PostHogPlaceholderProvider>

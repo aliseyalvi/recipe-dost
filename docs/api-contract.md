@@ -316,16 +316,18 @@ Configuration:
 Flow:
 1. Android shares text into Recipe Dost.
 2. Expo Router native-intent handling redirects to `/share-recipe`.
-3. The mobile app extracts the first valid `http` or `https` URL from the shared text.
-4. If a URL is found, the app calls the existing `parse-url` flow, stores a local recipe draft, and opens Preview.
-5. If no URL is found, the app shows "No recipe link found" with CTA "Paste Manually".
+3. The mobile app extracts the first supported Instagram, TikTok, YouTube, Facebook, or `fb.watch` `http`/`https` URL from the shared text.
+4. If a supported URL is found, the app opens the existing Save Recipe modal with the URL prefilled and uses `save-recipe-link` after the user taps Save Recipe.
+5. Metadata refresh runs afterward through `refresh-recipe-metadata`.
+6. If no supported URL is found, the app shows "Could not find a recipe video link in the shared text."
 
 Rules:
 - Do not store videos.
 - Do not download files.
 - Do not scrape source pages.
 - Do not claim deleted-video backup.
-- Analytics may track `share_intent_received` with platform only or `share_intent_failed` with reason only.
+- Do not create `media_jobs` or consume AI credits from share intake or shared-link save.
+- Analytics may track share-intent status and platform only, never the full source URL.
 
 ### POST /functions/v1/grocery-list
 Purpose:

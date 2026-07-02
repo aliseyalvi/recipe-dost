@@ -1,5 +1,15 @@
 # Recipe Dost Milestones
 
+## M21.8 - Android Share-To-App Modal Save
+
+- Status: Done after validation.
+- Android text share intent support remains configured through Expo app config for `ACTION_SEND` with `text/plain`/`text/*`; full native share testing requires a development build/APK, and Expo Go may not receive Android share intents reliably.
+- Shared text is parsed for the first supported Instagram, TikTok, YouTube, Facebook, or `fb.watch` HTTP(S) recipe URL, with unsupported text showing "Could not find a recipe video link in the shared text."
+- Valid shares open the existing Save Recipe modal with the URL prefilled and a "Shared from another app" hint instead of auto-saving or opening the old preview flow.
+- Saving from share uses `save-recipe-link`, then background `refresh-recipe-metadata`, and does not create `media_jobs` or consume AI credits.
+- `save-recipe-link` now returns an existing saved item for the same user and normalized URL instead of creating a duplicate row.
+- `Generate AI Recipe` remains the only user-facing AI generation path through `create-media-job`.
+
 ## M21.7G - Metadata Preview Payload Contract Fix
 
 - Status: Done after validation.

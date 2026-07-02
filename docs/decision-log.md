@@ -1,5 +1,13 @@
 # Recipe Dost Decision Log
 
+## 2026-07-02
+- M21.8 Android share-to-app modal save completed.
+- Decision: Android share intake accepts text share intents and may require a development build/APK for full testing; Expo Go is not a reliable validation target for receiving Android share intents.
+- Decision: Share intake extracts only supported Instagram, TikTok, YouTube, Facebook, and `fb.watch` HTTP(S) URLs, then opens the existing Save Recipe modal prefilled with the URL and a "Shared from another app" hint.
+- Decision: Shared saves use the same `save-recipe-link` plus background `refresh-recipe-metadata` flow as manual modal saves, so sharing/saving does not create `media_jobs`, call AI, or consume credits.
+- Decision: `save-recipe-link` handles same-user duplicate normalized URLs by returning the existing saved item, with the client cache also filtering by `source_url`.
+- Decision: `Generate AI Recipe` remains the only user-facing path that calls `create-media-job` and spends AI generation access.
+
 ## 2026-07-01
 - M21.7G metadata-preview payload contract fix completed.
 - Decision: The worker `/metadata-preview` contract is `{ url, platform }`; `refresh-recipe-metadata` must never send `source_url` to the worker or call it with a missing/invalid URL.

@@ -1,4 +1,4 @@
-import { SaveRecipeModalProvider, useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
+import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
 import { colors, radius, spacing, typography } from '@/theme'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { Tabs } from 'expo-router'
@@ -14,21 +14,19 @@ const tabIcons = {
 
 export default function TabsLayout() {
   return (
-    <SaveRecipeModalProvider>
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarShowLabel: false,
-        }}
-        tabBar={(props) => <RecipeDostTabBar {...props} />}
-      >
-        <Tabs.Screen name="home" options={{ title: 'Home' }} />
-        <Tabs.Screen name="library" options={{ title: 'Library' }} />
-        <Tabs.Screen name="grocery" options={{ title: 'Grocery' }} />
-        <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
-        <Tabs.Screen name="index" options={{ href: null }} />
-      </Tabs>
-    </SaveRecipeModalProvider>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarShowLabel: false,
+      }}
+      tabBar={(props) => <RecipeDostTabBar {...props} />}
+    >
+      <Tabs.Screen name="home" options={{ title: 'Home' }} />
+      <Tabs.Screen name="library" options={{ title: 'Library' }} />
+      <Tabs.Screen name="grocery" options={{ title: 'Grocery' }} />
+      <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
+      <Tabs.Screen name="index" options={{ href: null }} />
+    </Tabs>
   )
 }
 
@@ -191,7 +189,7 @@ function CenterSaveButton() {
     <Pressable
       accessibilityLabel="Save Recipe"
       accessibilityRole="button"
-      onPress={openSaveRecipeModal}
+      onPress={() => openSaveRecipeModal()}
       style={({ pressed }) => ({
         width: 72,
         height: 72,

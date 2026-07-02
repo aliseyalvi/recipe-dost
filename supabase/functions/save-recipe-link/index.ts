@@ -171,6 +171,33 @@ async function handleSaveRecipeLinkRequest(request: Request) {
     platform,
     host,
   } satisfies Json;
+  const existingResult = await clients.adminClient
+    .from("recipe_items")
+    .select(
+      "id, user_id, source_url, platform, title, description, thumbnail_url, duration_seconds, metadata_status, source_metadata, created_at, updated_at",
+    )
+    .eq("user_id", user.id)
+    .eq("source_url", normalizedUrl)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<RecipeItem>();
+
+  if (existingResult.error) {
+    return errorResponse(
+      "recipe_link_insert_failed",
+      "Could not save this recipe link. Please try again.",
+      500,
+    );
+  }
+
+  if (existingResult.data) {
+    return jsonResponse({
+      ok: true,
+      data: {
+        recipe_item: existingResult.data,
+      },
+    });
+  }
 
   const insertResult = await clients.adminClient
     .from("recipe_items")

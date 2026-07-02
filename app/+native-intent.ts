@@ -1,4 +1,4 @@
-import { extractFirstHttpUrl } from '@/features/share-intent/extract-url'
+import { extractFirstRecipeUrlFromSharedText } from '@/features/share-intent/extract-url'
 
 const appRoutes = new Set([
   '',
@@ -39,11 +39,22 @@ export function redirectSystemPath({
     return normalizedPath
   }
 
-  const sharedUrl = extractFirstHttpUrl(decodeURIComponent(path))
+  const decodedPath = safelyDecodePath(path)
+  const sharedUrl =
+    extractFirstRecipeUrlFromSharedText(decodedPath) ??
+    extractFirstRecipeUrlFromSharedText(path)
 
   if (sharedUrl) {
     return `/share-recipe?url=${encodeURIComponent(sharedUrl)}`
   }
 
   return `/share-recipe?text=${encodeURIComponent(path)}`
+}
+
+function safelyDecodePath(path: string) {
+  try {
+    return decodeURIComponent(path)
+  } catch {
+    return path
+  }
 }
