@@ -17,7 +17,7 @@ module.exports = ({ config }) => {
         package: "com.recipedost.dev",
         softwareKeyboardLayoutMode: "resize",
         adaptiveIcon: {
-          foregroundImage: "./assets/images/adaptive-icon.png",
+          foregroundImage: "./assets/adaptive-icon.png",
           backgroundColor: "#050505",
           // backgroundImage: "./assets/android-icon-background.png",
           // monochromeImage: "./assets/android-icon-monochrome.png",
