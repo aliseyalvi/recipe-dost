@@ -153,7 +153,7 @@ export default function HomeRoute() {
 
       <View style={{ gap: spacing.md }}>
         <SectionHeader title="Recent" subtitle="Saved links and AI recipes." />
-        {recentRecipesQuery.isLoading || recentRecipesQuery.isFetching ? (
+        {recentRecipesQuery.isLoading && !recentRecipesQuery.data ? (
           <LoadingState message="Loading recent recipes..." />
         ) : null}
         {recentRecipesQuery.error ? (

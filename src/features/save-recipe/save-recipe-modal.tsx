@@ -34,6 +34,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 type SaveRecipeModalContextValue = {
   openSaveRecipeModal: (options?: SaveRecipeModalOpenOptions) => void
+  showSaveRecipeMessage: (message: string) => void
 }
 
 type SaveRecipeModalOpenOptions = {
@@ -110,6 +111,10 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
     setHasSubmitted(false)
     setErrorMessage(null)
   }, [isSaving])
+
+  const showSaveRecipeMessage = useCallback((message: string) => {
+    setBannerMessage(message)
+  }, [])
 
   const upsertSavedItemInCache = useCallback(
     (savedItem: SavedRecipeItem | RecipeLibraryItem) => {
@@ -201,8 +206,9 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
 
     const recipeUrl = validationResult.data
     const recipePlatform = savedPlatformFromUrl(recipeUrl)
+    const optimisticSourceUrl = normalizeRecipeSourceUrl(recipeUrl)
     const optimisticItem = createOptimisticRecipeLibraryItem({
-      sourceUrl: recipeUrl,
+      sourceUrl: optimisticSourceUrl,
       platform: recipePlatform,
     })
 
@@ -249,7 +255,9 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <SaveRecipeModalContext.Provider value={{ openSaveRecipeModal }}>
+    <SaveRecipeModalContext.Provider
+      value={{ openSaveRecipeModal, showSaveRecipeMessage }}
+    >
       {children}
       {bannerMessage ? (
         <View
@@ -312,10 +320,40 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
                 paddingBottom: spacing.xl + spacing.md + insets.bottom,
               }}
             >
-              <View style={{ gap: spacing.xs }}>
-                <Text selectable style={[typography.title, { color: colors.text }]}>
-                  Save recipe video
-                </Text>
+              <View style={{ gap: spacing.sm }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: spacing.md,
+                  }}
+                >
+                  <Text selectable style={[typography.title, { color: colors.text }]}>
+                    Save recipe video
+                  </Text>
+                  <Pressable
+                    accessibilityLabel="Close save recipe modal"
+                    accessibilityRole="button"
+                    onPress={closeModal}
+                    style={({ pressed }) => ({
+                      width: 36,
+                      height: 36,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: radius.pill,
+                      backgroundColor: colors.surfaceMuted,
+                      opacity: pressed ? 0.72 : 1,
+                    })}
+                  >
+                    <Text
+                      selectable={false}
+                      style={[typography.body, { color: colors.text, fontWeight: '900' }]}
+                    >
+                      x
+                    </Text>
+                  </Pressable>
+                </View>
                 <Text selectable style={[typography.body, { color: colors.textMuted }]}>
                   Paste a TikTok, Instagram, YouTube, or Facebook recipe link.
                 </Text>
@@ -440,7 +478,7 @@ function createOptimisticRecipeLibraryItem({
   const timestamp = new Date().toISOString()
 
   return {
-    id: `optimistic-${Date.now()}`,
+    id: `optimistic:${sourceUrl}`,
     source_url: sourceUrl,
     platform,
     title: 'Saving recipe link...',
@@ -455,5 +493,16 @@ function createOptimisticRecipeLibraryItem({
     updated_at: timestamp,
     latest_card: null,
     latest_media_job: null,
+  }
+}
+
+function normalizeRecipeSourceUrl(sourceUrl: string) {
+  try {
+    const parsedUrl = new URL(sourceUrl.trim())
+    parsedUrl.hostname = parsedUrl.hostname.toLowerCase().replace(/^www\./, '')
+
+    return parsedUrl.toString()
+  } catch {
+    return sourceUrl.trim()
   }
 }

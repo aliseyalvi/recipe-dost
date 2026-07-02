@@ -2,7 +2,6 @@ import { detectRecipePlatform } from '@/features/recipe-draft/platform'
 import { extractFirstRecipeUrlFromSharedText } from '@/features/share-intent/extract-url'
 import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
-import { EmptyState } from '@/ui/empty-state'
 import { Screen } from '@/ui/screen'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef } from 'react'
@@ -10,7 +9,7 @@ import { useEffect, useMemo, useRef } from 'react'
 export default function ShareRecipeRoute() {
   const router = useRouter()
   const { track } = usePostHog()
-  const { openSaveRecipeModal } = useSaveRecipeModal()
+  const { openSaveRecipeModal, showSaveRecipeMessage } = useSaveRecipeModal()
   const { url, text } = useLocalSearchParams<{ url?: string; text?: string }>()
   const didHandleRef = useRef(false)
   const sharedUrl = useMemo(() => {
@@ -33,6 +32,8 @@ export default function ShareRecipeRoute() {
 
     if (!sharedUrl) {
       track('share_url_invalid', { reason: 'missing_supported_url' })
+      showSaveRecipeMessage('Could not find a recipe video link in the shared text.')
+      router.replace('/home')
       return
     }
 
@@ -44,27 +45,10 @@ export default function ShareRecipeRoute() {
       source: 'share_intent',
       sourceHint: 'Shared from another app',
     })
-
     router.replace('/home')
-  }, [openSaveRecipeModal, router, sharedUrl, track])
+  }, [openSaveRecipeModal, router, sharedUrl, showSaveRecipeMessage, track])
 
-  if (sharedUrl) {
-    return <Screen compact>{null}</Screen>
-  }
-
-  return (
-    <Screen compact>
-      <EmptyState
-        title="No recipe video link found"
-        message="Could not find a recipe video link in the shared text."
-        actionLabel="Paste Manually"
-        onActionPress={() => {
-          openSaveRecipeModal()
-          router.replace('/home')
-        }}
-      />
-    </Screen>
-  )
+  return <Screen compact>{null}</Screen>
 }
 
 function getFirstParamValue(value: string | string[] | undefined) {

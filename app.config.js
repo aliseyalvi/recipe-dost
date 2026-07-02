@@ -3,12 +3,12 @@ module.exports = ({ config }) => {
 
   return {
     expo: {
-      name: "recipe-dost",
+      name: "Recipe Dost",
       slug: "recipe-dost",
       scheme: "recipe-dost",
       version: "1.0.0",
       orientation: "portrait",
-      icon: "./assets/icon.png",
+      icon: "./assets/images/icon.png",
       userInterfaceStyle: "dark",
       ios: {
         supportsTablet: true,
@@ -17,7 +17,7 @@ module.exports = ({ config }) => {
         package: "com.recipedost.dev",
         softwareKeyboardLayoutMode: "resize",
         adaptiveIcon: {
-          foregroundImage: "./assets/adaptive-icon.png",
+          foregroundImage: "./assets/images/adaptive-icon.png",
           backgroundColor: "#050505",
           // backgroundImage: "./assets/android-icon-background.png",
           // monochromeImage: "./assets/android-icon-monochrome.png",
@@ -32,7 +32,7 @@ module.exports = ({ config }) => {
         predictiveBackGestureEnabled: false,
       },
       web: {
-        favicon: "./assets/favicon.png",
+        favicon: "./assets/images/favicon.png",
       },
       plugins: [
         "expo-router",
@@ -40,6 +40,15 @@ module.exports = ({ config }) => {
         "expo-localization",
         "expo-sharing",
         "expo-sqlite",
+        [
+          "expo-splash-screen",
+          {
+            image: "./assets/images/splash-icon.png",
+            imageWidth: 200,
+            resizeMode: "contain",
+            backgroundColor: "#050505",
+          },
+        ],
         [
           "expo-share-intent",
           {

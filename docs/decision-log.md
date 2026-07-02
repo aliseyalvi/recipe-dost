@@ -1,6 +1,14 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-02
+- Updated visible app name to Recipe Dost while preserving slug/package.
+- M21.8C share/save visual polish and splash config completed.
+- Decision: Normal app launch must remain idle on Home; share errors are shown only after an actual native share payload is received and cannot be parsed into a supported URL.
+- Decision: Save modal opens only from the plus button or a valid shared URL, clears shared initial state on close, and uses Android resize plus scrollable content to stay above the keyboard.
+- Decision: Optimistic save cards use `optimistic:<normalizedUrl>` and normalized `source_url` so server recipe_items replace the optimistic item instead of rendering duplicates.
+- Decision: Background recipe-list refetch is silent after initial load; no fetched/fetching status card should appear during metadata refresh.
+- Decision: Display mapping continues to prefer AI recipe title and summary over source metadata after recipe generation, without overwriting source URLs or source metadata.
+- Decision: Splash/icon config now uses `assets/images/*` and requires a rebuilt dev APK to verify native splash changes.
 - M21.8B Android share payload and save UX polish completed.
 - Decision: Android share intake now uses `expo-share-intent` to read native shared text/web URLs on cold start and resume; the existing manifest share filters remain for Android share-sheet visibility.
 - Decision: Share/save remains a free saved-link flow through `save-recipe-link` plus background `refresh-recipe-metadata`; only `Generate AI Recipe` can create `media_jobs` or spend AI generation access.

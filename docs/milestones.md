@@ -1,5 +1,16 @@
 # Recipe Dost Milestones
 
+## M21.8C - Share State, Optimistic Save, and Splash Polish
+
+- Status: Done after validation.
+- Normal app launch now stays on Home silently: no share error screen and no save modal unless the plus button is tapped or a valid native share URL is received.
+- Share handling now uses an explicit idle/valid/invalid/consumed state flow; invalid share text shows one friendly message only after an actual native share payload is received.
+- Save modal close behavior was tightened with a visible close button, backdrop close, Android back handling, shared URL cleanup, Android keyboard resize, and scrollable bottom-sheet content.
+- Optimistic saves now use one `optimistic:<normalizedUrl>` card, dedupe/replace by normalized `source_url`, and remove the optimistic card on save failure.
+- Home background refetch is silent after initial load, avoiding repeated loading/refetch cards and layout jumps.
+- AI recipe cards continue to override vague source metadata titles/summaries for Home, Library, and saved-link detail display without mutating `source_url` or source metadata.
+- Splash/icon config now references `assets/images/icon.png`, `assets/images/adaptive-icon.png`, `assets/images/splash-icon.png`, and `assets/images/favicon.png`; splash/icon changes require a rebuilt dev APK.
+
 ## M21.8B - Android Share Payload + Save UX Polish
 
 - Status: Done after validation.

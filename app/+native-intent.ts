@@ -48,7 +48,7 @@ export function redirectSystemPath({
     return `/share-recipe?url=${encodeURIComponent(sharedUrl)}`
   }
 
-  return `/share-recipe?text=${encodeURIComponent(path)}`
+  return '/home'
 }
 
 function safelyDecodePath(path: string) {
