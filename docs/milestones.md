@@ -1,5 +1,15 @@
 # Recipe Dost Milestones
 
+## M21.8B - Android Share Payload + Save UX Polish
+
+- Status: Done after validation.
+- Added `expo-share-intent` to read Android shared text payloads in JS; Android share testing still requires a dev build/APK, not Expo Go.
+- Shared Instagram, TikTok, YouTube, and Facebook URLs now open the existing Save Recipe modal with the URL prefilled and a "Shared from another app" hint, without creating `media_jobs` or consuming AI credits.
+- The save modal is keyboard-safe on Android with resize mode and scrollable bottom-sheet content.
+- Saving a valid link now closes the modal immediately, shows an optimistic "Saving" card, replaces it with the saved `recipe_item`, and refreshes metadata in the background.
+- Home/Library card states are limited to Saving, Fetching details, Saved Link, Analyzing, AI Recipe, and AI failed, with platform shown in the metadata row.
+- When AI generation completes, saved-link detail and list cards prefer the AI recipe title/summary over vague source metadata while preserving the original source URL and metadata.
+
 ## M21.8A - EAS Android Development Build Setup
 
 - Status: Done after validation.

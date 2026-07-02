@@ -3,7 +3,7 @@ import { detectRecipePlatform } from '@/features/recipe-draft/platform'
 const httpUrlPattern = /https?:\/\/[^\s<>"']+/gi
 const trailingPunctuationPattern = /[),.!?;:\]}]+$/u
 
-export function extractFirstRecipeUrlFromSharedText(
+export function extractFirstRecipeUrlFromText(
   text: string | null | undefined
 ) {
   if (!text) {
@@ -38,5 +38,11 @@ export function extractFirstRecipeUrlFromSharedText(
 }
 
 export function extractFirstHttpUrl(value: string | null | undefined) {
-  return extractFirstRecipeUrlFromSharedText(value)
+  return extractFirstRecipeUrlFromText(value)
+}
+
+export function extractFirstRecipeUrlFromSharedText(
+  text: string | null | undefined
+) {
+  return extractFirstRecipeUrlFromText(text)
 }

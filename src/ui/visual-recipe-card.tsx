@@ -4,6 +4,7 @@ import { AppBadge } from '@/ui/app-badge'
 import { Image, Pressable, Text, View } from 'react-native'
 
 export type VisualRecipeStatus =
+  | 'saving'
   | 'fetching_details'
   | 'saved_link'
   | 'ai_card'
@@ -153,6 +154,8 @@ function MiniPill({ label }: { label: string }) {
 
 function getStatusLabel(status: VisualRecipeStatus) {
   switch (status) {
+    case 'saving':
+      return 'Saving'
     case 'fetching_details':
       return 'Fetching details'
     case 'ai_card':
@@ -170,6 +173,8 @@ function getStatusLabel(status: VisualRecipeStatus) {
 
 function getStatusTone(status: VisualRecipeStatus) {
   switch (status) {
+    case 'saving':
+      return 'primary'
     case 'fetching_details':
       return 'primary'
     case 'ai_card':

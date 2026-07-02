@@ -1,6 +1,11 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-02
+- M21.8B Android share payload and save UX polish completed.
+- Decision: Android share intake now uses `expo-share-intent` to read native shared text/web URLs on cold start and resume; the existing manifest share filters remain for Android share-sheet visibility.
+- Decision: Share/save remains a free saved-link flow through `save-recipe-link` plus background `refresh-recipe-metadata`; only `Generate AI Recipe` can create `media_jobs` or spend AI generation access.
+- Decision: The save modal closes immediately after a valid submit and writes an optimistic Saving card to Home/Library caches; failures remove the optimistic item and show a friendly retry banner.
+- Decision: AI recipe cards override vague source metadata titles/summaries in user-facing cards and saved-link detail after generation completes, while preserving original source URL/metadata.
 - M21.8A EAS Android development build setup completed.
 - Decision: Android share-to-app testing now uses `expo-dev-client` and internal APK EAS profiles because Expo Go is not a reliable target for native Android share intents.
 - Decision: The app uses temporary development package `com.recipedost.dev` until a production Android package name is finalized.

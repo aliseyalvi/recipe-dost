@@ -15,6 +15,7 @@ module.exports = ({ config }) => {
       },
       android: {
         package: "com.recipedost.dev",
+        softwareKeyboardLayoutMode: "resize",
         adaptiveIcon: {
           foregroundImage: "./assets/images/adaptive-icon.png",
           backgroundColor: "#050505",
@@ -39,6 +40,14 @@ module.exports = ({ config }) => {
         "expo-localization",
         "expo-sharing",
         "expo-sqlite",
+        [
+          "expo-share-intent",
+          {
+            androidIntentFilters: ["text/plain", "text/*"],
+            androidMultiIntentFilters: [],
+            disableIOS: true,
+          },
+        ],
       ],
       extra: {
         ...existingExtra,

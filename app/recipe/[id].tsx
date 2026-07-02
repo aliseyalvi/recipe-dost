@@ -55,7 +55,14 @@ export default function SavedRecipeRoute() {
     refetchInterval: (query) =>
       isMediaJobActive(query.state.data) ? 5000 : false,
   })
+  const resultRecipeCardId = mediaJobQuery.data?.result_recipe_card_id
+  const recipeCardQuery = useQuery({
+    enabled: Boolean(resultRecipeCardId),
+    queryKey: ['recipe-card', resultRecipeCardId],
+    queryFn: () => getRecipeCard(resultRecipeCardId ?? ''),
+  })
   const aiAccess = aiAccessQuery.data
+  const isAiLimitReached = aiAccess?.reason === 'limit_reached'
 
   useEffect(() => {
     if (!aiAccess || didTrackUsageSummary.current) {
@@ -97,23 +104,29 @@ export default function SavedRecipeRoute() {
   }, [mediaJobQuery.data, track])
 
   useEffect(() => {
-    const recipeCardId = mediaJobQuery.data?.result_recipe_card_id
-
-    if (!recipeCardId) {
+    if (!resultRecipeCardId) {
       return
     }
 
-    void queryClient.prefetchQuery({
-      queryKey: ['recipe-card', recipeCardId],
-      queryFn: () => getRecipeCard(recipeCardId),
-    })
     void queryClient.invalidateQueries({
       queryKey: ['recent-recipes'],
     })
     void queryClient.invalidateQueries({
       queryKey: ['recipe-library'],
     })
-  }, [mediaJobQuery.data?.result_recipe_card_id, queryClient])
+    void queryClient.invalidateQueries({
+      queryKey: ['recipe-item', recipeId],
+    })
+    void queryClient.invalidateQueries({
+      queryKey: ['recipe-card', resultRecipeCardId],
+    })
+    void queryClient.invalidateQueries({
+      queryKey: ['media-job', 'recipe', recipeId],
+    })
+    void queryClient.invalidateQueries({
+      queryKey: ['ai-access-state'],
+    })
+  }, [queryClient, recipeId, resultRecipeCardId])
 
   if (!recipeId) {
     return (
@@ -169,12 +182,15 @@ export default function SavedRecipeRoute() {
   const recipe = recipeQuery.data
   const platform = getRecipePlatform(recipe.platform)
   const mediaJob = mediaJobQuery.data
+  const recipeCard = recipeCardQuery.data
   const liveSourceTitle =
     mediaJob?.source_metadata.title?.trim() || recipe.title?.trim()
   const displaySourceTitle =
-    recipe.metadata_status === 'pending'
+    recipeCard?.recipe_title?.trim() ||
+    (recipe.metadata_status === 'pending'
       ? 'Fetching details...'
-      : liveSourceTitle
+      : liveSourceTitle)
+  const displaySourceSubtitle = recipeCard?.short_summary?.trim()
   const liveThumbnailUrl =
     mediaJob?.thumbnail_url ??
     mediaJob?.source_metadata.uploaded_thumbnail_url ??
@@ -359,11 +375,16 @@ export default function SavedRecipeRoute() {
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           <PlatformBadge platform={platform} />
-          <AppBadge label="Saved Link" />
+          <AppBadge label={recipeCard ? 'AI Recipe' : 'Saved Link'} />
         </View>
         <Text selectable style={[typography.heading, { color: colors.text }]}>
           {displaySourceTitle ?? 'Saved recipe link'}
         </Text>
+        {displaySourceSubtitle ? (
+          <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+            {displaySourceSubtitle}
+          </Text>
+        ) : null}
         {typeof liveDurationSeconds === 'number' ? (
           <Text selectable style={[typography.body, { color: colors.textMuted }]}>
             Duration: {formatDuration(liveDurationSeconds)}
@@ -463,15 +484,20 @@ export default function SavedRecipeRoute() {
             {activeMediaJob.progress}% complete
           </Text>
         </Card>
-      ) : mediaJob?.result_recipe_card_id ? (
+      ) : resultRecipeCardId ? (
         <Card tone="warm">
           <Text selectable style={[typography.heading, { color: colors.text }]}>
-            AI recipe ready
+            {recipeCard?.recipe_title?.trim() || 'AI recipe ready'}
           </Text>
+          {recipeCard?.short_summary?.trim() ? (
+            <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+              {recipeCard.short_summary.trim()}
+            </Text>
+          ) : null}
           <Button
             label="Open AI Recipe"
             fullWidth
-            onPress={() => router.push(`/recipe-card/${mediaJob.result_recipe_card_id}`)}
+            onPress={() => router.push(`/recipe-card/${resultRecipeCardId}`)}
           />
         </Card>
       ) : !mediaJobQuery.isLoading && !mediaJobQuery.error ? (
@@ -488,11 +514,16 @@ export default function SavedRecipeRoute() {
           <Button
             label="Generate AI Recipe"
             fullWidth
-            disabled={isCreatingMediaJob}
+            disabled={isCreatingMediaJob || isAiLimitReached}
             onPress={() => {
               void handleCreateMediaJob()
             }}
           />
+          {isAiLimitReached ? (
+            <Text selectable style={[typography.caption, { color: colors.warning }]}>
+              You have used your free AI recipes. Upgrade to generate more recipe cards.
+            </Text>
+          ) : null}
           {mediaJob?.status === 'failed' ? (
             <Text selectable style={[typography.caption, { color: colors.warning }]}>
               The last AI generation attempt failed. You can try generating again.
@@ -516,7 +547,7 @@ export default function SavedRecipeRoute() {
           <Button
             label="Generate AI Recipe"
             fullWidth
-            disabled={isCreatingMediaJob}
+            disabled={isCreatingMediaJob || isAiLimitReached}
             onPress={() => {
               void handleCreateMediaJob()
             }}

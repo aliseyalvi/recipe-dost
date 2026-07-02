@@ -26,9 +26,11 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   View,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 type SaveRecipeModalContextValue = {
   openSaveRecipeModal: (options?: SaveRecipeModalOpenOptions) => void
@@ -46,6 +48,7 @@ const SaveRecipeModalContext =
 export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const insets = useSafeAreaInsets()
   const { user } = useAuth()
   const { track } = usePostHog()
   const [isVisible, setIsVisible] = useState(false)
@@ -56,6 +59,7 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [bannerMessage, setBannerMessage] = useState<string | null>(null)
   const validationResult = useMemo(
     () => validateRecipeUrl(sourceUrl),
     [sourceUrl]
@@ -85,6 +89,7 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
     setModalSource(options?.source ?? 'manual')
     setSourceHint(options?.sourceHint ?? null)
     setIsVisible(true)
+    setBannerMessage(null)
     setErrorMessage(null)
     setHasSubmitted(false)
     track('save_recipe_modal_opened', {
@@ -107,12 +112,13 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
   }, [isSaving])
 
   const upsertSavedItemInCache = useCallback(
-    (savedItem: SavedRecipeItem) => {
+    (savedItem: SavedRecipeItem | RecipeLibraryItem) => {
       if (!user?.id) {
         return
       }
 
-      const libraryItem = toRecipeLibraryItem(savedItem)
+      const libraryItem =
+        'latest_card' in savedItem ? savedItem : toRecipeLibraryItem(savedItem)
 
       queryClient.setQueryData<RecipeLibraryItem[]>(
         ['recent-recipes', user.id],
@@ -121,6 +127,30 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData<RecipeLibraryItem[]>(
         ['recipe-library', user.id],
         (currentItems) => upsertRecipeLibraryItem(currentItems, libraryItem)
+      )
+    },
+    [queryClient, user?.id]
+  )
+
+  const removeSavedItemFromCache = useCallback(
+    (savedItem: RecipeLibraryItem) => {
+      if (!user?.id) {
+        return
+      }
+
+      const removeItem = (currentItems: RecipeLibraryItem[] | undefined) =>
+        (currentItems ?? []).filter(
+          (item) =>
+            item.id !== savedItem.id && item.source_url !== savedItem.source_url
+        )
+
+      queryClient.setQueryData<RecipeLibraryItem[]>(
+        ['recent-recipes', user.id],
+        removeItem
+      )
+      queryClient.setQueryData<RecipeLibraryItem[]>(
+        ['recipe-library', user.id],
+        removeItem
       )
     },
     [queryClient, user?.id]
@@ -169,16 +199,32 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    const recipeUrl = validationResult.data
+    const recipePlatform = savedPlatformFromUrl(recipeUrl)
+    const optimisticItem = createOptimisticRecipeLibraryItem({
+      sourceUrl: recipeUrl,
+      platform: recipePlatform,
+    })
+
     setIsSaving(true)
     track('save_recipe_link_submitted')
     if (modalSource === 'share_intent') {
       track('shared_recipe_save_started', {
-        platform: savedPlatformFromUrl(validationResult.data),
+        platform: recipePlatform,
       })
     }
 
+    setIsVisible(false)
+    setSourceUrl('')
+    setModalSource('manual')
+    setSourceHint(null)
+    setHasSubmitted(false)
+    setErrorMessage(null)
+    upsertSavedItemInCache(optimisticItem)
+    router.navigate('/home')
+
     try {
-      const savedItem = await saveRecipeLink(validationResult.data)
+      const savedItem = await saveRecipeLink(recipeUrl)
 
       track('save_recipe_link_saved', {
         platform: savedItem.platform ?? 'other',
@@ -186,25 +232,17 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
       })
       if (modalSource === 'share_intent') {
         track('shared_recipe_save_completed', {
-          platform: savedItem.platform ?? savedPlatformFromUrl(validationResult.data),
+          platform: savedItem.platform ?? recipePlatform,
           metadata_status: savedItem.metadata_status ?? 'pending',
         })
       }
       upsertSavedItemInCache(savedItem)
       refetchRecipeLists()
-      setIsVisible(false)
-      setSourceUrl('')
-      setModalSource('manual')
-      setSourceHint(null)
-      setHasSubmitted(false)
-      router.navigate('/home')
       void refreshMetadataInBackground(savedItem.id)
     } catch (caughtError) {
-      setErrorMessage(
-        caughtError instanceof Error
-          ? caughtError.message
-          : 'Could not save this recipe link. Please try again.'
-      )
+      removeSavedItemFromCache(optimisticItem)
+      setBannerMessage('Could not save this link. Please try again.')
+      refetchRecipeLists()
     } finally {
       setIsSaving(false)
     }
@@ -213,6 +251,37 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
   return (
     <SaveRecipeModalContext.Provider value={{ openSaveRecipeModal }}>
       {children}
+      {bannerMessage ? (
+        <View
+          style={{
+            position: 'absolute',
+            top: insets.top + spacing.md,
+            right: spacing.lg,
+            left: spacing.lg,
+            zIndex: 20,
+            borderRadius: radius.md,
+            backgroundColor: colors.surface,
+            padding: spacing.md,
+            boxShadow: '0 12px 28px rgba(0, 0, 0, 0.3)',
+          }}
+        >
+          <Text selectable style={[typography.body, { color: colors.text }]}>
+            {bannerMessage}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setBannerMessage(null)}
+            style={{ marginTop: spacing.sm }}
+          >
+            <Text
+              selectable={false}
+              style={[typography.caption, { color: colors.primary, fontWeight: '800' }]}
+            >
+              Dismiss
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
       <Modal
         animationType="slide"
         transparent
@@ -220,83 +289,89 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
         onRequestClose={closeModal}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{ flex: 1, justifyContent: 'flex-end' }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+          style={{ flex: 1 }}
         >
           <Pressable
             accessibilityLabel="Close save recipe modal"
             style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.58)' }}
             onPress={closeModal}
           />
-          <View
-            style={{
-              gap: spacing.lg,
-              borderTopLeftRadius: radius.lg,
-              borderTopRightRadius: radius.lg,
-              backgroundColor: colors.surface,
-              padding: spacing.xl,
-              paddingBottom: spacing.xl + spacing.md,
-            }}
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}
           >
-            <View style={{ gap: spacing.xs }}>
-              <Text selectable style={[typography.title, { color: colors.text }]}>
-                Save recipe video
-              </Text>
-              <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-                Paste a TikTok, Instagram, YouTube, or Facebook recipe link.
-              </Text>
-              {sourceHint ? (
-                <Text selectable style={[typography.caption, { color: colors.primary }]}>
-                  {sourceHint}
+            <View
+              style={{
+                gap: spacing.lg,
+                borderTopLeftRadius: radius.lg,
+                borderTopRightRadius: radius.lg,
+                backgroundColor: colors.surface,
+                padding: spacing.xl,
+                paddingBottom: spacing.xl + spacing.md + insets.bottom,
+              }}
+            >
+              <View style={{ gap: spacing.xs }}>
+                <Text selectable style={[typography.title, { color: colors.text }]}>
+                  Save recipe video
+                </Text>
+                <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+                  Paste a TikTok, Instagram, YouTube, or Facebook recipe link.
+                </Text>
+                {sourceHint ? (
+                  <Text selectable style={[typography.caption, { color: colors.primary }]}>
+                    {sourceHint}
+                  </Text>
+                ) : null}
+              </View>
+
+              <Input
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!isSaving}
+                keyboardType="url"
+                label="URL"
+                onChangeText={(value) => {
+                  setSourceUrl(value)
+                  if (errorMessage) {
+                    setErrorMessage(null)
+                  }
+                }}
+                onSubmitEditing={() => {
+                  void submitRecipeLink()
+                }}
+                placeholder="https://www.instagram.com/reel/..."
+                returnKeyType="done"
+                value={sourceUrl}
+              />
+
+              {hasSubmitted && validationMessage ? (
+                <Text selectable style={[typography.caption, { color: colors.danger }]}>
+                  {validationMessage}
                 </Text>
               ) : null}
+
+              {errorMessage ? (
+                <Text selectable style={[typography.caption, { color: colors.danger }]}>
+                  {errorMessage}
+                </Text>
+              ) : null}
+
+              <Button
+                label="Save Recipe"
+                fullWidth
+                disabled={isSaving}
+                onPress={() => {
+                  void submitRecipeLink()
+                }}
+              />
+
+              <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+                We save links and recipe cards, not videos.
+              </Text>
             </View>
-
-            <Input
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isSaving}
-              keyboardType="url"
-              label="URL"
-              onChangeText={(value) => {
-                setSourceUrl(value)
-                if (errorMessage) {
-                  setErrorMessage(null)
-                }
-              }}
-              onSubmitEditing={() => {
-                void submitRecipeLink()
-              }}
-              placeholder="https://www.instagram.com/reel/..."
-              returnKeyType="done"
-              value={sourceUrl}
-            />
-
-            {hasSubmitted && validationMessage ? (
-              <Text selectable style={[typography.caption, { color: colors.danger }]}>
-                {validationMessage}
-              </Text>
-            ) : null}
-
-            {errorMessage ? (
-              <Text selectable style={[typography.caption, { color: colors.danger }]}>
-                {errorMessage}
-              </Text>
-            ) : null}
-
-            <Button
-              label={isSaving ? 'Saving...' : 'Save Recipe'}
-              fullWidth
-              disabled={isSaving}
-              onPress={() => {
-                void submitRecipeLink()
-              }}
-            />
-
-            <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-              We save links and recipe cards, not videos.
-            </Text>
-          </View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
     </SaveRecipeModalContext.Provider>
@@ -353,4 +428,32 @@ function upsertRecipeLibraryItem(
 
 function savedPlatformFromUrl(sourceUrl: string) {
   return detectRecipePlatform(sourceUrl)
+}
+
+function createOptimisticRecipeLibraryItem({
+  sourceUrl,
+  platform,
+}: {
+  sourceUrl: string
+  platform: ReturnType<typeof detectRecipePlatform>
+}): RecipeLibraryItem {
+  const timestamp = new Date().toISOString()
+
+  return {
+    id: `optimistic-${Date.now()}`,
+    source_url: sourceUrl,
+    platform,
+    title: 'Saving recipe link...',
+    thumbnail_url: null,
+    metadata_status: 'saving',
+    user_note: null,
+    pasted_caption: null,
+    manual_ingredients: null,
+    meal_type: null,
+    cuisine: null,
+    created_at: timestamp,
+    updated_at: timestamp,
+    latest_card: null,
+    latest_media_job: null,
+  }
 }
