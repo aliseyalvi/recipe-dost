@@ -6,7 +6,11 @@ import { colors } from '@/theme'
 export default function RootLayout() {
   return (
     <AppProviders>
-      <StatusBar style="dark" />
+      <StatusBar
+        style="light"
+        backgroundColor={colors.background}
+        translucent={false}
+      />
       <Stack
         screenOptions={{
           contentStyle: { backgroundColor: colors.background },
@@ -25,8 +29,14 @@ export default function RootLayout() {
         <Stack.Screen name="save-recipe" options={{ title: 'Save Recipe' }} />
         <Stack.Screen name="share-recipe" options={{ title: 'Share Recipe' }} />
         <Stack.Screen name="recipe/preview" options={{ title: 'Preview' }} />
-        <Stack.Screen name="recipe/[id]" options={{ title: 'Saved Recipe' }} />
-        <Stack.Screen name="recipe-card/[id]" options={{ title: 'Recipe Card' }} />
+        <Stack.Screen
+          name="recipe/[id]"
+          options={{ headerShown: true, title: 'Saved Recipe' }}
+        />
+        <Stack.Screen
+          name="recipe-card/[id]"
+          options={{ headerShown: true, title: 'AI Recipe' }}
+        />
         <Stack.Screen name="recipe/ready" options={{ title: 'Recipe Card' }} />
         <Stack.Screen name="paywall" options={{ title: 'Recipe Dost Pro' }} />
       </Stack>
