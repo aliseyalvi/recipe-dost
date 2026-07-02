@@ -1,5 +1,14 @@
 # Recipe Dost Milestones
 
+## M21.8A - EAS Android Development Build Setup
+
+- Status: Done after validation.
+- Added `expo-dev-client` aligned with Expo SDK 56 so Android share-to-app can be tested in a development build instead of Expo Go.
+- Added a temporary stable Android application ID, `com.recipedost.dev`, for development APK testing until the production package name is finalized.
+- Added `eas.json` with internal Android APK profiles: `development` uses `developmentClient: true`, and `preview` builds an internal APK without adding production release settings.
+- Android text share intent config remains in `app.config.js` for `ACTION_SEND` with `text/plain` and `text/*`.
+- Expo Go cannot fully test native Android share intents; use an EAS development APK or local native build, and rebuild/reinstall the dev app after native config changes.
+
 ## M21.8 - Android Share-To-App Modal Save
 
 - Status: Done after validation.

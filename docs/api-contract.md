@@ -312,6 +312,8 @@ Configuration:
 - Android share intent MIME types are limited to text/link sharing such as `text/plain` and `text/*`.
 - Video, image, file, private saved folder, and media import intents are intentionally not configured.
 - Native share intake may require a development build and may not fully work in Expo Go.
+- To test native Android share intake, build an internal development APK with `eas build -p android --profile development`, install it on the device, start Metro with `npm run start -- --dev-client`, and share a supported recipe link into Recipe Dost.
+- Rebuild and reinstall the development APK or local native build after native config changes such as intent filters or Android package ID updates.
 
 Flow:
 1. Android shares text into Recipe Dost.

@@ -1,6 +1,10 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-02
+- M21.8A EAS Android development build setup completed.
+- Decision: Android share-to-app testing now uses `expo-dev-client` and internal APK EAS profiles because Expo Go is not a reliable target for native Android share intents.
+- Decision: The app uses temporary development package `com.recipedost.dev` until a production Android package name is finalized.
+- Decision: Native config changes such as Android share intent filters or package IDs require rebuilding and reinstalling the development APK or local native build before testing.
 - M21.8 Android share-to-app modal save completed.
 - Decision: Android share intake accepts text share intents and may require a development build/APK for full testing; Expo Go is not a reliable validation target for receiving Android share intents.
 - Decision: Share intake extracts only supported Instagram, TikTok, YouTube, Facebook, and `fb.watch` HTTP(S) URLs, then opens the existing Save Recipe modal prefilled with the URL and a "Shared from another app" hint.
