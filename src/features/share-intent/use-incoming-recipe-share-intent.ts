@@ -27,15 +27,16 @@ export function useIncomingRecipeShareIntent() {
   useEffect(() => {
     if (error) {
       track('share_url_invalid', { reason: 'native_share_error' })
-      setShareState({ status: 'received_invalid_share' })
+      setShareState((currentState) =>
+        currentState.status === 'received_invalid_share'
+          ? currentState
+          : { status: 'received_invalid_share' }
+      )
     }
   }, [error, track])
 
   useEffect(() => {
     if (!hasShareIntent) {
-      if (shareState.status !== 'consumed') {
-        setShareState({ status: 'idle' })
-      }
       return
     }
 
@@ -48,13 +49,19 @@ export function useIncomingRecipeShareIntent() {
 
     if (!sharedUrl) {
       track('share_url_invalid', { reason: 'missing_supported_url' })
-      setShareState({ status: 'received_invalid_share' })
+      setShareState((currentState) =>
+        currentState.status === 'received_invalid_share'
+          ? currentState
+          : { status: 'received_invalid_share' }
+      )
       resetShareIntent()
       return
     }
 
     if (lastHandledUrlRef.current === sharedUrl) {
-      setShareState({ status: 'consumed' })
+      setShareState((currentState) =>
+        currentState.status === 'consumed' ? currentState : { status: 'consumed' }
+      )
       resetShareIntent()
       return
     }
@@ -62,12 +69,16 @@ export function useIncomingRecipeShareIntent() {
     track('share_url_extracted', {
       platform: detectRecipePlatform(sharedUrl),
     })
-    setShareState({ status: 'received_valid_share', url: sharedUrl })
+    setShareState((currentState) =>
+      currentState.status === 'received_valid_share' &&
+      currentState.url === sharedUrl
+        ? currentState
+        : { status: 'received_valid_share', url: sharedUrl }
+    )
     resetShareIntent()
   }, [
     hasShareIntent,
     resetShareIntent,
-    shareState.status,
     shareIntent.meta?.title,
     shareIntent.text,
     shareIntent.webUrl,
@@ -77,7 +88,9 @@ export function useIncomingRecipeShareIntent() {
   useEffect(() => {
     if (shareState.status === 'received_invalid_share') {
       showSaveRecipeMessage('Could not find a recipe video link in the shared text.')
-      setShareState({ status: 'consumed' })
+      setShareState((currentState) =>
+        currentState.status === 'consumed' ? currentState : { status: 'consumed' }
+      )
       return
     }
 
@@ -86,7 +99,9 @@ export function useIncomingRecipeShareIntent() {
     }
 
     if (lastHandledUrlRef.current === shareState.url) {
-      setShareState({ status: 'consumed' })
+      setShareState((currentState) =>
+        currentState.status === 'consumed' ? currentState : { status: 'consumed' }
+      )
       return
     }
 
@@ -101,8 +116,15 @@ export function useIncomingRecipeShareIntent() {
       source: 'share_intent',
       sourceHint: 'Shared from another app',
     })
-    setShareState({ status: 'consumed' })
-  }, [openSaveRecipeModal, shareState, showSaveRecipeMessage])
+    setShareState((currentState) =>
+      currentState.status === 'consumed' ? currentState : { status: 'consumed' }
+    )
+  }, [
+    openSaveRecipeModal,
+    shareState.status,
+    shareState.status === 'received_valid_share' ? shareState.url : null,
+    showSaveRecipeMessage,
+  ])
 }
 
 export function IncomingRecipeShareIntentHandler() {

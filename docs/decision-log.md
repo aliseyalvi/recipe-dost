@@ -1,6 +1,7 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-02
+- Fixed M21.8C.1 share intent render loop by avoiding idle state updates when no share intent exists.
 - Updated visible app name to Recipe Dost while preserving slug/package.
 - M21.8C share/save visual polish and splash config completed.
 - Decision: Normal app launch must remain idle on Home; share errors are shown only after an actual native share payload is received and cannot be parsed into a supported URL.
