@@ -93,6 +93,11 @@ type PreviewMetadata = {
   metadataStatus: MetadataStatus | null;
   isTooLong: boolean | null;
   maxDurationSeconds: number | null;
+  thumbnailSource: string | null;
+  thumbnailProvider: string | null;
+  thumbnailStrategy: string | null;
+  thumbnailCandidateCount: number | null;
+  thumbnailSelected: boolean | null;
 };
 
 type WorkerAttemptResult =
@@ -946,6 +951,26 @@ function normalizePreviewMetadata(value: unknown): PreviewMetadata {
       getRecordValue(value, "max_duration_seconds") ??
         getRecordValue(value, "maxDurationSeconds"),
     ),
+    thumbnailSource: getMetadataTraceString(
+      getRecordValue(value, "thumbnail_source") ??
+        getRecordValue(value, "thumbnailSource"),
+    ),
+    thumbnailProvider: getMetadataTraceString(
+      getRecordValue(value, "thumbnail_provider") ??
+        getRecordValue(value, "thumbnailProvider"),
+    ),
+    thumbnailStrategy: getMetadataTraceString(
+      getRecordValue(value, "thumbnail_strategy") ??
+        getRecordValue(value, "thumbnailStrategy"),
+    ),
+    thumbnailCandidateCount: getMetadataNumber(
+      getRecordValue(value, "thumbnail_candidate_count") ??
+        getRecordValue(value, "thumbnailCandidateCount"),
+    ),
+    thumbnailSelected: getMetadataBoolean(
+      getRecordValue(value, "thumbnail_selected") ??
+        getRecordValue(value, "thumbnailSelected"),
+    ),
   };
 }
 
@@ -959,6 +984,11 @@ function buildSafeSourceMetadata(metadata: PreviewMetadata) {
     metadata_status: getMetadataStatus(metadata),
     is_too_long: metadata.isTooLong,
     max_duration_seconds: metadata.maxDurationSeconds,
+    thumbnail_source: metadata.thumbnailSource,
+    thumbnail_provider: metadata.thumbnailProvider,
+    thumbnail_strategy: metadata.thumbnailStrategy,
+    thumbnail_candidate_count: metadata.thumbnailCandidateCount,
+    thumbnail_selected: metadata.thumbnailSelected,
   });
 }
 
@@ -1002,6 +1032,15 @@ function buildSafeRefreshResponse({
   thumbnailPresent: boolean;
   durationSeconds: number | null;
 }) {
+  const thumbnailSource = getSafeSourceMetadataString(
+    recipeItem.source_metadata,
+    "thumbnail_source",
+  );
+  const thumbnailStrategy = getSafeSourceMetadataString(
+    recipeItem.source_metadata,
+    "thumbnail_strategy",
+  );
+
   return {
     recipe_item_id: recipeItem.id,
     metadata_status: metadataStatus,
@@ -1009,6 +1048,8 @@ function buildSafeRefreshResponse({
     error_code: errorCode,
     title_present: titlePresent,
     thumbnail_present: thumbnailPresent,
+    ...(thumbnailSource ? { thumbnail_source: thumbnailSource } : {}),
+    ...(thumbnailStrategy ? { thumbnail_strategy: thumbnailStrategy } : {}),
     duration_seconds: durationSeconds,
   };
 }
@@ -1131,6 +1172,22 @@ function getMetadataString(value: unknown) {
   return typeof value === "string" && value.trim()
     ? value.trim().slice(0, 500)
     : null;
+}
+
+function getMetadataTraceString(value: unknown) {
+  const text = getMetadataString(value);
+
+  if (!text || /(?:https?:)?\/\//i.test(text)) {
+    return null;
+  }
+
+  return /(authorization|bearer|cookie|secret|token)/i.test(text) ? null : text;
+}
+
+function getSafeSourceMetadataString(sourceMetadata: Json, key: string) {
+  const value = getRecordValue(sourceMetadata, key);
+
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 function getMetadataStringArray(value: unknown) {

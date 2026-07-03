@@ -1,6 +1,7 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-03
+- M21.9B.1A preserves safe thumbnail trace fields in recipe_items.source_metadata.
 - M21.9A.4 fixed Save Recipe BottomSheet keyboard behavior using BottomSheetTextInput, tall snap points, keyboardBehavior=extend, and coordinated keyboard+sheet close.
 - M21.9A.3 fixed BottomSheet keyboard behavior by using BottomSheetTextInput, dismissing keyboard before sheet close, and synchronizing close state via onDismiss.
 - M21.9A.2 replaced the custom Save Recipe URL modal with a stable `@gorhom/bottom-sheet` `BottomSheetModal`.
