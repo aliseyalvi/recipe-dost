@@ -6,6 +6,7 @@ import {
   isMediaJobAttentionRequired,
 } from '@/lib/api/recipes'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
+import { getRecipeCardThumbnail } from '@/lib/recipe-thumbnails'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
@@ -93,18 +94,18 @@ export default function HomeRoute() {
     })
 
     if (recipe.latest_card) {
-      router.push(`/recipe-card/${recipe.latest_card.id}`)
+      router.push(`/recipe-card/${recipe.latest_card.id}?returnTo=/home`)
       return
     }
 
     if (recipe.latest_media_job?.result_recipe_card_id) {
       router.push(
-        `/recipe-card/${recipe.latest_media_job.result_recipe_card_id}`
+        `/recipe-card/${recipe.latest_media_job.result_recipe_card_id}?returnTo=/home`
       )
       return
     }
 
-    router.push(`/recipe/${recipe.id}`)
+    router.push(`/recipe/${recipe.id}?returnTo=/home`)
   }
 
   const toggleFilter = (chip: HomeChip) => {
@@ -195,11 +196,7 @@ export default function HomeRoute() {
                   subtitle={getHomeRecipeSubtitle(recipe)}
                   platform={getRecipePlatform(recipe.platform)}
                   status={getRecipeVisualStatus(recipe)}
-                  thumbnailUrl={
-                    recipe.latest_media_job?.thumbnail_url ??
-                    recipe.latest_media_job?.source_metadata.uploaded_thumbnail_url ??
-                    recipe.thumbnail_url
-                  }
+                  thumbnailUrl={getRecipeCardThumbnail(recipe)}
                   sourceUrl={recipe.source_url}
                   hasGroceryList={Boolean(recipe.latest_card)}
                   progress={recipe.latest_media_job?.progress}

@@ -1,6 +1,10 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-03
+- M21.9C.3 fixed nested header back behavior to prefer router.back() and route-specific returnTo fallbacks. Grocery cards now reuse the Library thumbnail fallback chain.
+- Decision: Parent screens pass `returnTo` when opening nested details; the nested header only uses that value when there is no native back stack.
+- Decision: Source Detail auto-open keeps `router.replace` behavior but carries a Source Detail `returnTo` so direct fallback navigation remains useful.
+- Decision: Grocery list cards are enriched app-side from existing `media_jobs` and `recipe_items.thumbnail_url` data; no schema, worker, thumbnail generation, or Supabase Function changes were made.
 - M21.9C.2 replaced custom Back pill headers with a standard nested-screen header.
 - Decision: Tab roots have no back header; nested/detail screens have safe back navigation through the compact `NestedScreenHeader`.
 - Decision: Source/AI detail screens support compact optional open-original right actions using existing source-opening handlers; no new delete/options menu was added because no existing delete action is present in these screens.

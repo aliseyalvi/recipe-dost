@@ -7,6 +7,7 @@ import { hasUrduScript } from '@/features/language/localized-text'
 import { detectRecipePlatform } from '@/features/recipe-draft/platform'
 import { getRecipeGroceryList, getRecipeGroceryLists } from '@/lib/api/recipes'
 import type { GroceryItem, RecipeGroceryList } from '@/lib/api/recipes'
+import { getRecipeCardThumbnail } from '@/lib/recipe-thumbnails'
 import { getUsageSummary } from '@/lib/api/usage'
 import { UsagePill } from '@/features/usage/usage-limit-card'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
@@ -147,8 +148,11 @@ export default function GroceryRoute() {
                   status="ai_card"
                   sourceUrl={item.source_link}
                   hasGroceryList
+                  thumbnailUrl={getRecipeCardThumbnail(item)}
                   createdAt={item.created_at}
-                  onPress={() => router.push(`/grocery?recipeCardId=${item.id}`)}
+                  onPress={() =>
+                    router.push(`/grocery?recipeCardId=${item.id}&returnTo=/grocery`)
+                  }
                 />
               </View>
             ))}
@@ -292,7 +296,13 @@ export default function GroceryRoute() {
           title="No grocery items here yet"
           message="This recipe card does not have grocery items or ingredients to turn into a checklist."
           actionLabel="Back to Recipe"
-          onActionPress={() => router.push(`/recipe-card/${recipeGroceryList.id}`)}
+          onActionPress={() =>
+            router.push(
+              `/recipe-card/${recipeGroceryList.id}?returnTo=${encodeURIComponent(
+                `/grocery?recipeCardId=${recipeGroceryList.id}`
+              )}`
+            )
+          }
         />
       ) : (
         <>
@@ -343,7 +353,13 @@ export default function GroceryRoute() {
               label="Back to Recipe"
               fullWidth
               variant="ghost"
-              onPress={() => router.push(`/recipe-card/${recipeGroceryList.id}`)}
+              onPress={() =>
+                router.push(
+                  `/recipe-card/${recipeGroceryList.id}?returnTo=${encodeURIComponent(
+                    `/grocery?recipeCardId=${recipeGroceryList.id}`
+                  )}`
+                )
+              }
             />
           </View>
         </>

@@ -1,6 +1,6 @@
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, radius, spacing, typography } from '@/theme'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
 import { ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
@@ -24,6 +24,10 @@ export function NestedScreenHeader({
 }: Props) {
   const router = useRouter()
   const { track } = usePostHog()
+  const { returnTo: returnToParam } = useLocalSearchParams<{
+    returnTo?: string | string[]
+  }>()
+  const returnToRoute = getReturnToRoute(returnToParam)
 
   const goBack = () => {
     if (onBack) {
@@ -31,10 +35,12 @@ export function NestedScreenHeader({
       return
     }
 
+    const fallback = returnToRoute ?? fallbackRoute
+
     track('navigation_back_tapped', {
       title,
       fallback_route:
-        typeof fallbackRoute === 'string' ? fallbackRoute : 'object_route',
+        typeof fallback === 'string' ? fallback : 'object_route',
     })
 
     if (router.canGoBack()) {
@@ -42,7 +48,7 @@ export function NestedScreenHeader({
       return
     }
 
-    router.replace(fallbackRoute)
+    router.replace(fallback)
   }
 
   return (
@@ -106,6 +112,16 @@ export function NestedScreenHeader({
       ) : null}
     </View>
   )
+}
+
+function getReturnToRoute(value: string | string[] | undefined): Href | null {
+  const route = Array.isArray(value) ? value[0] : value
+
+  if (!route || !route.startsWith('/') || route.startsWith('//')) {
+    return null
+  }
+
+  return route as Href
 }
 
 export function NestedHeaderIconButton({

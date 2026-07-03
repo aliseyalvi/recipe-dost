@@ -317,7 +317,13 @@ export type RecipeGroceryList = Omit<
   'grocery_list_json' | 'ingredients_json'
 > & {
   grocery_items: GroceryItem[]
+  thumbnail_url: string | null
 }
+
+type RecipeGroceryListSourceRow = Pick<
+  Database['public']['Tables']['recipe_items']['Row'],
+  'id' | 'thumbnail_url'
+>
 
 type RecipeLibraryItemRow = Pick<
   Database['public']['Tables']['recipe_items']['Row'],
@@ -817,8 +823,53 @@ export async function getRecipeGroceryLists() {
     throw new Error('Could not load grocery lists.')
   }
 
-  return (data satisfies RecipeGroceryListRow[])
-    .map(normalizeRecipeGroceryList)
+  const rows = data satisfies RecipeGroceryListRow[]
+  const recipeIds = rows.map((item) => item.recipe_id)
+  const sourceThumbnailByRecipeId = new Map<string, string | null>()
+  const mediaThumbnailByRecipeId = new Map<string, string | null>()
+
+  if (recipeIds.length > 0) {
+    const { data: sourceRows } = await supabase
+      .from('recipe_items')
+      .select('id, thumbnail_url')
+      .eq('user_id', user.id)
+      .in('id', recipeIds)
+
+    for (const sourceRow of (sourceRows ?? []) as RecipeGroceryListSourceRow[]) {
+      sourceThumbnailByRecipeId.set(sourceRow.id, sourceRow.thumbnail_url)
+    }
+
+    const { data: mediaJobs } = await supabase
+      .from('media_jobs')
+      .select(MEDIA_JOB_SELECT)
+      .eq('user_id', user.id)
+      .in('recipe_item_id', recipeIds)
+      .order('created_at', { ascending: false })
+
+    for (const row of (mediaJobs ?? []) as MediaJobRow[]) {
+      if (!row.recipe_item_id || mediaThumbnailByRecipeId.has(row.recipe_item_id)) {
+        continue
+      }
+
+      const mediaJob = normalizeMediaJob(row)
+      mediaThumbnailByRecipeId.set(
+        row.recipe_item_id,
+        mediaJob.thumbnail_url ??
+          mediaJob.source_metadata.uploaded_thumbnail_url ??
+          null
+      )
+    }
+  }
+
+  return rows
+    .map((row) =>
+      normalizeRecipeGroceryList(
+        row,
+        mediaThumbnailByRecipeId.get(row.recipe_id) ??
+          sourceThumbnailByRecipeId.get(row.recipe_id) ??
+          null
+      )
+    )
     .filter((item) => item.grocery_items.length > 0)
 }
 
@@ -1088,7 +1139,10 @@ function getAiSourceMode(value: unknown): AiSourceMode | undefined {
   return undefined
 }
 
-function normalizeRecipeGroceryList(row: RecipeGroceryListRow): RecipeGroceryList {
+function normalizeRecipeGroceryList(
+  row: RecipeGroceryListRow,
+  thumbnailUrl: string | null = null
+): RecipeGroceryList {
   return {
     id: row.id,
     recipe_id: row.recipe_id,
@@ -1097,6 +1151,7 @@ function normalizeRecipeGroceryList(row: RecipeGroceryListRow): RecipeGroceryLis
     source_link: row.source_link,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    thumbnail_url: thumbnailUrl,
     grocery_items: getGroceryItems(row.grocery_list_json, row.ingredients_json),
   }
 }

@@ -5,6 +5,7 @@ import {
   isMediaJobActive,
   isMediaJobAttentionRequired,
 } from '@/lib/api/recipes'
+import { getRecipeCardThumbnail } from '@/lib/recipe-thumbnails'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
@@ -144,16 +145,18 @@ export default function LibraryRoute() {
     })
 
     if (item.latest_card) {
-      router.push(`/recipe-card/${item.latest_card.id}`)
+      router.push(`/recipe-card/${item.latest_card.id}?returnTo=/library`)
       return
     }
 
     if (item.latest_media_job?.result_recipe_card_id) {
-      router.push(`/recipe-card/${item.latest_media_job.result_recipe_card_id}`)
+      router.push(
+        `/recipe-card/${item.latest_media_job.result_recipe_card_id}?returnTo=/library`
+      )
       return
     }
 
-    router.push(`/recipe/${item.id}`)
+    router.push(`/recipe/${item.id}?returnTo=/library`)
   }
 
   return (
@@ -223,11 +226,7 @@ export default function LibraryRoute() {
               subtitle={getLibrarySubtitle(item)}
               platform={getRecipePlatform(item.platform)}
               status={getRecipeVisualStatus(item)}
-              thumbnailUrl={
-                item.latest_media_job?.thumbnail_url ??
-                item.latest_media_job?.source_metadata.uploaded_thumbnail_url ??
-                item.thumbnail_url
-              }
+              thumbnailUrl={getRecipeCardThumbnail(item)}
               sourceUrl={item.source_url}
               hasGroceryList={Boolean(item.latest_card)}
               progress={item.latest_media_job?.progress}

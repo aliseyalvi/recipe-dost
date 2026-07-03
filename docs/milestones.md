@@ -1,5 +1,14 @@
 # Recipe Dost Milestones
 
+## M21.9C.3 - Nested Header Back Behavior and Grocery Thumbnails
+
+- Status: Done after validation.
+- Nested header back behavior now prefers `router.back()`, then a safe `returnTo` route param, then the screen fallback route.
+- Home, Library, Grocery, Source Detail, AI Recipe, and Grocery detail navigations pass parent `returnTo` context into nested screens.
+- Auto-opening an AI Recipe from Source Detail keeps a safe return route back to that source detail when the stack has been replaced.
+- Grocery cards now reuse the Library thumbnail fallback chain by resolving latest media-job thumbnails before recipe-item thumbnails.
+- Main tab roots remain headerless, and the compact nested header style remains unchanged.
+
 ## M21.9C.2 - Standard Nested-Screen Header
 
 - Status: Done after validation.

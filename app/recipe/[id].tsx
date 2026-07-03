@@ -141,7 +141,11 @@ export default function SavedRecipeRoute() {
     ) {
       hasAutoOpenedResultRef.current = true
       shouldAutoOpenResultRef.current = false
-      router.replace(`/recipe-card/${resultRecipeCardId}`)
+      router.replace(
+        `/recipe-card/${resultRecipeCardId}?returnTo=${encodeURIComponent(
+          `/recipe/${recipeId}`
+        )}`
+      )
     }
   }, [queryClient, recipeId, resultRecipeCardId, router])
 
@@ -554,7 +558,13 @@ export default function SavedRecipeRoute() {
           <Button
             label="Open AI Recipe"
             fullWidth
-            onPress={() => router.push(`/recipe-card/${resultRecipeCardId}`)}
+            onPress={() =>
+              router.push(
+                `/recipe-card/${resultRecipeCardId}?returnTo=${encodeURIComponent(
+                  `/recipe/${recipeId}`
+                )}`
+              )
+            }
           />
         </Card>
       ) : !mediaJobQuery.isLoading && !mediaJobQuery.error ? (

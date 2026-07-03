@@ -341,7 +341,13 @@ export default function RecipeCardResultRoute() {
           label="Open Grocery List"
           fullWidth
           variant="accent"
-          onPress={() => router.push(`/grocery?recipeCardId=${recipeCard.id}`)}
+          onPress={() =>
+            router.push(
+              `/grocery?recipeCardId=${recipeCard.id}&returnTo=${encodeURIComponent(
+                `/recipe-card/${recipeCard.id}`
+              )}`
+            )
+          }
         />
       ) : null}
       <SubstitutionsSection substitutions={recipeCard.substitutions} />
