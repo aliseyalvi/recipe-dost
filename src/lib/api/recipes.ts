@@ -3,6 +3,7 @@ import {
   RecipeMetadataStatus,
   RecipePlatform,
 } from '@/features/recipe-draft/types'
+import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import { supabase } from '@/lib/supabase/client'
 import { Database, Json } from '@/types/supabase'
 
@@ -87,6 +88,9 @@ export type AiSourceMode =
 
 export type MediaJobStatus =
   | 'queued'
+  | 'processing'
+  | 'pending'
+  | 'running'
   | 'resolving'
   | 'downloading'
   | 'validating'
@@ -146,6 +150,7 @@ type CreateMediaJobResponse =
         progress: number
         worker_triggered: boolean
         processor_mode: 'worker' | 'queue' | 'manual' | 'disabled'
+        duplicate_active_job?: boolean
       }
     }
   | {
@@ -565,7 +570,10 @@ export async function createMediaJob({
       code: responseError?.code ?? functionError.code,
       message:
         responseError?.message ??
-        'Could not start AI recipe. Please try again.',
+        getFriendlyApiErrorMessage(
+          error,
+          'Could not start AI recipe. Please try again.'
+        ),
       status: functionError.status,
       causeName: functionError.name ?? undefined,
       functionBody: functionError.functionBody,
@@ -597,7 +605,12 @@ export async function getMediaJob(mediaJobId: string) {
   } = await supabase.auth.getUser()
 
   if (userError || !user) {
-    throw new Error('Could not load AI recipe status.')
+    throw new Error(
+      getFriendlyApiErrorMessage(
+        userError,
+        'Could not load AI recipe status.'
+      )
+    )
   }
 
   const { data, error } = await supabase
@@ -608,7 +621,9 @@ export async function getMediaJob(mediaJobId: string) {
     .single()
 
   if (error) {
-    throw new Error('Could not load AI recipe status.')
+    throw new Error(
+      getFriendlyApiErrorMessage(error, 'Could not load AI recipe status.')
+    )
   }
 
   return normalizeMediaJob(data satisfies MediaJobRow)
@@ -621,7 +636,12 @@ export async function getLatestMediaJobForRecipe(recipeItemId: string) {
   } = await supabase.auth.getUser()
 
   if (userError || !user) {
-    throw new Error('Could not load AI recipe status.')
+    throw new Error(
+      getFriendlyApiErrorMessage(
+        userError,
+        'Could not load AI recipe status.'
+      )
+    )
   }
 
   const { data, error } = await supabase
@@ -634,7 +654,9 @@ export async function getLatestMediaJobForRecipe(recipeItemId: string) {
     .maybeSingle()
 
   if (error) {
-    throw new Error('Could not load AI recipe status.')
+    throw new Error(
+      getFriendlyApiErrorMessage(error, 'Could not load AI recipe status.')
+    )
   }
 
   return data ? normalizeMediaJob(data satisfies MediaJobRow) : null
@@ -739,7 +761,9 @@ export async function getRecipeCard(recipeCardId: string) {
     .single()
 
   if (error) {
-    throw new Error('Could not load this recipe card.')
+    throw new Error(
+      getFriendlyApiErrorMessage(error, 'Could not load this recipe card.')
+    )
   }
 
   return normalizeRecipeCard(data satisfies RecipeCardRow)
@@ -808,7 +832,12 @@ export async function getSavedRecipeItem(recipeId: string) {
     .single()
 
   if (error) {
-    throw new Error('Could not load this saved recipe link.')
+    throw new Error(
+      getFriendlyApiErrorMessage(
+        error,
+        'Could not load this saved recipe link.'
+      )
+    )
   }
 
   return data satisfies SavedRecipeItem
@@ -821,7 +850,12 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
   } = await supabase.auth.getUser()
 
   if (userError || !user) {
-    throw new Error('Could not load your recipe library.')
+    throw new Error(
+      getFriendlyApiErrorMessage(
+        userError,
+        'Could not load your recipe library.'
+      )
+    )
   }
 
   let recipeItemsQuery = supabase
@@ -839,7 +873,12 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
   const { data: recipeItems, error: recipeItemsError } = await recipeItemsQuery
 
   if (recipeItemsError) {
-    throw new Error('Could not load your recipe library.')
+    throw new Error(
+      getFriendlyApiErrorMessage(
+        recipeItemsError,
+        'Could not load your recipe library.'
+      )
+    )
   }
 
   const items = recipeItems satisfies RecipeLibraryItemRow[]
@@ -868,7 +907,12 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
     .order('created_at', { ascending: false })
 
   if (recipeCardsError) {
-    throw new Error('Could not load your recipe library.')
+    throw new Error(
+      getFriendlyApiErrorMessage(
+        recipeCardsError,
+        'Could not load your recipe library.'
+      )
+    )
   }
 
   const latestCardByRecipeId = new Map<string, RecipeLibraryCard>()

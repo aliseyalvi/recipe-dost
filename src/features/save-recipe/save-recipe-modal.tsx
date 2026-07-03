@@ -11,6 +11,13 @@ import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, radius, spacing, typography } from '@/theme'
 import { Button } from '@/ui/button'
 import { Input } from '@/ui/input'
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet'
+import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet'
+import type { BottomSheetModalMethods } from '@gorhom/bottom-sheet/lib/typescript/types'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import {
@@ -18,18 +25,12 @@ import {
   ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native'
+import { BackHandler, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 type SaveRecipeModalContextValue = {
@@ -52,7 +53,9 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
   const insets = useSafeAreaInsets()
   const { user } = useAuth()
   const { track } = usePostHog()
-  const [isVisible, setIsVisible] = useState(false)
+  const bottomSheetRef = useRef<BottomSheetModalMethods>(null)
+  const previousIsOpenRef = useRef(false)
+  const [isOpen, setIsOpen] = useState(false)
   const [sourceUrl, setSourceUrl] = useState('')
   const [modalSource, setModalSource] =
     useState<SaveRecipeModalOpenOptions['source']>('manual')
@@ -73,7 +76,7 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
     const initialUrl = options?.initialUrl?.trim()
 
     if (
-      isVisible &&
+      isOpen &&
       options?.source === 'share_intent' &&
       initialUrl &&
       sourceUrl === initialUrl
@@ -89,7 +92,7 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
 
     setModalSource(options?.source ?? 'manual')
     setSourceHint(options?.sourceHint ?? null)
-    setIsVisible(true)
+    setIsOpen(true)
     setBannerMessage(null)
     setErrorMessage(null)
     setHasSubmitted(false)
@@ -97,20 +100,67 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
       source: options?.source ?? 'manual',
       has_initial_url: Boolean(initialUrl),
     })
-  }, [isVisible, sourceUrl, track])
+  }, [isOpen, sourceUrl, track])
 
   const closeModal = useCallback(() => {
     if (isSaving) {
       return
     }
 
-    setIsVisible(false)
+    setIsOpen(false)
+  }, [isSaving])
+
+  const resetClosedSheetState = useCallback(() => {
+    previousIsOpenRef.current = false
+    setIsOpen(false)
     setSourceUrl('')
     setModalSource('manual')
     setSourceHint(null)
     setHasSubmitted(false)
     setErrorMessage(null)
-  }, [isSaving])
+  }, [])
+
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        pressBehavior="close"
+        opacity={0.55}
+      />
+    ),
+    []
+  )
+
+  useEffect(() => {
+    const wasOpen = previousIsOpenRef.current
+
+    if (isOpen && !wasOpen) {
+      bottomSheetRef.current?.present()
+    }
+
+    if (!isOpen && wasOpen) {
+      bottomSheetRef.current?.dismiss()
+    }
+
+    previousIsOpenRef.current = isOpen
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) {
+      return
+    }
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      closeModal()
+      return true
+    })
+
+    return () => {
+      backHandler.remove()
+    }
+  }, [closeModal, isOpen])
 
   const showSaveRecipeMessage = useCallback((message: string) => {
     setBannerMessage(message)
@@ -220,10 +270,7 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
       })
     }
 
-    setIsVisible(false)
-    setSourceUrl('')
-    setModalSource('manual')
-    setSourceHint(null)
+    setIsOpen(false)
     setHasSubmitted(false)
     setErrorMessage(null)
     upsertSavedItemInCache(optimisticItem)
@@ -290,128 +337,136 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
           </Pressable>
         </View>
       ) : null}
-      <Modal
-        animationType="slide"
-        transparent
-        visible={isVisible}
-        onRequestClose={closeModal}
+      <BottomSheetModal
+        ref={bottomSheetRef}
+        backdropComponent={renderBackdrop}
+        bottomInset={0}
+        enableContentPanningGesture={false}
+        enableDismissOnClose
+        enableDynamicSizing
+        enableHandlePanningGesture={false}
+        enableOverDrag={false}
+        enablePanDownToClose={false}
+        keyboardBehavior="interactive"
+        keyboardBlurBehavior="restore"
+        android_keyboardInputMode="adjustResize"
+        onDismiss={resetClosedSheetState}
+        backgroundStyle={{
+          borderTopLeftRadius: radius.lg,
+          borderTopRightRadius: radius.lg,
+          backgroundColor: colors.surface,
+        }}
+        handleIndicatorStyle={{
+          width: 42,
+          height: 4,
+          borderRadius: radius.pill,
+          backgroundColor: colors.border,
+        }}
+        handleStyle={{
+          paddingTop: spacing.md,
+          paddingBottom: spacing.sm,
+        }}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
-          style={{ flex: 1 }}
+        <BottomSheetScrollView
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+          contentContainerStyle={{
+            gap: spacing.lg,
+            paddingHorizontal: spacing.xl,
+            paddingTop: spacing.sm,
+            paddingBottom: spacing.xl + spacing.md + insets.bottom,
+          }}
         >
-          <Pressable
-            accessibilityLabel="Close save recipe modal"
-            style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.58)' }}
-            onPress={closeModal}
-          />
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}
-          >
+          <View style={{ gap: spacing.sm }}>
             <View
               style={{
-                gap: spacing.lg,
-                borderTopLeftRadius: radius.lg,
-                borderTopRightRadius: radius.lg,
-                backgroundColor: colors.surface,
-                padding: spacing.xl,
-                paddingBottom: spacing.xl + spacing.md + insets.bottom,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: spacing.md,
               }}
             >
-              <View style={{ gap: spacing.sm }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: spacing.md,
-                  }}
-                >
-                  <Text selectable style={[typography.title, { color: colors.text }]}>
-                    Save recipe video
-                  </Text>
-                  <Pressable
-                    accessibilityLabel="Close save recipe modal"
-                    accessibilityRole="button"
-                    onPress={closeModal}
-                    style={({ pressed }) => ({
-                      width: 36,
-                      height: 36,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: radius.pill,
-                      backgroundColor: colors.surfaceMuted,
-                      opacity: pressed ? 0.72 : 1,
-                    })}
-                  >
-                    <Text
-                      selectable={false}
-                      style={[typography.body, { color: colors.text, fontWeight: '900' }]}
-                    >
-                      x
-                    </Text>
-                  </Pressable>
-                </View>
-                <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-                  Paste a TikTok, Instagram, YouTube, or Facebook recipe link.
-                </Text>
-                {sourceHint ? (
-                  <Text selectable style={[typography.caption, { color: colors.primary }]}>
-                    {sourceHint}
-                  </Text>
-                ) : null}
-              </View>
-
-              <Input
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isSaving}
-                keyboardType="url"
-                label="URL"
-                onChangeText={(value) => {
-                  setSourceUrl(value)
-                  if (errorMessage) {
-                    setErrorMessage(null)
-                  }
-                }}
-                onSubmitEditing={() => {
-                  void submitRecipeLink()
-                }}
-                placeholder="https://www.instagram.com/reel/..."
-                returnKeyType="done"
-                value={sourceUrl}
-              />
-
-              {hasSubmitted && validationMessage ? (
-                <Text selectable style={[typography.caption, { color: colors.danger }]}>
-                  {validationMessage}
-                </Text>
-              ) : null}
-
-              {errorMessage ? (
-                <Text selectable style={[typography.caption, { color: colors.danger }]}>
-                  {errorMessage}
-                </Text>
-              ) : null}
-
-              <Button
-                label="Save Recipe"
-                fullWidth
-                disabled={isSaving}
-                onPress={() => {
-                  void submitRecipeLink()
-                }}
-              />
-
-              <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-                We save links and recipe cards, not videos.
+              <Text selectable style={[typography.title, { color: colors.text }]}>
+                Save recipe video
               </Text>
+              <Pressable
+                accessibilityLabel="Close save recipe modal"
+                accessibilityRole="button"
+                onPress={closeModal}
+                style={({ pressed }) => ({
+                  width: 36,
+                  height: 36,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: radius.pill,
+                  backgroundColor: colors.surfaceMuted,
+                  opacity: pressed ? 0.72 : 1,
+                })}
+              >
+                <Text
+                  selectable={false}
+                  style={[typography.body, { color: colors.text, fontWeight: '900' }]}
+                >
+                  x
+                </Text>
+              </Pressable>
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </Modal>
+            <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+              Paste a TikTok, Instagram, YouTube, or Facebook recipe link.
+            </Text>
+            {sourceHint ? (
+              <Text selectable style={[typography.caption, { color: colors.primary }]}>
+                {sourceHint}
+              </Text>
+            ) : null}
+          </View>
+
+          <Input
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!isSaving}
+            keyboardType="url"
+            label="URL"
+            onChangeText={(value) => {
+              setSourceUrl(value)
+              if (errorMessage) {
+                setErrorMessage(null)
+              }
+            }}
+            onSubmitEditing={() => {
+              void submitRecipeLink()
+            }}
+            placeholder="https://www.instagram.com/reel/..."
+            returnKeyType="done"
+            value={sourceUrl}
+          />
+
+          {hasSubmitted && validationMessage ? (
+            <Text selectable style={[typography.caption, { color: colors.danger }]}>
+              {validationMessage}
+            </Text>
+          ) : null}
+
+          {errorMessage ? (
+            <Text selectable style={[typography.caption, { color: colors.danger }]}>
+              {errorMessage}
+            </Text>
+          ) : null}
+
+          <Button
+            label="Save Recipe"
+            fullWidth
+            disabled={isSaving}
+            onPress={() => {
+              void submitRecipeLink()
+            }}
+          />
+
+          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+            We save links and recipe cards, not videos.
+          </Text>
+        </BottomSheetScrollView>
+      </BottomSheetModal>
     </SaveRecipeModalContext.Provider>
   )
 }

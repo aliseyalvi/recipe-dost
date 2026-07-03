@@ -23,6 +23,7 @@ import {
   getRecipeCard,
   getLatestMediaJobForRecipe,
 } from '@/lib/api/recipes'
+import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import { MediaJobSourceMetadataSummary } from '@/features/media-jobs/media-job-source-metadata'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, radius, spacing, typography } from '@/theme'
@@ -102,7 +103,10 @@ export default function RecipeCardResultRoute() {
       <Screen>
         <ErrorState
           title="Could not load recipe card"
-          message={recipeCardQuery.error.message}
+          message={getFriendlyApiErrorMessage(
+            recipeCardQuery.error,
+            recipeCardQuery.error.message
+          )}
           retryLabel="Retry"
           onRetry={() => {
             void recipeCardQuery.refetch()

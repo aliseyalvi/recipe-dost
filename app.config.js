@@ -10,6 +10,11 @@ module.exports = ({ config }) => {
       orientation: "portrait",
       icon: "./assets/images/icon.png",
       userInterfaceStyle: "dark",
+      androidStatusBar: {
+        translucent: false,
+        barStyle: "light-content",
+        backgroundColor: "#000000",
+      },
       ios: {
         supportsTablet: true,
       },

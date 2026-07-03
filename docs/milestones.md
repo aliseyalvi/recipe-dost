@@ -1,5 +1,36 @@
 # Recipe Dost Milestones
 
+## M21.9A.2 - Save Recipe Bottom Sheet Modal
+
+- Status: Done after validation.
+- Save Recipe URL now uses one global `@gorhom/bottom-sheet` `BottomSheetModal` instead of the custom React Native `Modal` plus Pressable overlay.
+- `GestureHandlerRootView` and `BottomSheetModalProvider` are mounted once near the app root.
+- Backdrop tap through `BottomSheetBackdrop`, Android hardware back, and the X button are the supported close methods.
+- Swipe-to-close and sheet panning are disabled for the MVP to avoid keyboard gesture glitches.
+- Shared URLs still open the same provider flow prefilled with "Shared from another app"; invalid shares still show one friendly message only.
+- Save still validates the URL, dismisses quickly, shows one optimistic card, and finishes save/metadata refresh in the background.
+- New native bottom sheet/gesture dependency behavior requires a fresh development build before device QA.
+
+## M21.9A.1 - Save Recipe Modal Stabilization
+
+- Status: Done after validation.
+- Save Recipe now uses a stable full-screen transparent React Native `Modal` with one dark opacity backdrop and one bottom-anchored sheet.
+- Backdrop tap, Android hardware back, and the X button close the modal and clear the initial URL/share hint state.
+- Swipe-to-close is disabled for this MVP because reliable backdrop/back/X close behavior is safer with the Android keyboard.
+- Keyboard-safe layout uses `KeyboardAvoidingView`, a handled-taps `ScrollView`, and preserved Android resize mode so the URL input and Save Recipe button stay reachable.
+- Save behavior remains unchanged: validate URL, close quickly, show one optimistic card, then save and refresh metadata in the background.
+
+## M21.9A - AI Queue Reservation and Detail Polish
+
+- Status: Done after validation.
+- Active AI jobs now reserve free AI slots while queued, processing, analyzing, pending, running, resolving, downloading, validating, thumbnailing, uploading to AI, or saving results.
+- Successful AI jobs count permanently; failed/cancelled/non-result jobs do not permanently consume free credits.
+- `get-ai-access` and `create-media-job` share the same server-side slot math and expose safe fields for successful used, active reserved, free limit, remaining to start, and can-start state.
+- Source Detail disables duplicate Generate AI Recipe starts, treats duplicate active jobs as analyzing, and auto-opens the AI recipe card when a job started from that screen completes.
+- Save modal backdrop/outside close behavior remains the simple modal save flow; sharing/saving still never creates `media_jobs`.
+- Source Detail and AI Recipe screens now use visible stack headers, and Android status bar content stays visible on the dark app background.
+- Network failures now show friendly offline retry UI on Home, Source Detail, AI access, AI status, and recipe-card loads.
+
 ## M21.8C - Share State, Optimistic Save, and Splash Polish
 
 - Status: Done after validation.

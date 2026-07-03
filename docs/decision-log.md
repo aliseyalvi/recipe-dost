@@ -1,6 +1,25 @@
 # Recipe Dost Decision Log
 
+## 2026-07-03
+- M21.9A.2 replaced the custom Save Recipe URL modal with a stable `@gorhom/bottom-sheet` `BottomSheetModal`.
+- Decision: The app root is wrapped once with `GestureHandlerRootView`, with one `BottomSheetModalProvider` near the root and one global Save Recipe sheet instance in `SaveRecipeModalProvider`.
+- Decision: Backdrop tap, Android hardware back, and the X close button are the supported Save Recipe sheet close methods.
+- Decision: Swipe-to-close and sheet panning are disabled for the MVP to avoid Android keyboard gesture glitches.
+- Decision: Shared URL prefill, invalid-share messaging, optimistic save, and background metadata refresh behavior remain on the existing provider flow.
+- Decision: Native bottom sheet/gesture behavior requires a fresh development build before device QA.
+- M21.9A.1 stabilized Save Recipe modal behavior.
+- Decision: Save Recipe uses a built-in full-screen transparent Modal with an absolute dark backdrop and a bottom-anchored sheet to avoid detached shadows, gaps, and backdrop layering issues.
+- Decision: Swipe-to-close is disabled for the MVP because backdrop tap, Android back, and X close are more reliable with the Android keyboard open.
+- Decision: Closing the modal clears initial URL/share hint state while preserving the existing optimistic save plus background metadata refresh flow.
+- Blocker: M21.9A.1 validation stopped after `npm run typecheck` failed with `app/_layout.tsx(9,32): error TS2322: Type '{ style: "light"; translucent: boolean; }' is not assignable to type 'IntrinsicAttributes & StatusBarProps'. Property 'translucent' does not exist on type 'IntrinsicAttributes & StatusBarProps'.`; `npx expo config --json` was not run because validation stopped on the first failure.
+
 ## 2026-07-02
+- M21.9A AI queue reservation and detail polish completed.
+- Decision: Successful AI jobs count permanently, while active queued/analyzing jobs reserve free slots temporarily and release them if they fail or stop before producing a result.
+- Decision: Source Detail may auto-open an AI recipe result only when generation was started from that detail screen in the current session.
+- Decision: Save modal backdrop/outside close, visible detail headers, status-bar safe layout, and friendly retry copy are polish changes only; save/share still uses `save-recipe-link` plus `refresh-recipe-metadata` and does not create `media_jobs`.
+- Decision: Network failures should show "You seem to be offline. Check your internet and try again." with retry UI instead of Java/fetch exception text.
+- Blocker: M21.9A validation stopped after `npm run typecheck` failed with `app/_layout.tsx(11,9): error TS2322: Type '{ style: "light"; backgroundColor: "#050505"; translucent: boolean; }' is not assignable to type 'IntrinsicAttributes & StatusBarProps'. Property 'backgroundColor' does not exist on type 'IntrinsicAttributes & StatusBarProps'.` and `src/features/media-jobs/media-job-card.tsx(75,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'. Type 'undefined' is not assignable to type 'string'.`; `npx expo config --json` was not run because validation stopped on the first failure.
 - Fixed M21.8C.1 share intent render loop by avoiding idle state updates when no share intent exists.
 - Updated visible app name to Recipe Dost while preserving slug/package.
 - M21.8C share/save visual polish and splash config completed.

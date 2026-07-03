@@ -166,6 +166,12 @@ function getMediaJobStatusLabel(status: MediaJob['status']) {
   switch (status) {
     case 'queued':
       return 'Waiting'
+    case 'processing':
+      return 'Processing'
+    case 'pending':
+      return 'Waiting'
+    case 'running':
+      return 'Processing'
     case 'resolving':
       return 'Finding video'
     case 'downloading':
@@ -201,6 +207,12 @@ function getMediaJobMessage(job: MediaJob) {
   switch (job.status) {
     case 'queued':
       return 'Waiting to start...'
+    case 'processing':
+      return 'Processing recipe video...'
+    case 'pending':
+      return 'Waiting to start...'
+    case 'running':
+      return 'Processing recipe video...'
     case 'resolving':
       return 'Finding recipe video...'
     case 'downloading':

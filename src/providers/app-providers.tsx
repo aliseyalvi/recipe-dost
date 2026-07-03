@@ -6,8 +6,10 @@ import { PostHogPlaceholderProvider } from '@/providers/posthog-placeholder-prov
 import { SentryPlaceholderProvider } from '@/providers/sentry-placeholder-provider'
 import { SaveRecipeModalProvider } from '@/features/save-recipe/save-recipe-modal'
 import { IncomingRecipeShareIntentHandler } from '@/features/share-intent/use-incoming-recipe-share-intent'
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { ReactNode } from 'react'
 import { I18nextProvider } from 'react-i18next'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { i18n } from '@/i18n'
 
 type Props = {
@@ -16,19 +18,23 @@ type Props = {
 
 export function AppProviders({ children }: Props) {
   return (
-    <SentryPlaceholderProvider>
-      <PostHogPlaceholderProvider>
-        <I18nextProvider i18n={i18n}>
-          <AppQueryProvider>
-            <AuthProvider>
-              <SaveRecipeModalProvider>
-                <IncomingRecipeShareIntentHandler />
-                {children}
-              </SaveRecipeModalProvider>
-            </AuthProvider>
-          </AppQueryProvider>
-        </I18nextProvider>
-      </PostHogPlaceholderProvider>
-    </SentryPlaceholderProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SentryPlaceholderProvider>
+        <PostHogPlaceholderProvider>
+          <I18nextProvider i18n={i18n}>
+            <AppQueryProvider>
+              <AuthProvider>
+                <BottomSheetModalProvider>
+                  <SaveRecipeModalProvider>
+                    <IncomingRecipeShareIntentHandler />
+                    {children}
+                  </SaveRecipeModalProvider>
+                </BottomSheetModalProvider>
+              </AuthProvider>
+            </AppQueryProvider>
+          </I18nextProvider>
+        </PostHogPlaceholderProvider>
+      </SentryPlaceholderProvider>
+    </GestureHandlerRootView>
   )
 }

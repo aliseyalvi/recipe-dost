@@ -130,6 +130,7 @@ type CreateMediaJobRequest = {
 };
 
 type CreateMediaJobErrorCode =
+  | "ai_credit_limit_or_active_queue_full"
   | "ai_credit_limit_reached"
   | "invalid_request"
   | "unauthorized"
@@ -155,6 +156,20 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Max-Age": "86400",
 };
+
+const ACTIVE_MEDIA_JOB_STATUSES = [
+  "queued",
+  "processing",
+  "analyzing",
+  "pending",
+  "running",
+  "resolving",
+  "downloading",
+  "validating",
+  "thumbnailing",
+  "uploading_to_ai",
+  "saving_result",
+] as const;
 
 Deno.serve((request) =>
   handleCreateMediaJobRequest(request).catch(() =>
@@ -276,16 +291,48 @@ async function handleCreateMediaJobRequest(request: Request) {
   }
 
   const sourceMode = getSourceMode(platform, recipeItem);
+  const activeJob = input.recipe_item_id
+    ? await getActiveMediaJobForRecipe(
+      clients.adminClient,
+      user.id,
+      input.recipe_item_id,
+    )
+    : null;
+
+  if (activeJob.error) {
+    return errorResponse(
+      "unexpected_media_job_error",
+      "Could not check active AI recipe status. Please try again.",
+      500,
+    );
+  }
+
+  if (activeJob.data) {
+    return jsonResponse({
+      ok: true,
+      data: {
+        media_job_id: activeJob.data.id,
+        status: activeJob.data.status,
+        progress: activeJob.data.progress,
+        worker_triggered: false,
+        processor_mode: getMediaProcessorMode(),
+        duplicate_active_job: true,
+      },
+    });
+  }
+
   const access = await getAiGenerationAccess(clients.adminClient, user.id);
 
   if (!access.allowed) {
     return errorResponse(
-      "ai_credit_limit_reached",
-      "You have used your free AI recipe generations.",
+      "ai_credit_limit_or_active_queue_full",
+      "No free AI slots left. Wait for active analysis to finish or upgrade.",
       402,
       {
         freeLimit: access.freeLimit,
         usedSuccessfulGenerations: access.usedSuccessfulGenerations,
+        activeReserved: access.activeReserved,
+        remainingToStart: access.remainingToStart,
         remaining: access.remaining,
         role: access.role,
       },
@@ -340,18 +387,25 @@ async function handleCreateMediaJobRequest(request: Request) {
       progress: jobResult.data.progress,
       worker_triggered: workerTriggered,
       processor_mode: processorMode,
-      ai_generation_access: {
-        reason: access.reason,
-        free_limit: access.freeLimit,
-        used_successful_generations: access.usedSuccessfulGenerations,
-        monthly_limit: access.monthlyLimit,
-        remaining: access.remaining,
-        role: access.role,
-        premium_active: access.premiumActive,
-        is_test_user: access.isTestUser,
-      },
+      ai_generation_access: toSafeAiGenerationAccessMetadata(access),
     },
   });
+}
+
+async function getActiveMediaJobForRecipe(
+  adminClient: EdgeSupabaseClient,
+  userId: string,
+  recipeItemId: string,
+) {
+  return await adminClient
+    .from("media_jobs")
+    .select("id, status, progress")
+    .eq("user_id", userId)
+    .eq("recipe_item_id", recipeItemId)
+    .in("status", ACTIVE_MEDIA_JOB_STATUSES)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ id: string; status: string; progress: number }>();
 }
 
 function getMediaProcessorMode(): MediaProcessorMode {

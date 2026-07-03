@@ -5,6 +5,7 @@ import {
   isMediaJobActive,
   isMediaJobAttentionRequired,
 } from '@/lib/api/recipes'
+import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
@@ -159,7 +160,10 @@ export default function HomeRoute() {
         {recentRecipesQuery.error ? (
           <ErrorState
             title="Could not load recent recipes"
-            message={recentRecipesQuery.error.message}
+            message={getFriendlyApiErrorMessage(
+              recentRecipesQuery.error,
+              recentRecipesQuery.error.message
+            )}
             retryLabel="Retry"
             onRetry={() => {
               void recentRecipesQuery.refetch()

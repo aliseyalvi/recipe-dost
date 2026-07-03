@@ -3,6 +3,7 @@ import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { RecipePlatform } from '@/features/recipe-draft/types'
 import { UsagePill } from '@/features/usage/usage-limit-card'
 import { getAiAccessState } from '@/lib/api/ai-access'
+import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import {
   RecipeApiError,
   createMediaJob,
@@ -39,6 +40,8 @@ export default function SavedRecipeRoute() {
   const [showCreditLimitState, setShowCreditLimitState] = useState(false)
   const didTrackUsageSummary = useRef(false)
   const lastTrackedMediaJobStatus = useRef<string | null>(null)
+  const shouldAutoOpenResultRef = useRef(false)
+  const hasAutoOpenedResultRef = useRef(false)
   const recipeQuery = useQuery({
     enabled: Boolean(recipeId),
     queryKey: ['recipe-item', recipeId],
@@ -62,7 +65,8 @@ export default function SavedRecipeRoute() {
     queryFn: () => getRecipeCard(resultRecipeCardId ?? ''),
   })
   const aiAccess = aiAccessQuery.data
-  const isAiLimitReached = aiAccess?.reason === 'limit_reached'
+  const isAiLimitReached =
+    aiAccess?.canStartAiJob === false || aiAccess?.reason === 'limit_reached'
 
   useEffect(() => {
     if (!aiAccess || didTrackUsageSummary.current) {
@@ -126,7 +130,16 @@ export default function SavedRecipeRoute() {
     void queryClient.invalidateQueries({
       queryKey: ['ai-access-state'],
     })
-  }, [queryClient, recipeId, resultRecipeCardId])
+
+    if (
+      shouldAutoOpenResultRef.current &&
+      !hasAutoOpenedResultRef.current
+    ) {
+      hasAutoOpenedResultRef.current = true
+      shouldAutoOpenResultRef.current = false
+      router.replace(`/recipe-card/${resultRecipeCardId}`)
+    }
+  }, [queryClient, recipeId, resultRecipeCardId, router])
 
   if (!recipeId) {
     return (
@@ -154,7 +167,10 @@ export default function SavedRecipeRoute() {
       <Screen>
         <ErrorState
           title="Could not load saved link"
-          message={recipeQuery.error.message}
+          message={getFriendlyApiErrorMessage(
+            recipeQuery.error,
+            recipeQuery.error.message
+          )}
           retryLabel="Retry"
           onRetry={() => {
             void recipeQuery.refetch()
@@ -212,7 +228,7 @@ export default function SavedRecipeRoute() {
   }
 
   const handleCreateMediaJob = async () => {
-    if (isCreatingMediaJob) {
+    if (isCreatingMediaJob || activeMediaJob) {
       return
     }
 
@@ -228,17 +244,22 @@ export default function SavedRecipeRoute() {
       const createdJob = await createMediaJob({
         recipeItemId: recipe.id,
       })
+      shouldAutoOpenResultRef.current = true
 
       track('media_job_created', {
         platform,
         status: createdJob.status,
+        duplicate_active_job: createdJob.duplicate_active_job === true,
       })
       await aiAccessQuery.refetch()
       await mediaJobQuery.refetch()
     } catch (caughtError) {
       if (
         caughtError instanceof RecipeApiError &&
-        caughtError.code === 'ai_credit_limit_reached'
+        (
+          caughtError.code === 'ai_credit_limit_or_active_queue_full' ||
+          caughtError.code === 'ai_credit_limit_reached'
+        )
       ) {
         setShowCreditLimitState(true)
         track('ai_credit_limit_reached', {
@@ -446,7 +467,10 @@ export default function SavedRecipeRoute() {
       {mediaJobQuery.error ? (
         <ErrorState
           title="Could not load AI recipe status"
-          message={mediaJobQuery.error.message}
+          message={getFriendlyApiErrorMessage(
+            mediaJobQuery.error,
+            mediaJobQuery.error.message
+          )}
           retryLabel="Retry"
           onRetry={() => {
             void mediaJobQuery.refetch()
@@ -512,16 +536,20 @@ export default function SavedRecipeRoute() {
             </Text>
           </View>
           <Button
-            label="Generate AI Recipe"
+            label={isCreatingMediaJob ? 'Starting AI Recipe...' : 'Generate AI Recipe'}
             fullWidth
-            disabled={isCreatingMediaJob || isAiLimitReached}
+            disabled={isCreatingMediaJob || Boolean(activeMediaJob) || isAiLimitReached}
             onPress={() => {
               void handleCreateMediaJob()
             }}
           />
           {isAiLimitReached ? (
             <Text selectable style={[typography.caption, { color: colors.warning }]}>
-              You have used your free AI recipes. Upgrade to generate more recipe cards.
+              No free AI slots left. Wait for active analysis to finish or upgrade.
+            </Text>
+          ) : aiAccess ? (
+            <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+              {getAiAvailabilityText(aiAccess)}
             </Text>
           ) : null}
           {mediaJob?.status === 'failed' ? (
@@ -547,7 +575,7 @@ export default function SavedRecipeRoute() {
           <Button
             label="Generate AI Recipe"
             fullWidth
-            disabled={isCreatingMediaJob || isAiLimitReached}
+            disabled={isCreatingMediaJob || Boolean(activeMediaJob) || isAiLimitReached}
             onPress={() => {
               void handleCreateMediaJob()
             }}
@@ -561,8 +589,7 @@ export default function SavedRecipeRoute() {
             Free AI recipes used
           </Text>
           <Text selectable style={[typography.body, { color: colors.text }]}>
-            You have used your 3 free AI recipe generations. Upgrade to generate
-            more recipe cards.
+            No free AI slots left. Wait for active analysis to finish or upgrade.
           </Text>
           <Button
             label="Unlock Pro"
@@ -586,6 +613,26 @@ export default function SavedRecipeRoute() {
         />
       ) : aiAccessQuery.isLoading ? (
         <UsagePill label="AI recipes left" value="-" />
+      ) : aiAccessQuery.error ? (
+        <Card tone="muted">
+          <Text selectable style={[typography.heading, { color: colors.text }]}>
+            Could not load AI availability
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.text }]}>
+            {getFriendlyApiErrorMessage(
+              aiAccessQuery.error,
+              aiAccessQuery.error.message
+            )}
+          </Text>
+          <Button
+            label="Retry"
+            fullWidth
+            variant="secondary"
+            onPress={() => {
+              void aiAccessQuery.refetch()
+            }}
+          />
+        </Card>
       ) : null}
 
       <Button
@@ -621,13 +668,15 @@ function getFriendlyMediaJobError(caughtError: unknown, fallback: Error) {
     )
   }
 
-  return fallback
+  return new Error(getFriendlyApiErrorMessage(caughtError, fallback.message))
 }
 
 function getAiRecipesLeftValue(access: {
   role: string
   isTestUser: boolean
   premiumActive: boolean
+  activeReserved: number
+  remainingToStart: number | null
   remaining: number | null
   reason: string
 }) {
@@ -647,7 +696,32 @@ function getAiRecipesLeftValue(access: {
     return '0'
   }
 
-  return access.remaining === null ? '-' : `${access.remaining}`
+  return access.remainingToStart === null ? '-' : `${access.remainingToStart}`
+}
+
+function getAiAvailabilityText(access: {
+  role: string
+  isTestUser: boolean
+  premiumActive: boolean
+  activeReserved: number
+  remainingToStart: number | null
+  reason: string
+}) {
+  if (access.role === 'admin' || access.isTestUser || access.premiumActive) {
+    return 'AI recipe generation is available.'
+  }
+
+  const remaining = access.remainingToStart ?? 0
+
+  if (access.activeReserved > 0) {
+    return `${access.activeReserved} analyzing, ${remaining} left`
+  }
+
+  if (access.reason === 'limit_reached') {
+    return 'No free AI slots left. Wait for active analysis to finish or upgrade.'
+  }
+
+  return `${remaining} free AI ${remaining === 1 ? 'recipe' : 'recipes'} left`
 }
 
 function formatDuration(totalSeconds: number) {
