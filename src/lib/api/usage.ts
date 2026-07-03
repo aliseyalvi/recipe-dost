@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import { Json } from '@/types/supabase'
 
 export type UsageSummary = {
@@ -18,7 +19,9 @@ export async function getUsageSummary(): Promise<UsageSummary> {
   } = await supabase.auth.getUser()
 
   if (userError || !user) {
-    throw new Error('Could not load free plan usage.')
+    throw new Error(
+      getFriendlyApiErrorMessage(userError, 'Could not load free plan usage.')
+    )
   }
 
   const [
@@ -46,7 +49,14 @@ export async function getUsageSummary(): Promise<UsageSummary> {
     recipeCardsCountResult.error ||
     groceryListRowsResult.error
   ) {
-    throw new Error('Could not load free plan usage.')
+    throw new Error(
+      getFriendlyApiErrorMessage(
+        savedLinksCountResult.error ??
+          recipeCardsCountResult.error ??
+          groceryListRowsResult.error,
+        'Could not load free plan usage.'
+      )
+    )
   }
 
   const savedLinksUsed = savedLinksCountResult.count ?? 0

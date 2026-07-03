@@ -198,7 +198,7 @@ export default function HomeRoute() {
                   status={getRecipeVisualStatus(recipe)}
                   thumbnailUrl={getRecipeCardThumbnail(recipe)}
                   sourceUrl={recipe.source_url}
-                  hasGroceryList={Boolean(recipe.latest_card)}
+                  hasGroceryList={hasAiRecipe(recipe)}
                   progress={recipe.latest_media_job?.progress}
                   createdAt={recipe.created_at}
                   onPress={() => openRecipe(recipe)}
@@ -227,11 +227,11 @@ function filterHomeRecipes(items: RecipeLibraryItem[], selectedFilters: HomeFilt
     return selectedFilters.some((filter) => {
       switch (filter) {
         case 'ai_cards':
-          return Boolean(item.latest_card)
+          return hasAiRecipe(item)
         case 'saved_links':
-          return !item.latest_card
+          return !hasAiRecipe(item)
         case 'grocery':
-          return Boolean(item.latest_card)
+          return hasAiRecipe(item)
         case 'instagram':
         case 'tiktok':
         case 'youtube':
@@ -241,6 +241,12 @@ function filterHomeRecipes(items: RecipeLibraryItem[], selectedFilters: HomeFilt
       }
     })
   })
+}
+
+function hasAiRecipe(recipe: RecipeLibraryItem) {
+  return Boolean(
+    recipe.latest_card || recipe.latest_media_job?.result_recipe_card_id
+  )
 }
 
 function getRecipePlatform(platform: string | null): RecipePlatform {

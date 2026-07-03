@@ -29,7 +29,6 @@ type Props = {
 export function VisualRecipeCard({
   title,
   subtitle,
-  platform,
   status,
   thumbnailUrl,
   sourceUrl,
@@ -94,7 +93,6 @@ export function VisualRecipeCard({
           {subtitle}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-          <MiniPill label={getPlatformLabel(platform)} />
           {hasGroceryList ? <MiniPill label="Grocery" /> : null}
           {hasNotes ? <MiniPill label="Notes" /> : null}
           {status === 'processing' && typeof progress === 'number' ? (
@@ -187,21 +185,6 @@ function getStatusTone(status: VisualRecipeStatus) {
       return 'warning'
     case 'saved_link':
       return 'default'
-  }
-}
-
-function getPlatformLabel(platform: RecipePlatform) {
-  switch (platform) {
-    case 'instagram':
-      return 'Instagram'
-    case 'tiktok':
-      return 'TikTok'
-    case 'youtube':
-      return 'YouTube'
-    case 'facebook':
-      return 'Facebook'
-    case 'other':
-      return 'Link'
   }
 }
 

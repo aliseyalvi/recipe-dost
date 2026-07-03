@@ -1,8 +1,15 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-03
+- M21.9C final core-flow QA freeze completed after focused validation.
+- Fixed: Home/Library AI-card filters and grocery affordances now count completed media jobs with `result_recipe_card_id`, matching visible AI Recipe status.
+- Fixed: Home/Library visual cards no longer render platform as an extra mini pill; platform remains in subtitle/meta copy and the image keeps one main status pill.
+- Fixed: Nested headers honor explicit `returnTo` parents before native back history so source/detail/grocery returns are predictable after replace-based auto-open flows.
+- Fixed: Grocery list and usage summary loading now route common network failures through the friendly offline message.
+- Deferred: Native Android share-intent behavior and full device acceptance still need human QA on a development APK.
+- Decision: M21.9C is a QA freeze only; no RevenueCat, auth, worker changes, media prompt changes, schema changes, or new dependencies were added. The app is ready for M21.10A agent QA contract if acceptance passes.
 - M21.9C.3 fixed nested header back behavior to prefer router.back() and route-specific returnTo fallbacks. Grocery cards now reuse the Library thumbnail fallback chain.
-- Decision: Parent screens pass `returnTo` when opening nested details; the nested header only uses that value when there is no native back stack.
+- Decision: Parent screens pass `returnTo` when opening nested details; the nested header now treats that explicit parent as the preferred destination.
 - Decision: Source Detail auto-open keeps `router.replace` behavior but carries a Source Detail `returnTo` so direct fallback navigation remains useful.
 - Decision: Grocery list cards are enriched app-side from existing `media_jobs` and `recipe_items.thumbnail_url` data; no schema, worker, thumbnail generation, or Supabase Function changes were made.
 - M21.9C.2 replaced custom Back pill headers with a standard nested-screen header.

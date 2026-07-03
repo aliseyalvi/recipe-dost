@@ -782,7 +782,9 @@ export async function getRecipeGroceryList(recipeCardId: string) {
   } = await supabase.auth.getUser()
 
   if (userError || !user) {
-    throw new Error('Could not load this grocery list.')
+    throw new Error(
+      getFriendlyApiErrorMessage(userError, 'Could not load this grocery list.')
+    )
   }
 
   const { data, error } = await supabase
@@ -795,7 +797,9 @@ export async function getRecipeGroceryList(recipeCardId: string) {
     .single()
 
   if (error) {
-    throw new Error('Could not load this grocery list.')
+    throw new Error(
+      getFriendlyApiErrorMessage(error, 'Could not load this grocery list.')
+    )
   }
 
   return normalizeRecipeGroceryList(data satisfies RecipeGroceryListRow)
@@ -808,7 +812,9 @@ export async function getRecipeGroceryLists() {
   } = await supabase.auth.getUser()
 
   if (userError || !user) {
-    throw new Error('Could not load grocery lists.')
+    throw new Error(
+      getFriendlyApiErrorMessage(userError, 'Could not load grocery lists.')
+    )
   }
 
   const { data, error } = await supabase
@@ -820,7 +826,9 @@ export async function getRecipeGroceryLists() {
     .order('created_at', { ascending: false })
 
   if (error) {
-    throw new Error('Could not load grocery lists.')
+    throw new Error(
+      getFriendlyApiErrorMessage(error, 'Could not load grocery lists.')
+    )
   }
 
   const rows = data satisfies RecipeGroceryListRow[]

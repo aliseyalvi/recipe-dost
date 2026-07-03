@@ -5,6 +5,7 @@ import {
   isMediaJobActive,
   isMediaJobAttentionRequired,
 } from '@/lib/api/recipes'
+import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import { getRecipeCardThumbnail } from '@/lib/recipe-thumbnails'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
@@ -228,7 +229,7 @@ export default function LibraryRoute() {
               status={getRecipeVisualStatus(item)}
               thumbnailUrl={getRecipeCardThumbnail(item)}
               sourceUrl={item.source_url}
-              hasGroceryList={Boolean(item.latest_card)}
+              hasGroceryList={hasAiRecipe(item)}
               progress={item.latest_media_job?.progress}
               createdAt={item.created_at}
               onPress={() => openLibraryItem(item)}
@@ -338,7 +339,7 @@ function LibraryEmptyState({
     return (
       <ErrorState
         title="Could not load library"
-        message={error.message}
+        message={getFriendlyApiErrorMessage(error, error.message)}
         retryLabel="Retry"
         onRetry={onRetry}
       />
@@ -415,11 +416,11 @@ function getFilteredLibraryItems({
 function itemMatchesFilter(item: RecipeLibraryItem, filter: ContentFilter) {
   switch (filter) {
     case 'recipe_cards':
-      return Boolean(item.latest_card)
+      return hasAiRecipe(item)
     case 'saved_links':
-      return !item.latest_card
+      return !hasAiRecipe(item)
     case 'grocery':
-      return Boolean(item.latest_card)
+      return hasAiRecipe(item)
     case 'instagram':
     case 'tiktok':
     case 'youtube':
@@ -427,6 +428,10 @@ function itemMatchesFilter(item: RecipeLibraryItem, filter: ContentFilter) {
     case 'other':
       return getRecipePlatform(item.platform) === filter
   }
+}
+
+function hasAiRecipe(item: RecipeLibraryItem) {
+  return Boolean(item.latest_card || item.latest_media_job?.result_recipe_card_id)
 }
 
 function getLibrarySubtitle(item: RecipeLibraryItem) {

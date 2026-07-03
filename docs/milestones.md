@@ -1,9 +1,20 @@
 # Recipe Dost Milestones
 
+## M21.9C - Final Core-Flow QA Freeze
+
+- Status: Completed after focused validation.
+- Core-flow QA freeze kept the MVP scope unchanged: manual save/share save still use saved-link metadata functions only, and only Generate AI Recipe can create `media_jobs` or reserve AI access.
+- Fixed QA-blocking display consistency by treating completed `media_jobs.result_recipe_card_id` the same as `latest_card` for Home/Library AI filters and grocery affordances.
+- Reduced Home/Library card pill clutter so platform stays in subtitle/meta text while the image keeps one primary status pill.
+- Fixed nested header back behavior to honor explicit `returnTo` parents before falling back to native history, keeping Source Detail, AI Recipe, Library, and Grocery detail returns predictable.
+- Extended friendly offline/network error copy to Library empty errors, grocery list APIs, and usage summary loading.
+- Known non-blocking deferred items: native Android share-intent and full device core-flow acceptance still require human QA on a development APK.
+- Ready for M21.10A agent QA contract if human acceptance passes.
+
 ## M21.9C.3 - Nested Header Back Behavior and Grocery Thumbnails
 
 - Status: Done after validation.
-- Nested header back behavior now prefers `router.back()`, then a safe `returnTo` route param, then the screen fallback route.
+- Nested header back behavior now prefers a safe `returnTo` route param, then `router.back()`, then the screen fallback route.
 - Home, Library, Grocery, Source Detail, AI Recipe, and Grocery detail navigations pass parent `returnTo` context into nested screens.
 - Auto-opening an AI Recipe from Source Detail keeps a safe return route back to that source detail when the stack has been replaced.
 - Grocery cards now reuse the Library thumbnail fallback chain by resolving latest media-job thumbnails before recipe-item thumbnails.
