@@ -28,16 +28,20 @@ import {
   NestedScreenHeader,
 } from '@/ui/screen-header'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Image, Linking, Text, View } from 'react-native'
 
 export default function SavedRecipeRoute() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const { track } = usePostHog()
-  const { id } = useLocalSearchParams<{ id?: string }>()
+  const { id, returnTo } = useLocalSearchParams<{
+    id?: string
+    returnTo?: string | string[]
+  }>()
   const recipeId = Array.isArray(id) ? id[0] : id
+  const sourceReturnToRoute = getSafeReturnToRoute(returnTo)
   const [isCreatingMediaJob, setIsCreatingMediaJob] = useState(false)
   const [isRefreshingMetadata, setIsRefreshingMetadata] = useState(false)
   const [mediaJobError, setMediaJobError] = useState<Error | null>(null)
@@ -50,6 +54,8 @@ export default function SavedRecipeRoute() {
     enabled: Boolean(recipeId),
     queryKey: ['recipe-item', recipeId],
     queryFn: () => getSavedRecipeItem(recipeId ?? ''),
+    refetchInterval: (query) =>
+      isMetadataRefreshActive(query.state.data?.metadata_status) ? 2000 : false,
   })
   const aiAccessQuery = useQuery({
     queryKey: ['ai-access-state', 'recipe-detail'],
@@ -71,6 +77,15 @@ export default function SavedRecipeRoute() {
   const aiAccess = aiAccessQuery.data
   const isAiLimitReached =
     aiAccess?.canStartAiJob === false || aiAccess?.reason === 'limit_reached'
+
+  useFocusEffect(
+    useCallback(() => {
+      if (recipeId) {
+        void recipeQuery.refetch()
+        void mediaJobQuery.refetch()
+      }
+    }, [mediaJobQuery, recipeId, recipeQuery])
+  )
 
   useEffect(() => {
     if (!aiAccess || didTrackUsageSummary.current) {
@@ -143,11 +158,11 @@ export default function SavedRecipeRoute() {
       shouldAutoOpenResultRef.current = false
       router.replace(
         `/recipe-card/${resultRecipeCardId}?returnTo=${encodeURIComponent(
-          `/recipe/${recipeId}`
+          sourceReturnToRoute ?? '/'
         )}`
       )
     }
-  }, [queryClient, recipeId, resultRecipeCardId, router])
+  }, [queryClient, recipeId, resultRecipeCardId, router, sourceReturnToRoute])
 
   if (!recipeId) {
     return (
@@ -344,8 +359,6 @@ export default function SavedRecipeRoute() {
         thumbnail_present: result.thumbnail_present,
       })
       await recipeQuery.refetch()
-      void queryClient.invalidateQueries({ queryKey: ['recent-recipes'] })
-      void queryClient.invalidateQueries({ queryKey: ['recipe-library'] })
     } catch {
       track('metadata_refresh_completed', {
         source: 'saved_recipe_detail',
@@ -353,6 +366,9 @@ export default function SavedRecipeRoute() {
         error_code: 'client_error',
       })
     } finally {
+      void queryClient.invalidateQueries({ queryKey: ['recipe-item', recipe.id] })
+      void queryClient.invalidateQueries({ queryKey: ['recent-recipes'] })
+      void queryClient.invalidateQueries({ queryKey: ['recipe-library'] })
       setIsRefreshingMetadata(false)
     }
   }
@@ -699,6 +715,25 @@ function getRecipePlatform(platform: string | null): RecipePlatform {
   }
 
   return 'other'
+}
+
+function isMetadataRefreshActive(status: string | null | undefined) {
+  return (
+    status === 'pending' ||
+    status === 'saving' ||
+    status === 'loading' ||
+    status === 'fetching'
+  )
+}
+
+function getSafeReturnToRoute(value: string | string[] | undefined) {
+  const route = Array.isArray(value) ? value[0] : value
+
+  if (!route || !route.startsWith('/') || route.startsWith('//')) {
+    return null
+  }
+
+  return route
 }
 
 function getFriendlyMediaJobError(caughtError: unknown, fallback: Error) {

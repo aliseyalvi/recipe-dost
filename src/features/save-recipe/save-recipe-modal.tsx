@@ -6,6 +6,7 @@ import {
   refreshRecipeMetadata,
   saveRecipeLink,
 } from "@/lib/api/recipes";
+import { getFriendlyApiErrorMessage } from "@/lib/api/errors";
 import { useAuth } from "@/providers/auth-provider";
 import { usePostHog } from "@/providers/posthog-placeholder-provider";
 import { colors, radius, spacing, typography } from "@/theme";
@@ -300,10 +301,13 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
           has_error: true,
         });
       } finally {
+        void queryClient.invalidateQueries({
+          queryKey: ["recipe-item", recipeItemId],
+        });
         refetchRecipeLists();
       }
     },
-    [refetchRecipeLists, track, upsertSavedItemInCache],
+    [queryClient, refetchRecipeLists, track],
   );
 
   const submitRecipeLink = async () => {
@@ -356,7 +360,12 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
       void refreshMetadataInBackground(savedItem.id);
     } catch (caughtError) {
       removeSavedItemFromCache(optimisticItem);
-      setBannerMessage("Could not save this link. Please try again.");
+      setBannerMessage(
+        getFriendlyApiErrorMessage(
+          caughtError,
+          "Could not save this link. Please try again.",
+        ),
+      );
       refetchRecipeLists();
     } finally {
       setIsSaving(false);

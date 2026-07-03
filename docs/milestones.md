@@ -1,5 +1,16 @@
 # Recipe Dost Milestones
 
+## M21.9C.4 - Navigation, Live Metadata, and Offline Cache QA Fixes
+
+- Status: Completed after focused validation.
+- Fixed QA issues: back navigation avoids duplicate Home stack entries by using real stack back first and `replace` fallbacks only when needed.
+- Home now opens detail screens with `/` as the safe parent fallback, while Library and Grocery keep route-specific parent fallbacks.
+- AI result auto-open replaces Source Detail with AI Recipe while preserving the original parent `returnTo`, so back returns to the parent screen instead of the old source detail.
+- Saved Recipe detail now refetches on focus and polls while metadata is pending/saving/fetching, so title, thumbnail, and duration update without reopening the screen.
+- Home/Library loading cards avoid duplicate "Fetching details" text and show a placeholder preview with lightweight activity feedback.
+- Home, Library, and Grocery preserve cached list data during background offline/refetch errors and show non-blocking friendly offline messaging when previous data exists.
+- Save/share still use saved-link metadata functions only and do not create `media_jobs` or consume AI credits.
+
 ## M21.9C - Final Core-Flow QA Freeze
 
 - Status: Completed after focused validation.

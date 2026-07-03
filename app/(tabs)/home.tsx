@@ -70,6 +70,8 @@ export default function HomeRoute() {
     () => filterHomeRecipes(recentRecipesQuery.data ?? [], selectedFilters),
     [recentRecipesQuery.data, selectedFilters]
   )
+  const hasRecipes = (recentRecipesQuery.data?.length ?? 0) > 0
+  const hasBackgroundError = Boolean(recentRecipesQuery.error && hasRecipes)
 
   useEffect(() => {
     track('home_viewed')
@@ -94,18 +96,18 @@ export default function HomeRoute() {
     })
 
     if (recipe.latest_card) {
-      router.push(`/recipe-card/${recipe.latest_card.id}?returnTo=/home`)
+      router.push(`/recipe-card/${recipe.latest_card.id}?returnTo=/`)
       return
     }
 
     if (recipe.latest_media_job?.result_recipe_card_id) {
       router.push(
-        `/recipe-card/${recipe.latest_media_job.result_recipe_card_id}?returnTo=/home`
+        `/recipe-card/${recipe.latest_media_job.result_recipe_card_id}?returnTo=/`
       )
       return
     }
 
-    router.push(`/recipe/${recipe.id}?returnTo=/home`)
+    router.push(`/recipe/${recipe.id}?returnTo=/`)
   }
 
   const toggleFilter = (chip: HomeChip) => {
@@ -158,7 +160,15 @@ export default function HomeRoute() {
         {recentRecipesQuery.isLoading && !recentRecipesQuery.data ? (
           <LoadingState message="Loading recent recipes..." />
         ) : null}
-        {recentRecipesQuery.error ? (
+        {hasBackgroundError ? (
+          <NonBlockingNetworkNotice
+            message={getFriendlyApiErrorMessage(
+              recentRecipesQuery.error,
+              'Could not refresh recent recipes. Try again.'
+            )}
+          />
+        ) : null}
+        {recentRecipesQuery.error && !hasRecipes ? (
           <ErrorState
             title="Could not load recent recipes"
             message={getFriendlyApiErrorMessage(
@@ -171,7 +181,7 @@ export default function HomeRoute() {
             }}
           />
         ) : null}
-        {recentRecipesQuery.data?.length === 0 ? (
+        {recentRecipesQuery.data?.length === 0 && !recentRecipesQuery.error ? (
           <EmptyState
             title="Your recipe library is waiting"
             message="Save a Reel, TikTok, Short, or recipe video link."
@@ -213,6 +223,24 @@ export default function HomeRoute() {
         We save links and recipe cards, not videos.
       </Text>
     </Screen>
+  )
+}
+
+function NonBlockingNetworkNotice({ message }: { message: string }) {
+  return (
+    <View
+      style={{
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 8,
+        backgroundColor: colors.surface,
+        padding: spacing.md,
+      }}
+    >
+      <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+        {message}
+      </Text>
+    </View>
   )
 }
 
@@ -318,11 +346,11 @@ function getHomeRecipeSubtitle(recipe: RecipeLibraryItem) {
   }
 
   if (recipe.metadata_status === 'saving') {
-    return getPlatformLabel(getRecipePlatform(recipe.platform))
+    return 'Saving link...'
   }
 
   if (recipe.metadata_status === 'pending') {
-    return getPlatformLabel(getRecipePlatform(recipe.platform))
+    return 'Preparing preview...'
   }
 
   if (recipe.metadata_status === 'failed') {
@@ -342,11 +370,11 @@ function getHomeRecipeTitle(recipe: RecipeLibraryItem) {
   }
 
   if (recipe.metadata_status === 'saving') {
-    return 'Saving recipe link...'
+    return 'Recipe link saved'
   }
 
   if (recipe.metadata_status === 'pending') {
-    return 'Fetching details...'
+    return `${getPlatformLabel(getRecipePlatform(recipe.platform))} recipe link`
   }
 
   if (recipe.metadata_status === 'failed') {

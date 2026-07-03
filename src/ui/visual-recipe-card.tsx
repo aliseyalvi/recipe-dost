@@ -1,7 +1,7 @@
 import { RecipePlatform } from '@/features/recipe-draft/types'
 import { colors, radius, spacing, typography } from '@/theme'
 import { AppBadge } from '@/ui/app-badge'
-import { Image, Pressable, Text, View } from 'react-native'
+import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native'
 
 export type VisualRecipeStatus =
   | 'saving'
@@ -39,6 +39,7 @@ export function VisualRecipeCard({
   onPress,
 }: Props) {
   const displayThumbnailUrl = thumbnailUrl ?? getYouTubeThumbnailUrl(sourceUrl)
+  const isLoadingPreview = status === 'saving' || status === 'fetching_details'
 
   return (
     <Pressable
@@ -60,7 +61,7 @@ export function VisualRecipeCard({
             style={{ width: '100%', height: '100%' }}
           />
         ) : (
-          <RecipeFallback />
+          <RecipeFallback isLoading={isLoadingPreview} />
         )}
         <View
           style={{
@@ -107,7 +108,7 @@ export function VisualRecipeCard({
   )
 }
 
-function RecipeFallback() {
+function RecipeFallback({ isLoading }: { isLoading: boolean }) {
   return (
     <View
       style={{
@@ -129,6 +130,7 @@ function RecipeFallback() {
       >
         RD
       </Text>
+      {isLoading ? <ActivityIndicator color={colors.primary} /> : null}
     </View>
   )
 }

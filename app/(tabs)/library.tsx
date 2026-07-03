@@ -80,6 +80,8 @@ export default function LibraryRoute() {
         : false,
   })
   const libraryItems = libraryQuery.data ?? []
+  const hasLibraryItems = libraryItems.length > 0
+  const hasBackgroundError = Boolean(libraryQuery.error && hasLibraryItems)
   const filteredItems = useMemo(
     () =>
       getFilteredLibraryItems({
@@ -163,7 +165,7 @@ export default function LibraryRoute() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <FlatList
-        data={libraryQuery.error ? [] : filteredItems}
+        data={filteredItems}
         keyExtractor={(item) => item.id}
         numColumns={2}
         contentInsetAdjustmentBehavior="automatic"
@@ -190,6 +192,14 @@ export default function LibraryRoute() {
             selectedFilters={selectedFilters}
             sortMode={sortMode}
             resultCount={filteredItems.length}
+            offlineMessage={
+              hasBackgroundError
+                ? getFriendlyApiErrorMessage(
+                    libraryQuery.error,
+                    'Could not refresh library. Pull to retry.'
+                  )
+                : null
+            }
             onSearchChange={setSearchQuery}
             onContentFilterToggle={(filter) => {
               const nextFilters =
@@ -213,7 +223,7 @@ export default function LibraryRoute() {
           <LibraryEmptyState
             isLoading={libraryQuery.isLoading}
             error={libraryQuery.error}
-            hasItems={libraryItems.length > 0}
+            hasItems={hasLibraryItems}
             onRetry={() => {
               void libraryQuery.refetch()
             }}
@@ -246,6 +256,7 @@ function LibraryHeader({
   selectedFilters,
   sortMode,
   resultCount,
+  offlineMessage,
   onSearchChange,
   onContentFilterToggle,
   onSortModeChange,
@@ -255,6 +266,7 @@ function LibraryHeader({
   selectedFilters: ContentFilter[]
   sortMode: SortMode
   resultCount: number
+  offlineMessage: string | null
   onSearchChange: (value: string) => void
   onContentFilterToggle: (value: ContentChip) => void
   onSortModeChange: (value: SortMode) => void
@@ -314,6 +326,25 @@ function LibraryHeader({
       <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
         {resultCount} {resultCount === 1 ? 'recipe' : 'recipes'}
       </Text>
+      {offlineMessage ? <NonBlockingNetworkNotice message={offlineMessage} /> : null}
+    </View>
+  )
+}
+
+function NonBlockingNetworkNotice({ message }: { message: string }) {
+  return (
+    <View
+      style={{
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 8,
+        backgroundColor: colors.surface,
+        padding: spacing.md,
+      }}
+    >
+      <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+        {message}
+      </Text>
     </View>
   )
 }
@@ -335,7 +366,7 @@ function LibraryEmptyState({
     return <LoadingState message="Loading library..." />
   }
 
-  if (error) {
+  if (error && !hasItems) {
     return (
       <ErrorState
         title="Could not load library"
@@ -459,11 +490,11 @@ function getLibrarySubtitle(item: RecipeLibraryItem) {
   }
 
   if (item.metadata_status === 'saving') {
-    return source
+    return 'Saving link...'
   }
 
   if (item.metadata_status === 'pending') {
-    return source
+    return `${source} · Preparing preview...`
   }
 
   if (item.metadata_status === 'failed') {
@@ -545,11 +576,11 @@ function getLibraryTitle(item: RecipeLibraryItem) {
   }
 
   if (item.metadata_status === 'saving') {
-    return 'Saving recipe link...'
+    return 'Recipe link saved'
   }
 
   if (item.metadata_status === 'pending') {
-    return 'Fetching details...'
+    return `${getPlatformLabel(getRecipePlatform(item.platform))} recipe link`
   }
 
   if (item.metadata_status === 'failed') {

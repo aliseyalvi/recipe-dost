@@ -9,6 +9,7 @@ import { getRecipeGroceryList, getRecipeGroceryLists } from '@/lib/api/recipes'
 import type { GroceryItem, RecipeGroceryList } from '@/lib/api/recipes'
 import { getRecipeCardThumbnail } from '@/lib/recipe-thumbnails'
 import { getUsageSummary } from '@/lib/api/usage'
+import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import { UsagePill } from '@/features/usage/usage-limit-card'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, radius, spacing, typography } from '@/theme'
@@ -62,6 +63,10 @@ export default function GroceryRoute() {
   })
   const recipeGroceryList = groceryListQuery.data
   const usageSummary = usageSummaryQuery.data
+  const hasGroceryLists = (groceryListsQuery.data?.length ?? 0) > 0
+  const hasRootBackgroundError = Boolean(
+    groceryListsQuery.error && hasGroceryLists
+  )
   const groceryItems = useMemo(
     () =>
       (recipeGroceryList?.grocery_items ?? []).map((item) => ({
@@ -119,17 +124,28 @@ export default function GroceryRoute() {
         {groceryListsQuery.isLoading ? (
           <LoadingState message="Loading grocery lists..." />
         ) : null}
-        {groceryListsQuery.error ? (
+        {hasRootBackgroundError ? (
+          <NonBlockingNetworkNotice
+            message={getFriendlyApiErrorMessage(
+              groceryListsQuery.error,
+              'Could not refresh grocery lists. Try again.'
+            )}
+          />
+        ) : null}
+        {groceryListsQuery.error && !hasGroceryLists ? (
           <ErrorState
             title="Could not load grocery lists"
-            message={groceryListsQuery.error.message}
+            message={getFriendlyApiErrorMessage(
+              groceryListsQuery.error,
+              groceryListsQuery.error.message
+            )}
             retryLabel="Retry"
             onRetry={() => {
               void groceryListsQuery.refetch()
             }}
           />
         ) : null}
-        {groceryListsQuery.data?.length === 0 ? (
+        {groceryListsQuery.data?.length === 0 && !groceryListsQuery.error ? (
           <EmptyState
             title="No grocery lists yet"
             message="Generate a recipe card first, then open its grocery list."
@@ -174,7 +190,7 @@ export default function GroceryRoute() {
     )
   }
 
-  if (groceryListQuery.error) {
+  if (groceryListQuery.error && !recipeGroceryList) {
     return (
       <Screen tabBarPadding>
         <NestedScreenHeader
@@ -183,7 +199,10 @@ export default function GroceryRoute() {
         />
         <ErrorState
           title="Could not load grocery list"
-          message={groceryListQuery.error.message}
+          message={getFriendlyApiErrorMessage(
+            groceryListQuery.error,
+            groceryListQuery.error.message
+          )}
           retryLabel="Retry"
           onRetry={() => {
             void groceryListQuery.refetch()
@@ -365,6 +384,16 @@ export default function GroceryRoute() {
         </>
       )}
     </Screen>
+  )
+}
+
+function NonBlockingNetworkNotice({ message }: { message: string }) {
+  return (
+    <Card tone="muted">
+      <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+        {message}
+      </Text>
+    </Card>
   )
 }
 

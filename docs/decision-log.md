@@ -1,6 +1,13 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-03
+- M21.9C.4 fixed QA issues: back navigation avoids duplicate Home stack, AI auto-open replaces source detail, detail screens live-refresh metadata, loading cards avoid duplicate Fetching labels, and offline errors preserve cached lists.
+- Fixed: Header back uses native stack back when available, then safe `returnTo`/fallback `replace`; Home callers pass `/` as the fallback parent, while Library and Grocery keep route-specific parents.
+- Fixed: Source Detail auto-open preserves the incoming parent route and replaces into AI Recipe, preventing back from returning to the old metadata/source screen.
+- Fixed: Saved Recipe detail polls active metadata states and refetches on focus; background metadata refresh invalidates the detail query plus Home/Library lists.
+- Fixed: Pending metadata cards now show a useful saved-link title/subtitle and a lightweight loading placeholder instead of repeating "Fetching details" in title and status.
+- Fixed: Home, Library, and Grocery render cached data through background network errors and only show large retry errors when no cached data exists.
+- Decision: M21.9C.4 remains app-side only; no worker, Supabase Function, native config, dependency, RevenueCat, login, or media prompt changes were made.
 - M21.9C final core-flow QA freeze completed after focused validation.
 - Fixed: Home/Library AI-card filters and grocery affordances now count completed media jobs with `result_recipe_card_id`, matching visible AI Recipe status.
 - Fixed: Home/Library visual cards no longer render platform as an extra mini pill; platform remains in subtitle/meta copy and the image keeps one main status pill.

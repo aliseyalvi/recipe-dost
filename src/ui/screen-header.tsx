@@ -43,13 +43,13 @@ export function NestedScreenHeader({
         typeof fallback === 'string' ? fallback : 'object_route',
     })
 
-    if (returnToRoute) {
-      router.replace(returnToRoute)
+    if (router.canGoBack()) {
+      router.back()
       return
     }
 
-    if (router.canGoBack()) {
-      router.back()
+    if (returnToRoute) {
+      router.replace(returnToRoute)
       return
     }
 
