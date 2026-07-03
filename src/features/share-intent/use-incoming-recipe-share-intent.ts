@@ -3,6 +3,7 @@ import { extractFirstRecipeUrlFromText } from '@/features/share-intent/extract-u
 import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { useEffect, useRef, useState } from 'react'
+import { InteractionManager } from 'react-native'
 import { useShareIntent } from 'expo-share-intent'
 
 type IncomingShareState =
@@ -14,7 +15,15 @@ type IncomingShareState =
 export function useIncomingRecipeShareIntent() {
   const { openSaveRecipeModal, showSaveRecipeMessage } = useSaveRecipeModal()
   const { track } = usePostHog()
+  const mountedRef = useRef(false)
   const lastHandledUrlRef = useRef<string | null>(null)
+  const resetHandledUrlTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  )
+  const shareOpenTaskRef =
+    useRef<ReturnType<typeof InteractionManager.runAfterInteractions> | null>(
+      null
+    )
   const [shareState, setShareState] = useState<IncomingShareState>({
     status: 'idle',
   })
@@ -23,6 +32,21 @@ export function useIncomingRecipeShareIntent() {
       resetOnBackground: false,
       scheme: 'recipe-dost',
     })
+
+  useEffect(() => {
+    mountedRef.current = true
+
+    return () => {
+      mountedRef.current = false
+      shareOpenTaskRef.current?.cancel()
+      shareOpenTaskRef.current = null
+
+      if (resetHandledUrlTimerRef.current) {
+        clearTimeout(resetHandledUrlTimerRef.current)
+        resetHandledUrlTimerRef.current = null
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (error) {
@@ -87,10 +111,17 @@ export function useIncomingRecipeShareIntent() {
 
   useEffect(() => {
     if (shareState.status === 'received_invalid_share') {
-      showSaveRecipeMessage('Could not find a recipe video link in the shared text.')
-      setShareState((currentState) =>
-        currentState.status === 'consumed' ? currentState : { status: 'consumed' }
-      )
+      shareOpenTaskRef.current?.cancel()
+      shareOpenTaskRef.current = InteractionManager.runAfterInteractions(() => {
+        if (!mountedRef.current) {
+          return
+        }
+
+        showSaveRecipeMessage('Could not find a recipe video link in the shared text.')
+        setShareState((currentState) =>
+          currentState.status === 'consumed' ? currentState : { status: 'consumed' }
+        )
+      })
       return
     }
 
@@ -106,19 +137,30 @@ export function useIncomingRecipeShareIntent() {
     }
 
     lastHandledUrlRef.current = shareState.url
-    setTimeout(() => {
+    if (resetHandledUrlTimerRef.current) {
+      clearTimeout(resetHandledUrlTimerRef.current)
+    }
+    resetHandledUrlTimerRef.current = setTimeout(() => {
       if (lastHandledUrlRef.current === shareState.url) {
         lastHandledUrlRef.current = null
       }
     }, 2000)
-    openSaveRecipeModal({
-      initialUrl: shareState.url,
-      source: 'share_intent',
-      sourceHint: 'Shared from another app',
+
+    shareOpenTaskRef.current?.cancel()
+    shareOpenTaskRef.current = InteractionManager.runAfterInteractions(() => {
+      if (!mountedRef.current) {
+        return
+      }
+
+      openSaveRecipeModal({
+        initialUrl: shareState.url,
+        source: 'share_intent',
+        sourceHint: 'Shared from another app',
+      })
+      setShareState((currentState) =>
+        currentState.status === 'consumed' ? currentState : { status: 'consumed' }
+      )
     })
-    setShareState((currentState) =>
-      currentState.status === 'consumed' ? currentState : { status: 'consumed' }
-    )
   }, [
     openSaveRecipeModal,
     shareState.status,

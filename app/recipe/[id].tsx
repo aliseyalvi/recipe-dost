@@ -28,12 +28,24 @@ import {
   NestedScreenHeader,
 } from '@/ui/screen-header'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
+import {
+  useFocusEffect,
+  useLocalSearchParams,
+  useRootNavigationState,
+  useRouter,
+} from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Image, Linking, Text, View } from 'react-native'
+import { Image, InteractionManager, Linking, Text, View } from 'react-native'
+
+const MAX_AI_VIDEO_DURATION_SECONDS = 120
+const LONG_VIDEO_MESSAGE =
+  'This video is longer than 2 minutes. Recipe Dost currently supports recipe videos up to 2 minutes.'
+const LONG_VIDEO_FAILED_MESSAGE =
+  'This video is longer than 2 minutes. Try a shorter recipe video.'
 
 export default function SavedRecipeRoute() {
   const router = useRouter()
+  const rootNavigationState = useRootNavigationState()
   const queryClient = useQueryClient()
   const { track } = usePostHog()
   const { id, returnTo } = useLocalSearchParams<{
@@ -50,6 +62,11 @@ export default function SavedRecipeRoute() {
   const lastTrackedMediaJobStatus = useRef<string | null>(null)
   const shouldAutoOpenResultRef = useRef(false)
   const hasAutoOpenedResultRef = useRef(false)
+  const mountedRef = useRef(false)
+  const autoOpenTaskRef =
+    useRef<ReturnType<typeof InteractionManager.runAfterInteractions> | null>(
+      null
+    )
   const recipeQuery = useQuery({
     enabled: Boolean(recipeId),
     queryKey: ['recipe-item', recipeId],
@@ -77,6 +94,17 @@ export default function SavedRecipeRoute() {
   const aiAccess = aiAccessQuery.data
   const isAiLimitReached =
     aiAccess?.canStartAiJob === false || aiAccess?.reason === 'limit_reached'
+  const isNavigationReady = Boolean(rootNavigationState?.key)
+
+  useEffect(() => {
+    mountedRef.current = true
+
+    return () => {
+      mountedRef.current = false
+      autoOpenTaskRef.current?.cancel()
+      autoOpenTaskRef.current = null
+    }
+  }, [])
 
   useFocusEffect(
     useCallback(() => {
@@ -123,8 +151,22 @@ export default function SavedRecipeRoute() {
         platform: getRecipePlatform(mediaJob.platform),
         error_code: mediaJob.error_code ?? 'unknown',
       })
+      void queryClient.invalidateQueries({
+        queryKey: ['ai-access-state'],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: ['media-job', 'recipe', recipeId],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: ['recipe-item', recipeId],
+      })
+      if (mediaJob.result_recipe_card_id) {
+        void queryClient.invalidateQueries({
+          queryKey: ['recipe-card', mediaJob.result_recipe_card_id],
+        })
+      }
     }
-  }, [mediaJobQuery.data, track])
+  }, [mediaJobQuery.data, queryClient, recipeId, track])
 
   useEffect(() => {
     if (!resultRecipeCardId) {
@@ -152,17 +194,32 @@ export default function SavedRecipeRoute() {
 
     if (
       shouldAutoOpenResultRef.current &&
-      !hasAutoOpenedResultRef.current
+      !hasAutoOpenedResultRef.current &&
+      isNavigationReady
     ) {
       hasAutoOpenedResultRef.current = true
       shouldAutoOpenResultRef.current = false
-      router.replace(
-        `/recipe-card/${resultRecipeCardId}?returnTo=${encodeURIComponent(
-          sourceReturnToRoute ?? '/'
-        )}`
-      )
+      autoOpenTaskRef.current?.cancel()
+      autoOpenTaskRef.current = InteractionManager.runAfterInteractions(() => {
+        if (!mountedRef.current) {
+          return
+        }
+
+        router.replace(
+          `/recipe-card/${resultRecipeCardId}?returnTo=${encodeURIComponent(
+            sourceReturnToRoute ?? '/'
+          )}`
+        )
+      })
     }
-  }, [queryClient, recipeId, resultRecipeCardId, router, sourceReturnToRoute])
+  }, [
+    isNavigationReady,
+    queryClient,
+    recipeId,
+    resultRecipeCardId,
+    router,
+    sourceReturnToRoute,
+  ])
 
   if (!recipeId) {
     return (
@@ -253,6 +310,15 @@ export default function SavedRecipeRoute() {
   const liveDurationSeconds =
     mediaJob?.source_metadata.duration_seconds ?? recipe.duration_seconds
   const activeMediaJob = isMediaJobActive(mediaJob) ? mediaJob : null
+  const isMetadataPending = isMetadataRefreshActive(recipe.metadata_status)
+  const durationBlockMessage = getDurationBlockMessage(recipe, mediaJob)
+  const failedMediaJobMessage = getFailedMediaJobMessage(mediaJob)
+  const isGenerateDisabled =
+    isCreatingMediaJob ||
+    Boolean(activeMediaJob) ||
+    isAiLimitReached ||
+    isMetadataPending ||
+    Boolean(durationBlockMessage)
 
   const openOriginalVideo = async () => {
     const canOpenUrl = await Linking.canOpenURL(recipe.source_url)
@@ -267,7 +333,10 @@ export default function SavedRecipeRoute() {
   }
 
   const handleCreateMediaJob = async () => {
-    if (isCreatingMediaJob || activeMediaJob) {
+    if (isGenerateDisabled) {
+      if (durationBlockMessage) {
+        setMediaJobError(new Error(durationBlockMessage))
+      }
       return
     }
 
@@ -283,6 +352,11 @@ export default function SavedRecipeRoute() {
       const createdJob = await createMediaJob({
         recipeItemId: recipe.id,
       })
+
+      if (!mountedRef.current) {
+        return
+      }
+
       shouldAutoOpenResultRef.current = true
 
       track('media_job_created', {
@@ -293,6 +367,10 @@ export default function SavedRecipeRoute() {
       await aiAccessQuery.refetch()
       await mediaJobQuery.refetch()
     } catch (caughtError) {
+      if (!mountedRef.current) {
+        return
+      }
+
       if (
         caughtError instanceof RecipeApiError &&
         (
@@ -332,7 +410,12 @@ export default function SavedRecipeRoute() {
             : 'media_job_failed',
       })
     } finally {
-      setIsCreatingMediaJob(false)
+      void queryClient.invalidateQueries({
+        queryKey: ['ai-access-state'],
+      })
+      if (mountedRef.current) {
+        setIsCreatingMediaJob(false)
+      }
     }
   }
 
@@ -369,7 +452,9 @@ export default function SavedRecipeRoute() {
       void queryClient.invalidateQueries({ queryKey: ['recipe-item', recipe.id] })
       void queryClient.invalidateQueries({ queryKey: ['recent-recipes'] })
       void queryClient.invalidateQueries({ queryKey: ['recipe-library'] })
-      setIsRefreshingMetadata(false)
+      if (mountedRef.current) {
+        setIsRefreshingMetadata(false)
+      }
     }
   }
 
@@ -597,11 +682,26 @@ export default function SavedRecipeRoute() {
           <Button
             label={isCreatingMediaJob ? 'Starting AI Recipe...' : 'Generate AI Recipe'}
             fullWidth
-            disabled={isCreatingMediaJob || Boolean(activeMediaJob) || isAiLimitReached}
+            disabled={isGenerateDisabled}
             onPress={() => {
               void handleCreateMediaJob()
             }}
           />
+          {isMetadataPending ? (
+            <View style={{ gap: spacing.xs }}>
+              <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+                Preparing video details...
+              </Text>
+              <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+                You can generate the AI recipe once the preview check finishes.
+              </Text>
+            </View>
+          ) : null}
+          {durationBlockMessage ? (
+            <Text selectable style={[typography.caption, { color: colors.warning }]}>
+              {durationBlockMessage}
+            </Text>
+          ) : null}
           {isAiLimitReached ? (
             <Text selectable style={[typography.caption, { color: colors.warning }]}>
               No free AI slots left. Wait for active analysis to finish or upgrade.
@@ -613,7 +713,7 @@ export default function SavedRecipeRoute() {
           ) : null}
           {mediaJob?.status === 'failed' ? (
             <Text selectable style={[typography.caption, { color: colors.warning }]}>
-              The last AI generation attempt failed. You can try generating again.
+              {failedMediaJobMessage}
             </Text>
           ) : null}
         </Card>
@@ -634,7 +734,7 @@ export default function SavedRecipeRoute() {
           <Button
             label="Generate AI Recipe"
             fullWidth
-            disabled={isCreatingMediaJob || Boolean(activeMediaJob) || isAiLimitReached}
+            disabled={isGenerateDisabled}
             onPress={() => {
               void handleCreateMediaJob()
             }}
@@ -726,6 +826,103 @@ function isMetadataRefreshActive(status: string | null | undefined) {
   )
 }
 
+function getDurationBlockMessage(
+  recipe: { duration_seconds: number | null; source_metadata: unknown },
+  mediaJob:
+    | {
+        source_metadata: {
+          duration_seconds?: number
+          is_too_long?: boolean
+        }
+      }
+    | null
+    | undefined
+) {
+  if (
+    recipe.duration_seconds !== null &&
+    recipe.duration_seconds > MAX_AI_VIDEO_DURATION_SECONDS
+  ) {
+    return LONG_VIDEO_MESSAGE
+  }
+
+  if (
+    typeof mediaJob?.source_metadata.duration_seconds === 'number' &&
+    mediaJob.source_metadata.duration_seconds > MAX_AI_VIDEO_DURATION_SECONDS
+  ) {
+    return LONG_VIDEO_MESSAGE
+  }
+
+  if (mediaJob?.source_metadata.is_too_long === true) {
+    return LONG_VIDEO_MESSAGE
+  }
+
+  const sourceMetadata = recipe.source_metadata
+
+  if (isRecord(sourceMetadata)) {
+    const durationSeconds = getNumberValue(
+      sourceMetadata.duration_seconds ?? sourceMetadata.durationSeconds
+    )
+    const isTooLong = getBooleanValue(
+      sourceMetadata.is_too_long ?? sourceMetadata.isTooLong
+    )
+
+    if (
+      (durationSeconds !== null &&
+        durationSeconds > MAX_AI_VIDEO_DURATION_SECONDS) ||
+      isTooLong === true
+    ) {
+      return LONG_VIDEO_MESSAGE
+    }
+  }
+
+  return null
+}
+
+function getFailedMediaJobMessage(
+  mediaJob:
+    | {
+        status: string
+        error_code: string | null
+        error_message: string | null
+      }
+    | null
+    | undefined
+) {
+  if (mediaJob?.status !== 'failed') {
+    return 'The last AI generation attempt failed. You can try again.'
+  }
+
+  if (isDurationExceededCode(mediaJob.error_code)) {
+    return LONG_VIDEO_FAILED_MESSAGE
+  }
+
+  return getFriendlyApiErrorMessage(
+    new Error([mediaJob.error_code, mediaJob.error_message].filter(Boolean).join(' ')),
+    'The last AI generation attempt failed. You can try again.'
+  )
+}
+
+function isDurationExceededCode(code: string | null | undefined) {
+  return (
+    code === 'video_duration_exceeded' ||
+    code === 'media_duration_exceeded' ||
+    code === 'video_too_long' ||
+    code === 'duration_exceeded'
+  )
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+function getNumberValue(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
+function getBooleanValue(value: unknown) {
+  return typeof value === 'boolean' ? value : null
+}
+
 function getSafeReturnToRoute(value: string | string[] | undefined) {
   const route = Array.isArray(value) ? value[0] : value
 
@@ -739,11 +936,9 @@ function getSafeReturnToRoute(value: string | string[] | undefined) {
 function getFriendlyMediaJobError(caughtError: unknown, fallback: Error) {
   if (
     caughtError instanceof RecipeApiError &&
-    caughtError.code === 'video_duration_exceeded'
+    isDurationExceededCode(caughtError.code)
   ) {
-    return new Error(
-      'This video is over the 2-minute analysis limit. Save the link or paste the caption instead.'
-    )
+    return new Error(LONG_VIDEO_MESSAGE)
   }
 
   return new Error(getFriendlyApiErrorMessage(caughtError, fallback.message))

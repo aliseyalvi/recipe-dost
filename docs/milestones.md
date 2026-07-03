@@ -1,5 +1,15 @@
 # Recipe Dost Milestones
 
+## M21.9C.5 - Router Mount, AI Duration Guard, and Credit Refresh QA Fixes
+
+- Status: Completed after focused validation.
+- Fixed navigation side-effects to avoid Expo Router mounted warnings by guarding AI auto-open and share-intent modal work with mount checks and post-interaction scheduling.
+- Blocked AI generation while saved-link metadata is still pending/saving/loading/fetching, with clear "Preparing video details..." copy.
+- Added a 120-second app-side duration guard using saved recipe duration and safe source metadata duration flags before calling `create-media-job`.
+- Mapped duration-related create/job failure codes to friendly long-video copy and kept the original video action available.
+- Refreshed AI access, media-job, recipe-item, and recipe-card queries after failed jobs so failed jobs do not remain visible as analyzing/reserved.
+- Save/share, bottom sheet behavior, thumbnail strategy, back navigation, and Grocery thumbnails were preserved.
+
 ## M21.9C.4 - Navigation, Live Metadata, and Offline Cache QA Fixes
 
 - Status: Completed after focused validation.

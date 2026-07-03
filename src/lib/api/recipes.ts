@@ -109,6 +109,8 @@ export type MediaJobSourceMetadata = {
   resolver?: string
   author_username?: string
   duration_seconds?: number
+  is_too_long?: boolean
+  max_duration_seconds?: number
   uploaded_thumbnail_url?: string
   media?: {
     mime_type?: string
@@ -698,15 +700,12 @@ export async function updateSavedRecipeCaption({
 }
 
 export function isMediaJobActive(job: MediaJob | null | undefined) {
-  if (job?.status === 'completed' && !job.result_recipe_card_id) {
-    return true
-  }
-
-  return Boolean(
-    job &&
-      job.status !== 'completed' &&
-      job.status !== 'failed' &&
-      job.status !== 'needs_caption'
+  return (
+    job?.status === 'queued' ||
+    job?.status === 'processing' ||
+    job?.status === 'analyzing' ||
+    job?.status === 'pending' ||
+    job?.status === 'running'
   )
 }
 
@@ -1035,6 +1034,10 @@ function normalizeMediaJobSourceMetadata(
       value.author_username ?? value.authorUsername ?? value.author
     ),
     duration_seconds: getNumberValue(value.duration_seconds),
+    is_too_long: getBooleanValue(value.is_too_long ?? value.isTooLong),
+    max_duration_seconds: getNumberValue(
+      value.max_duration_seconds ?? value.maxDurationSeconds
+    ),
     uploaded_thumbnail_url: getStringValue(value.uploaded_thumbnail_url),
     media,
   }

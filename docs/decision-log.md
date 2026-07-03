@@ -1,6 +1,13 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-03
+- M21.9C.5 fixed navigation side-effects to avoid Expo Router mounted warnings, blocked AI generation while metadata is pending/too long, mapped video duration failures to friendly copy, and refreshed AI access after failed jobs.
+- Fixed: Source Detail AI auto-open now waits for root navigation readiness, runs after interactions, cancels pending work on unmount, and still navigates only once.
+- Fixed: Incoming share-intent modal/error handling is scheduled after interactions and cancels delayed modal/timer work on unmount.
+- Fixed: Generate AI Recipe is disabled while metadata is pending/saving/loading/fetching and when recipe/media metadata says the video exceeds the 120-second support limit.
+- Fixed: Duration failure codes (`video_duration_exceeded`, `media_duration_exceeded`, `video_too_long`, `duration_exceeded`) now show friendly long-video copy instead of generic AI failure.
+- Fixed: Failed media jobs invalidate AI access, media-job, recipe-item, and recipe-card queries so failed jobs do not keep stale active/reserved credit copy.
+- Decision: M21.9C.5 remains app-side only; no worker, Supabase Function, thumbnail, native config, modal architecture, RevenueCat, auth, dependency, icon, or splash changes were made.
 - M21.9C.4 fixed QA issues: back navigation avoids duplicate Home stack, AI auto-open replaces source detail, detail screens live-refresh metadata, loading cards avoid duplicate Fetching labels, and offline errors preserve cached lists.
 - Fixed: Header back uses native stack back when available, then safe `returnTo`/fallback `replace`; Home callers pass `/` as the fallback parent, while Library and Grocery keep route-specific parents.
 - Fixed: Source Detail auto-open preserves the incoming parent route and replaces into AI Recipe, preventing back from returning to the old metadata/source screen.
