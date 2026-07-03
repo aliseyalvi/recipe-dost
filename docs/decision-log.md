@@ -1,6 +1,8 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-03
+- M21.9A.4 fixed Save Recipe BottomSheet keyboard behavior using BottomSheetTextInput, tall snap points, keyboardBehavior=extend, and coordinated keyboard+sheet close.
+- M21.9A.3 fixed BottomSheet keyboard behavior by using BottomSheetTextInput, dismissing keyboard before sheet close, and synchronizing close state via onDismiss.
 - M21.9A.2 replaced the custom Save Recipe URL modal with a stable `@gorhom/bottom-sheet` `BottomSheetModal`.
 - Decision: The app root is wrapped once with `GestureHandlerRootView`, with one `BottomSheetModalProvider` near the root and one global Save Recipe sheet instance in `SaveRecipeModalProvider`.
 - Decision: Backdrop tap, Android hardware back, and the X close button are the supported Save Recipe sheet close methods.

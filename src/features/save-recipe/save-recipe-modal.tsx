@@ -1,25 +1,25 @@
-import { validateRecipeUrl } from '@/features/recipe-draft/validation'
-import { detectRecipePlatform } from '@/features/recipe-draft/platform'
+import { validateRecipeUrl } from "@/features/recipe-draft/validation";
+import { detectRecipePlatform } from "@/features/recipe-draft/platform";
 import {
   RecipeLibraryItem,
   SavedRecipeItem,
   refreshRecipeMetadata,
   saveRecipeLink,
-} from '@/lib/api/recipes'
-import { useAuth } from '@/providers/auth-provider'
-import { usePostHog } from '@/providers/posthog-placeholder-provider'
-import { colors, radius, spacing, typography } from '@/theme'
-import { Button } from '@/ui/button'
-import { Input } from '@/ui/input'
+} from "@/lib/api/recipes";
+import { useAuth } from "@/providers/auth-provider";
+import { usePostHog } from "@/providers/posthog-placeholder-provider";
+import { colors, radius, spacing, typography } from "@/theme";
+import { Button } from "@/ui/button";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
   BottomSheetScrollView,
-} from '@gorhom/bottom-sheet'
-import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet'
-import type { BottomSheetModalMethods } from '@gorhom/bottom-sheet/lib/typescript/types'
-import { useQueryClient } from '@tanstack/react-query'
-import { useRouter } from 'expo-router'
+  BottomSheetTextInput,
+} from "@gorhom/bottom-sheet";
+import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
+import type { BottomSheetModalMethods } from "@gorhom/bottom-sheet/lib/typescript/types";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 import {
   createContext,
   ReactNode,
@@ -29,277 +29,339 @@ import {
   useMemo,
   useRef,
   useState,
-} from 'react'
-import { BackHandler, Pressable, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+} from "react";
+import { BackHandler, Keyboard, Pressable, Text, View } from "react-native";
+import type { TextInput as GestureTextInput } from "react-native-gesture-handler";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type SaveRecipeModalContextValue = {
-  openSaveRecipeModal: (options?: SaveRecipeModalOpenOptions) => void
-  showSaveRecipeMessage: (message: string) => void
-}
+  openSaveRecipeModal: (options?: SaveRecipeModalOpenOptions) => void;
+  showSaveRecipeMessage: (message: string) => void;
+};
 
 type SaveRecipeModalOpenOptions = {
-  initialUrl?: string
-  source?: 'manual' | 'share_intent'
-  sourceHint?: string
-}
+  initialUrl?: string;
+  source?: "manual" | "share_intent";
+  sourceHint?: string;
+};
 
 const SaveRecipeModalContext =
-  createContext<SaveRecipeModalContextValue | null>(null)
+  createContext<SaveRecipeModalContextValue | null>(null);
 
 export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
-  const router = useRouter()
-  const queryClient = useQueryClient()
-  const insets = useSafeAreaInsets()
-  const { user } = useAuth()
-  const { track } = usePostHog()
-  const bottomSheetRef = useRef<BottomSheetModalMethods>(null)
-  const previousIsOpenRef = useRef(false)
-  const [isOpen, setIsOpen] = useState(false)
-  const [sourceUrl, setSourceUrl] = useState('')
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const { track } = usePostHog();
+  const bottomSheetRef = useRef<BottomSheetModalMethods>(null);
+  const urlInputRef = useRef<GestureTextInput | undefined>(undefined);
+  const previousIsOpenRef = useRef(false);
+  const isClosingRef = useRef(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const snapPoints = useMemo(() => ["58%", "88%"], []);
+  const [isOpen, setIsOpen] = useState(false);
+  const [sourceUrl, setSourceUrl] = useState("");
   const [modalSource, setModalSource] =
-    useState<SaveRecipeModalOpenOptions['source']>('manual')
-  const [sourceHint, setSourceHint] = useState<string | null>(null)
-  const [hasSubmitted, setHasSubmitted] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [bannerMessage, setBannerMessage] = useState<string | null>(null)
+    useState<SaveRecipeModalOpenOptions["source"]>("manual");
+  const [sourceHint, setSourceHint] = useState<string | null>(null);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
   const validationResult = useMemo(
     () => validateRecipeUrl(sourceUrl),
-    [sourceUrl]
-  )
+    [sourceUrl],
+  );
   const validationMessage = validationResult.success
     ? null
-    : validationResult.error.issues[0]?.message ?? 'Enter a valid recipe link.'
+    : (validationResult.error.issues[0]?.message ??
+      "Enter a valid recipe link.");
 
-  const openSaveRecipeModal = useCallback((options?: SaveRecipeModalOpenOptions) => {
-    const initialUrl = options?.initialUrl?.trim()
+  const openSaveRecipeModal = useCallback(
+    (options?: SaveRecipeModalOpenOptions) => {
+      const initialUrl = options?.initialUrl?.trim();
 
-    if (
-      isOpen &&
-      options?.source === 'share_intent' &&
-      initialUrl &&
-      sourceUrl === initialUrl
-    ) {
-      return
-    }
+      if (
+        isOpen &&
+        options?.source === "share_intent" &&
+        initialUrl &&
+        sourceUrl === initialUrl
+      ) {
+        return;
+      }
 
-    if (initialUrl) {
-      setSourceUrl(initialUrl)
-    } else {
-      setSourceUrl('')
-    }
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
 
-    setModalSource(options?.source ?? 'manual')
-    setSourceHint(options?.sourceHint ?? null)
-    setIsOpen(true)
-    setBannerMessage(null)
-    setErrorMessage(null)
-    setHasSubmitted(false)
-    track('save_recipe_modal_opened', {
-      source: options?.source ?? 'manual',
-      has_initial_url: Boolean(initialUrl),
-    })
-  }, [isOpen, sourceUrl, track])
+      isClosingRef.current = false;
 
-  const closeModal = useCallback(() => {
-    if (isSaving) {
-      return
-    }
+      if (initialUrl) {
+        setSourceUrl(initialUrl);
+      } else {
+        setSourceUrl("");
+      }
 
-    setIsOpen(false)
-  }, [isSaving])
+      setModalSource(options?.source ?? "manual");
+      setSourceHint(options?.sourceHint ?? null);
+      setIsOpen(true);
+      setBannerMessage(null);
+      setErrorMessage(null);
+      setHasSubmitted(false);
+      track("save_recipe_modal_opened", {
+        source: options?.source ?? "manual",
+        has_initial_url: Boolean(initialUrl),
+      });
+    },
+    [isOpen, sourceUrl, track],
+  );
+
+  const requestCloseSheet = useCallback(
+    (options?: { force?: boolean }) => {
+      if (isClosingRef.current || (isSaving && !options?.force)) {
+        return;
+      }
+
+      isClosingRef.current = true;
+
+      urlInputRef.current?.blur?.();
+      Keyboard.dismiss();
+
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+
+      closeTimerRef.current = setTimeout(() => {
+        bottomSheetRef.current?.dismiss();
+        closeTimerRef.current = null;
+      }, 180);
+    },
+    [isSaving],
+  );
 
   const resetClosedSheetState = useCallback(() => {
-    previousIsOpenRef.current = false
-    setIsOpen(false)
-    setSourceUrl('')
-    setModalSource('manual')
-    setSourceHint(null)
-    setHasSubmitted(false)
-    setErrorMessage(null)
-  }, [])
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+
+    isClosingRef.current = false;
+    previousIsOpenRef.current = false;
+    setIsOpen(false);
+    setSourceUrl("");
+    setModalSource("manual");
+    setSourceHint(null);
+    setHasSubmitted(false);
+    setErrorMessage(null);
+  }, []);
+
+  const handleSheetDismiss = useCallback(() => {
+    Keyboard.dismiss();
+    resetClosedSheetState();
+  }, [resetClosedSheetState]);
+
+  const handleSheetChange = useCallback((index: number) => {
+    if (index === -1) {
+      Keyboard.dismiss();
+    }
+  }, []);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        pressBehavior="close"
-        opacity={0.55}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Close save recipe modal"
+        onPress={() => requestCloseSheet()}
+        style={[
+          props.style,
+          {
+            backgroundColor: "rgba(0, 0, 0, 0.55)",
+          },
+        ]}
       />
     ),
-    []
-  )
+    [requestCloseSheet],
+  );
 
   useEffect(() => {
-    const wasOpen = previousIsOpenRef.current
+    const wasOpen = previousIsOpenRef.current;
 
     if (isOpen && !wasOpen) {
-      bottomSheetRef.current?.present()
+      bottomSheetRef.current?.present();
     }
 
     if (!isOpen && wasOpen) {
-      bottomSheetRef.current?.dismiss()
+      bottomSheetRef.current?.dismiss();
     }
 
-    previousIsOpenRef.current = isOpen
-  }, [isOpen])
+    previousIsOpenRef.current = isOpen;
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
-      return
+      return;
     }
 
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      closeModal()
-      return true
-    })
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        requestCloseSheet();
+        return true;
+      },
+    );
 
     return () => {
-      backHandler.remove()
-    }
-  }, [closeModal, isOpen])
+      backHandler.remove();
+    };
+  }, [isOpen, requestCloseSheet]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
 
   const showSaveRecipeMessage = useCallback((message: string) => {
-    setBannerMessage(message)
-  }, [])
+    setBannerMessage(message);
+  }, []);
 
   const upsertSavedItemInCache = useCallback(
     (savedItem: SavedRecipeItem | RecipeLibraryItem) => {
       if (!user?.id) {
-        return
+        return;
       }
 
       const libraryItem =
-        'latest_card' in savedItem ? savedItem : toRecipeLibraryItem(savedItem)
+        "latest_card" in savedItem ? savedItem : toRecipeLibraryItem(savedItem);
 
       queryClient.setQueryData<RecipeLibraryItem[]>(
-        ['recent-recipes', user.id],
-        (currentItems) => upsertRecipeLibraryItem(currentItems, libraryItem, 6)
-      )
+        ["recent-recipes", user.id],
+        (currentItems) => upsertRecipeLibraryItem(currentItems, libraryItem, 6),
+      );
       queryClient.setQueryData<RecipeLibraryItem[]>(
-        ['recipe-library', user.id],
-        (currentItems) => upsertRecipeLibraryItem(currentItems, libraryItem)
-      )
+        ["recipe-library", user.id],
+        (currentItems) => upsertRecipeLibraryItem(currentItems, libraryItem),
+      );
     },
-    [queryClient, user?.id]
-  )
+    [queryClient, user?.id],
+  );
 
   const removeSavedItemFromCache = useCallback(
     (savedItem: RecipeLibraryItem) => {
       if (!user?.id) {
-        return
+        return;
       }
 
       const removeItem = (currentItems: RecipeLibraryItem[] | undefined) =>
         (currentItems ?? []).filter(
           (item) =>
-            item.id !== savedItem.id && item.source_url !== savedItem.source_url
-        )
+            item.id !== savedItem.id &&
+            item.source_url !== savedItem.source_url,
+        );
 
       queryClient.setQueryData<RecipeLibraryItem[]>(
-        ['recent-recipes', user.id],
-        removeItem
-      )
+        ["recent-recipes", user.id],
+        removeItem,
+      );
       queryClient.setQueryData<RecipeLibraryItem[]>(
-        ['recipe-library', user.id],
-        removeItem
-      )
+        ["recipe-library", user.id],
+        removeItem,
+      );
     },
-    [queryClient, user?.id]
-  )
+    [queryClient, user?.id],
+  );
 
   const refetchRecipeLists = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['recent-recipes'] })
-    void queryClient.invalidateQueries({ queryKey: ['recipe-library'] })
-    void queryClient.invalidateQueries({ queryKey: ['usage-summary'] })
-  }, [queryClient])
+    void queryClient.invalidateQueries({ queryKey: ["recent-recipes"] });
+    void queryClient.invalidateQueries({ queryKey: ["recipe-library"] });
+    void queryClient.invalidateQueries({ queryKey: ["usage-summary"] });
+  }, [queryClient]);
 
   const refreshMetadataInBackground = useCallback(
     async (recipeItemId: string) => {
-      track('metadata_refresh_started')
+      track("metadata_refresh_started");
 
       try {
-        const result = await refreshRecipeMetadata(recipeItemId)
-        track('metadata_refresh_completed', {
+        const result = await refreshRecipeMetadata(recipeItemId);
+        track("metadata_refresh_completed", {
           metadata_status: result.metadata_status,
           worker_status: result.worker_status,
           error_code: result.error_code,
           title_present: result.title_present,
           thumbnail_present: result.thumbnail_present,
-        })
+        });
       } catch (caughtError) {
-        track('metadata_refresh_completed', {
-          metadata_status: 'failed',
+        track("metadata_refresh_completed", {
+          metadata_status: "failed",
           has_error: true,
-        })
+        });
       } finally {
-        refetchRecipeLists()
+        refetchRecipeLists();
       }
     },
-    [refetchRecipeLists, track, upsertSavedItemInCache]
-  )
+    [refetchRecipeLists, track, upsertSavedItemInCache],
+  );
 
   const submitRecipeLink = async () => {
     if (isSaving) {
-      return
+      return;
     }
 
-    setHasSubmitted(true)
-    setErrorMessage(null)
+    setHasSubmitted(true);
+    setErrorMessage(null);
 
     if (!validationResult.success) {
-      return
+      return;
     }
 
-    const recipeUrl = validationResult.data
-    const recipePlatform = savedPlatformFromUrl(recipeUrl)
-    const optimisticSourceUrl = normalizeRecipeSourceUrl(recipeUrl)
+    const recipeUrl = validationResult.data;
+    const recipePlatform = savedPlatformFromUrl(recipeUrl);
+    const optimisticSourceUrl = normalizeRecipeSourceUrl(recipeUrl);
     const optimisticItem = createOptimisticRecipeLibraryItem({
       sourceUrl: optimisticSourceUrl,
       platform: recipePlatform,
-    })
+    });
 
-    setIsSaving(true)
-    track('save_recipe_link_submitted')
-    if (modalSource === 'share_intent') {
-      track('shared_recipe_save_started', {
+    setIsSaving(true);
+    track("save_recipe_link_submitted");
+    if (modalSource === "share_intent") {
+      track("shared_recipe_save_started", {
         platform: recipePlatform,
-      })
+      });
     }
 
-    setIsOpen(false)
-    setHasSubmitted(false)
-    setErrorMessage(null)
-    upsertSavedItemInCache(optimisticItem)
-    router.navigate('/home')
+    requestCloseSheet({ force: true });
+    upsertSavedItemInCache(optimisticItem);
+    router.navigate("/home");
 
     try {
-      const savedItem = await saveRecipeLink(recipeUrl)
+      const savedItem = await saveRecipeLink(recipeUrl);
 
-      track('save_recipe_link_saved', {
-        platform: savedItem.platform ?? 'other',
-        metadata_status: savedItem.metadata_status ?? 'pending',
-      })
-      if (modalSource === 'share_intent') {
-        track('shared_recipe_save_completed', {
+      track("save_recipe_link_saved", {
+        platform: savedItem.platform ?? "other",
+        metadata_status: savedItem.metadata_status ?? "pending",
+      });
+      if (modalSource === "share_intent") {
+        track("shared_recipe_save_completed", {
           platform: savedItem.platform ?? recipePlatform,
-          metadata_status: savedItem.metadata_status ?? 'pending',
-        })
+          metadata_status: savedItem.metadata_status ?? "pending",
+        });
       }
-      upsertSavedItemInCache(savedItem)
-      refetchRecipeLists()
-      void refreshMetadataInBackground(savedItem.id)
+      upsertSavedItemInCache(savedItem);
+      refetchRecipeLists();
+      void refreshMetadataInBackground(savedItem.id);
     } catch (caughtError) {
-      removeSavedItemFromCache(optimisticItem)
-      setBannerMessage('Could not save this link. Please try again.')
-      refetchRecipeLists()
+      removeSavedItemFromCache(optimisticItem);
+      setBannerMessage("Could not save this link. Please try again.");
+      refetchRecipeLists();
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   return (
     <SaveRecipeModalContext.Provider
@@ -309,7 +371,7 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
       {bannerMessage ? (
         <View
           style={{
-            position: 'absolute',
+            position: "absolute",
             top: insets.top + spacing.md,
             right: spacing.lg,
             left: spacing.lg,
@@ -317,7 +379,7 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
             borderRadius: radius.md,
             backgroundColor: colors.surface,
             padding: spacing.md,
-            boxShadow: '0 12px 28px rgba(0, 0, 0, 0.3)',
+            boxShadow: "0 12px 28px rgba(0, 0, 0, 0.3)",
           }}
         >
           <Text selectable style={[typography.body, { color: colors.text }]}>
@@ -330,7 +392,10 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
           >
             <Text
               selectable={false}
-              style={[typography.caption, { color: colors.primary, fontWeight: '800' }]}
+              style={[
+                typography.caption,
+                { color: colors.primary, fontWeight: "800" },
+              ]}
             >
               Dismiss
             </Text>
@@ -343,14 +408,17 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
         bottomInset={0}
         enableContentPanningGesture={false}
         enableDismissOnClose
-        enableDynamicSizing
-        enableHandlePanningGesture={false}
+        enableDynamicSizing={false}
+        enableHandlePanningGesture
         enableOverDrag={false}
-        enablePanDownToClose={false}
-        keyboardBehavior="interactive"
-        keyboardBlurBehavior="restore"
+        enablePanDownToClose
+        index={0}
+        keyboardBehavior="extend"
+        keyboardBlurBehavior="none"
         android_keyboardInputMode="adjustResize"
-        onDismiss={resetClosedSheetState}
+        onDismiss={handleSheetDismiss}
+        onChange={handleSheetChange}
+        snapPoints={snapPoints}
         backgroundStyle={{
           borderTopLeftRadius: radius.lg,
           borderTopRightRadius: radius.lg,
@@ -374,30 +442,33 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
             gap: spacing.lg,
             paddingHorizontal: spacing.xl,
             paddingTop: spacing.sm,
-            paddingBottom: spacing.xl + spacing.md + insets.bottom,
+            paddingBottom: spacing.xxxl + spacing.xxl + insets.bottom,
           }}
         >
           <View style={{ gap: spacing.sm }}>
             <View
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
                 gap: spacing.md,
               }}
             >
-              <Text selectable style={[typography.title, { color: colors.text }]}>
+              <Text
+                selectable
+                style={[typography.title, { color: colors.text }]}
+              >
                 Save recipe video
               </Text>
               <Pressable
                 accessibilityLabel="Close save recipe modal"
                 accessibilityRole="button"
-                onPress={closeModal}
+                onPress={() => requestCloseSheet()}
                 style={({ pressed }) => ({
                   width: 36,
                   height: 36,
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  alignItems: "center",
+                  justifyContent: "center",
                   borderRadius: radius.pill,
                   backgroundColor: colors.surfaceMuted,
                   opacity: pressed ? 0.72 : 1,
@@ -405,50 +476,89 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
               >
                 <Text
                   selectable={false}
-                  style={[typography.body, { color: colors.text, fontWeight: '900' }]}
+                  style={[
+                    typography.body,
+                    { color: colors.text, fontWeight: "900" },
+                  ]}
                 >
                   x
                 </Text>
               </Pressable>
             </View>
-            <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+            <Text
+              selectable
+              style={[typography.body, { color: colors.textMuted }]}
+            >
               Paste a TikTok, Instagram, YouTube, or Facebook recipe link.
             </Text>
             {sourceHint ? (
-              <Text selectable style={[typography.caption, { color: colors.primary }]}>
+              <Text
+                selectable
+                style={[typography.caption, { color: colors.primary }]}
+              >
                 {sourceHint}
               </Text>
             ) : null}
           </View>
 
-          <Input
-            autoCapitalize="none"
-            autoCorrect={false}
-            editable={!isSaving}
-            keyboardType="url"
-            label="URL"
-            onChangeText={(value) => {
-              setSourceUrl(value)
-              if (errorMessage) {
-                setErrorMessage(null)
-              }
-            }}
-            onSubmitEditing={() => {
-              void submitRecipeLink()
-            }}
-            placeholder="https://www.instagram.com/reel/..."
-            returnKeyType="done"
-            value={sourceUrl}
-          />
+          <View style={{ gap: spacing.sm }}>
+            <Text
+              selectable
+              style={[typography.caption, { color: colors.textMuted }]}
+            >
+              URL
+            </Text>
+            <BottomSheetTextInput
+              ref={urlInputRef}
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!isSaving}
+              keyboardType="url"
+              onChangeText={(value) => {
+                setSourceUrl(value);
+                if (errorMessage) {
+                  setErrorMessage(null);
+                }
+              }}
+              onFocus={() => {
+                bottomSheetRef.current?.snapToIndex(1);
+              }}
+              onSubmitEditing={() => {
+                void submitRecipeLink();
+              }}
+              placeholder="https://www.instagram.com/reel/..."
+              placeholderTextColor={colors.textMuted}
+              returnKeyType="done"
+              style={[
+                typography.body,
+                {
+                  minHeight: 52,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: radius.md,
+                  backgroundColor: colors.surfaceMuted,
+                  color: colors.text,
+                  paddingHorizontal: spacing.lg,
+                },
+              ]}
+              value={sourceUrl}
+            />
+          </View>
 
           {hasSubmitted && validationMessage ? (
-            <Text selectable style={[typography.caption, { color: colors.danger }]}>
+            <Text
+              selectable
+              style={[typography.caption, { color: colors.danger }]}
+            >
               {validationMessage}
             </Text>
           ) : null}
 
           {errorMessage ? (
-            <Text selectable style={[typography.caption, { color: colors.danger }]}>
+            <Text
+              selectable
+              style={[typography.caption, { color: colors.danger }]}
+            >
               {errorMessage}
             </Text>
           ) : null}
@@ -458,27 +568,32 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
             fullWidth
             disabled={isSaving}
             onPress={() => {
-              void submitRecipeLink()
+              void submitRecipeLink();
             }}
           />
 
-          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+          <Text
+            selectable
+            style={[typography.caption, { color: colors.textMuted }]}
+          >
             We save links and recipe cards, not videos.
           </Text>
         </BottomSheetScrollView>
       </BottomSheetModal>
     </SaveRecipeModalContext.Provider>
-  )
+  );
 }
 
 export function useSaveRecipeModal() {
-  const value = useContext(SaveRecipeModalContext)
+  const value = useContext(SaveRecipeModalContext);
 
   if (!value) {
-    throw new Error('useSaveRecipeModal must be used inside SaveRecipeModalProvider.')
+    throw new Error(
+      "useSaveRecipeModal must be used inside SaveRecipeModalProvider.",
+    );
   }
 
-  return value
+  return value;
 }
 
 function toRecipeLibraryItem(savedItem: SavedRecipeItem): RecipeLibraryItem {
@@ -498,47 +613,48 @@ function toRecipeLibraryItem(savedItem: SavedRecipeItem): RecipeLibraryItem {
     updated_at: savedItem.updated_at,
     latest_card: null,
     latest_media_job: null,
-  }
+  };
 }
 
 function upsertRecipeLibraryItem(
   currentItems: RecipeLibraryItem[] | undefined,
   nextItem: RecipeLibraryItem,
-  limit?: number
+  limit?: number,
 ) {
-  const items = currentItems ?? []
+  const items = currentItems ?? [];
   const filteredItems = items.filter(
-    (item) => item.id !== nextItem.id && item.source_url !== nextItem.source_url
-  )
+    (item) =>
+      item.id !== nextItem.id && item.source_url !== nextItem.source_url,
+  );
   const nextItems = [nextItem, ...filteredItems].sort(
     (firstItem, secondItem) =>
       new Date(secondItem.created_at).getTime() -
-      new Date(firstItem.created_at).getTime()
-  )
+      new Date(firstItem.created_at).getTime(),
+  );
 
-  return typeof limit === 'number' ? nextItems.slice(0, limit) : nextItems
+  return typeof limit === "number" ? nextItems.slice(0, limit) : nextItems;
 }
 
 function savedPlatformFromUrl(sourceUrl: string) {
-  return detectRecipePlatform(sourceUrl)
+  return detectRecipePlatform(sourceUrl);
 }
 
 function createOptimisticRecipeLibraryItem({
   sourceUrl,
   platform,
 }: {
-  sourceUrl: string
-  platform: ReturnType<typeof detectRecipePlatform>
+  sourceUrl: string;
+  platform: ReturnType<typeof detectRecipePlatform>;
 }): RecipeLibraryItem {
-  const timestamp = new Date().toISOString()
+  const timestamp = new Date().toISOString();
 
   return {
     id: `optimistic:${sourceUrl}`,
     source_url: sourceUrl,
     platform,
-    title: 'Saving recipe link...',
+    title: "Saving recipe link...",
     thumbnail_url: null,
-    metadata_status: 'saving',
+    metadata_status: "saving",
     user_note: null,
     pasted_caption: null,
     manual_ingredients: null,
@@ -548,16 +664,16 @@ function createOptimisticRecipeLibraryItem({
     updated_at: timestamp,
     latest_card: null,
     latest_media_job: null,
-  }
+  };
 }
 
 function normalizeRecipeSourceUrl(sourceUrl: string) {
   try {
-    const parsedUrl = new URL(sourceUrl.trim())
-    parsedUrl.hostname = parsedUrl.hostname.toLowerCase().replace(/^www\./, '')
+    const parsedUrl = new URL(sourceUrl.trim());
+    parsedUrl.hostname = parsedUrl.hostname.toLowerCase().replace(/^www\./, "");
 
-    return parsedUrl.toString()
+    return parsedUrl.toString();
   } catch {
-    return sourceUrl.trim()
+    return sourceUrl.trim();
   }
 }
