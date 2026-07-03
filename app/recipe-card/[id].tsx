@@ -35,6 +35,10 @@ import { EmptyState } from '@/ui/empty-state'
 import { ErrorState } from '@/ui/error-state'
 import { LoadingState } from '@/ui/loading-state'
 import { Screen } from '@/ui/screen'
+import {
+  NestedHeaderIconButton,
+  NestedScreenHeader,
+} from '@/ui/screen-header'
 import { UrduText } from '@/ui/urdu-text'
 import { useQuery } from '@tanstack/react-query'
 import * as Clipboard from 'expo-clipboard'
@@ -80,6 +84,10 @@ export default function RecipeCardResultRoute() {
   if (!recipeCardId) {
     return (
       <Screen>
+        <NestedScreenHeader
+          title="AI Recipe"
+          fallbackRoute="/"
+        />
         <EmptyState
           title="Recipe card not found"
           message="Go back home and open a generated recipe card again."
@@ -93,6 +101,10 @@ export default function RecipeCardResultRoute() {
   if (recipeCardQuery.isLoading) {
     return (
       <Screen>
+        <NestedScreenHeader
+          title="AI Recipe"
+          fallbackRoute="/"
+        />
         <LoadingState message="Loading recipe card..." />
       </Screen>
     )
@@ -101,6 +113,10 @@ export default function RecipeCardResultRoute() {
   if (recipeCardQuery.error) {
     return (
       <Screen>
+        <NestedScreenHeader
+          title="AI Recipe"
+          fallbackRoute="/"
+        />
         <ErrorState
           title="Could not load recipe card"
           message={getFriendlyApiErrorMessage(
@@ -121,6 +137,10 @@ export default function RecipeCardResultRoute() {
   if (!recipeCardQuery.data) {
     return (
       <Screen>
+        <NestedScreenHeader
+          title="AI Recipe"
+          fallbackRoute="/"
+        />
         <EmptyState
           title="Recipe card not found"
           message="Go back home and open a generated recipe card again."
@@ -179,6 +199,21 @@ export default function RecipeCardResultRoute() {
 
   return (
     <Screen compact>
+      <NestedScreenHeader
+        title="AI Recipe"
+        fallbackRoute="/"
+        rightActions={
+          canOpenSource ? (
+            <NestedHeaderIconButton
+              accessibilityLabel="Open original video"
+              icon="↗"
+              onPress={() => {
+                void openOriginalSource()
+              }}
+            />
+          ) : null
+        }
+      />
       <Card tone="warm">
         <View
           style={{

@@ -23,6 +23,10 @@ import { EmptyState } from '@/ui/empty-state'
 import { ErrorState } from '@/ui/error-state'
 import { LoadingState } from '@/ui/loading-state'
 import { Screen } from '@/ui/screen'
+import {
+  NestedHeaderIconButton,
+  NestedScreenHeader,
+} from '@/ui/screen-header'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
@@ -144,6 +148,10 @@ export default function SavedRecipeRoute() {
   if (!recipeId) {
     return (
       <Screen>
+        <NestedScreenHeader
+          title="Saved Recipe"
+          fallbackRoute="/"
+        />
         <EmptyState
           title="Recipe link not found"
           message="Go back home and open a saved recipe link again."
@@ -157,6 +165,10 @@ export default function SavedRecipeRoute() {
   if (recipeQuery.isLoading) {
     return (
       <Screen>
+        <NestedScreenHeader
+          title="Saved Recipe"
+          fallbackRoute="/"
+        />
         <LoadingState message="Loading saved recipe link..." />
       </Screen>
     )
@@ -165,6 +177,10 @@ export default function SavedRecipeRoute() {
   if (recipeQuery.error) {
     return (
       <Screen>
+        <NestedScreenHeader
+          title="Saved Recipe"
+          fallbackRoute="/"
+        />
         <ErrorState
           title="Could not load saved link"
           message={getFriendlyApiErrorMessage(
@@ -185,6 +201,10 @@ export default function SavedRecipeRoute() {
   if (!recipeQuery.data) {
     return (
       <Screen>
+        <NestedScreenHeader
+          title="Saved Recipe"
+          fallbackRoute="/"
+        />
         <EmptyState
           title="Recipe link not found"
           message="Go back home and open a saved recipe link again."
@@ -335,6 +355,19 @@ export default function SavedRecipeRoute() {
 
   return (
     <Screen compact>
+      <NestedScreenHeader
+        title="Saved Recipe"
+        fallbackRoute="/"
+        rightActions={
+          <NestedHeaderIconButton
+            accessibilityLabel="Open original video"
+            icon="↗"
+            onPress={() => {
+              void openOriginalVideo()
+            }}
+          />
+        }
+      />
       <AppHeader
         eyebrow="Saved link"
         title="Recipe source"

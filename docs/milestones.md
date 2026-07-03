@@ -1,5 +1,24 @@
 # Recipe Dost Milestones
 
+## M21.9C.2 - Standard Nested-Screen Header
+
+- Status: Done after validation.
+- Replaced the custom large Back pill header with a compact `NestedScreenHeader` using a back arrow, one-line title, and optional right-side icon actions.
+- Tab roots still have no back header: Home, Library/Saved Links, Grocery root, and Settings keep the bottom tab shell only.
+- Nested/detail screens keep safe fallback back navigation through `router.back()` with route fallback when there is no history.
+- Source Detail and AI Recipe detail support compact open-original right actions using existing open-source behavior only.
+- Grocery detail uses a simple back arrow plus "Grocery List" title with no right action.
+
+## M21.9C.1 - Navigation Headers and Back Buttons Audit
+
+- Status: Done after validation.
+- Main tab roots remain headerless: Home, Library/Saved Links, Grocery root, and Settings keep the existing bottom tab behavior with no back header.
+- Nested/detail screens now use visible back navigation: Saved Recipe/Source Detail, AI Recipe detail, and recipe-specific Grocery List.
+- Grocery root at `/grocery` stays a tab-root index with no back button; grocery detail at `/grocery?recipeCardId=...` shows a safe in-screen back header.
+- Back headers call `router.back()` when history exists and fall back to a parent route (`/grocery` or `/library`) so detail screens do not trap users.
+- Header spacing is inside the existing safe-area-aware `Screen` layout, avoiding Android status bar overlap and duplicate native headers.
+- Settings has no nested route files in the current Expo Router tree, so Settings remains a headerless tab root.
+
 ## M21.9A.2 - Save Recipe Bottom Sheet Modal
 
 - Status: Done after validation.

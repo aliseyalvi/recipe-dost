@@ -18,6 +18,7 @@ import { EmptyState } from '@/ui/empty-state'
 import { ErrorState } from '@/ui/error-state'
 import { LoadingState } from '@/ui/loading-state'
 import { Screen } from '@/ui/screen'
+import { NestedScreenHeader } from '@/ui/screen-header'
 import { UrduText } from '@/ui/urdu-text'
 import { VisualRecipeCard } from '@/ui/visual-recipe-card'
 import { useQuery } from '@tanstack/react-query'
@@ -160,6 +161,10 @@ export default function GroceryRoute() {
   if (groceryListQuery.isLoading) {
     return (
       <Screen tabBarPadding>
+        <NestedScreenHeader
+          title="Grocery List"
+          fallbackRoute="/grocery"
+        />
         <LoadingState message="Loading grocery list..." />
       </Screen>
     )
@@ -168,6 +173,10 @@ export default function GroceryRoute() {
   if (groceryListQuery.error) {
     return (
       <Screen tabBarPadding>
+        <NestedScreenHeader
+          title="Grocery List"
+          fallbackRoute="/grocery"
+        />
         <ErrorState
           title="Could not load grocery list"
           message={groceryListQuery.error.message}
@@ -185,6 +194,10 @@ export default function GroceryRoute() {
   if (!recipeGroceryList) {
     return (
       <Screen tabBarPadding>
+        <NestedScreenHeader
+          title="Grocery List"
+          fallbackRoute="/grocery"
+        />
         <EmptyState
           title="Grocery list not found"
           message="Open a recipe card first, then view its grocery list."
@@ -246,11 +259,15 @@ export default function GroceryRoute() {
 
   return (
     <Screen compact tabBarPadding>
+      <NestedScreenHeader
+        title="Grocery List"
+        fallbackRoute="/grocery"
+      />
       <View style={{ gap: spacing.sm }}>
         <AppHeader
           eyebrow="Cook"
-          title="Grocery List"
-          subtitle={recipeTitle}
+          title={recipeTitle}
+          subtitle="Recipe checklist"
         />
         {recipeGroceryList.servings ? (
           <Text selectable style={[typography.caption, { color: colors.textMuted }]}>

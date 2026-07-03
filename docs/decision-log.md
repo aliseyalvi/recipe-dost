@@ -1,6 +1,14 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-03
+- M21.9C.2 replaced custom Back pill headers with a standard nested-screen header.
+- Decision: Tab roots have no back header; nested/detail screens have safe back navigation through the compact `NestedScreenHeader`.
+- Decision: Source/AI detail screens support compact optional open-original right actions using existing source-opening handlers; no new delete/options menu was added because no existing delete action is present in these screens.
+- Decision: Grocery detail uses a simple back arrow plus "Grocery List" title and no right-side action.
+- M21.9C.1 audited navigation headers. Main tab roots have no back header; nested/detail screens have visible back navigation with safe fallback.
+- Decision: The tab group remains `headerShown=false` for Home, Library/Saved Links, Grocery root, and Settings to avoid duplicate headers above the fixed bottom tab bar.
+- Decision: Saved Recipe/Source Detail, AI Recipe detail, and recipe-specific Grocery List use a shared in-screen `ScreenHeader` so the back control can fall back to `/library` or `/grocery` when `router.canGoBack()` is false.
+- Decision: The grocery tab route is intentionally query-param based for MVP; `/grocery` renders the root list without a back button, while `/grocery?recipeCardId=...` renders the nested grocery checklist with a back header.
 - M21.9B.1A preserves safe thumbnail trace fields in recipe_items.source_metadata.
 - M21.9A.4 fixed Save Recipe BottomSheet keyboard behavior using BottomSheetTextInput, tall snap points, keyboardBehavior=extend, and coordinated keyboard+sheet close.
 - M21.9A.3 fixed BottomSheet keyboard behavior by using BottomSheetTextInput, dismissing keyboard before sheet close, and synchronizing close state via onDismiss.
