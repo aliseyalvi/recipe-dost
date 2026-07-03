@@ -1,6 +1,10 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-03
+- M21.9C.6 prevents duplicate saved videos by normalizing recipe source URLs, blocking local duplicate optimistic cards, and returning existing recipe_items from save-recipe-link when already saved.
+- Decision: The canonical duplicate key is stored as `recipe_items.source_metadata.normalized_source_key` for new saved links; this patch does not add a schema migration or backfill old rows, and `save-recipe-link` compares legacy saved `source_url` values by the same normalizer before inserting.
+- Decision: Duplicate saves show "This recipe is already saved.", reuse the existing cached/server item, and do not create `media_jobs`, trigger metadata refresh for the duplicate, or reset existing title/thumbnail/loading state.
+- Manual cleanup note: existing duplicate rows were intentionally left untouched; if needed later, inspect candidate duplicates by grouping on `user_id` and `source_metadata->>'normalized_source_key'`, then archive/delete only after manually choosing the canonical row per group.
 - M21.9C.5 fixed navigation side-effects to avoid Expo Router mounted warnings, blocked AI generation while metadata is pending/too long, mapped video duration failures to friendly copy, and refreshed AI access after failed jobs.
 - Fixed: Source Detail AI auto-open now waits for root navigation readiness, runs after interactions, cancels pending work on unmount, and still navigates only once.
 - Fixed: Incoming share-intent modal/error handling is scheduled after interactions and cancels delayed modal/timer work on unmount.

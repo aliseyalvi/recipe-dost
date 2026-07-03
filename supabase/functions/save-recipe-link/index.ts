@@ -60,6 +60,18 @@ type Database = {
 
 type EdgeSupabaseClient = SupabaseClient<Database>;
 
+const RECIPE_ITEM_SELECT =
+  "id, user_id, source_url, platform, title, description, thumbnail_url, duration_seconds, metadata_status, source_metadata, created_at, updated_at";
+
+const TRACKING_PARAMS = new Set([
+  "si",
+  "igsh",
+  "fbclid",
+  "gclid",
+  "ref",
+  "share_id",
+]);
+
 type SaveRecipeLinkErrorCode =
   | "invalid_request"
   | "unauthorized"
@@ -165,24 +177,22 @@ async function handleSaveRecipeLinkRequest(request: Request) {
     );
   }
 
-  const { normalizedUrl, platform, host } = validation.data;
+  const { normalizedUrl, normalizedSourceKey, platform, host } = validation.data;
   const safeSourceMetadata = {
-    source_url: normalizedUrl,
     platform,
     host,
+    normalized_source_key: normalizedSourceKey,
   } satisfies Json;
-  const existingResult = await clients.adminClient
+  const existingByUrlResult = await clients.adminClient
     .from("recipe_items")
-    .select(
-      "id, user_id, source_url, platform, title, description, thumbnail_url, duration_seconds, metadata_status, source_metadata, created_at, updated_at",
-    )
+    .select(RECIPE_ITEM_SELECT)
     .eq("user_id", user.id)
     .eq("source_url", normalizedUrl)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle<RecipeItem>();
 
-  if (existingResult.error) {
+  if (existingByUrlResult.error) {
     return errorResponse(
       "recipe_link_insert_failed",
       "Could not save this recipe link. Please try again.",
@@ -190,13 +200,56 @@ async function handleSaveRecipeLinkRequest(request: Request) {
     );
   }
 
-  if (existingResult.data) {
-    return jsonResponse({
-      ok: true,
-      data: {
-        recipe_item: existingResult.data,
-      },
-    });
+  if (existingByUrlResult.data) {
+    return duplicateResponse(existingByUrlResult.data);
+  }
+
+  const existingByKeyResult = await clients.adminClient
+    .from("recipe_items")
+    .select(RECIPE_ITEM_SELECT)
+    .eq("user_id", user.id)
+    .contains("source_metadata", {
+      normalized_source_key: normalizedSourceKey,
+    })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<RecipeItem>();
+
+  if (existingByKeyResult.error) {
+    return errorResponse(
+      "recipe_link_insert_failed",
+      "Could not save this recipe link. Please try again.",
+      500,
+    );
+  }
+
+  if (existingByKeyResult.data) {
+    return duplicateResponse(existingByKeyResult.data);
+  }
+
+  const legacyDuplicateResult = await clients.adminClient
+    .from("recipe_items")
+    .select(RECIPE_ITEM_SELECT)
+    .eq("user_id", user.id)
+    .eq("platform", platform)
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (legacyDuplicateResult.error) {
+    return errorResponse(
+      "recipe_link_insert_failed",
+      "Could not save this recipe link. Please try again.",
+      500,
+    );
+  }
+
+  const legacyDuplicate = legacyDuplicateResult.data?.find(
+    (recipeItem) =>
+      normalizeRecipeSourceUrl(recipeItem.source_url) === normalizedSourceKey,
+  );
+
+  if (legacyDuplicate) {
+    return duplicateResponse(legacyDuplicate);
   }
 
   const insertResult = await clients.adminClient
@@ -211,9 +264,7 @@ async function handleSaveRecipeLinkRequest(request: Request) {
       metadata_status: "pending",
       source_metadata: safeSourceMetadata,
     })
-    .select(
-      "id, user_id, source_url, platform, title, description, thumbnail_url, duration_seconds, metadata_status, source_metadata, created_at, updated_at",
-    )
+    .select(RECIPE_ITEM_SELECT)
     .single<RecipeItem>();
 
   if (insertResult.error || !insertResult.data) {
@@ -228,6 +279,7 @@ async function handleSaveRecipeLinkRequest(request: Request) {
     ok: true,
     data: {
       recipe_item: insertResult.data,
+      duplicate: false,
     },
   });
 }
@@ -275,6 +327,7 @@ function validateSaveRecipeLinkRequest(body: unknown):
     ok: true;
     data: {
       normalizedUrl: string;
+      normalizedSourceKey: string;
       platform: RecipePlatform;
       host: string;
     };
@@ -298,11 +351,20 @@ function validateSaveRecipeLinkRequest(body: unknown):
 
   const parsedUrl = new URL(normalizedUrl);
   const host = parsedUrl.hostname;
+  const normalizedSourceKey = normalizeRecipeSourceUrl(normalizedUrl);
+
+  if (!normalizedSourceKey) {
+    return {
+      ok: false,
+      message: "Enter a valid link, like https://www.instagram.com/reel/...",
+    };
+  }
 
   return {
     ok: true,
     data: {
       normalizedUrl,
+      normalizedSourceKey,
       platform: detectPlatform(host),
       host,
     },
@@ -330,6 +392,108 @@ function normalizeUrl(value: unknown) {
 
 function normalizeHost(hostname: string) {
   return hostname.toLowerCase().replace(/^www\./, "");
+}
+
+function normalizeRecipeSourceUrl(value: string): string | null {
+  try {
+    const url = new URL(value.trim());
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+
+    const host = normalizeHost(url.hostname);
+    const pathParts = getPathParts(url);
+
+    if (host === "youtu.be") {
+      return pathParts[0] ? `youtube:${pathParts[0]}` : null;
+    }
+
+    if (host === "youtube.com" || host.endsWith(".youtube.com")) {
+      if (pathParts[0] === "shorts" && pathParts[1]) {
+        return `youtube:${pathParts[1]}`;
+      }
+
+      const videoId = cleanSegment(url.searchParams.get("v"));
+      return videoId ? `youtube:${videoId}` : canonicalUrlKey(url, host);
+    }
+
+    if (host === "instagram.com" || host.endsWith(".instagram.com")) {
+      if ((pathParts[0] === "reel" || pathParts[0] === "p") && pathParts[1]) {
+        return `instagram:${pathParts[0]}:${pathParts[1]}`;
+      }
+
+      return canonicalUrlKey(url, host);
+    }
+
+    if (host === "tiktok.com" || host.endsWith(".tiktok.com")) {
+      const videoIndex = pathParts.indexOf("video");
+
+      if (videoIndex >= 0 && pathParts[videoIndex + 1]) {
+        return `tiktok:${pathParts[videoIndex + 1]}`;
+      }
+
+      return canonicalUrlKey(url, host);
+    }
+
+    if (host === "vm.tiktok.com" || host === "vt.tiktok.com") {
+      return canonicalUrlKey(url, host);
+    }
+
+    if (host === "fb.watch") {
+      return pathParts[0] ? `facebook:watch:${pathParts[0]}` : null;
+    }
+
+    if (host === "facebook.com" || host.endsWith(".facebook.com")) {
+      const videoId = cleanSegment(url.searchParams.get("v")) ??
+        getPathIdAfter(pathParts, "videos") ??
+        getPathIdAfter(pathParts, "watch");
+
+      return videoId ? `facebook:${videoId}` : canonicalUrlKey(url, host);
+    }
+
+    return canonicalUrlKey(url, host);
+  } catch {
+    return null;
+  }
+}
+
+function canonicalUrlKey(url: URL, host: string) {
+  const params = new URLSearchParams(url.searchParams);
+
+  for (const key of Array.from(params.keys())) {
+    if (isTrackingParam(key)) {
+      params.delete(key);
+    }
+  }
+
+  const pathname = url.pathname.replace(/\/+$/, "") || "/";
+  const query = params.toString();
+
+  return `${host}${pathname}${query ? `?${query}` : ""}`;
+}
+
+function getPathParts(url: URL) {
+  return url.pathname
+    .split("/")
+    .map((part) => cleanSegment(part))
+    .filter((part): part is string => Boolean(part));
+}
+
+function getPathIdAfter(parts: string[], marker: string) {
+  const index = parts.indexOf(marker);
+
+  return index >= 0 ? parts[index + 1] : null;
+}
+
+function cleanSegment(value: string | null | undefined) {
+  return value?.trim() || null;
+}
+
+function isTrackingParam(key: string) {
+  const normalizedKey = key.toLowerCase();
+
+  return TRACKING_PARAMS.has(normalizedKey) || normalizedKey.startsWith("utm_");
 }
 
 function detectPlatform(host: string): RecipePlatform {
@@ -391,6 +555,17 @@ function errorResponse(
     },
     status,
   );
+}
+
+function duplicateResponse(recipeItem: RecipeItem) {
+  return jsonResponse({
+    ok: true,
+    data: {
+      duplicate: true,
+      message: "already_saved",
+      recipe_item: recipeItem,
+    },
+  });
 }
 
 function jsonResponse(body: unknown, status = 200) {

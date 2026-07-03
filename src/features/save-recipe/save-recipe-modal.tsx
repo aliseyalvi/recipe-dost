@@ -7,6 +7,7 @@ import {
   saveRecipeLink,
 } from "@/lib/api/recipes";
 import { getFriendlyApiErrorMessage } from "@/lib/api/errors";
+import { normalizeRecipeSourceUrl } from "@/lib/recipe-source-url";
 import { useAuth } from "@/providers/auth-provider";
 import { usePostHog } from "@/providers/posthog-placeholder-provider";
 import { colors, radius, spacing, typography } from "@/theme";
@@ -257,11 +258,13 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      const savedSourceKey = getRecipeSourceKey(savedItem);
       const removeItem = (currentItems: RecipeLibraryItem[] | undefined) =>
         (currentItems ?? []).filter(
           (item) =>
             item.id !== savedItem.id &&
-            item.source_url !== savedItem.source_url,
+            item.source_url !== savedItem.source_url &&
+            (!savedSourceKey || getRecipeSourceKey(item) !== savedSourceKey),
         );
 
       queryClient.setQueryData<RecipeLibraryItem[]>(
@@ -323,11 +326,37 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
     }
 
     const recipeUrl = validationResult.data;
+    const normalizedSourceKey = normalizeRecipeSourceUrl(recipeUrl);
+
+    if (!normalizedSourceKey) {
+      setErrorMessage("Enter a valid recipe link.");
+      return;
+    }
+
+    const existingItem = findDuplicateSavedItemInCache({
+      queryClient,
+      userId: user?.id,
+      normalizedSourceKey,
+    });
+
+    if (existingItem) {
+      track("save_recipe_duplicate_found", {
+        platform: existingItem.platform ?? savedPlatformFromUrl(recipeUrl),
+        source: modalSource ?? "manual",
+      });
+      requestCloseSheet({ force: true });
+      upsertSavedItemInCache(existingItem);
+      setBannerMessage("This recipe is already saved.");
+      router.navigate("/home");
+      return;
+    }
+
     const recipePlatform = savedPlatformFromUrl(recipeUrl);
-    const optimisticSourceUrl = normalizeRecipeSourceUrl(recipeUrl);
+    const optimisticSourceUrl = normalizeRecipeDisplayUrl(recipeUrl);
     const optimisticItem = createOptimisticRecipeLibraryItem({
       sourceUrl: optimisticSourceUrl,
       platform: recipePlatform,
+      normalizedSourceKey,
     });
 
     setIsSaving(true);
@@ -343,20 +372,29 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
     router.navigate("/home");
 
     try {
-      const savedItem = await saveRecipeLink(recipeUrl);
+      const saveResult = await saveRecipeLink(recipeUrl);
+      const savedItem = saveResult.recipe_item;
 
       track("save_recipe_link_saved", {
         platform: savedItem.platform ?? "other",
         metadata_status: savedItem.metadata_status ?? "pending",
+        duplicate: saveResult.duplicate === true,
       });
       if (modalSource === "share_intent") {
         track("shared_recipe_save_completed", {
           platform: savedItem.platform ?? recipePlatform,
           metadata_status: savedItem.metadata_status ?? "pending",
+          duplicate: saveResult.duplicate === true,
         });
       }
+      removeSavedItemFromCache(optimisticItem);
       upsertSavedItemInCache(savedItem);
       refetchRecipeLists();
+      if (saveResult.duplicate === true) {
+        setBannerMessage("This recipe is already saved.");
+        return;
+      }
+
       void refreshMetadataInBackground(savedItem.id);
     } catch (caughtError) {
       removeSavedItemFromCache(optimisticItem);
@@ -613,6 +651,7 @@ function toRecipeLibraryItem(savedItem: SavedRecipeItem): RecipeLibraryItem {
     title: savedItem.title,
     thumbnail_url: savedItem.thumbnail_url,
     metadata_status: savedItem.metadata_status,
+    source_metadata: savedItem.source_metadata,
     user_note: savedItem.user_note,
     pasted_caption: savedItem.pasted_caption,
     manual_ingredients: savedItem.manual_ingredients,
@@ -631,9 +670,12 @@ function upsertRecipeLibraryItem(
   limit?: number,
 ) {
   const items = currentItems ?? [];
+  const nextSourceKey = getRecipeSourceKey(nextItem);
   const filteredItems = items.filter(
     (item) =>
-      item.id !== nextItem.id && item.source_url !== nextItem.source_url,
+      item.id !== nextItem.id &&
+      item.source_url !== nextItem.source_url &&
+      (!nextSourceKey || getRecipeSourceKey(item) !== nextSourceKey),
   );
   const nextItems = [nextItem, ...filteredItems].sort(
     (firstItem, secondItem) =>
@@ -651,19 +693,24 @@ function savedPlatformFromUrl(sourceUrl: string) {
 function createOptimisticRecipeLibraryItem({
   sourceUrl,
   platform,
+  normalizedSourceKey,
 }: {
   sourceUrl: string;
   platform: ReturnType<typeof detectRecipePlatform>;
+  normalizedSourceKey: string;
 }): RecipeLibraryItem {
   const timestamp = new Date().toISOString();
 
   return {
-    id: `optimistic:${sourceUrl}`,
+    id: `optimistic:${normalizedSourceKey}`,
     source_url: sourceUrl,
     platform,
     title: "Saving recipe link...",
     thumbnail_url: null,
     metadata_status: "saving",
+    source_metadata: {
+      normalized_source_key: normalizedSourceKey,
+    },
     user_note: null,
     pasted_caption: null,
     manual_ingredients: null,
@@ -676,7 +723,7 @@ function createOptimisticRecipeLibraryItem({
   };
 }
 
-function normalizeRecipeSourceUrl(sourceUrl: string) {
+function normalizeRecipeDisplayUrl(sourceUrl: string) {
   try {
     const parsedUrl = new URL(sourceUrl.trim());
     parsedUrl.hostname = parsedUrl.hostname.toLowerCase().replace(/^www\./, "");
@@ -685,4 +732,52 @@ function normalizeRecipeSourceUrl(sourceUrl: string) {
   } catch {
     return sourceUrl.trim();
   }
+}
+
+function findDuplicateSavedItemInCache({
+  queryClient,
+  userId,
+  normalizedSourceKey,
+}: {
+  queryClient: ReturnType<typeof useQueryClient>;
+  userId: string | undefined;
+  normalizedSourceKey: string;
+}) {
+  if (!userId) {
+    return null;
+  }
+
+  const cachedLists = [
+    queryClient.getQueryData<RecipeLibraryItem[]>(["recent-recipes", userId]),
+    queryClient.getQueryData<RecipeLibraryItem[]>(["recipe-library", userId]),
+  ];
+
+  for (const items of cachedLists) {
+    const duplicateItem = items?.find(
+      (item) => getRecipeSourceKey(item) === normalizedSourceKey,
+    );
+
+    if (duplicateItem && !duplicateItem.id.startsWith("optimistic:")) {
+      return duplicateItem;
+    }
+  }
+
+  return null;
+}
+
+function getRecipeSourceKey(item: RecipeLibraryItem) {
+  const metadataKey = getNormalizedSourceKeyFromMetadata(item.source_metadata);
+
+  return metadataKey ?? normalizeRecipeSourceUrl(item.source_url);
+}
+
+function getNormalizedSourceKeyFromMetadata(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const key = (value as { normalized_source_key?: unknown })
+    .normalized_source_key;
+
+  return typeof key === "string" && key.trim().length > 0 ? key.trim() : null;
 }

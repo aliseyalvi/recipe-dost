@@ -39,6 +39,8 @@ type SaveRecipeLinkResponse =
       ok: true
       data: {
         recipe_item: SavedRecipeItem
+        duplicate?: boolean
+        message?: 'already_saved'
       }
     }
   | {
@@ -335,6 +337,7 @@ type RecipeLibraryItemRow = Pick<
   | 'title'
   | 'thumbnail_url'
   | 'metadata_status'
+  | 'source_metadata'
   | 'user_note'
   | 'pasted_caption'
   | 'manual_ingredients'
@@ -429,7 +432,7 @@ export async function saveRecipeLink(url: string) {
     })
   }
 
-  return data.data.recipe_item
+  return data.data
 }
 
 export async function refreshRecipeMetadata(recipeItemId: string) {
@@ -720,7 +723,8 @@ export async function saveRecipeItem({
   draft: RecipeLinkDraft
   userId: string
 }) {
-  const savedItem = await saveRecipeLink(draft.source_url)
+  const saveResult = await saveRecipeLink(draft.source_url)
+  const savedItem = saveResult.recipe_item
   const updateFields = {
     user_note: draft.user_note?.trim() || null,
     pasted_caption: draft.pasted_caption?.trim() || null,
@@ -919,7 +923,7 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
   let recipeItemsQuery = supabase
     .from('recipe_items')
     .select(
-      'id, source_url, platform, title, thumbnail_url, metadata_status, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, created_at, updated_at'
+      'id, source_url, platform, title, thumbnail_url, metadata_status, source_metadata, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, created_at, updated_at'
     )
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })

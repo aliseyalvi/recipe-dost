@@ -1,5 +1,12 @@
 # Recipe Dost Milestones
 
+## M21.9C.6 - Duplicate Source Detection and No-Glitch Save Flow
+
+- Status: Completed after focused validation.
+- M21.9C.6 prevents duplicate saved videos by normalizing recipe source URLs, blocking local duplicate optimistic cards, and returning existing recipe_items from save-recipe-link when already saved.
+- YouTube, Instagram, TikTok, Facebook, and generic HTTP(S) links now produce deterministic duplicate keys with common tracking params removed.
+- Save/share still uses `save-recipe-link` plus background `refresh-recipe-metadata`; duplicate saves do not create `media_jobs`, reset existing metadata, or show a second loading card.
+
 ## M21.9C.5 - Router Mount, AI Duration Guard, and Credit Refresh QA Fixes
 
 - Status: Completed after focused validation.
