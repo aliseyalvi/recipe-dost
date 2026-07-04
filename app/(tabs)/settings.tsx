@@ -12,6 +12,7 @@ import { Screen } from '@/ui/screen'
 import { useQuery } from '@tanstack/react-query'
 import Constants from 'expo-constants'
 import * as Application from 'expo-application'
+import { useRouter } from 'expo-router'
 import type { ReactNode } from 'react'
 import { useEffect } from 'react'
 import { Alert, Pressable, Text, View } from 'react-native'
@@ -31,6 +32,7 @@ const appVersion =
   '1.0.0'
 
 export default function SettingsRoute() {
+  const router = useRouter()
   const { user } = useAuth()
   const { track } = usePostHog()
   const aiAccessQuery = useQuery({
@@ -98,13 +100,13 @@ export default function SettingsRoute() {
         <SettingsRow
           marker="L"
           title="Secondary recipe language"
-          subtitle="Urdu"
-          onPress={() =>
-            showPlaceholder(
-              'secondary_recipe_language',
-              'Language preferences will be editable in the next settings milestone.'
-            )
-          }
+          subtitle="Urdu / اردو"
+          onPress={() => {
+            track('settings_row_tapped', {
+              row: 'secondary_recipe_language',
+            })
+            router.push('/settings/secondary-language')
+          }}
         />
       </SettingsSection>
 
@@ -124,24 +126,24 @@ export default function SettingsRoute() {
           marker="i"
           title="Privacy & data usage"
           subtitle="Plain-language details before launch."
-          onPress={() =>
-            showPlaceholder(
-              'privacy_data_usage',
-              'Privacy and data usage details are coming before launch.'
-            )
-          }
+          onPress={() => {
+            track('settings_row_tapped', {
+              row: 'privacy_data_usage',
+            })
+            router.push('/settings/privacy-data')
+          }}
         />
         <SettingsRow
           marker="!"
           title="Delete account & data"
-          subtitle="Backend deletion comes in M21.11C."
+          subtitle="Request deletion before backend automation."
           danger
-          onPress={() =>
-            showPlaceholder(
-              'delete_account_data',
-              'Account and data deletion will be wired up in M21.11C.'
-            )
-          }
+          onPress={() => {
+            track('settings_row_tapped', {
+              row: 'delete_account_data',
+            })
+            router.push('/settings/delete-account-data')
+          }}
         />
       </SettingsSection>
 

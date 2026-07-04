@@ -2,9 +2,18 @@
 
 ## M21.11C - Delete Account Backend
 
-- Status: Deferred.
-- Scope: Add the backend-backed account and data deletion path after the Settings hub and compliance placeholder screens are in place.
-- M21.11A only adds the visible placeholder row; it does not add deletion backend behavior.
+- Status: Scaffold completed; backend automation deferred before store submission.
+- Added a nested Delete account & data settings page explaining the data categories to delete and warning that deletion cannot be undone.
+- Current action is a safe request/contact placeholder; no service-role deletion function was added in the mobile app.
+- Backend deletion automation and public store deletion link remain M23 before release unless prioritized sooner.
+
+## M21.11B - Secondary Recipe Language Preference
+
+- Status: Completed.
+- Added `SUPPORTED_SECONDARY_RECIPE_LANGUAGES` with Urdu as the only selectable secondary recipe language and an AI instruction field for future prompt consumption.
+- Added `user_profiles.secondary_recipe_language_code` with default `ur` and a check constraint for supported values.
+- Added a nested Secondary recipe language settings screen that loads, retries, saves, and shows Urdu / اردو selected.
+- Generate AI Recipe now sends the selected secondary language code to `create-media-job`; the Edge Function stores it safely in `media_jobs.source_metadata` without changing the worker contract.
 
 ## M21.11A - Settings Screen Redesign
 
@@ -14,7 +23,7 @@
 - Subscription shows the free-plan and Premium/restore placeholders without adding RevenueCat purchase logic.
 - Secondary recipe language, theme, privacy/data usage, delete account/data, contact support, and app version rows are present as structured settings rows.
 - Developer identity/access tools are grouped under a Developer section and hidden unless running in dev mode or the access role is admin/tester.
-- RevenueCat integration remains M22, and delete account backend work remains M21.11C.
+- RevenueCat integration remains M22, and automated delete account backend work remains M23 before release.
 
 ## M22 - RevenueCat Paywall + Entitlement Sync
 

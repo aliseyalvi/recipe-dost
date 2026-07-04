@@ -59,6 +59,7 @@ type MediaJobInsert = {
   platform: string;
   status?: string;
   source_mode?: string;
+  source_metadata?: Json;
   progress?: number;
   thumbnail_url?: string | null;
 };
@@ -70,6 +71,7 @@ type UserProfile = {
   ai_monthly_limit_override: number | null;
   revenuecat_entitlement: string | null;
   revenuecat_entitlement_active: boolean | null;
+  secondary_recipe_language_code: string | null;
 };
 
 type Database = {
@@ -125,8 +127,18 @@ type EdgeSupabaseClient = SupabaseClient<Database>;
 
 type CreateMediaJobRequest = {
   recipe_item_id?: string;
+  secondary_recipe_language_code?: SecondaryRecipeLanguageCode;
   source_url?: string;
   platform?: RecipePlatform;
+};
+
+type SecondaryRecipeLanguageCode = "ur";
+
+type SecondaryRecipeLanguage = {
+  code: SecondaryRecipeLanguageCode;
+  label: string;
+  nativeLabel: string;
+  aiInstruction: string;
 };
 
 type CreateMediaJobErrorCode =
@@ -170,6 +182,15 @@ const ACTIVE_MEDIA_JOB_STATUSES = [
   "uploading_to_ai",
   "saving_result",
 ] as const;
+
+const SUPPORTED_SECONDARY_RECIPE_LANGUAGES: SecondaryRecipeLanguage[] = [
+  {
+    code: "ur",
+    label: "Urdu",
+    nativeLabel: "اردو",
+    aiInstruction: "Provide secondary explanations in Urdu.",
+  },
+];
 
 Deno.serve((request) =>
   handleCreateMediaJobRequest(request).catch(() =>
@@ -291,34 +312,37 @@ async function handleCreateMediaJobRequest(request: Request) {
   }
 
   const sourceMode = getSourceMode(platform, recipeItem);
-  const activeJob = input.recipe_item_id
-    ? await getActiveMediaJobForRecipe(
+  const secondaryRecipeLanguage = getSecondaryRecipeLanguage(
+    input.secondary_recipe_language_code,
+  );
+  if (input.recipe_item_id) {
+    const activeJob = await getActiveMediaJobForRecipe(
       clients.adminClient,
       user.id,
       input.recipe_item_id,
-    )
-    : null;
-
-  if (activeJob.error) {
-    return errorResponse(
-      "unexpected_media_job_error",
-      "Could not check active AI recipe status. Please try again.",
-      500,
     );
-  }
 
-  if (activeJob.data) {
-    return jsonResponse({
-      ok: true,
-      data: {
-        media_job_id: activeJob.data.id,
-        status: activeJob.data.status,
-        progress: activeJob.data.progress,
-        worker_triggered: false,
-        processor_mode: getMediaProcessorMode(),
-        duplicate_active_job: true,
-      },
-    });
+    if (activeJob.error) {
+      return errorResponse(
+        "unexpected_media_job_error",
+        "Could not check active AI recipe status. Please try again.",
+        500,
+      );
+    }
+
+    if (activeJob.data) {
+      return jsonResponse({
+        ok: true,
+        data: {
+          media_job_id: activeJob.data.id,
+          status: activeJob.data.status,
+          progress: activeJob.data.progress,
+          worker_triggered: false,
+          processor_mode: getMediaProcessorMode(),
+          duplicate_active_job: true,
+        },
+      });
+    }
   }
 
   const access = await getAiGenerationAccess(clients.adminClient, user.id);
@@ -348,6 +372,11 @@ async function handleCreateMediaJobRequest(request: Request) {
       platform,
       status: "queued",
       source_mode: sourceMode,
+      source_metadata: {
+        secondary_recipe_language_code: secondaryRecipeLanguage.code,
+        secondary_recipe_language_instruction:
+          secondaryRecipeLanguage.aiInstruction,
+      },
       progress: 0,
       thumbnail_url: null,
     })
@@ -369,6 +398,7 @@ async function handleCreateMediaJobRequest(request: Request) {
     "Media job created.",
     {
       ai_generation_access: toSafeAiGenerationAccessMetadata(access),
+      secondary_recipe_language_code: secondaryRecipeLanguage.code,
     },
   );
 
@@ -607,6 +637,9 @@ function validateCreateMediaJobRequest(body: unknown):
 
   const sourceUrl = normalizeUrl(body.source_url);
   const platform = normalizePlatform(body.platform);
+  const secondaryRecipeLanguageCode = normalizeSecondaryRecipeLanguageCode(
+    body.secondary_recipe_language_code,
+  );
   const recipeItemId = typeof body.recipe_item_id === "string"
     ? body.recipe_item_id.trim()
     : undefined;
@@ -630,9 +663,26 @@ function validateCreateMediaJobRequest(body: unknown):
     data: {
       ...(sourceUrl ? { source_url: sourceUrl } : {}),
       ...(platform ? { platform } : {}),
+      ...(secondaryRecipeLanguageCode
+        ? { secondary_recipe_language_code: secondaryRecipeLanguageCode }
+        : {}),
       ...(recipeItemId ? { recipe_item_id: recipeItemId } : {}),
     },
   };
+}
+
+function getSecondaryRecipeLanguage(
+  code: SecondaryRecipeLanguageCode | undefined,
+) {
+  return SUPPORTED_SECONDARY_RECIPE_LANGUAGES.find((language) =>
+    language.code === code
+  ) ?? SUPPORTED_SECONDARY_RECIPE_LANGUAGES[0];
+}
+
+function normalizeSecondaryRecipeLanguageCode(
+  value: unknown,
+): SecondaryRecipeLanguageCode | undefined {
+  return value === "ur" ? value : undefined;
 }
 
 function normalizeUrl(value: unknown) {

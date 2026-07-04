@@ -1,6 +1,13 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-04
+- M21.11B/C settings preferences and compliance scaffold started and completed.
+- Decision: Add `SUPPORTED_SECONDARY_RECIPE_LANGUAGES` with Urdu as the only supported option, default profile persistence through `user_profiles.secondary_recipe_language_code = 'ur'`, and a nested selector screen instead of hardcoding Urdu across Settings.
+- Decision: Generate AI Recipe passes `secondary_recipe_language_code` to `create-media-job`; the Edge Function stores the selected code and instruction in `media_jobs.source_metadata` without changing the worker request contract or Gemini extraction prompt.
+- Decision: Privacy & data usage and Delete account & data are nested settings pages with short non-legal copy. Delete account remains a request/contact scaffold; no service-role deletion function was added because the final user-owned data map and public store deletion link should be verified before automation.
+- Deferred: Automated delete-account backend and public store deletion link remain M23 before release unless prioritized sooner.
+- Deployment notes: run `supabase db push` for `20260704161913_m21_11_secondary_language_preference.sql`, then deploy only the changed function with `supabase functions deploy create-media-job`.
+- Validation: `npm run typecheck`, `npm run functions:check`, and `npx expo config --json` passed. `functions:check` emitted existing Deno warnings about ignored `ignoreDeprecations`.
 - M21.11A Settings screen redesign started and completed.
 - Decision: Settings is now a structured hub with Profile, Subscription, Recipe Preferences, Appearance, Privacy & Data, Support, and Developer sections instead of mixed normal/debug cards.
 - Decision: Premium and restore purchases remain friendly placeholders; RevenueCat integration remains M22.

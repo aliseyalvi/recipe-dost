@@ -1,6 +1,11 @@
 import { getPlatformLabel } from '@/features/recipe-draft/platform'
 import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { RecipePlatform } from '@/features/recipe-draft/types'
+import { useUserProfileQuery } from '@/features/onboarding/use-user-profile-query'
+import {
+  DEFAULT_SECONDARY_RECIPE_LANGUAGE_CODE,
+  getSecondaryRecipeLanguage,
+} from '@/features/settings/secondary-recipe-language'
 import { UsagePill } from '@/features/usage/usage-limit-card'
 import { getAiAccessState } from '@/lib/api/ai-access'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
@@ -86,6 +91,11 @@ export default function SavedRecipeRoute() {
       isMediaJobActive(query.state.data) ? 5000 : false,
   })
   const resultRecipeCardId = mediaJobQuery.data?.result_recipe_card_id
+  const userProfileQuery = useUserProfileQuery()
+  const secondaryRecipeLanguage = getSecondaryRecipeLanguage(
+    userProfileQuery.data?.secondary_recipe_language_code ??
+      DEFAULT_SECONDARY_RECIPE_LANGUAGE_CODE
+  )
   const recipeCardQuery = useQuery({
     enabled: Boolean(resultRecipeCardId),
     queryKey: ['recipe-card', resultRecipeCardId],
@@ -346,11 +356,13 @@ export default function SavedRecipeRoute() {
 
     track('generate_ai_recipe_tapped', {
       platform,
+      secondary_recipe_language_code: secondaryRecipeLanguage.code,
     })
 
     try {
       const createdJob = await createMediaJob({
         recipeItemId: recipe.id,
+        secondaryRecipeLanguageCode: secondaryRecipeLanguage.code,
       })
 
       if (!mountedRef.current) {

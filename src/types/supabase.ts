@@ -584,6 +584,7 @@ export type Database = {
           revenuecat_entitlement_active: boolean
           revenuecat_updated_at: string | null
           role: string
+          secondary_recipe_language_code: string
           updated_at: string
           user_id: string
         }
@@ -603,6 +604,7 @@ export type Database = {
           revenuecat_entitlement_active?: boolean
           revenuecat_updated_at?: string | null
           role?: string
+          secondary_recipe_language_code?: string
           updated_at?: string
           user_id: string
         }
@@ -622,6 +624,7 @@ export type Database = {
           revenuecat_entitlement_active?: boolean
           revenuecat_updated_at?: string | null
           role?: string
+          secondary_recipe_language_code?: string
           updated_at?: string
           user_id?: string
         }

@@ -3,6 +3,7 @@ import {
   RecipeMetadataStatus,
   RecipePlatform,
 } from '@/features/recipe-draft/types'
+import type { SecondaryRecipeLanguageCode } from '@/features/settings/secondary-recipe-language'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import { supabase } from '@/lib/supabase/client'
 import { Database, Json } from '@/types/supabase'
@@ -113,6 +114,8 @@ export type MediaJobSourceMetadata = {
   duration_seconds?: number
   is_too_long?: boolean
   max_duration_seconds?: number
+  secondary_recipe_language_code?: string
+  secondary_recipe_language_instruction?: string
   uploaded_thumbnail_url?: string
   media?: {
     mime_type?: string
@@ -554,10 +557,12 @@ export async function generateRecipeCard(recipeId: string) {
 
 export async function createMediaJob({
   recipeItemId,
+  secondaryRecipeLanguageCode,
   sourceUrl,
   platform,
 }: {
   recipeItemId?: string
+  secondaryRecipeLanguageCode?: SecondaryRecipeLanguageCode
   sourceUrl?: string
   platform?: RecipePlatform
 }) {
@@ -567,6 +572,7 @@ export async function createMediaJob({
       {
         body: {
           recipe_item_id: recipeItemId,
+          secondary_recipe_language_code: secondaryRecipeLanguageCode,
           source_url: sourceUrl,
           platform,
         },
@@ -1041,6 +1047,12 @@ function normalizeMediaJobSourceMetadata(
     is_too_long: getBooleanValue(value.is_too_long ?? value.isTooLong),
     max_duration_seconds: getNumberValue(
       value.max_duration_seconds ?? value.maxDurationSeconds
+    ),
+    secondary_recipe_language_code: getStringValue(
+      value.secondary_recipe_language_code
+    ),
+    secondary_recipe_language_instruction: getStringValue(
+      value.secondary_recipe_language_instruction
     ),
     uploaded_thumbnail_url: getStringValue(value.uploaded_thumbnail_url),
     media,
