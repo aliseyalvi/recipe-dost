@@ -1,6 +1,12 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-04
+- M21.11A Settings screen redesign started and completed.
+- Decision: Settings is now a structured hub with Profile, Subscription, Recipe Preferences, Appearance, Privacy & Data, Support, and Developer sections instead of mixed normal/debug cards.
+- Decision: Premium and restore purchases remain friendly placeholders; RevenueCat integration remains M22.
+- Decision: Delete account & data remains a placeholder row only; backend deletion remains M21.11C.
+- Decision: Developer identity/access tools remain available but are grouped under Developer and gated to `__DEV__`, admin, or tester access only.
+- Validation: `npm run typecheck` and `npx expo config --json`.
 - M21.10A lightweight agent QA contract docs started and completed.
 - Decision: Add concise agent runbook, QA scenarios, milestone status, and compact `AGENTS.md` guardrails now; defer heavy closed-loop QA architecture.
 - Reason: Avoid complexity, token burn, and delivery delay before monetization.

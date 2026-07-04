@@ -1,155 +1,346 @@
-import { ContentLanguageControl } from '@/features/language/content-language-control'
 import {
   DevIdentityPanel,
   shouldShowDevIdentityPanel,
 } from '@/features/dev-tools/dev-identity-panel'
 import { getAiAccessState } from '@/lib/api/ai-access'
+import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { useAuth } from '@/providers/auth-provider'
-import { colors, spacing, typography } from '@/theme'
+import { colors, radius, spacing, typography } from '@/theme'
 import { AppHeader } from '@/ui/app-header'
-import { Button } from '@/ui/button'
 import { Card } from '@/ui/card'
 import { Screen } from '@/ui/screen'
 import { useQuery } from '@tanstack/react-query'
-import { Text, View } from 'react-native'
+import Constants from 'expo-constants'
+import * as Application from 'expo-application'
+import type { ReactNode } from 'react'
+import { useEffect } from 'react'
+import { Alert, Pressable, Text, View } from 'react-native'
+
+type SettingsRowProps = {
+  marker: string
+  title: string
+  subtitle: string
+  value?: string
+  danger?: boolean
+  onPress?: () => void
+}
+
+const appVersion =
+  Application.nativeApplicationVersion ??
+  Constants.expoConfig?.version ??
+  '1.0.0'
 
 export default function SettingsRoute() {
   const { user } = useAuth()
+  const { track } = usePostHog()
   const aiAccessQuery = useQuery({
     enabled: Boolean(user?.id),
     queryKey: ['ai-access-state', user?.id, 'settings'],
     queryFn: getAiAccessState,
   })
+  const showDeveloperSection = shouldShowDevIdentityPanel(aiAccessQuery.data)
+  const userIdentifier = user?.id ? shortId(user.id) : null
+
+  useEffect(() => {
+    track('settings_screen_viewed')
+  }, [track])
+
+  const showPlaceholder = (row: string, message: string) => {
+    track('settings_placeholder_tapped', { row })
+    Alert.alert('Coming soon', message)
+  }
 
   return (
     <Screen compact tabBarPadding>
       <AppHeader
         eyebrow="Settings"
         title="Settings"
-        subtitle="Account, plan, app, and support."
+        subtitle="Manage your app profile, preferences, privacy, and support."
       />
 
-      <Card>
-        <Text selectable style={[typography.heading, { color: colors.text }]}>
-          Account
-        </Text>
-        <SettingsRow label="Account" value="Guest mode" />
+      <SettingsSection title="Profile">
         <SettingsRow
-          label="Anonymous user"
-          value={user?.id ? shortId(user.id) : 'Starting session'}
+          marker="P"
+          title={user?.email ?? 'Guest profile'}
+          subtitle="Your saved recipes are linked to this app profile."
+          value={userIdentifier ?? 'Starting'}
         />
-        <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-          Sign-in and account linking are coming later.
-        </Text>
-      </Card>
+      </SettingsSection>
 
-      <Card tone="warm">
-        <Text selectable style={[typography.heading, { color: colors.text }]}>
-          Plan
-        </Text>
-        <SettingsRow label="Plan" value="Free plan" />
+      <SettingsSection title="Subscription" tone="warm">
         <SettingsRow
-          label="AI recipes left"
-          value={
-            aiAccessQuery.data
-              ? getAiRecipesLeftValue(aiAccessQuery.data)
-              : aiAccessQuery.isLoading
-                ? 'Loading'
-                : 'Unavailable'
+          marker="$"
+          title="Free plan"
+          subtitle="3 free AI recipe cards included."
+        />
+        <SettingsRow
+          marker="+"
+          title="Upgrade to Premium"
+          subtitle="Premium is coming next."
+          onPress={() =>
+            showPlaceholder('upgrade_to_premium', 'Premium is coming next.')
           }
         />
-        <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-          Basic organizer features stay free. AI recipe cards will be monetized
-          after free tries.
-        </Text>
-        {aiAccessQuery.error ? (
-          <View style={{ gap: spacing.sm }}>
-            <Text selectable style={[typography.caption, { color: colors.danger }]}>
-              Could not load plan usage.
-            </Text>
-            <Button
-              label="Retry usage"
-              variant="secondary"
-              onPress={() => {
-                void aiAccessQuery.refetch()
-              }}
-            />
-          </View>
-        ) : null}
-        <Button label="Upgrade coming next" disabled variant="secondary" />
-        <Button label="Restore coming later" disabled variant="ghost" />
-      </Card>
+        <SettingsRow
+          marker="R"
+          title="Restore purchases"
+          subtitle="Restore support will arrive with Premium."
+          onPress={() =>
+            showPlaceholder(
+              'restore_purchases',
+              'Restore purchases is coming soon.'
+            )
+          }
+        />
+      </SettingsSection>
 
-      <Card>
-        <Text selectable style={[typography.heading, { color: colors.text }]}>
-          App
-        </Text>
-        <SettingsRow label="Theme" value="Warm dark" />
-        <SettingsRow label="Video storage" value="Not used" />
-      </Card>
+      <SettingsSection title="Recipe Preferences">
+        <SettingsRow
+          marker="L"
+          title="Secondary recipe language"
+          subtitle="Urdu"
+          onPress={() =>
+            showPlaceholder(
+              'secondary_recipe_language',
+              'Language preferences will be editable in the next settings milestone.'
+            )
+          }
+        />
+      </SettingsSection>
 
-      <Card>
-        <Text selectable style={[typography.heading, { color: colors.text }]}>
-          Language
-        </Text>
-        <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-          Recipe content language
-        </Text>
-        <ContentLanguageControl />
-      </Card>
+      <SettingsSection title="Appearance">
+        <SettingsRow
+          marker="T"
+          title="Theme"
+          subtitle="System default"
+          onPress={() =>
+            showPlaceholder('theme', 'Theme options are coming later.')
+          }
+        />
+      </SettingsSection>
 
-      {shouldShowDevIdentityPanel() ? (
-        <DevIdentityPanel />
+      <SettingsSection title="Privacy & Data">
+        <SettingsRow
+          marker="i"
+          title="Privacy & data usage"
+          subtitle="Plain-language details before launch."
+          onPress={() =>
+            showPlaceholder(
+              'privacy_data_usage',
+              'Privacy and data usage details are coming before launch.'
+            )
+          }
+        />
+        <SettingsRow
+          marker="!"
+          title="Delete account & data"
+          subtitle="Backend deletion comes in M21.11C."
+          danger
+          onPress={() =>
+            showPlaceholder(
+              'delete_account_data',
+              'Account and data deletion will be wired up in M21.11C.'
+            )
+          }
+        />
+      </SettingsSection>
+
+      <SettingsSection title="Support">
+        <SettingsRow
+          marker="?"
+          title="Contact support"
+          subtitle="Support contact is coming soon."
+          onPress={() =>
+            showPlaceholder('contact_support', 'Contact support is coming soon.')
+          }
+        />
+        <SettingsRow
+          marker="V"
+          title="App version"
+          subtitle={appVersion}
+        />
+      </SettingsSection>
+
+      {showDeveloperSection ? (
+        <View style={{ gap: spacing.md }}>
+          <SectionTitle title="Developer" />
+          <DeveloperDiagnosticsCard
+            role={aiAccessQuery.data?.role ?? (__DEV__ ? 'Development' : 'Unknown')}
+            accessState={
+              aiAccessQuery.data
+                ? getDeveloperAccessLabel(aiAccessQuery.data)
+                : aiAccessQuery.isLoading
+                  ? 'Loading access'
+                  : 'Access unavailable'
+            }
+          />
+          <DevIdentityPanel />
+        </View>
       ) : null}
-
-      {__DEV__ ? (
-        <Card>
-          <Text selectable style={[typography.heading, { color: colors.text }]}>
-            Development
-          </Text>
-          <SettingsRow label="Telemetry" value="Placeholder only" />
-          <SettingsRow label="RevenueCat" value="Not initialized" />
-          <SettingsRow label="Supabase" value="Anonymous auth enabled" />
-        </Card>
-      ) : null}
-
-      <Card>
-        <Text selectable style={[typography.heading, { color: colors.text }]}>
-          Support
-        </Text>
-        <SettingsRow label="Help" value="Coming later" />
-        <SettingsRow label="Privacy" value="Before launch" />
-        <SettingsRow label="Terms" value="Before launch" />
-        <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-          Support, privacy, terms, and account deletion will be added before
-          launch.
-        </Text>
-      </Card>
-
     </Screen>
   )
 }
 
-function SettingsRow({ label, value }: { label: string; value: string }) {
+function SettingsSection({
+  children,
+  title,
+  tone = 'default',
+}: {
+  children: ReactNode
+  title: string
+  tone?: 'default' | 'warm' | 'muted'
+}) {
   return (
-    <View
-      style={{
+    <View style={{ gap: spacing.sm }}>
+      <SectionTitle title={title} />
+      <Card tone={tone}>{children}</Card>
+    </View>
+  )
+}
+
+function SectionTitle({ title }: { title: string }) {
+  return (
+    <Text
+      selectable
+      style={[
+        typography.caption,
+        {
+          color: colors.textMuted,
+          fontWeight: '800',
+          textTransform: 'uppercase',
+        },
+      ]}
+    >
+      {title}
+    </Text>
+  )
+}
+
+function SettingsRow({
+  marker,
+  title,
+  subtitle,
+  value,
+  danger = false,
+  onPress,
+}: SettingsRowProps) {
+  const content = (
+    <>
+      <View
+        style={{
+          width: 34,
+          height: 34,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: radius.sm,
+          backgroundColor: danger ? colors.dangerSurface : colors.surfaceMuted,
+        }}
+      >
+        <Text
+          selectable={false}
+          style={[
+            typography.caption,
+            {
+              color: danger ? colors.danger : colors.accent,
+              fontWeight: '900',
+            },
+          ]}
+        >
+          {marker}
+        </Text>
+      </View>
+      <View style={{ minWidth: 0, flex: 1, gap: 2 }}>
+        <Text
+          selectable
+          numberOfLines={1}
+          ellipsizeMode="tail"
+          style={[
+            typography.body,
+            { color: danger ? colors.danger : colors.text, fontWeight: '800' },
+          ]}
+        >
+          {title}
+        </Text>
+        <Text
+          selectable
+          numberOfLines={2}
+          ellipsizeMode="tail"
+          style={[typography.caption, { color: colors.textMuted }]}
+        >
+          {subtitle}
+        </Text>
+      </View>
+      {value ? (
+        <Text
+          selectable
+          numberOfLines={1}
+          ellipsizeMode="middle"
+          style={[typography.caption, { color: colors.textMuted }]}
+        >
+          {value}
+        </Text>
+      ) : null}
+      {onPress ? (
+        <Text
+          selectable={false}
+          style={[typography.body, { color: colors.textMuted, fontWeight: '900' }]}
+        >
+          {'>'}
+        </Text>
+      ) : null}
+    </>
+  )
+
+  if (!onPress) {
+    return (
+      <View
+        style={{
+          minHeight: 58,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.md,
+        }}
+      >
+        {content}
+      </View>
+    )
+  }
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => ({
+        minHeight: 58,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
         gap: spacing.md,
-      }}
+        borderRadius: radius.md,
+        opacity: pressed ? 0.78 : 1,
+      })}
     >
-      <Text selectable style={[typography.body, { flex: 1, color: colors.text }]}>
-        {label}
+      {content}
+    </Pressable>
+  )
+}
+
+function DeveloperDiagnosticsCard({
+  role,
+  accessState,
+}: {
+  role: string
+  accessState: string
+}) {
+  return (
+    <Card tone="muted">
+      <Text selectable style={[typography.heading, { color: colors.text }]}>
+        Access diagnostics
       </Text>
-      <Text
-        selectable
-        style={[typography.body, { color: colors.textMuted, textAlign: 'right' }]}
-      >
-        {value}
-      </Text>
-    </View>
+      <SettingsRow marker="D" title="Role" subtitle={role} />
+      <SettingsRow marker="A" title="AI access" subtitle={accessState} />
+      <SettingsRow marker="S" title="Supabase" subtitle="Anonymous auth enabled" />
+      <SettingsRow marker="R" title="RevenueCat" subtitle="Not initialized" />
+    </Card>
   )
 }
 
@@ -157,28 +348,23 @@ function shortId(value: string) {
   return `${value.slice(0, 8)}...`
 }
 
-function getAiRecipesLeftValue(access: {
-  role: string
-  isTestUser: boolean
+function getDeveloperAccessLabel(access: {
   premiumActive: boolean
+  isTestUser: boolean
   remaining: number | null
   reason: string
 }) {
-  if (access.role === 'admin') {
-    return 'Admin'
+  if (access.premiumActive) {
+    return 'Premium'
   }
 
-  if (access.isTestUser || access.role === 'tester') {
+  if (access.isTestUser) {
     return 'Tester'
   }
 
-  if (access.premiumActive) {
-    return 'Pro'
-  }
-
   if (access.reason === 'limit_reached') {
-    return '0'
+    return 'Limit reached'
   }
 
-  return access.remaining === null ? '-' : `${access.remaining}`
+  return access.remaining === null ? 'Unlimited' : `${access.remaining} remaining`
 }

@@ -6,6 +6,7 @@ import {
   switchToSavedDevIdentity,
 } from '@/features/dev-tools/dev-identities'
 import { getAiAccessState } from '@/lib/api/ai-access'
+import type { AiAccessState } from '@/lib/api/ai-access'
 import { useAuth } from '@/providers/auth-provider'
 import { colors, spacing, typography } from '@/theme'
 import { Button } from '@/ui/button'
@@ -17,8 +18,13 @@ import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import { Text, View } from 'react-native'
 
-export function shouldShowDevIdentityPanel() {
-  return __DEV__ || process.env.EXPO_PUBLIC_DEV_TOOLS_ENABLED === 'true'
+export function shouldShowDevIdentityPanel(access?: AiAccessState | null) {
+  return (
+    __DEV__ ||
+    access?.role === 'admin' ||
+    access?.role === 'tester' ||
+    access?.isTestUser === true
+  )
 }
 
 export function DevIdentityPanel() {

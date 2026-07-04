@@ -1,8 +1,24 @@
 # Recipe Dost Milestones
 
+## M21.11C - Delete Account Backend
+
+- Status: Deferred.
+- Scope: Add the backend-backed account and data deletion path after the Settings hub and compliance placeholder screens are in place.
+- M21.11A only adds the visible placeholder row; it does not add deletion backend behavior.
+
+## M21.11A - Settings Screen Redesign
+
+- Status: Completed.
+- Settings is now a clean production-ready hub with Profile, Subscription, Recipe Preferences, Appearance, Privacy & Data, Support, and Developer sections.
+- Profile shows the guest/app profile identity without adding sign-in.
+- Subscription shows the free-plan and Premium/restore placeholders without adding RevenueCat purchase logic.
+- Secondary recipe language, theme, privacy/data usage, delete account/data, contact support, and app version rows are present as structured settings rows.
+- Developer identity/access tools are grouped under a Developer section and hidden unless running in dev mode or the access role is admin/tester.
+- RevenueCat integration remains M22, and delete account backend work remains M21.11C.
+
 ## M22 - RevenueCat Paywall + Entitlement Sync
 
-- Status: Next after M21.10A.
+- Status: Deferred until after the M21.11 settings and compliance foundation.
 - Scope: Add RevenueCat paywall behavior and entitlement sync after the lightweight agent QA docs milestone is complete.
 - Save links remain free, and AI generation remains the monetized path.
 
