@@ -1,5 +1,14 @@
 # Recipe Dost Decision Log
 
+## 2026-07-04
+- M21.10A lightweight agent QA contract docs started and completed.
+- Decision: Add concise agent runbook, QA scenarios, milestone status, and compact `AGENTS.md` guardrails now; defer heavy closed-loop QA architecture.
+- Reason: Avoid complexity, token burn, and delivery delay before monetization.
+- Deferred: Expo MCP setup, React runtime introspection, device/browser visual QA automation, automated self-healing loops, Maestro, serve-sim, and agent-device setup.
+- Next: M22 RevenueCat paywall + entitlement sync.
+- Validation: Docs-only review with `git diff -- docs AGENTS.md`; no typecheck run.
+- Human QA needed: Review the docs before starting M22.
+
 ## 2026-07-03
 - M21.9C.6 prevents duplicate saved videos by normalizing recipe source URLs, blocking local duplicate optimistic cards, and returning existing recipe_items from save-recipe-link when already saved.
 - Decision: The canonical duplicate key is stored as `recipe_items.source_metadata.normalized_source_key` for new saved links; this patch does not add a schema migration or backfill old rows, and `save-recipe-link` compares legacy saved `source_url` values by the same normalizer before inserting.

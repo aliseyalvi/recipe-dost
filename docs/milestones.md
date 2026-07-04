@@ -1,5 +1,45 @@
 # Recipe Dost Milestones
 
+## M22 - RevenueCat Paywall + Entitlement Sync
+
+- Status: Next after M21.10A.
+- Scope: Add RevenueCat paywall behavior and entitlement sync after the lightweight agent QA docs milestone is complete.
+- Save links remain free, and AI generation remains the monetized path.
+
+## M21.10E - Automated QA Scenarios
+
+- Status: Deferred.
+- Deferred until after monetization because automated closed-loop QA would add complexity and token burn before the paywall milestone.
+
+## M21.10D - Device/Simulator Visual QA Loop
+
+- Status: Deferred.
+- Deferred until later; no browser/device visual QA automation, self-healing loops, Maestro, serve-sim, or agent-device setup is being added now.
+
+## M21.10C - Runtime Component Inspection
+
+- Status: Deferred.
+- Deferred until later; no React runtime introspection is being added now.
+
+## M21.10B - Expo MCP Local Setup
+
+- Status: Deferred.
+- Deferred until later; no Expo MCP setup is being added now.
+
+## M21.10A - Lightweight Agent QA Contract Docs
+
+- Status: Current docs-only milestone, completed.
+- Added lightweight agent runbook and QA scenario docs instead of implementing a full closed-loop QA architecture.
+- Heavy QA automation remains deferred to avoid complexity and token burn before monetization.
+- Validation: docs-only diff review with `git diff -- docs AGENTS.md`.
+- Human QA needed: review the runbook and checklist for fit before starting M22 RevenueCat paywall work.
+
+## M21.9C - Core MVP QA Freeze
+
+- Status: Stable/done.
+- Manual save URL flow, Android share URL flow, duplicate blocking, metadata bridge, thumbnails, AI generation, long-video/failed-AI UX, save modal, headers/back navigation, grocery thumbnails, and offline/cache behavior are stable enough to move toward paywall.
+- Save/share still must not create `media_jobs`; only Generate AI Recipe can start AI generation.
+
 ## M21.9C.6 - Duplicate Source Detection and No-Glitch Save Flow
 
 - Status: Completed after focused validation.

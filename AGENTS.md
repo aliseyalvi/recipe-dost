@@ -42,6 +42,19 @@ unless explicitly requested.
 
 # Agent Execution Rules & Context Mapping
 
+## Recipe Dost Agent Rules
+
+- Classify the task layer first.
+- Read targeted files only.
+- Use a maximum of 2 correction attempts.
+- Run the relevant validation once.
+- Update `docs/decision-log.md`.
+- Stop and ask a human if blocked.
+- Never expose secrets, raw video URLs, or CDN URLs.
+- Save/share must not create `media_job`.
+- Do not add features during QA freeze.
+- Keep changes small and milestone-aligned.
+
 ## Environment Ground Rules
 - **OS Platform:** macOS / Darwin (Architecture tracking)
 - **Context Constraints:** The codebase contains **NO** active semantic or AST graph explorers. Do not attempt tools/scripts to map dependencies.
