@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const REVENUECAT_ENTITLEMENT_PREMIUM = "premium";
-export const PREMIUM_MONTHLY_AI_LIMIT = 60;
+export const PREMIUM_MONTHLY_AI_LIMIT = 100;
 export const TESTER_MONTHLY_AI_LIMIT = 100;
 export const ADMIN_MONTHLY_AI_LIMIT = 10_000;
 
@@ -52,9 +52,18 @@ const ACTIVE_AI_JOB_STATUSES = [
 export type AiGenerationAccess = {
   allowed: boolean;
   reason: AiGenerationAccessReason;
+  plan: "free" | "premium";
+  blockReason: string | null;
   freeLimit: number;
   usedSuccessfulGenerations: number;
   activeReserved: number;
+  freeSuccessfulUsed: number;
+  freeActiveReserved: number;
+  freeRemainingToStart: number;
+  premiumMonthlyLimit: number;
+  premiumMonthlySuccessfulUsed: number;
+  premiumMonthlyActiveReserved: number;
+  premiumMonthlyRemainingToStart: number;
   remainingToStart: number | null;
   isPremiumOrTester: boolean;
   monthlyLimit: number | null;
@@ -70,7 +79,15 @@ export async function getAiGenerationAccess(
   adminClient: AccessSupabaseClient,
   userId: string,
 ): Promise<AiGenerationAccess> {
-  const [profileResult, lifetimeCountResult, monthlyCountResult, activeCountResult] =
+  const monthStartIso = getCurrentMonthStartIso();
+  const nextMonthStartIso = getNextMonthStartIso();
+  const [
+    profileResult,
+    lifetimeCountResult,
+    monthlyCountResult,
+    activeCountResult,
+    monthlyActiveCountResult,
+  ] =
     await Promise.all([
       adminClient
         .from("user_profiles")
@@ -81,9 +98,12 @@ export async function getAiGenerationAccess(
         .maybeSingle<UserProfile>(),
       buildSuccessfulAiJobsCountQuery(adminClient, userId),
       buildSuccessfulAiJobsCountQuery(adminClient, userId)
-        .gte("completed_at", getCurrentMonthStartIso())
-        .lt("completed_at", getNextMonthStartIso()),
+        .gte("completed_at", monthStartIso)
+        .lt("completed_at", nextMonthStartIso),
       buildActiveAiJobsCountQuery(adminClient, userId),
+      buildActiveAiJobsCountQuery(adminClient, userId)
+        .gte("created_at", monthStartIso)
+        .lt("created_at", nextMonthStartIso),
     ]);
 
   if (profileResult.error) {
@@ -102,15 +122,25 @@ export async function getAiGenerationAccess(
     throw activeCountResult.error;
   }
 
+  if (monthlyActiveCountResult.error) {
+    throw monthlyActiveCountResult.error;
+  }
+
   const profile = profileResult.data;
   const role = normalizeRole(profile?.role);
   const usedSuccessfulGenerations = lifetimeCountResult.count ?? 0;
   const usedThisMonth = monthlyCountResult.count ?? 0;
   const activeReserved = activeCountResult.count ?? 0;
+  const monthlyActiveReserved = monthlyActiveCountResult.count ?? 0;
   const override = getMonthlyLimitOverride(profile);
   const premiumActive = isPremiumActive(profile, role);
   const isTestUser = role === "tester" || profile?.is_test_user === true;
   const isPremiumOrTester = role === "admin" || isTestUser || premiumActive;
+  const freeLimit = getFreeAiGenerationLimit();
+  const freeRemaining = Math.max(
+    0,
+    freeLimit - usedSuccessfulGenerations - activeReserved,
+  );
 
   if (role === "admin") {
     return buildMonthlyAccess({
@@ -120,6 +150,9 @@ export async function getAiGenerationAccess(
       usedThisMonth,
       usedSuccessfulGenerations,
       activeReserved,
+      monthlyActiveReserved,
+      freeLimit,
+      freeRemaining,
       premiumActive,
       isTestUser,
       isPremiumOrTester,
@@ -134,6 +167,9 @@ export async function getAiGenerationAccess(
       usedThisMonth,
       usedSuccessfulGenerations,
       activeReserved,
+      monthlyActiveReserved,
+      freeLimit,
+      freeRemaining,
       premiumActive,
       isTestUser,
       isPremiumOrTester,
@@ -148,24 +184,33 @@ export async function getAiGenerationAccess(
       usedThisMonth,
       usedSuccessfulGenerations,
       activeReserved,
+      monthlyActiveReserved,
+      freeLimit,
+      freeRemaining,
       premiumActive,
       isTestUser,
       isPremiumOrTester,
     });
   }
 
-  const freeLimit = getFreeAiGenerationLimit();
-  const freeRemaining = Math.max(
-    0,
-    freeLimit - usedSuccessfulGenerations - activeReserved,
-  );
-
   return {
     allowed: freeRemaining > 0,
     reason: freeRemaining > 0 ? "free_credit_available" : "limit_reached",
+    plan: "free",
+    blockReason: freeRemaining > 0 ? null : "free_ai_limit_reached",
     freeLimit,
     usedSuccessfulGenerations,
     activeReserved,
+    freeSuccessfulUsed: usedSuccessfulGenerations,
+    freeActiveReserved: activeReserved,
+    freeRemainingToStart: freeRemaining,
+    premiumMonthlyLimit: PREMIUM_MONTHLY_AI_LIMIT,
+    premiumMonthlySuccessfulUsed: usedThisMonth,
+    premiumMonthlyActiveReserved: monthlyActiveReserved,
+    premiumMonthlyRemainingToStart: Math.max(
+      0,
+      PREMIUM_MONTHLY_AI_LIMIT - usedThisMonth - monthlyActiveReserved,
+    ),
     remainingToStart: freeRemaining,
     isPremiumOrTester,
     monthlyLimit: null,
@@ -182,6 +227,9 @@ export function toSafeAiGenerationAccessMetadata(access: AiGenerationAccess) {
     reason: access.reason,
     free_limit: access.freeLimit,
     freeLimit: access.freeLimit,
+    plan: access.plan,
+    block_reason: access.blockReason,
+    blockReason: access.blockReason,
     successful_used: access.usedSuccessfulGenerations,
     used_successful_generations: access.usedSuccessfulGenerations,
     usedSuccessfulGenerations: access.usedSuccessfulGenerations,
@@ -192,6 +240,21 @@ export function toSafeAiGenerationAccessMetadata(access: AiGenerationAccess) {
     remaining_to_start: access.remainingToStart,
     remainingToStart: access.remainingToStart,
     remaining: access.remaining,
+    free_successful_used: access.freeSuccessfulUsed,
+    freeSuccessfulUsed: access.freeSuccessfulUsed,
+    free_active_reserved: access.freeActiveReserved,
+    freeActiveReserved: access.freeActiveReserved,
+    free_remaining_to_start: access.freeRemainingToStart,
+    freeRemainingToStart: access.freeRemainingToStart,
+    premium_monthly_limit: access.premiumMonthlyLimit,
+    premiumMonthlyLimit: access.premiumMonthlyLimit,
+    premium_monthly_successful_used: access.premiumMonthlySuccessfulUsed,
+    premiumMonthlySuccessfulUsed: access.premiumMonthlySuccessfulUsed,
+    premium_monthly_active_reserved: access.premiumMonthlyActiveReserved,
+    premiumMonthlyActiveReserved: access.premiumMonthlyActiveReserved,
+    premium_monthly_remaining_to_start:
+      access.premiumMonthlyRemainingToStart,
+    premiumMonthlyRemainingToStart: access.premiumMonthlyRemainingToStart,
     can_start_ai_job: access.allowed,
     canStartAiJob: access.allowed,
     is_premium_or_tester: access.isPremiumOrTester,
@@ -235,6 +298,9 @@ function buildMonthlyAccess({
   usedThisMonth,
   usedSuccessfulGenerations,
   activeReserved,
+  monthlyActiveReserved,
+  freeLimit,
+  freeRemaining,
   premiumActive,
   isTestUser,
   isPremiumOrTester,
@@ -245,18 +311,33 @@ function buildMonthlyAccess({
   usedThisMonth: number;
   usedSuccessfulGenerations: number;
   activeReserved: number;
+  monthlyActiveReserved: number;
+  freeLimit: number;
+  freeRemaining: number;
   premiumActive: boolean;
   isTestUser: boolean;
   isPremiumOrTester: boolean;
 }): AiGenerationAccess {
-  const remaining = Math.max(0, monthlyLimit - usedThisMonth - activeReserved);
+  const remaining = Math.max(
+    0,
+    monthlyLimit - usedThisMonth - monthlyActiveReserved,
+  );
 
   return {
     allowed: remaining > 0,
     reason: remaining > 0 ? reason : "limit_reached",
-    freeLimit: getFreeAiGenerationLimit(),
+    plan: "premium",
+    blockReason: remaining > 0 ? null : "premium_monthly_limit_reached",
+    freeLimit,
     usedSuccessfulGenerations,
     activeReserved,
+    freeSuccessfulUsed: usedSuccessfulGenerations,
+    freeActiveReserved: activeReserved,
+    freeRemainingToStart: freeRemaining,
+    premiumMonthlyLimit: monthlyLimit,
+    premiumMonthlySuccessfulUsed: usedThisMonth,
+    premiumMonthlyActiveReserved: monthlyActiveReserved,
+    premiumMonthlyRemainingToStart: remaining,
     remainingToStart: remaining,
     isPremiumOrTester,
     monthlyLimit,

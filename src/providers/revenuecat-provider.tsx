@@ -3,8 +3,13 @@ import {
   REVENUECAT_ENTITLEMENT_ID,
   REVENUECAT_OFFERING_ID,
 } from '@/config/revenuecat'
+import {
+  syncPremiumEntitlement as syncRevenueCatPremiumEntitlement,
+  type SyncedPremiumEntitlement,
+} from '@/lib/api/premium-entitlement'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
+import { useQueryClient } from '@tanstack/react-query'
 import type {
   CustomerInfo,
   PurchasesOffering,
@@ -33,6 +38,7 @@ type RevenueCatContextValue = {
   error: string | null
   refreshCustomerInfo: () => Promise<CustomerInfo | null>
   refreshOfferings: () => Promise<PurchasesOffering | null>
+  syncPremiumEntitlement: () => Promise<SyncedPremiumEntitlement | null>
   purchasePackage: (selectedPackage: PurchasesPackage) => Promise<CustomerInfo>
   restorePurchases: () => Promise<CustomerInfo>
 }
@@ -47,9 +53,11 @@ let didConfigurePurchases = false
 let configuredAppUserId: string | null = null
 
 export function RevenueCatProvider({ children }: Props) {
+  const queryClient = useQueryClient()
   const { user } = useAuth()
   const { track } = usePostHog()
   const mountedRef = useRef(true)
+  const syncInFlightRef = useRef(false)
   const [isConfigured, setIsConfigured] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null)
@@ -69,6 +77,30 @@ export function RevenueCatProvider({ children }: Props) {
     }
   }, [])
 
+  const syncPremiumEntitlement = useCallback(async () => {
+    if (syncInFlightRef.current) {
+      return null
+    }
+
+    syncInFlightRef.current = true
+
+    try {
+      const synced = await syncRevenueCatPremiumEntitlement()
+
+      await queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
+      track('premium_entitlement_synced', {
+        premium_active: synced.revenuecat_entitlement_active,
+      })
+
+      return synced
+    } catch {
+      track('premium_entitlement_sync_failed')
+      return null
+    } finally {
+      syncInFlightRef.current = false
+    }
+  }, [queryClient, track])
+
   const refreshCustomerInfo = useCallback(async () => {
     if (!isConfigured) {
       return null
@@ -81,6 +113,9 @@ export function RevenueCatProvider({ children }: Props) {
       track('premium_status_refreshed', {
         is_premium: isCustomerPremium(nextInfo),
       })
+      if (isCustomerPremium(nextInfo)) {
+        await syncPremiumEntitlement()
+      }
 
       return nextInfo
     } catch {
@@ -90,7 +125,7 @@ export function RevenueCatProvider({ children }: Props) {
 
       return null
     }
-  }, [isConfigured, setCustomerInfoSafely, track])
+  }, [isConfigured, setCustomerInfoSafely, syncPremiumEntitlement, track])
 
   const refreshOfferings = useCallback(async () => {
     if (!isConfigured) {
@@ -122,19 +157,25 @@ export function RevenueCatProvider({ children }: Props) {
       const result = await Purchases.purchasePackage(selectedPackage)
 
       setCustomerInfoSafely(result.customerInfo)
+      if (isCustomerPremium(result.customerInfo)) {
+        await syncPremiumEntitlement()
+      }
 
       return result.customerInfo
     },
-    [setCustomerInfoSafely]
+    [setCustomerInfoSafely, syncPremiumEntitlement]
   )
 
   const restorePurchases = useCallback(async () => {
     const nextInfo = await Purchases.restorePurchases()
 
     setCustomerInfoSafely(nextInfo)
+    if (isCustomerPremium(nextInfo)) {
+      await syncPremiumEntitlement()
+    }
 
     return nextInfo
-  }, [setCustomerInfoSafely])
+  }, [setCustomerInfoSafely, syncPremiumEntitlement])
 
   useEffect(() => {
     mountedRef.current = true
@@ -199,6 +240,9 @@ export function RevenueCatProvider({ children }: Props) {
         track('premium_status_refreshed', {
           is_premium: isCustomerPremium(nextInfo),
         })
+        if (isCustomerPremium(nextInfo)) {
+          await syncPremiumEntitlement()
+        }
       } catch {
         if (isActive && mountedRef.current) {
           setIsConfigured(didReachConfiguredSdk)
@@ -220,7 +264,7 @@ export function RevenueCatProvider({ children }: Props) {
     return () => {
       isActive = false
     }
-  }, [setCustomerInfoSafely, track, user?.id])
+  }, [setCustomerInfoSafely, syncPremiumEntitlement, track, user?.id])
 
   const value = useMemo<RevenueCatContextValue>(
     () => ({
@@ -233,6 +277,7 @@ export function RevenueCatProvider({ children }: Props) {
       error,
       refreshCustomerInfo,
       refreshOfferings,
+      syncPremiumEntitlement,
       purchasePackage,
       restorePurchases,
     }),
@@ -248,6 +293,7 @@ export function RevenueCatProvider({ children }: Props) {
       refreshCustomerInfo,
       refreshOfferings,
       restorePurchases,
+      syncPremiumEntitlement,
     ]
   )
 

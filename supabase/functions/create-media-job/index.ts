@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
+  type AiGenerationAccess,
   getAiGenerationAccess,
   toSafeAiGenerationAccessMetadata,
 } from "../_shared/ai-access.ts";
@@ -33,6 +34,8 @@ type RecipeItem = {
   platform: string | null;
   pasted_caption: string | null;
   manual_ingredients: string | null;
+  duration_seconds: number | null;
+  source_metadata: Json;
 };
 
 type MediaJob = {
@@ -144,6 +147,11 @@ type SecondaryRecipeLanguage = {
 type CreateMediaJobErrorCode =
   | "ai_credit_limit_or_active_queue_full"
   | "ai_credit_limit_reached"
+  | "free_ai_limit_reached"
+  | "premium_monthly_limit_reached"
+  | "active_ai_job_limit_reached"
+  | "premium_sync_required"
+  | "video_duration_exceeded"
   | "invalid_request"
   | "unauthorized"
   | "recipe_not_found"
@@ -168,6 +176,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Max-Age": "86400",
 };
+
+const MAX_AI_VIDEO_DURATION_SECONDS = 120;
 
 const ACTIVE_MEDIA_JOB_STATUSES = [
   "queued",
@@ -283,7 +293,7 @@ async function handleCreateMediaJobRequest(request: Request) {
     const recipeResult = await clients.userClient
       .from("recipe_items")
       .select(
-        "id, user_id, source_url, platform, pasted_caption, manual_ingredients",
+        "id, user_id, source_url, platform, pasted_caption, manual_ingredients, duration_seconds, source_metadata",
       )
       .eq("id", input.recipe_item_id)
       .eq("user_id", user.id)
@@ -301,6 +311,14 @@ async function handleCreateMediaJobRequest(request: Request) {
     sourceUrl = normalizeUrl(recipeItem.source_url);
     platform = normalizePlatform(recipeItem.platform) ??
       detectPlatformFromUrl(recipeItem.source_url);
+  }
+
+  if (recipeItem && isRecipeTooLong(recipeItem)) {
+    return errorResponse(
+      "video_duration_exceeded",
+      "This video is longer than 2 minutes. Recipe Dost currently supports videos up to 2 minutes in beta.",
+      422,
+    );
   }
 
   if (!sourceUrl || !platform) {
@@ -348,18 +366,13 @@ async function handleCreateMediaJobRequest(request: Request) {
   const access = await getAiGenerationAccess(clients.adminClient, user.id);
 
   if (!access.allowed) {
+    const block = getAccessBlockError(access);
+
     return errorResponse(
-      "ai_credit_limit_or_active_queue_full",
-      "No free AI slots left. Wait for active analysis to finish or upgrade.",
+      block.code,
+      block.message,
       402,
-      {
-        freeLimit: access.freeLimit,
-        usedSuccessfulGenerations: access.usedSuccessfulGenerations,
-        activeReserved: access.activeReserved,
-        remainingToStart: access.remainingToStart,
-        remaining: access.remaining,
-        role: access.role,
-      },
+      toSafeAiGenerationAccessMetadata(access),
     );
   }
 
@@ -436,6 +449,46 @@ async function getActiveMediaJobForRecipe(
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle<{ id: string; status: string; progress: number }>();
+}
+
+function getAccessBlockError(access: AiGenerationAccess): {
+  code: CreateMediaJobErrorCode;
+  message: string;
+} {
+  if (access.plan === "premium") {
+    if (
+      access.premiumMonthlySuccessfulUsed >= access.premiumMonthlyLimit
+    ) {
+      return {
+        code: "premium_monthly_limit_reached",
+        message: "You've used your 100 Premium AI recipes this month.",
+      };
+    }
+
+    return {
+      code: "active_ai_job_limit_reached",
+      message: "An AI recipe is already being generated. Please wait for it to finish.",
+    };
+  }
+
+  if (access.freeSuccessfulUsed >= access.freeLimit) {
+    return {
+      code: "free_ai_limit_reached",
+      message: "You've used your 3 free AI recipes.",
+    };
+  }
+
+  if (access.freeActiveReserved > 0) {
+    return {
+      code: "active_ai_job_limit_reached",
+      message: "An AI recipe is already being generated. Please wait for it to finish.",
+    };
+  }
+
+  return {
+    code: "free_ai_limit_reached",
+    message: "You've used your 3 free AI recipes.",
+  };
 }
 
 function getMediaProcessorMode(): MediaProcessorMode {
@@ -770,6 +823,26 @@ function getSourceMode(
   return "text_only";
 }
 
+function isRecipeTooLong(recipeItem: RecipeItem) {
+  if (
+    typeof recipeItem.duration_seconds === "number" &&
+    recipeItem.duration_seconds > MAX_AI_VIDEO_DURATION_SECONDS
+  ) {
+    return true;
+  }
+
+  const sourceMetadata = isRecord(recipeItem.source_metadata)
+    ? recipeItem.source_metadata
+    : {};
+  const metadataDuration = getNumber(sourceMetadata.duration_seconds);
+  const maxDuration =
+    getNumber(sourceMetadata.max_duration_seconds) ??
+      MAX_AI_VIDEO_DURATION_SECONDS;
+
+  return sourceMetadata.is_too_long === true ||
+    (metadataDuration !== null && metadataDuration > maxDuration);
+}
+
 async function triggerWorker(
   adminClient: EdgeSupabaseClient,
   mediaJobId: string,
@@ -912,6 +985,10 @@ function isUuid(value: string) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 function errorResponse(

@@ -1,6 +1,15 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-05
+- M22B RevenueCat backend entitlement sync and AI quota enforcement completed.
+- Decision: M22B uses the existing `user_profiles` RevenueCat mirror fields and adds only optional safe RevenueCat metadata columns (`revenuecat_product_id`, `revenuecat_expires_at`, `revenuecat_store`).
+- Decision: `sync-revenuecat-entitlement` is the authenticated server-side sync path. It reads RevenueCat with `REVENUECAT_API_KEY`, does not trust client premium flags, and returns safe entitlement fields only.
+- Decision: Backend AI quota enforcement is now the source of truth. Free gets 3 successful AI recipes total; Premium gets 100 successful AI recipes/month; active jobs reserve slots; failed/cancelled jobs do not count.
+- Decision: `create-media-job` blocks before inserting a job with specific quota error codes and preserves the 2-minute beta video duration guard for all users.
+- Decision: Source Detail handles unsynced local Premium by syncing entitlement and refetching access before retry, and the error card no longer adds a second large Generate AI Recipe button.
+- Deferred: RevenueCat webhooks may be added later for store-initiated subscription changes.
+- Deployment notes: run `supabase db push`, then `supabase functions deploy sync-revenuecat-entitlement`, `supabase functions deploy get-ai-access`, and `supabase functions deploy create-media-job`.
+- Validation: `npm run typecheck`, `npx expo config --json`, and `npm run functions:check` passed. `functions:check` emitted existing Deno warnings about ignored `ignoreDeprecations`.
 - M22A.2 Paywall and AI generation CTA UX polish completed.
 - Decision: Source Detail AI generation now uses one state-driven CTA area so existing AI recipes show Open AI Recipe, Premium users see Generate AI Recipe with Premium helper copy, free users see remaining free recipes, and exhausted free users see one Upgrade card.
 - Decision: Long-video and metadata-pending states do not suggest Premium as the fix; Premium does not increase the 2-minute beta video duration limit.

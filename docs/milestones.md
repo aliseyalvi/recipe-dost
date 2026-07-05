@@ -1,5 +1,17 @@
 # Recipe Dost Milestones
 
+## M22B - RevenueCat Backend Entitlement Sync and AI Quota Enforcement
+
+- Status: Completed.
+- Added backend RevenueCat entitlement sync using existing `user_profiles` RevenueCat columns, plus optional safe metadata columns for product, expiry, and store.
+- Added `sync-revenuecat-entitlement` Edge Function to fetch RevenueCat server-side with `REVENUECAT_API_KEY` and update only the current user's profile entitlement mirror.
+- Server-side AI access is now the source of truth: Free users get 3 successful AI recipes total, Premium gets 100 successful AI recipes/month, active jobs reserve slots, and failed/cancelled jobs do not count.
+- `get-ai-access` now returns free and Premium quota fields, including `plan`, `block_reason`, and Premium monthly remaining counts.
+- `create-media-job` now blocks before insert with specific quota error codes and keeps the 2-minute beta video duration guard server-side.
+- Source Detail syncs local Premium with backend entitlement state before starting AI generation when needed and no longer shows a duplicate Generate retry button after errors.
+- RevenueCat webhooks may be added later.
+- Deploy notes: run `supabase db push`, then `supabase functions deploy sync-revenuecat-entitlement`, `supabase functions deploy get-ai-access`, and `supabase functions deploy create-media-job`.
+
 ## M22A.2 - Paywall and AI Generation CTA Polish
 
 - Status: Completed.

@@ -53,7 +53,7 @@ export default function SavedRecipeRoute() {
   const rootNavigationState = useRootNavigationState()
   const queryClient = useQueryClient()
   const { track } = usePostHog()
-  const { isPremium } = useRevenueCat()
+  const { isPremium, syncPremiumEntitlement } = useRevenueCat()
   const { id, returnTo } = useLocalSearchParams<{
     id?: string
     returnTo?: string | string[]
@@ -64,6 +64,7 @@ export default function SavedRecipeRoute() {
   const [isRefreshingMetadata, setIsRefreshingMetadata] = useState(false)
   const [mediaJobError, setMediaJobError] = useState<Error | null>(null)
   const [showCreditLimitState, setShowCreditLimitState] = useState(false)
+  const [isSyncingPremiumAccess, setIsSyncingPremiumAccess] = useState(false)
   const didTrackUsageSummary = useRef(false)
   const lastTrackedMediaJobStatus = useRef<string | null>(null)
   const shouldAutoOpenResultRef = useRef(false)
@@ -340,6 +341,8 @@ export default function SavedRecipeRoute() {
     !durationBlockMessage &&
     !isPremium &&
     (showCreditLimitState || isAiLimitReached)
+  const backendPremiumActive =
+    aiAccess?.plan === 'premium' && aiAccess.premiumActive === true
 
   const openOriginalVideo = async () => {
     const canOpenUrl = await Linking.canOpenURL(recipe.source_url)
@@ -367,6 +370,16 @@ export default function SavedRecipeRoute() {
       if (durationBlockMessage) {
         setMediaJobError(new Error(durationBlockMessage))
       }
+      return
+    }
+
+    if (isPremium && aiAccess && !aiAccess.canStartAiJob && !backendPremiumActive) {
+      setIsSyncingPremiumAccess(true)
+      setMediaJobError(null)
+      await syncPremiumEntitlement()
+      await aiAccessQuery.refetch()
+      setIsSyncingPremiumAccess(false)
+      setMediaJobError(new Error('Premium access synced. Please try again.'))
       return
     }
 
@@ -415,19 +428,49 @@ export default function SavedRecipeRoute() {
         caughtError instanceof RecipeApiError &&
         (
           caughtError.code === 'ai_credit_limit_or_active_queue_full' ||
-          caughtError.code === 'ai_credit_limit_reached'
+          caughtError.code === 'ai_credit_limit_reached' ||
+          caughtError.code === 'free_ai_limit_reached'
         )
       ) {
         track('ai_credit_limit_reached', {
           platform,
         })
-        if (isPremium) {
-          setMediaJobError(
-            new Error('Premium active. Monthly usage limits will be enforced server-side.')
-          )
-        } else {
-          setShowCreditLimitState(true)
-        }
+        setShowCreditLimitState(true)
+        router.push('/paywall')
+        return
+      }
+
+      if (
+        caughtError instanceof RecipeApiError &&
+        caughtError.code === 'premium_sync_required'
+      ) {
+        setIsSyncingPremiumAccess(true)
+        await syncPremiumEntitlement()
+        await aiAccessQuery.refetch()
+        setIsSyncingPremiumAccess(false)
+        setMediaJobError(new Error('Premium access synced. Please try again.'))
+        return
+      }
+
+      if (
+        caughtError instanceof RecipeApiError &&
+        caughtError.code === 'premium_monthly_limit_reached'
+      ) {
+        setMediaJobError(
+          new Error("You've used your 100 Premium AI recipes this month.")
+        )
+        await aiAccessQuery.refetch()
+        return
+      }
+
+      if (
+        caughtError instanceof RecipeApiError &&
+        caughtError.code === 'active_ai_job_limit_reached'
+      ) {
+        setMediaJobError(
+          new Error('An AI recipe is already being generated. Please wait for it to finish.')
+        )
+        await mediaJobQuery.refetch()
         return
       }
 
@@ -748,10 +791,16 @@ export default function SavedRecipeRoute() {
               </View>
               {!isMetadataPending && !durationBlockMessage ? (
                 <Button
-                  label={isCreatingMediaJob ? 'Starting AI Recipe...' : 'Generate AI Recipe'}
+                  label={
+                    isSyncingPremiumAccess
+                      ? 'Syncing Premium access...'
+                      : isCreatingMediaJob
+                        ? 'Starting AI Recipe...'
+                        : 'Generate AI Recipe'
+                  }
                   fullWidth
                   variant="accent"
-                  disabled={isGenerateDisabled}
+                  disabled={isGenerateDisabled || isSyncingPremiumAccess}
                   onPress={() => {
                     void handleCreateMediaJob()
                   }}
@@ -776,7 +825,9 @@ export default function SavedRecipeRoute() {
           ) : null}
           {!shouldShowUpgradeCard && !isMetadataPending && !durationBlockMessage && isPremium ? (
             <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-              Premium active · 100 AI recipes/month
+              {backendPremiumActive
+                ? 'Premium active · 100 AI recipes/month'
+                : 'Syncing Premium access...'}
             </Text>
           ) : null}
           {!shouldShowUpgradeCard && !isMetadataPending && !durationBlockMessage && !isPremium && aiAccess ? (
@@ -804,16 +855,6 @@ export default function SavedRecipeRoute() {
           <Text selectable style={[typography.body, { color: colors.text }]}>
             {mediaJobError.message}
           </Text>
-          {!isGenerateDisabled ? (
-            <Button
-              label="Generate AI Recipe"
-              fullWidth
-              variant="accent"
-              onPress={() => {
-                void handleCreateMediaJob()
-              }}
-            />
-          ) : null}
         </Card>
       ) : null}
 

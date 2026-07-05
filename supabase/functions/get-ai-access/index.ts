@@ -1,5 +1,8 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { getAiGenerationAccess } from "../_shared/ai-access.ts";
+import {
+  getAiGenerationAccess,
+  toSafeAiGenerationAccessMetadata,
+} from "../_shared/ai-access.ts";
 
 type Database = Record<string, never>;
 type EdgeSupabaseClient = SupabaseClient<Database>;
@@ -91,25 +94,7 @@ async function handleGetAiAccessRequest(request: Request) {
   return jsonResponse({
     ok: true,
     data: {
-      allowed: access.allowed,
-      reason: access.reason,
-      role: access.role,
-      freeLimit: access.freeLimit,
-      usedSuccessfulGenerations: access.usedSuccessfulGenerations,
-      activeReserved: access.activeReserved,
-      monthlyLimit: access.monthlyLimit,
-      remainingToStart: access.remainingToStart,
-      remaining: access.remaining,
-      canStartAiJob: access.allowed,
-      isPremiumOrTester: access.isPremiumOrTester,
-      premiumActive: access.premiumActive,
-      isTestUser: access.isTestUser,
-      successful_used: access.usedSuccessfulGenerations,
-      active_reserved: access.activeReserved,
-      free_limit: access.freeLimit,
-      remaining_to_start: access.remainingToStart,
-      can_start_ai_job: access.allowed,
-      is_premium_or_tester: access.isPremiumOrTester,
+      ...toSafeAiGenerationAccessMetadata(access),
     },
   });
 }
