@@ -1,5 +1,30 @@
 # Recipe Dost Milestones
 
+## M22B.2E - AI Failure Copy and Subscription Actions
+
+- Status: Completed; pending device QA.
+- Added friendly AI extraction failure copy for Gemini structured extraction failures, daily AI dev limit failures, and long-video failures.
+- Settings subscription actions are now plan-aware: Free shows Upgrade, Restore, and Refresh; Premium shows Manage / cancel subscription, Restore, and Refresh.
+- Manage / cancel opens the RevenueCat/store management URL when available and otherwise explains the RevenueCat Test Store fallback.
+- No migration, worker, RevenueCat dashboard/config, save/share, metadata, or media-processing changes were made.
+
+## M22B.2C - RevenueCat Sync and Sticky AI Job UI
+
+- Status: Completed; pending device QA.
+- Stabilized RevenueCat identity readiness around the Supabase user id for status, purchase, and restore flows.
+- Settings keeps backend Premium as the source of truth during backend/local RevenueCat races and does not flash final Free until both sources are loaded and inactive.
+- Source Detail keeps the active media job visible through refetch gaps, broadens active job status handling, and prevents idle Generate from appearing while a job is running.
+- `sync-revenuecat-entitlement` now rejects malformed RevenueCat subscriber responses instead of overwriting entitlement state as inactive.
+- Deploy note: run `supabase functions deploy sync-revenuecat-entitlement`.
+
+## M22B.2B - Backend-First Subscription Status
+
+- Status: Completed; pending device QA.
+- Unified Settings, Source Detail, and access diagnostics around backend `get-ai-access` plan/quota fields.
+- Backend AI access is now the app-side source of truth for Premium status and monthly quota display, while RevenueCat local state remains for purchase, restore, refresh, and manage-subscription actions.
+- Fixed the Expo reload mismatch where Settings could show Free while backend access diagnostics and Recipe Detail correctly treated the user as Premium.
+- No migration, Supabase Function, RevenueCat dashboard/config, save/share, worker, or media-processing changes were made.
+
 ## M22B.2A - Recipe Detail Hook Order Hotfix
 
 - Status: Completed; pending device QA.

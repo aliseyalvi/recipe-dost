@@ -1,6 +1,15 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-05
+- M22B.2E improved AI extraction failure copy and made Subscription actions plan-aware. Premium users now see Manage / cancel subscription, Restore, and Refresh actions. Cancellation opens store management when managementURL is available.
+- Validation: `npm run typecheck` and `npx expo config --json` passed.
+- M22B.2C stabilized RevenueCat identity/sync and sticky active AI job UI. Settings no longer flashes Free during backend/local RevenueCat race. Source Detail keeps active job state during refetch gaps and does not fall back to idle Generate while a job is running.
+- Decision: RevenueCat restore/status calls now wait for the SDK to be configured for the Supabase user id, and backend Premium access remains authoritative if restore finds no new local purchase.
+- Decision: `sync-revenuecat-entitlement` no longer treats malformed RevenueCat subscriber responses as definitive inactive entitlement.
+- Deployment notes: run `supabase functions deploy sync-revenuecat-entitlement`.
+- Validation: `npm run typecheck`, `npx expo config --json`, and `npm run functions:check` passed. `functions:check` emitted existing Deno warnings about ignored `ignoreDeprecations`.
+- M22B.2B unified Settings subscription display with backend get-ai-access. Backend access is now source of truth for plan/quota; RevenueCat local state is used for purchase/restore/manage actions. Fixed Free/Premium mismatch after Expo reload.
+- Validation: `npm run typecheck` and `npx expo config --json` passed.
 - M22B.2A fixed hook order regression in recipe detail screen after AI job reconciliation patch.
 - Validation: `npm run typecheck` and `npx expo config --json` passed.
 - M22B.2 AI job state reconciliation, Premium quota display, and AI auto-open fix completed.

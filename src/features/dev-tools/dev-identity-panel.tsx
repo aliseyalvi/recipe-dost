@@ -5,6 +5,7 @@ import {
   saveCurrentDevIdentity,
   switchToSavedDevIdentity,
 } from '@/features/dev-tools/dev-identities'
+import { getNormalizedSubscriptionStatus } from '@/features/subscription/normalized-subscription-status'
 import { getAiAccessState } from '@/lib/api/ai-access'
 import type { AiAccessState } from '@/lib/api/ai-access'
 import { useAuth } from '@/providers/auth-provider'
@@ -49,6 +50,17 @@ export function DevIdentityPanel() {
   const currentSavedIdentity = useMemo(
     () => savedIdentities.find((identity) => identity.userId === user?.id),
     [savedIdentities, user?.id]
+  )
+  const subscriptionStatus = useMemo(
+    () =>
+      getNormalizedSubscriptionStatus({
+        aiAccess: accessQuery.data,
+        isAiAccessLoading: accessQuery.isLoading,
+        revenueCatState: {
+          isPremium: false,
+        },
+      }),
+    [accessQuery.data, accessQuery.isLoading]
   )
 
   useEffect(() => {
@@ -141,6 +153,8 @@ export function DevIdentityPanel() {
       {accessQuery.data ? (
         <>
           <DevRow label="Role" value={accessQuery.data.role} />
+          <DevRow label="Plan" value={subscriptionStatus.statusTitle} />
+          <DevRow label="Quota" value={subscriptionStatus.statusSubtitle} />
           <DevRow
             label="Used successful"
             value={`${accessQuery.data.usedSuccessfulGenerations}`}

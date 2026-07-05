@@ -128,8 +128,8 @@ export default function PaywallRoute() {
 
     if (!managementUrl) {
       Alert.alert(
-        'Manage subscription',
-        'Subscription management is not available yet for this test purchase. You can manage real subscriptions from Google Play after launch.'
+        'Manage / cancel subscription',
+        'Subscription management is available for real Google Play subscriptions after launch. For Test Store purchases, manage the test customer in RevenueCat.'
       )
       return
     }
@@ -142,8 +142,8 @@ export default function PaywallRoute() {
     }
 
     Alert.alert(
-      'Manage subscription',
-      'Subscription management is not available yet for this test purchase. You can manage real subscriptions from Google Play after launch.'
+      'Manage / cancel subscription',
+      'Subscription management is available for real Google Play subscriptions after launch. For Test Store purchases, manage the test customer in RevenueCat.'
     )
   }
 
@@ -294,7 +294,7 @@ export default function PaywallRoute() {
           </Text>
           {managementUrl ? (
             <Button
-              label="Manage subscription"
+              label="Manage / cancel subscription"
               fullWidth
               variant="outline"
               onPress={() => {

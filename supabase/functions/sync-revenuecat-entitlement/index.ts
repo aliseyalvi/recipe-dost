@@ -44,6 +44,7 @@ type SyncRevenueCatErrorCode =
   | "server_not_configured"
   | "revenuecat_not_configured"
   | "revenuecat_request_failed"
+  | "revenuecat_response_invalid"
   | "profile_update_failed"
   | "unexpected_revenuecat_sync_error";
 
@@ -152,16 +153,25 @@ async function handleSyncRevenueCatEntitlementRequest(request: Request) {
     revenueCatResult.data,
     entitlementId,
   );
+
+  if (!entitlement.ok) {
+    return errorResponse(
+      "revenuecat_response_invalid",
+      "Could not sync Premium access. Please try again.",
+      502,
+    );
+  }
+
   const syncedAt = new Date().toISOString();
   const update = {
     user_id: user.id,
     revenuecat_app_user_id: user.id,
-    revenuecat_entitlement: entitlement.entitlementId,
-    revenuecat_entitlement_active: entitlement.active,
+    revenuecat_entitlement: entitlement.data.entitlementId,
+    revenuecat_entitlement_active: entitlement.data.active,
     revenuecat_updated_at: syncedAt,
-    revenuecat_product_id: entitlement.productId,
-    revenuecat_expires_at: entitlement.expiresAt,
-    revenuecat_store: entitlement.store,
+    revenuecat_product_id: entitlement.data.productId,
+    revenuecat_expires_at: entitlement.data.expiresAt,
+    revenuecat_store: entitlement.data.store,
   } satisfies UserProfileUpsert;
 
   const updateResult = await clients.adminClient
@@ -217,6 +227,11 @@ function getRevenueCatEntitlement(data: Json, entitlementId: string) {
   const subscriber = isRecord(data) && isRecord(data.subscriber)
     ? data.subscriber
     : null;
+
+  if (!subscriber) {
+    return { ok: false } as const;
+  }
+
   const entitlements = subscriber && isRecord(subscriber.entitlements)
     ? subscriber.entitlements
     : {};
@@ -231,12 +246,15 @@ function getRevenueCatEntitlement(data: Json, entitlementId: string) {
   const subscription = productId ? getRecord(subscriptions[productId]) : null;
 
   return {
-    active,
-    entitlementId: entitlement ? entitlementId : null,
-    productId,
-    expiresAt,
-    store: getString(subscription?.store),
-  };
+    ok: true,
+    data: {
+      active,
+      entitlementId: entitlement ? entitlementId : null,
+      productId,
+      expiresAt,
+      store: getString(subscription?.store),
+    },
+  } as const;
 }
 
 function createSupabaseClients(authHeader: string) {

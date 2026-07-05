@@ -3,6 +3,10 @@ import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { RecipePlatform } from '@/features/recipe-draft/types'
 import { useUserProfileQuery } from '@/features/onboarding/use-user-profile-query'
 import {
+  getNormalizedSubscriptionStatus,
+  getRecipeSubscriptionAvailabilityText,
+} from '@/features/subscription/normalized-subscription-status'
+import {
   DEFAULT_SECONDARY_RECIPE_LANGUAGE_CODE,
   getSecondaryRecipeLanguage,
 } from '@/features/settings/secondary-recipe-language'
@@ -46,8 +50,6 @@ import { Image, InteractionManager, Linking, Text, View } from 'react-native'
 const MAX_AI_VIDEO_DURATION_SECONDS = 120
 const LONG_VIDEO_MESSAGE =
   'This video is longer than 2 minutes. Recipe Dost currently supports videos up to 2 minutes in beta.'
-const LONG_VIDEO_FAILED_MESSAGE =
-  'This video is longer than 2 minutes. Try a shorter recipe video.'
 
 export default function SavedRecipeRoute() {
   const router = useRouter()
@@ -67,6 +69,8 @@ export default function SavedRecipeRoute() {
   const [showCreditLimitState, setShowCreditLimitState] = useState(false)
   const [isSyncingPremiumAccess, setIsSyncingPremiumAccess] = useState(false)
   const [isStartLocked, setIsStartLocked] = useState(false)
+  const [lastKnownMediaJob, setLastKnownMediaJob] =
+    useState<MediaJob | null>(null)
   const didTrackUsageSummary = useRef(false)
   const lastTrackedMediaJobStatus = useRef<string | null>(null)
   const shouldAutoOpenResultRef = useRef(false)
@@ -91,12 +95,18 @@ export default function SavedRecipeRoute() {
     enabled: Boolean(recipeId),
     queryKey: ['media-job', 'recipe', recipeId],
     queryFn: () => getLatestMediaJobForRecipe(recipeId ?? ''),
+    placeholderData: (previousData) =>
+      previousData ?? (isMediaJobActive(lastKnownMediaJob) ? lastKnownMediaJob : undefined),
     refetchInterval: (query) =>
       isMediaJobActive(query.state.data) ? 2500 : false,
   })
-  const resultRecipeCardId = mediaJobQuery.data?.result_recipe_card_id
   const mediaJob = mediaJobQuery.data
-  const activeMediaJob = isMediaJobActive(mediaJob) ? mediaJob : null
+  const displayMediaJob =
+    mediaJob ?? (isMediaJobActive(lastKnownMediaJob) ? lastKnownMediaJob : null)
+  const resultRecipeCardId = displayMediaJob?.result_recipe_card_id
+  const activeMediaJob = isMediaJobActive(displayMediaJob)
+    ? displayMediaJob
+    : null
   const userProfileQuery = useUserProfileQuery()
   const secondaryRecipeLanguage = getSecondaryRecipeLanguage(
     userProfileQuery.data?.secondary_recipe_language_code ??
@@ -108,6 +118,13 @@ export default function SavedRecipeRoute() {
     queryFn: () => getRecipeCard(resultRecipeCardId ?? ''),
   })
   const aiAccess = aiAccessQuery.data
+  const subscriptionStatus = getNormalizedSubscriptionStatus({
+    aiAccess,
+    isAiAccessLoading: aiAccessQuery.isLoading,
+    revenueCatState: {
+      isPremium,
+    },
+  })
   const isAiLimitReached =
     aiAccess?.canStartAiJob === false || aiAccess?.reason === 'limit_reached'
   const isNavigationReady = Boolean(rootNavigationState?.key)
@@ -117,21 +134,50 @@ export default function SavedRecipeRoute() {
       return
     }
 
-    if (mediaJob && (isMediaJobActive(mediaJob) || isTerminalMediaJob(mediaJob))) {
+    if (
+      displayMediaJob &&
+      (isMediaJobActive(displayMediaJob) || isTerminalMediaJob(displayMediaJob))
+    ) {
       setIsStartLocked(false)
       return
     }
 
-    if (!isCreatingMediaJob && !mediaJob) {
+    if (!isCreatingMediaJob && !displayMediaJob) {
       setIsStartLocked(false)
     }
-  }, [isCreatingMediaJob, isStartLocked, mediaJob?.id, mediaJob?.status])
+  }, [
+    displayMediaJob?.id,
+    displayMediaJob?.status,
+    isCreatingMediaJob,
+    isStartLocked,
+  ])
 
   useEffect(() => {
     if (activeMediaJob) {
       shouldAutoOpenResultRef.current = true
     }
   }, [activeMediaJob?.id, activeMediaJob?.status])
+
+  useEffect(() => {
+    if (!mediaJob) {
+      return
+    }
+
+    if (isMediaJobActive(mediaJob)) {
+      setLastKnownMediaJob(mediaJob)
+      shouldAutoOpenResultRef.current = true
+      return
+    }
+
+    if (isTerminalMediaJob(mediaJob)) {
+      setLastKnownMediaJob(null)
+    }
+  }, [
+    mediaJob?.id,
+    mediaJob?.progress,
+    mediaJob?.result_recipe_card_id,
+    mediaJob?.status,
+  ])
 
   useEffect(() => {
     mountedRef.current = true
@@ -168,7 +214,7 @@ export default function SavedRecipeRoute() {
   }, [aiAccess, track])
 
   useEffect(() => {
-    const mediaJob = mediaJobQuery.data
+    const mediaJob = displayMediaJob
 
     if (
       !mediaJob ||
@@ -203,7 +249,13 @@ export default function SavedRecipeRoute() {
         })
       }
     }
-  }, [mediaJobQuery.data, queryClient, recipeId, track])
+  }, [
+    displayMediaJob,
+    displayMediaJob?.status,
+    queryClient,
+    recipeId,
+    track,
+  ])
 
   useEffect(() => {
     if (!resultRecipeCardId) {
@@ -332,7 +384,7 @@ export default function SavedRecipeRoute() {
   const platform = getRecipePlatform(recipe.platform)
   const recipeCard = recipeCardQuery.data
   const liveSourceTitle =
-    mediaJob?.source_metadata.title?.trim() || recipe.title?.trim()
+    displayMediaJob?.source_metadata.title?.trim() || recipe.title?.trim()
   const displaySourceTitle =
     recipeCard?.recipe_title?.trim() ||
     (recipe.metadata_status === 'pending'
@@ -340,34 +392,39 @@ export default function SavedRecipeRoute() {
       : liveSourceTitle)
   const displaySourceSubtitle = recipeCard?.short_summary?.trim()
   const liveThumbnailUrl =
-    mediaJob?.thumbnail_url ??
-    mediaJob?.source_metadata.uploaded_thumbnail_url ??
+    displayMediaJob?.thumbnail_url ??
+    displayMediaJob?.source_metadata.uploaded_thumbnail_url ??
     recipe.thumbnail_url
   const liveDurationSeconds =
-    mediaJob?.source_metadata.duration_seconds ?? recipe.duration_seconds
+    displayMediaJob?.source_metadata.duration_seconds ?? recipe.duration_seconds
   const isMetadataPending = isMetadataRefreshActive(recipe.metadata_status)
-  const durationBlockMessage = getDurationBlockMessage(recipe, mediaJob)
-  const failedMediaJobMessage = getFailedMediaJobMessage(mediaJob)
+  const durationBlockMessage = getDurationBlockMessage(recipe, displayMediaJob)
+  const mediaJobFailureCopy = getMediaJobFailureCopy(displayMediaJob)
+  const isBackendAccessBlocked =
+    Boolean(aiAccess && !aiAccess.canStartAiJob && !subscriptionStatus.needsSync) ||
+    Boolean(aiAccessQuery.error)
   const isGenerateDisabled =
     isCreatingMediaJob ||
     isStartLocked ||
     Boolean(activeMediaJob) ||
     isMetadataPending ||
+    isBackendAccessBlocked ||
     Boolean(durationBlockMessage)
   const shouldShowAiActionCard =
     !activeMediaJob &&
     !isStartLocked &&
     !resultRecipeCardId &&
-    !mediaJobQuery.isLoading &&
+    !(mediaJobQuery.isLoading && !displayMediaJob) &&
     !mediaJobQuery.error
   const shouldShowUpgradeCard =
     shouldShowAiActionCard &&
     !isMetadataPending &&
     !durationBlockMessage &&
-    !isPremium &&
+    !subscriptionStatus.isPremium &&
     (showCreditLimitState || isAiLimitReached)
   const backendPremiumActive =
-    aiAccess?.plan === 'premium' && aiAccess.premiumActive === true
+    subscriptionStatus.sourceOfTruth === 'backend' &&
+    subscriptionStatus.isPremium
 
   const openOriginalVideo = async () => {
     const canOpenUrl = await Linking.canOpenURL(recipe.source_url)
@@ -398,7 +455,12 @@ export default function SavedRecipeRoute() {
       return
     }
 
-    if (isPremium && aiAccess && !aiAccess.canStartAiJob && !backendPremiumActive) {
+    if (
+      subscriptionStatus.needsSync &&
+      aiAccess &&
+      !aiAccess.canStartAiJob &&
+      !backendPremiumActive
+    ) {
       setIsSyncingPremiumAccess(true)
       setMediaJobError(null)
       await syncPremiumEntitlement()
@@ -408,7 +470,7 @@ export default function SavedRecipeRoute() {
       return
     }
 
-    if (isAiLimitReached && !isPremium) {
+    if (isAiLimitReached && !subscriptionStatus.isPremium) {
       setShowCreditLimitState(true)
       track('ai_credit_limit_reached', {
         platform,
@@ -448,6 +510,7 @@ export default function SavedRecipeRoute() {
           ['media-job', 'recipe', recipe.id],
           attachedJob
         )
+        setLastKnownMediaJob(attachedJob)
         setIsStartLocked(false)
       }
 
@@ -738,7 +801,7 @@ export default function SavedRecipeRoute() {
         </Card>
       ) : null}
 
-      {mediaJobQuery.isLoading ? (
+      {mediaJobQuery.isLoading && !displayMediaJob ? (
         <LoadingState message="Checking AI recipe status..." />
       ) : null}
 
@@ -834,6 +897,25 @@ export default function SavedRecipeRoute() {
                 onPress={handleMaybeLater}
               />
             </View>
+          ) : mediaJobFailureCopy ? (
+            <View style={{ gap: spacing.xs }}>
+              <Text selectable style={[typography.heading, { color: colors.text }]}>
+                {mediaJobFailureCopy.title}
+              </Text>
+              <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+                {mediaJobFailureCopy.body}
+              </Text>
+              {!isMetadataPending && !durationBlockMessage ? (
+                <Button
+                  label="Try again"
+                  variant="secondary"
+                  disabled={isGenerateDisabled || isSyncingPremiumAccess}
+                  onPress={() => {
+                    void handleCreateMediaJob()
+                  }}
+                />
+              ) : null}
+            </View>
           ) : (
             <>
               <View style={{ gap: spacing.xs }}>
@@ -878,19 +960,14 @@ export default function SavedRecipeRoute() {
               {durationBlockMessage}
             </Text>
           ) : null}
-          {!shouldShowUpgradeCard && !isMetadataPending && !durationBlockMessage && isPremium ? (
+          {!shouldShowUpgradeCard && !isMetadataPending && !durationBlockMessage && subscriptionStatus.isPremium ? (
             <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-              {getPremiumAvailabilityText(aiAccess)}
+              {getRecipeSubscriptionAvailabilityText(subscriptionStatus)}
             </Text>
           ) : null}
-          {!shouldShowUpgradeCard && !isMetadataPending && !durationBlockMessage && !isPremium && aiAccess ? (
+          {!shouldShowUpgradeCard && !isMetadataPending && !durationBlockMessage && !subscriptionStatus.isPremium && aiAccess ? (
             <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
               {getAiAvailabilityText(aiAccess)}
-            </Text>
-          ) : null}
-          {mediaJob?.status === 'failed' ? (
-            <Text selectable style={[typography.caption, { color: colors.warning }]}>
-              {failedMediaJobMessage}
             </Text>
           ) : null}
         </Card>
@@ -963,6 +1040,7 @@ function isTerminalMediaJob(mediaJob: MediaJob | null | undefined) {
   return (
     mediaJob?.status === 'completed' ||
     mediaJob?.status === 'failed' ||
+    mediaJob?.status === 'cancelled' ||
     mediaJob?.status === 'needs_caption'
   )
 }
@@ -1055,7 +1133,7 @@ function getDurationBlockMessage(
   return null
 }
 
-function getFailedMediaJobMessage(
+function getMediaJobFailureCopy(
   mediaJob:
     | {
         status: string
@@ -1066,17 +1144,38 @@ function getFailedMediaJobMessage(
     | undefined
 ) {
   if (mediaJob?.status !== 'failed') {
-    return 'The last AI generation attempt failed. You can try again.'
+    return null
   }
 
-  if (isDurationExceededCode(mediaJob.error_code)) {
-    return LONG_VIDEO_FAILED_MESSAGE
-  }
+  switch (mediaJob.error_code) {
+    case 'gemini_structured_extraction_failed':
+      return {
+        title: 'Could not understand this recipe video',
+        body: 'Recipe Dost could not extract a clear recipe from this video. Try again, or use a shorter video with clearer cooking steps.',
+      }
+    case 'gemini_daily_dev_limit_reached':
+      return {
+        title: 'AI generation temporarily unavailable',
+        body: 'AI generation is temporarily unavailable because the daily AI limit was reached. Please try again later.',
+      }
+    case 'video_duration_exceeded':
+      return {
+        title: 'Video is too long',
+        body: LONG_VIDEO_MESSAGE,
+      }
+    default:
+      if (isDurationExceededCode(mediaJob.error_code)) {
+        return {
+          title: 'Video is too long',
+          body: LONG_VIDEO_MESSAGE,
+        }
+      }
 
-  return getFriendlyApiErrorMessage(
-    new Error([mediaJob.error_code, mediaJob.error_message].filter(Boolean).join(' ')),
-    'The last AI generation attempt failed. You can try again.'
-  )
+      return {
+        title: 'Could not generate AI recipe',
+        body: 'Could not generate AI recipe. Please try again.',
+      }
+  }
 }
 
 function isDurationExceededCode(code: string | null | undefined) {
@@ -1111,11 +1210,16 @@ function getSafeReturnToRoute(value: string | string[] | undefined) {
 }
 
 function getFriendlyMediaJobError(caughtError: unknown, fallback: Error) {
-  if (
-    caughtError instanceof RecipeApiError &&
-    isDurationExceededCode(caughtError.code)
-  ) {
-    return new Error(LONG_VIDEO_MESSAGE)
+  if (caughtError instanceof RecipeApiError) {
+    const failureCopy = getMediaJobFailureCopy({
+      status: 'failed',
+      error_code: caughtError.code,
+      error_message: caughtError.message,
+    })
+
+    if (failureCopy) {
+      return new Error(failureCopy.body)
+    }
   }
 
   return new Error(getFriendlyApiErrorMessage(caughtError, fallback.message))
@@ -1144,28 +1248,6 @@ function getAiAvailabilityText(access: {
   }
 
   return `${remaining} free AI ${remaining === 1 ? 'recipe' : 'recipes'} left`
-}
-
-function getPremiumAvailabilityText(
-  access:
-    | {
-        plan: string
-        premiumMonthlyLimit: number
-        premiumMonthlySuccessfulUsed: number
-        premiumMonthlyRemainingToStart: number
-      }
-    | null
-    | undefined
-) {
-  if (access?.plan !== 'premium') {
-    return access ? 'Syncing Premium access...' : 'Premium active · 100 AI recipes/month'
-  }
-
-  const remaining = access.premiumMonthlyRemainingToStart
-  const used = access.premiumMonthlySuccessfulUsed
-  const limit = access.premiumMonthlyLimit
-
-  return `Premium · ${remaining} AI ${remaining === 1 ? 'recipe' : 'recipes'} left this month · ${used}/${limit} used`
 }
 
 function formatDuration(totalSeconds: number) {

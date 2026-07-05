@@ -2,6 +2,10 @@ import {
   DevIdentityPanel,
   shouldShowDevIdentityPanel,
 } from '@/features/dev-tools/dev-identity-panel'
+import {
+  type NormalizedSubscriptionStatus,
+  getNormalizedSubscriptionStatus,
+} from '@/features/subscription/normalized-subscription-status'
 import { getAiAccessState } from '@/lib/api/ai-access'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { useAuth } from '@/providers/auth-provider'
@@ -22,7 +26,7 @@ import Constants from 'expo-constants'
 import * as Application from 'expo-application'
 import { useRouter } from 'expo-router'
 import type { ReactNode } from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Alert, Linking, Pressable, Text, View } from 'react-native'
 
 type SettingsRowProps = {
@@ -47,12 +51,18 @@ export default function SettingsRoute() {
   const {
     isConfigured: isRevenueCatConfigured,
     isLoading: isRevenueCatLoading,
+    isReadyForCurrentUser: isRevenueCatReadyForCurrentUser,
     isPremium,
     customerInfo,
     refreshCustomerInfo,
     restorePurchases,
+    syncPremiumEntitlement,
   } = useRevenueCat()
   const [isRefreshingPremium, setIsRefreshingPremium] = useState(false)
+  const mountedRef = useRef(false)
+  const didAttemptPremiumSyncRef = useRef(false)
+  const lastBackendPremiumAccessRef =
+    useRef<Awaited<ReturnType<typeof getAiAccessState>> | null>(null)
   const aiAccessQuery = useQuery({
     enabled: Boolean(user?.id),
     queryKey: ['ai-access-state', user?.id, 'settings'],
@@ -62,10 +72,64 @@ export default function SettingsRoute() {
   const userIdentifier = user?.id ? shortId(user.id) : null
   const managementUrl = getSubscriptionManagementUrl(customerInfo)
   const subscriptionDetailText = getSubscriptionDetailText(customerInfo)
+  const subscriptionStatus = getNormalizedSubscriptionStatus({
+    aiAccess: aiAccessQuery.data,
+    previousAiAccess: lastBackendPremiumAccessRef.current,
+    isAiAccessLoading: aiAccessQuery.isLoading,
+    revenueCatState: {
+      isPremium,
+      isLoading: isRevenueCatLoading,
+    },
+  })
+  const shouldShowUpgrade = !subscriptionStatus.isPremium &&
+    subscriptionStatus.sourceOfTruth !== 'loading'
+  const shouldShowManage =
+    subscriptionStatus.isPremium && !subscriptionStatus.needsSync
+  const shouldShowRefresh = true
+
+  useEffect(() => {
+    mountedRef.current = true
+
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
 
   useEffect(() => {
     track('settings_screen_viewed')
   }, [track])
+
+  useEffect(() => {
+    if (
+      aiAccessQuery.data?.plan === 'premium' ||
+      aiAccessQuery.data?.premiumActive === true
+    ) {
+      lastBackendPremiumAccessRef.current = aiAccessQuery.data
+    }
+  }, [aiAccessQuery.data])
+
+  useEffect(() => {
+    if (!subscriptionStatus.needsSync || didAttemptPremiumSyncRef.current) {
+      return
+    }
+
+    didAttemptPremiumSyncRef.current = true
+
+    const syncBackendAccess = async () => {
+      await syncPremiumEntitlement()
+      await queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
+      if (mountedRef.current) {
+        await aiAccessQuery.refetch()
+      }
+    }
+
+    void syncBackendAccess()
+  }, [
+    aiAccessQuery,
+    queryClient,
+    subscriptionStatus.needsSync,
+    syncPremiumEntitlement,
+  ])
 
   const showPlaceholder = (row: string, message: string) => {
     track('settings_placeholder_tapped', { row })
@@ -73,9 +137,12 @@ export default function SettingsRoute() {
   }
 
   const handleRestorePurchases = async () => {
-    if (!isRevenueCatConfigured) {
-      track('restore_failed', { source: 'settings', reason: 'not_configured' })
-      router.push('/paywall')
+    if (!isRevenueCatReadyForCurrentUser) {
+      track('restore_failed', { source: 'settings', reason: 'not_ready' })
+      Alert.alert(
+        'Checking your app profile',
+        'Checking your app profile. Please try again in a moment.'
+      )
       return
     }
 
@@ -91,9 +158,18 @@ export default function SettingsRoute() {
       })
 
       if (premiumActive) {
-        void aiAccessQuery.refetch()
+        await syncPremiumEntitlement()
         void queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
+        void aiAccessQuery.refetch()
         Alert.alert('Premium active', 'Your subscription has been restored.')
+        return
+      }
+
+      if (subscriptionStatus.isPremium) {
+        Alert.alert(
+          'Premium access active',
+          'Premium access is already active on this app profile.'
+        )
         return
       }
 
@@ -112,8 +188,8 @@ export default function SettingsRoute() {
 
     if (!managementUrl) {
       Alert.alert(
-        'Manage subscription',
-        'Subscription management is not available yet for this test purchase. You can manage real subscriptions from Google Play after launch.'
+        'Manage / cancel subscription',
+        'Subscription management is available for real Google Play subscriptions after launch. For Test Store purchases, manage the test customer in RevenueCat.'
       )
       return
     }
@@ -126,31 +202,46 @@ export default function SettingsRoute() {
     }
 
     Alert.alert(
-      'Manage subscription',
-      'Subscription management is not available yet for this test purchase. You can manage real subscriptions from Google Play after launch.'
+      'Manage / cancel subscription',
+      'Subscription management is available for real Google Play subscriptions after launch. For Test Store purchases, manage the test customer in RevenueCat.'
     )
   }
 
   const handleRefreshPremiumStatus = async () => {
-    if (!isRevenueCatConfigured || isRefreshingPremium) {
+    if (isRefreshingPremium) {
+      return
+    }
+
+    if (!isRevenueCatReadyForCurrentUser) {
+      Alert.alert(
+        'Checking your app profile',
+        'Checking your app profile. Please try again in a moment.'
+      )
       return
     }
 
     setIsRefreshingPremium(true)
 
     try {
-      const nextInfo = await refreshCustomerInfo()
+      const nextInfo = isRevenueCatConfigured
+        ? await refreshCustomerInfo()
+        : customerInfo
 
-      if (nextInfo) {
-        void aiAccessQuery.refetch()
-        void queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
+      if (nextInfo || !isRevenueCatConfigured) {
+        await syncPremiumEntitlement()
+        await queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
+        if (mountedRef.current) {
+          await aiAccessQuery.refetch()
+        }
         Alert.alert('Premium status refreshed.')
         return
       }
 
       Alert.alert('Could not refresh Premium status', 'Please try again.')
     } finally {
-      setIsRefreshingPremium(false)
+      if (mountedRef.current) {
+        setIsRefreshingPremium(false)
+      }
     }
   }
 
@@ -172,12 +263,13 @@ export default function SettingsRoute() {
       </SettingsSection>
 
       <SettingsSection title="Subscription" tone="warm">
-        {isPremium ? (
-          <PremiumSubscriptionSummary detailText={subscriptionDetailText} />
-        ) : (
-          <FreeSubscriptionSummary />
-        )}
-        {!isPremium ? (
+        <SubscriptionSummary
+          detailText={
+            shouldShowManage ? subscriptionDetailText : null
+          }
+          status={subscriptionStatus}
+        />
+        {shouldShowUpgrade ? (
           <SettingsRow
             marker="+"
             title="Upgrade to Premium"
@@ -185,16 +277,16 @@ export default function SettingsRoute() {
             onPress={() => {
               track('settings_row_tapped', {
                 row: 'upgrade_to_premium',
-                premium_active: isPremium,
+                premium_active: subscriptionStatus.isPremium,
               })
               router.push('/paywall')
             }}
           />
         ) : null}
-        {isPremium ? (
+        {shouldShowManage ? (
           <SettingsRow
             marker="M"
-            title="Manage subscription"
+            title="Manage / cancel subscription"
             subtitle={managementUrl ? 'Open store subscription settings.' : 'Managed by the store after launch.'}
             onPress={() => {
               void handleManageSubscription()
@@ -209,11 +301,15 @@ export default function SettingsRoute() {
             void handleRestorePurchases()
           }}
         />
-        {isPremium ? (
+        {shouldShowRefresh ? (
           <SettingsRow
             marker="S"
             title="Refresh status"
-            subtitle={isRefreshingPremium ? 'Refreshing Premium status...' : 'Check the latest store status.'}
+            subtitle={
+              isRefreshingPremium
+                ? 'Refreshing Premium status...'
+                : 'Check the latest store and AI access status.'
+            }
             onPress={() => {
               void handleRefreshPremiumStatus()
             }}
@@ -301,11 +397,7 @@ export default function SettingsRoute() {
                   : 'Access unavailable'
             }
             revenueCatState={
-              isRevenueCatConfigured
-                ? isPremium
-                  ? 'Premium active'
-                  : 'Configured'
-                : 'Not configured'
+              getDeveloperSubscriptionLabel(subscriptionStatus, isRevenueCatConfigured)
             }
           />
           <DevIdentityPanel />
@@ -315,39 +407,35 @@ export default function SettingsRoute() {
   )
 }
 
-function FreeSubscriptionSummary() {
+function SubscriptionSummary({
+  detailText,
+  status,
+}: {
+  detailText: string | null
+  status: NormalizedSubscriptionStatus
+}) {
   return (
     <View style={{ gap: spacing.sm }}>
-      <AppBadge label="Free plan" tone="default" />
+      <AppBadge
+        label={status.statusTitle}
+        tone={status.isPremium ? 'accent' : 'default'}
+      />
       <Text selectable style={[typography.heading, { color: colors.text }]}>
-        Free plan
+        {status.statusTitle}
       </Text>
       <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-        3 free AI recipe cards included.
+        {status.statusSubtitle}
       </Text>
       <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-        Save recipe links, metadata preview, library search, and grocery viewing stay free.
+        {status.isPremium
+          ? 'Videos up to 2 minutes in beta'
+          : 'Save recipe links, metadata preview, library search, and grocery viewing stay free.'}
       </Text>
-    </View>
-  )
-}
-
-function PremiumSubscriptionSummary({ detailText }: { detailText: string }) {
-  return (
-    <View style={{ gap: spacing.sm }}>
-      <AppBadge label="Premium active" tone="accent" />
-      <Text selectable style={[typography.heading, { color: colors.text }]}>
-        Premium active
-      </Text>
-      <Text selectable style={[typography.body, { color: colors.text }]}>
-        100 AI recipe cards/month
-      </Text>
-      <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-        Videos up to 2 minutes in beta
-      </Text>
-      <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-        {detailText}
-      </Text>
+      {detailText ? (
+        <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+          {detailText}
+        </Text>
+      ) : null}
     </View>
   )
 }
@@ -523,16 +611,34 @@ function shortId(value: string) {
 
 function getSubscriptionDetailText(customerInfo: CustomerInfo | null) {
   const entitlement = getPremiumEntitlement(customerInfo)
+  const planLabel = getPlanLabel(entitlement?.productIdentifier)
 
   if (!entitlement?.expirationDate) {
-    return 'Subscription details are managed by the store.'
+    return `${planLabel} · Subscription is managed by the store.`
   }
 
   const formattedDate = formatSubscriptionDate(entitlement.expirationDate)
 
   return entitlement.willRenew
-    ? `Renews on ${formattedDate}`
-    : `Access until ${formattedDate}`
+    ? `${planLabel} · Renews on ${formattedDate}`
+    : `${planLabel} · Access until ${formattedDate}`
+}
+
+function getPlanLabel(productId: string | null | undefined) {
+  const normalizedProductId = productId?.toLowerCase() ?? ''
+
+  if (normalizedProductId.includes('monthly')) {
+    return 'Monthly plan'
+  }
+
+  if (
+    normalizedProductId.includes('yearly') ||
+    normalizedProductId.includes('annual')
+  ) {
+    return 'Yearly plan'
+  }
+
+  return 'Premium plan'
 }
 
 function formatSubscriptionDate(value: string) {
@@ -568,4 +674,15 @@ function getDeveloperAccessLabel(access: {
   }
 
   return access.remaining === null ? 'No limit set' : `${access.remaining} remaining`
+}
+
+function getDeveloperSubscriptionLabel(
+  status: NormalizedSubscriptionStatus,
+  isRevenueCatConfigured: boolean
+) {
+  if (!isRevenueCatConfigured) {
+    return 'Not configured'
+  }
+
+  return `${status.statusTitle} (${status.sourceOfTruth})`
 }

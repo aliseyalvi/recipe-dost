@@ -103,6 +103,7 @@ export type MediaJobStatus =
   | 'saving_result'
   | 'completed'
   | 'failed'
+  | 'cancelled'
   | 'needs_caption'
 
 export type MediaJobSourceMetadata = {
@@ -725,7 +726,13 @@ export function isMediaJobActive(job: MediaJob | null | undefined) {
     job?.status === 'processing' ||
     job?.status === 'analyzing' ||
     job?.status === 'pending' ||
-    job?.status === 'running'
+    job?.status === 'running' ||
+    job?.status === 'resolving' ||
+    job?.status === 'downloading' ||
+    job?.status === 'validating' ||
+    job?.status === 'thumbnailing' ||
+    job?.status === 'uploading_to_ai' ||
+    job?.status === 'saving_result'
   )
 }
 
@@ -1102,6 +1109,7 @@ function getMediaJobStatus(value: string): MediaJobStatus {
     value === 'saving_result' ||
     value === 'completed' ||
     value === 'failed' ||
+    value === 'cancelled' ||
     value === 'needs_caption'
   ) {
     return value

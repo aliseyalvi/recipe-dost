@@ -106,8 +106,12 @@ function normalizeAiAccessState(data: AiAccessState & Record<string, unknown>) {
     getBoolean(data.canStartAiJob) ??
     getBoolean(data.can_start_ai_job) ??
     data.allowed
+  const premiumActive =
+    getBoolean(data.premiumActive) ??
+    getBoolean(data.premium_active) ??
+    false
   const fallbackIsPremiumOrTester =
-    data.premiumActive ||
+    premiumActive ||
     data.isTestUser ||
     data.role === 'admin' ||
     data.role === 'tester'
@@ -119,8 +123,9 @@ function normalizeAiAccessState(data: AiAccessState & Record<string, unknown>) {
   return {
     ...data,
     plan:
-      data.plan === 'premium' || data.premiumActive ? 'premium' : 'free',
+      data.plan === 'premium' || premiumActive ? 'premium' : 'free',
     blockReason: getBlockReason(data.blockReason ?? data.block_reason),
+    premiumActive,
     activeReserved,
     freeSuccessfulUsed,
     freeActiveReserved,

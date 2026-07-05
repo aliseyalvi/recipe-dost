@@ -31,6 +31,7 @@ import { Platform } from 'react-native'
 type RevenueCatContextValue = {
   isConfigured: boolean
   isLoading: boolean
+  isReadyForCurrentUser: boolean
   isPremium: boolean
   customerInfo: CustomerInfo | null
   currentOffering: PurchasesOffering | null
@@ -60,6 +61,7 @@ export function RevenueCatProvider({ children }: Props) {
   const syncInFlightRef = useRef(false)
   const [isConfigured, setIsConfigured] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [configuredUserId, setConfiguredUserId] = useState<string | null>(null)
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null)
   const [currentOffering, setCurrentOffering] =
     useState<PurchasesOffering | null>(null)
@@ -69,6 +71,8 @@ export function RevenueCatProvider({ children }: Props) {
     () => isCustomerPremium(customerInfo),
     [customerInfo]
   )
+  const isReadyForCurrentUser =
+    isConfigured && Boolean(user?.id) && configuredUserId === user?.id
   const packages = currentOffering?.availablePackages ?? []
 
   const setCustomerInfoSafely = useCallback((nextInfo: CustomerInfo | null) => {
@@ -102,7 +106,7 @@ export function RevenueCatProvider({ children }: Props) {
   }, [queryClient, track])
 
   const refreshCustomerInfo = useCallback(async () => {
-    if (!isConfigured) {
+    if (!isReadyForCurrentUser) {
       return null
     }
 
@@ -125,7 +129,7 @@ export function RevenueCatProvider({ children }: Props) {
 
       return null
     }
-  }, [isConfigured, setCustomerInfoSafely, syncPremiumEntitlement, track])
+  }, [isReadyForCurrentUser, setCustomerInfoSafely, syncPremiumEntitlement, track])
 
   const refreshOfferings = useCallback(async () => {
     if (!isConfigured) {
@@ -154,6 +158,10 @@ export function RevenueCatProvider({ children }: Props) {
 
   const purchasePackage = useCallback(
     async (selectedPackage: PurchasesPackage) => {
+      if (!isReadyForCurrentUser) {
+        throw new Error('Premium is still checking your app profile.')
+      }
+
       const result = await Purchases.purchasePackage(selectedPackage)
 
       setCustomerInfoSafely(result.customerInfo)
@@ -163,10 +171,14 @@ export function RevenueCatProvider({ children }: Props) {
 
       return result.customerInfo
     },
-    [setCustomerInfoSafely, syncPremiumEntitlement]
+    [isReadyForCurrentUser, setCustomerInfoSafely, syncPremiumEntitlement]
   )
 
   const restorePurchases = useCallback(async () => {
+    if (!isReadyForCurrentUser) {
+      throw new Error('Premium is still checking your app profile.')
+    }
+
     const nextInfo = await Purchases.restorePurchases()
 
     setCustomerInfoSafely(nextInfo)
@@ -175,7 +187,7 @@ export function RevenueCatProvider({ children }: Props) {
     }
 
     return nextInfo
-  }, [setCustomerInfoSafely, syncPremiumEntitlement])
+  }, [isReadyForCurrentUser, setCustomerInfoSafely, syncPremiumEntitlement])
 
   useEffect(() => {
     mountedRef.current = true
@@ -190,6 +202,7 @@ export function RevenueCatProvider({ children }: Props) {
 
     if (!user?.id || Platform.OS !== 'android' || !androidApiKey) {
       setIsConfigured(false)
+      setConfiguredUserId(null)
       setIsLoading(false)
       return
     }
@@ -209,11 +222,15 @@ export function RevenueCatProvider({ children }: Props) {
           })
           didConfigurePurchases = true
           configuredAppUserId = user.id
+          setConfiguredUserId(user.id)
         } else if (configuredAppUserId !== user.id) {
           const loginResult = await Purchases.logIn(user.id)
 
           configuredAppUserId = user.id
+          setConfiguredUserId(user.id)
           setCustomerInfoSafely(loginResult.customerInfo)
+        } else {
+          setConfiguredUserId(user.id)
         }
 
         didReachConfiguredSdk = true
@@ -270,6 +287,7 @@ export function RevenueCatProvider({ children }: Props) {
     () => ({
       isConfigured,
       isLoading,
+      isReadyForCurrentUser,
       isPremium,
       customerInfo,
       currentOffering,
@@ -287,6 +305,7 @@ export function RevenueCatProvider({ children }: Props) {
       error,
       isConfigured,
       isLoading,
+      isReadyForCurrentUser,
       isPremium,
       packages,
       purchasePackage,

@@ -25,7 +25,10 @@ export function MediaJobCard({
     job.thumbnail_url ??
     job.source_metadata.uploaded_thumbnail_url ??
     fallbackThumbnailUrl
-  const needsAttention = job.status === 'failed' || job.status === 'needs_caption'
+  const needsAttention =
+    job.status === 'failed' ||
+    job.status === 'cancelled' ||
+    job.status === 'needs_caption'
   const isCompleted = job.status === 'completed'
   const isCompletedWithoutResult = isCompleted && !job.result_recipe_card_id
   const isOverDurationLimit =
@@ -190,6 +193,8 @@ function getMediaJobStatusLabel(status: MediaJob['status']) {
       return 'Ready'
     case 'failed':
       return 'Failed'
+    case 'cancelled':
+      return 'Cancelled'
     case 'needs_caption':
       return 'Needs caption'
   }
@@ -231,6 +236,8 @@ function getMediaJobMessage(job: MediaJob) {
       return 'Recipe card ready'
     case 'failed':
       return 'Video analysis failed. Paste caption manually.'
+    case 'cancelled':
+      return 'Video analysis was cancelled.'
     case 'needs_caption':
       return 'Paste caption or visible ingredients for accurate AI results.'
   }
