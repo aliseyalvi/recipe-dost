@@ -1,5 +1,16 @@
 # Recipe Dost Milestones
 
+## M22A - RevenueCat Paywall Foundation
+
+- Status: Completed.
+- Added centralized RevenueCat app config for the `premium` entitlement, `default` offering, and Android public API key environment variable without committing real keys.
+- Added an app-side RevenueCat provider that configures after Supabase anonymous auth is available and uses the Supabase `user.id` as the RevenueCat appUserID.
+- Replaced the placeholder paywall with a Premium screen that loads monthly/yearly packages from RevenueCat offerings, uses RevenueCat price strings, supports purchase and restore, and handles unavailable plans gracefully.
+- Settings now shows Free/Premium status, opens the paywall from Upgrade, and restores purchases from the Subscription section.
+- Generate AI Recipe remains backend-gated: free users see the paywall after the free limit, local Premium can show the M22B sync message if the backend still blocks, and long-video/metadata guards still run first.
+- Save/share links, metadata preview, library/search, open original, and existing grocery viewing remain free.
+- Supabase/backend entitlement sync remains M22B; Google Play real subscription setup remains M22C.
+
 ## M21.11C - Delete Account Backend
 
 - Status: Scaffold completed; backend automation deferred before store submission.

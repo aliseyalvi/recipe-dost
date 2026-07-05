@@ -5,6 +5,7 @@ import {
 import { getAiAccessState } from '@/lib/api/ai-access'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { useAuth } from '@/providers/auth-provider'
+import { isCustomerPremium, useRevenueCat } from '@/providers/revenuecat-provider'
 import { colors, radius, spacing, typography } from '@/theme'
 import { AppHeader } from '@/ui/app-header'
 import { Card } from '@/ui/card'
@@ -35,6 +36,12 @@ export default function SettingsRoute() {
   const router = useRouter()
   const { user } = useAuth()
   const { track } = usePostHog()
+  const {
+    isConfigured: isRevenueCatConfigured,
+    isLoading: isRevenueCatLoading,
+    isPremium,
+    restorePurchases,
+  } = useRevenueCat()
   const aiAccessQuery = useQuery({
     enabled: Boolean(user?.id),
     queryKey: ['ai-access-state', user?.id, 'settings'],
@@ -42,6 +49,10 @@ export default function SettingsRoute() {
   })
   const showDeveloperSection = shouldShowDevIdentityPanel(aiAccessQuery.data)
   const userIdentifier = user?.id ? shortId(user.id) : null
+  const subscriptionTitle = isPremium ? 'Premium active' : 'Free plan'
+  const subscriptionSubtitle = isPremium
+    ? 'Unlimited AI recipes are active on this device.'
+    : '3 free AI recipe cards included.'
 
   useEffect(() => {
     track('settings_screen_viewed')
@@ -50,6 +61,37 @@ export default function SettingsRoute() {
   const showPlaceholder = (row: string, message: string) => {
     track('settings_placeholder_tapped', { row })
     Alert.alert('Coming soon', message)
+  }
+
+  const handleRestorePurchases = async () => {
+    if (!isRevenueCatConfigured) {
+      track('restore_failed', { source: 'settings', reason: 'not_configured' })
+      router.push('/paywall')
+      return
+    }
+
+    track('restore_started', { source: 'settings' })
+
+    try {
+      const customerInfo = await restorePurchases()
+      const premiumActive = isCustomerPremium(customerInfo)
+
+      track('restore_completed', {
+        source: 'settings',
+        premium_active: premiumActive,
+      })
+
+      if (premiumActive) {
+        void aiAccessQuery.refetch()
+        Alert.alert('Premium active', 'Your subscription has been restored.')
+        return
+      }
+
+      Alert.alert('No active subscription found.')
+    } catch {
+      track('restore_failed', { source: 'settings' })
+      Alert.alert('Could not restore purchases', 'Please try again.')
+    }
   }
 
   return (
@@ -72,27 +114,28 @@ export default function SettingsRoute() {
       <SettingsSection title="Subscription" tone="warm">
         <SettingsRow
           marker="$"
-          title="Free plan"
-          subtitle="3 free AI recipe cards included."
+          title={subscriptionTitle}
+          subtitle={subscriptionSubtitle}
         />
         <SettingsRow
           marker="+"
           title="Upgrade to Premium"
-          subtitle="Premium is coming next."
-          onPress={() =>
-            showPlaceholder('upgrade_to_premium', 'Premium is coming next.')
-          }
+          subtitle="Unlock unlimited AI recipe cards."
+          onPress={() => {
+            track('settings_row_tapped', {
+              row: 'upgrade_to_premium',
+              premium_active: isPremium,
+            })
+            router.push('/paywall')
+          }}
         />
         <SettingsRow
           marker="R"
           title="Restore purchases"
-          subtitle="Restore support will arrive with Premium."
-          onPress={() =>
-            showPlaceholder(
-              'restore_purchases',
-              'Restore purchases is coming soon.'
-            )
-          }
+          subtitle={isRevenueCatLoading ? 'Checking Premium status...' : 'Restore an active subscription.'}
+          onPress={() => {
+            void handleRestorePurchases()
+          }}
         />
       </SettingsSection>
 
@@ -174,6 +217,13 @@ export default function SettingsRoute() {
                 : aiAccessQuery.isLoading
                   ? 'Loading access'
                   : 'Access unavailable'
+            }
+            revenueCatState={
+              isRevenueCatConfigured
+                ? isPremium
+                  ? 'Premium active'
+                  : 'Configured'
+                : 'Not configured'
             }
           />
           <DevIdentityPanel />
@@ -329,9 +379,11 @@ function SettingsRow({
 function DeveloperDiagnosticsCard({
   role,
   accessState,
+  revenueCatState,
 }: {
   role: string
   accessState: string
+  revenueCatState: string
 }) {
   return (
     <Card tone="muted">
@@ -341,7 +393,7 @@ function DeveloperDiagnosticsCard({
       <SettingsRow marker="D" title="Role" subtitle={role} />
       <SettingsRow marker="A" title="AI access" subtitle={accessState} />
       <SettingsRow marker="S" title="Supabase" subtitle="Anonymous auth enabled" />
-      <SettingsRow marker="R" title="RevenueCat" subtitle="Not initialized" />
+      <SettingsRow marker="R" title="RevenueCat" subtitle={revenueCatState} />
     </Card>
   )
 }

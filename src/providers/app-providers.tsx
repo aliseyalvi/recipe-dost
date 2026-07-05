@@ -3,6 +3,7 @@ import '@/i18n'
 import { AppQueryProvider } from '@/providers/query-provider'
 import { AuthProvider } from '@/providers/auth-provider'
 import { PostHogPlaceholderProvider } from '@/providers/posthog-placeholder-provider'
+import { RevenueCatProvider } from '@/providers/revenuecat-provider'
 import { SentryPlaceholderProvider } from '@/providers/sentry-placeholder-provider'
 import { SaveRecipeModalProvider } from '@/features/save-recipe/save-recipe-modal'
 import { IncomingRecipeShareIntentHandler } from '@/features/share-intent/use-incoming-recipe-share-intent'
@@ -24,12 +25,14 @@ export function AppProviders({ children }: Props) {
           <I18nextProvider i18n={i18n}>
             <AppQueryProvider>
               <AuthProvider>
-                <BottomSheetModalProvider>
-                  <SaveRecipeModalProvider>
-                    <IncomingRecipeShareIntentHandler />
-                    {children}
-                  </SaveRecipeModalProvider>
-                </BottomSheetModalProvider>
+                <RevenueCatProvider>
+                  <BottomSheetModalProvider>
+                    <SaveRecipeModalProvider>
+                      <IncomingRecipeShareIntentHandler />
+                      {children}
+                    </SaveRecipeModalProvider>
+                  </BottomSheetModalProvider>
+                </RevenueCatProvider>
               </AuthProvider>
             </AppQueryProvider>
           </I18nextProvider>

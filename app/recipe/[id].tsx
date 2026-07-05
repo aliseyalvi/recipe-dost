@@ -19,6 +19,7 @@ import {
   refreshRecipeMetadata,
 } from '@/lib/api/recipes'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
+import { useRevenueCat } from '@/providers/revenuecat-provider'
 import { colors, radius, spacing, typography } from '@/theme'
 import { AppBadge } from '@/ui/app-badge'
 import { AppHeader } from '@/ui/app-header'
@@ -53,6 +54,7 @@ export default function SavedRecipeRoute() {
   const rootNavigationState = useRootNavigationState()
   const queryClient = useQueryClient()
   const { track } = usePostHog()
+  const { isPremium } = useRevenueCat()
   const { id, returnTo } = useLocalSearchParams<{
     id?: string
     returnTo?: string | string[]
@@ -326,7 +328,6 @@ export default function SavedRecipeRoute() {
   const isGenerateDisabled =
     isCreatingMediaJob ||
     Boolean(activeMediaJob) ||
-    isAiLimitReached ||
     isMetadataPending ||
     Boolean(durationBlockMessage)
 
@@ -347,6 +348,15 @@ export default function SavedRecipeRoute() {
       if (durationBlockMessage) {
         setMediaJobError(new Error(durationBlockMessage))
       }
+      return
+    }
+
+    if (isAiLimitReached && !isPremium) {
+      setShowCreditLimitState(true)
+      track('ai_credit_limit_reached', {
+        platform,
+      })
+      router.push('/paywall')
       return
     }
 
@@ -390,14 +400,17 @@ export default function SavedRecipeRoute() {
           caughtError.code === 'ai_credit_limit_reached'
         )
       ) {
-        setShowCreditLimitState(true)
         track('ai_credit_limit_reached', {
           platform,
         })
-        track('upgrade_placeholder_shown', {
-          limit_type: 'ai_recipe_cards',
-          source: 'saved_recipe_detail',
-        })
+        if (isPremium) {
+          setMediaJobError(
+            new Error('Premium is active. Final server access sync is coming next.')
+          )
+        } else {
+          setShowCreditLimitState(true)
+          router.push('/paywall')
+        }
         return
       }
 
@@ -716,7 +729,13 @@ export default function SavedRecipeRoute() {
           ) : null}
           {isAiLimitReached ? (
             <Text selectable style={[typography.caption, { color: colors.warning }]}>
-              No free AI slots left. Wait for active analysis to finish or upgrade.
+              {isPremium
+                ? 'Premium is active. Final server access sync is coming next.'
+                : 'No free AI slots left. Upgrade to keep generating AI recipes.'}
+            </Text>
+          ) : isPremium ? (
+            <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+              Premium is active on this device.
             </Text>
           ) : aiAccess ? (
             <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
@@ -763,7 +782,7 @@ export default function SavedRecipeRoute() {
             No free AI slots left. Wait for active analysis to finish or upgrade.
           </Text>
           <Button
-            label="Unlock Pro"
+            label="Unlock Premium"
             fullWidth
             variant="accent"
             onPress={() => router.push('/paywall')}
@@ -780,7 +799,7 @@ export default function SavedRecipeRoute() {
       {aiAccess ? (
         <UsagePill
           label="AI recipes left"
-          value={getAiRecipesLeftValue(aiAccess)}
+          value={isPremium ? 'Pro' : getAiRecipesLeftValue(aiAccess)}
         />
       ) : aiAccessQuery.isLoading ? (
         <UsagePill label="AI recipes left" value="-" />
