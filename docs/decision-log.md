@@ -1,6 +1,13 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-05
+- M22A.2 Paywall and AI generation CTA UX polish completed.
+- Decision: Source Detail AI generation now uses one state-driven CTA area so existing AI recipes show Open AI Recipe, Premium users see Generate AI Recipe with Premium helper copy, free users see remaining free recipes, and exhausted free users see one Upgrade card.
+- Decision: Long-video and metadata-pending states do not suggest Premium as the fix; Premium does not increase the 2-minute beta video duration limit.
+- Decision: Paywall now uses clearer short copy, compact benefits, selectable monthly/yearly package cards, and one selected-plan Continue CTA while Restore purchases and Maybe later stay visually quiet.
+- Decision: RevenueCat Test Store dialogs remain expected during development testing and are not customized by the app paywall.
+- Deferred: Server-side Premium monthly quota enforcement remains M22B/M22B.1.
+- Validation: `npm run typecheck` and `npx expo config --json` passed.
 - M22A.1 Premium UX polish, subscription management, and plan copy correction completed.
 - Decision: User-facing subscription copy now uses `Premium` instead of `Pro`, and Premium beta is described as 100 AI recipe cards/month instead of unlimited AI usage.
 - Decision: Paywall shows a clean Premium active state with Manage subscription and Close actions, while free users see monthly/yearly plan cards, restore purchases, loading, retry, and unavailable states.

@@ -20,11 +20,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { Alert, Linking, Pressable, Text, View } from 'react-native'
 
 const benefits = [
-  '100 AI recipe cards per month',
+  '100 AI recipe cards/month',
   'Save recipe links free forever',
-  'Urdu + English recipe help',
-  'Grocery lists from generated recipes',
-  'Premium support for future features',
+  'Ingredients, steps, and grocery lists',
+  'Urdu + English recipe insights',
+  'Videos up to 2 minutes in beta',
 ]
 
 export default function PaywallRoute() {
@@ -46,6 +46,7 @@ export default function PaywallRoute() {
   const [purchasePackageId, setPurchasePackageId] = useState<string | null>(null)
   const [isRestoring, setIsRestoring] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null)
   const managementUrl = getSubscriptionManagementUrl(customerInfo)
   const monthlyPackage = useMemo(
     () => packages.find((item) =>
@@ -68,6 +69,14 @@ export default function PaywallRoute() {
     (item): item is PurchasesPackage => Boolean(item)
   )
   const hasPackages = availablePackages.length > 0
+  const selectedPackage =
+    availablePackages.find((item) => item.identifier === selectedPackageId) ??
+    yearlyPackage ??
+    monthlyPackage ??
+    null
+  const selectedPackageLabel = selectedPackage
+    ? getPackageLabel(selectedPackage, monthlyPackage, yearlyPackage)
+    : null
 
   useEffect(() => {
     track('paywall_viewed', {
@@ -86,6 +95,24 @@ export default function PaywallRoute() {
       has_management_url: Boolean(managementUrl),
     })
   }, [isPremium, managementUrl, track])
+
+  useEffect(() => {
+    const preferredPackage = yearlyPackage ?? monthlyPackage
+
+    if (!preferredPackage) {
+      setSelectedPackageId(null)
+      return
+    }
+
+    if (
+      selectedPackageId &&
+      availablePackages.some((item) => item.identifier === selectedPackageId)
+    ) {
+      return
+    }
+
+    setSelectedPackageId(preferredPackage.identifier)
+  }, [availablePackages, monthlyPackage, selectedPackageId, yearlyPackage])
 
   const handleRetry = async () => {
     setActionError(null)
@@ -171,6 +198,22 @@ export default function PaywallRoute() {
     }
   }
 
+  const handleSelectPackage = (
+    nextPackage: PurchasesPackage,
+    cadence: 'monthly' | 'yearly'
+  ) => {
+    if (purchasePackageId || isRestoring) {
+      return
+    }
+
+    setSelectedPackageId(nextPackage.identifier)
+    track('premium_plan_card_tapped', {
+      cadence,
+      package_identifier: nextPackage.identifier,
+      product_identifier: nextPackage.product.identifier,
+    })
+  }
+
   const handleRestore = async () => {
     if (purchasePackageId || isRestoring) {
       return
@@ -205,12 +248,12 @@ export default function PaywallRoute() {
   return (
     <Screen compact>
       <AppHeader
-        eyebrow="Premium"
-        title={isPremium ? 'Premium active' : 'Upgrade to Recipe Dost Premium'}
+        eyebrow="PREMIUM"
+        title={isPremium ? 'Premium active' : 'Create recipe cards from reels'}
         subtitle={
           isPremium
             ? 'Your Premium plan is active on this device.'
-            : 'Create up to 100 AI recipe cards per month from reels and shorts.'
+            : 'Get up to 100 AI recipe cards/month with Urdu + English recipe help.'
         }
       />
 
@@ -236,9 +279,6 @@ export default function PaywallRoute() {
               </Text>
             </View>
           ))}
-          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-            Videos up to 2 minutes are supported in this beta.
-          </Text>
         </View>
         </Card>
       ) : null}
@@ -250,18 +290,23 @@ export default function PaywallRoute() {
             Premium active
           </Text>
           <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-            100 AI recipe cards/month
+            Your Premium plan is active. You can create up to 100 AI recipe cards/month.
           </Text>
-          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-            Videos up to 2 minutes are supported in this beta.
-          </Text>
+          {managementUrl ? (
+            <Button
+              label="Manage subscription"
+              fullWidth
+              variant="outline"
+              onPress={() => {
+                void handleManageSubscription()
+              }}
+            />
+          ) : null}
           <Button
-            label="Manage subscription"
+            label="Close"
             fullWidth
-            variant="secondary"
-            onPress={() => {
-              void handleManageSubscription()
-            }}
+            variant="ghost"
+            onPress={() => router.back()}
           />
         </Card>
       ) : null}
@@ -296,15 +341,10 @@ export default function PaywallRoute() {
               <PlanCard
                 label="Monthly"
                 selectedPackage={monthlyPackage}
-                isLoading={purchasePackageId === monthlyPackage.identifier}
+                selected={selectedPackageId === monthlyPackage.identifier}
                 disabled={Boolean(purchasePackageId) || isRestoring}
                 onPress={() => {
-                  track('premium_plan_card_tapped', {
-                    cadence: 'monthly',
-                    package_identifier: monthlyPackage.identifier,
-                    product_identifier: monthlyPackage.product.identifier,
-                  })
-                  void handlePurchase(monthlyPackage)
+                  handleSelectPackage(monthlyPackage, 'monthly')
                 }}
               />
             ) : null}
@@ -313,22 +353,34 @@ export default function PaywallRoute() {
                 label="Yearly"
                 badge="Best value"
                 selectedPackage={yearlyPackage}
-                isLoading={purchasePackageId === yearlyPackage.identifier}
+                selected={selectedPackageId === yearlyPackage.identifier}
                 disabled={Boolean(purchasePackageId) || isRestoring}
                 onPress={() => {
-                  track('premium_plan_card_tapped', {
-                    cadence: 'yearly',
-                    package_identifier: yearlyPackage.identifier,
-                    product_identifier: yearlyPackage.product.identifier,
-                  })
-                  void handlePurchase(yearlyPackage)
+                  handleSelectPackage(yearlyPackage, 'yearly')
                 }}
               />
             ) : null}
             <Button
+              label={
+                purchasePackageId && selectedPackageLabel
+                  ? `Starting ${selectedPackageLabel}...`
+                  : selectedPackageLabel
+                    ? `Continue with ${selectedPackageLabel}`
+                    : 'Continue'
+              }
+              fullWidth
+              variant="accent"
+              disabled={!selectedPackage || Boolean(purchasePackageId) || isRestoring}
+              onPress={() => {
+                if (selectedPackage) {
+                  void handlePurchase(selectedPackage)
+                }
+              }}
+            />
+            <Button
               label={isRestoring ? 'Restoring...' : 'Restore purchases'}
               fullWidth
-              variant="secondary"
+              variant="outline"
               disabled={Boolean(purchasePackageId) || isRestoring}
               onPress={() => {
                 void handleRestore()
@@ -346,13 +398,15 @@ export default function PaywallRoute() {
         </Card>
       ) : null}
 
-      <Button
-        label={isPremium ? 'Close' : 'Maybe later'}
-        fullWidth
-        variant="ghost"
-        disabled={Boolean(purchasePackageId) || isRestoring}
-        onPress={() => router.back()}
-      />
+      {!isPremium ? (
+        <Button
+          label="Maybe later"
+          fullWidth
+          variant="ghost"
+          disabled={Boolean(purchasePackageId) || isRestoring}
+          onPress={() => router.back()}
+        />
+      ) : null}
     </Screen>
   )
 }
@@ -361,14 +415,14 @@ function PlanCard({
   label,
   badge,
   selectedPackage,
-  isLoading,
+  selected,
   disabled,
   onPress,
 }: {
   label: string
   badge?: string
   selectedPackage: PurchasesPackage
-  isLoading: boolean
+  selected: boolean
   disabled: boolean
   onPress: () => void
 }) {
@@ -383,8 +437,8 @@ function PlanCard({
         borderWidth: 1,
         borderRadius: radius.md,
         borderCurve: 'continuous',
-        borderColor: label === 'Yearly' ? colors.accent : colors.border,
-        backgroundColor: label === 'Yearly' ? colors.accentSoft : colors.surfaceMuted,
+        borderColor: selected ? colors.accent : colors.border,
+        backgroundColor: selected ? colors.accentSoft : colors.surfaceMuted,
         padding: spacing.lg,
         opacity: disabled ? 0.5 : pressed ? 0.82 : 1,
       })}
@@ -400,16 +454,46 @@ function PlanCard({
         <Text selectable={false} style={[typography.heading, { color: colors.text }]}>
           {label}
         </Text>
-        {badge ? <AppBadge label={badge} tone="accent" /> : null}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          {badge ? <AppBadge label={badge} tone="accent" /> : null}
+          {selected ? (
+            <View
+              accessibilityLabel={`${label} selected`}
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: radius.pill,
+                backgroundColor: colors.accent,
+              }}
+            />
+          ) : null}
+        </View>
       </View>
       <Text selectable={false} style={[typography.body, { color: colors.text }]}>
         {selectedPackage.product.priceString}
       </Text>
       <Text selectable={false} style={[typography.caption, { color: colors.textMuted }]}>
-        {isLoading
-          ? `Starting ${label}...`
-          : '100 AI recipe cards/month'}
+        100 AI recipe cards/month
       </Text>
     </Pressable>
   )
+}
+
+function getPackageLabel(
+  selectedPackage: PurchasesPackage,
+  monthlyPackage: PurchasesPackage | undefined,
+  yearlyPackage: PurchasesPackage | undefined
+) {
+  if (yearlyPackage?.identifier === selectedPackage.identifier) {
+    return 'Yearly'
+  }
+
+  if (monthlyPackage?.identifier === selectedPackage.identifier) {
+    return 'Monthly'
+  }
+
+  return selectedPackage.identifier.toLowerCase().includes('year') ||
+    selectedPackage.identifier.toLowerCase().includes('annual')
+    ? 'Yearly'
+    : 'Monthly'
 }

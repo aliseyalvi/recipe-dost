@@ -1,7 +1,7 @@
 import { colors, radius, spacing, typography } from '@/theme'
 import { Pressable, Text, ViewStyle } from 'react-native'
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'accent'
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'accent' | 'outline'
 
 type Props = {
   label: string
@@ -29,6 +29,10 @@ const variantStyles: Record<ButtonVariant, ViewStyle> = {
     backgroundColor: colors.accent,
     borderColor: colors.accent,
   },
+  outline: {
+    backgroundColor: 'transparent',
+    borderColor: colors.border,
+  },
 }
 
 export function Button({
@@ -43,9 +47,11 @@ export function Button({
   const textColor =
     variant === 'accent'
       ? '#21150B'
-      : isFilled
-        ? colors.primaryText
-        : colors.primary
+      : variant === 'outline'
+        ? colors.textMuted
+        : isFilled
+          ? colors.primaryText
+          : colors.primary
 
   return (
     <Pressable

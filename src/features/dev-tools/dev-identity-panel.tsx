@@ -150,7 +150,7 @@ export function DevIdentityPanel() {
             label="Remaining"
             value={
               accessQuery.data.remaining === null
-                ? 'Unlimited'
+                ? 'No limit set'
                 : `${accessQuery.data.remaining}`
             }
           />

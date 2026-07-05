@@ -6,7 +6,6 @@ import {
   DEFAULT_SECONDARY_RECIPE_LANGUAGE_CODE,
   getSecondaryRecipeLanguage,
 } from '@/features/settings/secondary-recipe-language'
-import { UsagePill } from '@/features/usage/usage-limit-card'
 import { getAiAccessState } from '@/lib/api/ai-access'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import {
@@ -45,7 +44,7 @@ import { Image, InteractionManager, Linking, Text, View } from 'react-native'
 
 const MAX_AI_VIDEO_DURATION_SECONDS = 120
 const LONG_VIDEO_MESSAGE =
-  'This video is longer than 2 minutes. Recipe Dost currently supports recipe videos up to 2 minutes.'
+  'This video is longer than 2 minutes. Recipe Dost currently supports videos up to 2 minutes in beta.'
 const LONG_VIDEO_FAILED_MESSAGE =
   'This video is longer than 2 minutes. Try a shorter recipe video.'
 
@@ -330,6 +329,17 @@ export default function SavedRecipeRoute() {
     Boolean(activeMediaJob) ||
     isMetadataPending ||
     Boolean(durationBlockMessage)
+  const shouldShowAiActionCard =
+    !activeMediaJob &&
+    !resultRecipeCardId &&
+    !mediaJobQuery.isLoading &&
+    !mediaJobQuery.error
+  const shouldShowUpgradeCard =
+    shouldShowAiActionCard &&
+    !isMetadataPending &&
+    !durationBlockMessage &&
+    !isPremium &&
+    (showCreditLimitState || isAiLimitReached)
 
   const openOriginalVideo = async () => {
     const canOpenUrl = await Linking.canOpenURL(recipe.source_url)
@@ -341,6 +351,15 @@ export default function SavedRecipeRoute() {
         source: 'saved_recipe_detail',
       })
     }
+  }
+
+  const handleMaybeLater = () => {
+    if (router.canGoBack()) {
+      router.back()
+      return
+    }
+
+    router.replace(sourceReturnToRoute ?? '/home')
   }
 
   const handleCreateMediaJob = async () => {
@@ -356,7 +375,6 @@ export default function SavedRecipeRoute() {
       track('ai_credit_limit_reached', {
         platform,
       })
-      router.push('/paywall')
       return
     }
 
@@ -409,7 +427,6 @@ export default function SavedRecipeRoute() {
           )
         } else {
           setShowCreditLimitState(true)
-          router.push('/paywall')
         }
         return
       }
@@ -577,7 +594,7 @@ export default function SavedRecipeRoute() {
         <Button
           label="Open Original Video"
           fullWidth
-          variant="accent"
+          variant="outline"
           onPress={() => {
             void openOriginalVideo()
           }}
@@ -673,6 +690,7 @@ export default function SavedRecipeRoute() {
         </Card>
       ) : resultRecipeCardId ? (
         <Card tone="warm">
+          <AppBadge label="AI Recipe ready" tone="accent" />
           <Text selectable style={[typography.heading, { color: colors.text }]}>
             {recipeCard?.recipe_title?.trim() || 'AI recipe ready'}
           </Text>
@@ -684,6 +702,7 @@ export default function SavedRecipeRoute() {
           <Button
             label="Open AI Recipe"
             fullWidth
+            variant="accent"
             onPress={() =>
               router.push(
                 `/recipe-card/${resultRecipeCardId}?returnTo=${encodeURIComponent(
@@ -693,26 +712,54 @@ export default function SavedRecipeRoute() {
             }
           />
         </Card>
-      ) : !mediaJobQuery.isLoading && !mediaJobQuery.error ? (
+      ) : shouldShowAiActionCard ? (
         <Card tone="warm">
-          <View style={{ gap: spacing.xs }}>
-            <Text selectable style={[typography.heading, { color: colors.text }]}>
-              Generate AI Recipe
-            </Text>
-            <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-              AI turns this saved link and available details into a recipe card.
-              Recipe Dost saves links and recipe cards, not videos.
-            </Text>
-          </View>
-          <Button
-            label={isCreatingMediaJob ? 'Starting AI Recipe...' : 'Generate AI Recipe'}
-            fullWidth
-            disabled={isGenerateDisabled}
-            onPress={() => {
-              void handleCreateMediaJob()
-            }}
-          />
-          {isMetadataPending ? (
+          {shouldShowUpgradeCard ? (
+            <View style={{ gap: spacing.xs }}>
+              <AppBadge label="AI recipes left: 0" tone="warning" />
+              <Text selectable style={[typography.heading, { color: colors.text }]}>
+                Free AI recipes used
+              </Text>
+              <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+                You've used your 3 free AI recipes. Upgrade to create up to 100 AI recipe cards/month.
+              </Text>
+              <Button
+                label="Upgrade to Premium"
+                fullWidth
+                variant="accent"
+                onPress={() => router.push('/paywall')}
+              />
+              <Button
+                label="Maybe later"
+                fullWidth
+                variant="ghost"
+                onPress={handleMaybeLater}
+              />
+            </View>
+          ) : (
+            <>
+              <View style={{ gap: spacing.xs }}>
+                <Text selectable style={[typography.heading, { color: colors.text }]}>
+                  Generate AI Recipe
+                </Text>
+                <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+                  AI turns this saved link and available details into a recipe card.
+                </Text>
+              </View>
+              {!isMetadataPending && !durationBlockMessage ? (
+                <Button
+                  label={isCreatingMediaJob ? 'Starting AI Recipe...' : 'Generate AI Recipe'}
+                  fullWidth
+                  variant="accent"
+                  disabled={isGenerateDisabled}
+                  onPress={() => {
+                    void handleCreateMediaJob()
+                  }}
+                />
+              ) : null}
+            </>
+          )}
+          {isMetadataPending && !shouldShowUpgradeCard ? (
             <View style={{ gap: spacing.xs }}>
               <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
                 Preparing video details...
@@ -722,27 +769,17 @@ export default function SavedRecipeRoute() {
               </Text>
             </View>
           ) : null}
-          {durationBlockMessage ? (
+          {durationBlockMessage && !shouldShowUpgradeCard ? (
             <Text selectable style={[typography.caption, { color: colors.warning }]}>
               {durationBlockMessage}
             </Text>
           ) : null}
-          {isAiLimitReached ? (
-            <Text selectable style={[typography.caption, { color: colors.warning }]}>
-              {isPremium
-                ? 'Premium active. Monthly usage limits will be enforced server-side.'
-                : 'No free AI slots left. Upgrade to keep generating AI recipes.'}
+          {!shouldShowUpgradeCard && !isMetadataPending && !durationBlockMessage && isPremium ? (
+            <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+              Premium active · 100 AI recipes/month
             </Text>
-          ) : isPremium ? (
-            <View style={{ gap: spacing.xs }}>
-              <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-                Premium active.
-              </Text>
-              <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-                Monthly usage limits will be enforced server-side.
-              </Text>
-            </View>
-          ) : aiAccess ? (
+          ) : null}
+          {!shouldShowUpgradeCard && !isMetadataPending && !durationBlockMessage && !isPremium && aiAccess ? (
             <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
               {getAiAvailabilityText(aiAccess)}
             </Text>
@@ -767,48 +804,20 @@ export default function SavedRecipeRoute() {
           <Text selectable style={[typography.body, { color: colors.text }]}>
             {mediaJobError.message}
           </Text>
-          <Button
-            label="Generate AI Recipe"
-            fullWidth
-            disabled={isGenerateDisabled}
-            onPress={() => {
-              void handleCreateMediaJob()
-            }}
-          />
+          {!isGenerateDisabled ? (
+            <Button
+              label="Generate AI Recipe"
+              fullWidth
+              variant="accent"
+              onPress={() => {
+                void handleCreateMediaJob()
+              }}
+            />
+          ) : null}
         </Card>
       ) : null}
 
-      {showCreditLimitState ? (
-        <Card tone="muted">
-          <Text selectable style={[typography.heading, { color: colors.warning }]}>
-            Free AI recipes used
-          </Text>
-          <Text selectable style={[typography.body, { color: colors.text }]}>
-            No free AI slots left. Wait for active analysis to finish or upgrade.
-          </Text>
-          <Button
-            label="Unlock Premium"
-            fullWidth
-            variant="accent"
-            onPress={() => router.push('/paywall')}
-          />
-          <Button
-            label="Maybe later"
-            fullWidth
-            variant="secondary"
-            onPress={() => setShowCreditLimitState(false)}
-          />
-        </Card>
-      ) : null}
-
-      {aiAccess ? (
-        <UsagePill
-          label="AI recipes left"
-          value={isPremium ? 'Premium active' : getAiRecipesLeftValue(aiAccess)}
-        />
-      ) : aiAccessQuery.isLoading ? (
-        <UsagePill label="AI recipes left" value="-" />
-      ) : aiAccessQuery.error ? (
+      {aiAccessQuery.error ? (
         <Card tone="muted">
           <Text selectable style={[typography.heading, { color: colors.text }]}>
             Could not load AI availability
@@ -829,12 +838,6 @@ export default function SavedRecipeRoute() {
           />
         </Card>
       ) : null}
-
-      <Button
-        label="Back to Home"
-        fullWidth
-        onPress={() => router.replace('/home')}
-      />
     </Screen>
   )
 }
@@ -978,34 +981,6 @@ function getFriendlyMediaJobError(caughtError: unknown, fallback: Error) {
   }
 
   return new Error(getFriendlyApiErrorMessage(caughtError, fallback.message))
-}
-
-function getAiRecipesLeftValue(access: {
-  role: string
-  isTestUser: boolean
-  premiumActive: boolean
-  activeReserved: number
-  remainingToStart: number | null
-  remaining: number | null
-  reason: string
-}) {
-  if (access.role === 'admin') {
-    return 'Admin'
-  }
-
-  if (access.isTestUser || access.role === 'tester') {
-    return 'Tester'
-  }
-
-  if (access.premiumActive) {
-    return 'Premium active'
-  }
-
-  if (access.reason === 'limit_reached') {
-    return '0'
-  }
-
-  return access.remainingToStart === null ? '-' : `${access.remainingToStart}`
 }
 
 function getAiAvailabilityText(access: {

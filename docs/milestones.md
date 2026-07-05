@@ -1,5 +1,16 @@
 # Recipe Dost Milestones
 
+## M22A.2 - Paywall and AI Generation CTA Polish
+
+- Status: Completed.
+- Improved Source Detail AI generation hierarchy so ready, generating, Premium, free remaining, free-limit, metadata pending, and long-video states show focused CTAs instead of competing buttons.
+- Free-limit state now shows a single Upgrade to Premium card with quiet Maybe later navigation and keeps Premium copy at 100 AI recipe cards/month.
+- Paywall copy is shorter and clearer, with compact benefits and selectable monthly/yearly package cards using RevenueCat `priceString`.
+- Paywall purchase flow now uses one selected-plan Continue CTA, with Restore purchases and Maybe later as quiet secondary actions.
+- Paywall active Premium state stays clean and does not show purchase plans or duplicate close actions.
+- RevenueCat Test Store purchase dialogs remain expected during development testing and are not customized by the app.
+- Server-side Premium monthly quota enforcement remains M22B/M22B.1.
+
 ## M22A.1 - Premium UX Polish and Subscription Management
 
 - Status: Completed.
@@ -282,7 +293,7 @@
 - Home, Settings, and saved-link detail now use `get-ai-access` for AI generation credit state instead of local recipe-card remaining values.
 - Saved-link detail has one user-facing AI action: `Generate AI Recipe`, which uses the backend-gated `create-media-job` flow.
 - The old user-facing manual `generate-card` path is no longer exposed from saved-link detail.
-- `ai_credit_limit_reached` now shows a clear "Free AI recipes used" upgrade placeholder with Unlock Pro and Maybe later actions.
+- `ai_credit_limit_reached` now shows a clear "Free AI recipes used" upgrade placeholder with Unlock Premium and Maybe later actions.
 - Recipe result UI hides model/source-mode/confidence debug badges from production UI and keeps technical details in a dev-only section.
 
 ## M21.5 - Dev Identity Switcher and AI Access QA
