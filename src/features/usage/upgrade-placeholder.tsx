@@ -30,7 +30,7 @@ export function UpgradePlaceholder({
   return (
     <EmptyState
       title="Upgrade coming next"
-      message="Recipe Dost Pro will unlock more saved recipes, AI recipe cards, and grocery lists."
+      message="Recipe Dost Premium will unlock a higher monthly AI recipe limit."
       actionLabel={actionLabel}
       onActionPress={onActionPress}
     />

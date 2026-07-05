@@ -1,4 +1,5 @@
 import { colors, spacing } from '@/theme'
+import Constants from 'expo-constants'
 import { ReactNode } from 'react'
 import { ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -15,10 +16,11 @@ export function Screen({
   tabBarPadding = false,
 }: Props) {
   const insets = useSafeAreaInsets()
+  const topInset = insets.top || Constants.statusBarHeight || 0
   const bottomPadding = tabBarPadding
-    ? 112 + insets.bottom
+    ? 132 + insets.bottom
     : spacing.xxl + insets.bottom
-  const topPadding = insets.top + (compact ? spacing.md : spacing.lg)
+  const topPadding = topInset + (compact ? spacing.lg : spacing.xl)
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>

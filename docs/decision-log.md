@@ -1,10 +1,19 @@
 # Recipe Dost Decision Log
 
+## 2026-07-05
+- M22A.1 Premium UX polish, subscription management, and plan copy correction completed.
+- Decision: User-facing subscription copy now uses `Premium` instead of `Pro`, and Premium beta is described as 100 AI recipe cards/month instead of unlimited AI usage.
+- Decision: Paywall shows a clean Premium active state with Manage subscription and Close actions, while free users see monthly/yearly plan cards, restore purchases, loading, retry, and unavailable states.
+- Decision: Settings shows Free and Premium-specific subscription states. Premium users see Manage subscription, Restore purchases, Refresh status, 100 AI recipe cards/month, 2-minute beta video support, and RevenueCat renewal/access dates when available.
+- Decision: Manage subscription opens RevenueCat `customerInfo.managementURL` when available and otherwise shows the friendly test-purchase fallback; the app does not implement direct cancellation or delete the RevenueCat user.
+- Deferred: Supabase entitlement sync and real server-side monthly Premium quota enforcement remain M22B/M22B.1; Google Play real subscription testing remains M22C.
+- Validation: `npm run typecheck` and `npx expo config --json` passed.
+
 ## 2026-07-04
 - M22A RevenueCat paywall foundation started and completed.
 - Decision: RevenueCat SDK config is centralized in the app with `premium` and `default` fallbacks, and real API keys stay in `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY`.
 - Decision: The RevenueCat provider configures only after Supabase auth is available and uses the Supabase anonymous `user.id` as the RevenueCat appUserID.
-- Decision: Settings and the paywall use local RevenueCat entitlement state only; Supabase/backend entitlement sync remains M22B, so Premium may still need final server sync before unlimited backend AI access is enforced.
+- Decision: Settings and the paywall use local RevenueCat entitlement state only; Supabase/backend entitlement sync remains M22B, so Premium still needs final server-side monthly quota enforcement.
 - Decision: Save/share, metadata preview, library/search, open original, and existing grocery viewing remain free; only Generate AI Recipe opens the paywall after free AI access is exhausted.
 - Deferred: Google Play real subscription product setup remains M22C; no Supabase functions, migrations, worker repo, media pipeline, auth/signup, token bundles, lifetime plan, or multi-tier pricing were added.
 - Validation: `npm run typecheck` and `npx expo config --json` passed.

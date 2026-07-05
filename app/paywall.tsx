@@ -1,4 +1,5 @@
 import {
+  getSubscriptionManagementUrl,
   isCustomerPremium,
   isRevenueCatCancellation,
   useRevenueCat,
@@ -6,6 +7,7 @@ import {
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, radius, spacing, typography } from '@/theme'
 import { AppHeader } from '@/ui/app-header'
+import { AppBadge } from '@/ui/app-badge'
 import { Button } from '@/ui/button'
 import { Card } from '@/ui/card'
 import { ErrorState } from '@/ui/error-state'
@@ -15,14 +17,14 @@ import { useQueryClient } from '@tanstack/react-query'
 import type { PurchasesPackage } from '@revenuecat/purchases-typescript-internal'
 import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
-import { Alert, Text, View } from 'react-native'
+import { Alert, Linking, Pressable, Text, View } from 'react-native'
 
 const benefits = [
-  'Generate unlimited AI recipe cards',
+  '100 AI recipe cards per month',
   'Save recipe links free forever',
-  'Turn reels and shorts into ingredients and steps',
   'Urdu + English recipe help',
-  'Grocery lists from recipes',
+  'Grocery lists from generated recipes',
+  'Premium support for future features',
 ]
 
 export default function PaywallRoute() {
@@ -33,6 +35,7 @@ export default function PaywallRoute() {
     isConfigured,
     isLoading,
     isPremium,
+    customerInfo,
     packages,
     error,
     refreshCustomerInfo,
@@ -43,13 +46,20 @@ export default function PaywallRoute() {
   const [purchasePackageId, setPurchasePackageId] = useState<string | null>(null)
   const [isRestoring, setIsRestoring] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const managementUrl = getSubscriptionManagementUrl(customerInfo)
   const monthlyPackage = useMemo(
-    () => packages.find((item) => item.product.identifier === 'recipe_dost_premium_monthly') ??
+    () => packages.find((item) =>
+      item.product.identifier === 'recipe_dost_premium_monthly' ||
+      item.product.identifier === 'recipe_dost_monthly'
+    ) ??
       packages.find((item) => item.identifier.toLowerCase().includes('month')),
     [packages]
   )
   const yearlyPackage = useMemo(
-    () => packages.find((item) => item.product.identifier === 'recipe_dost_premium_yearly') ??
+    () => packages.find((item) =>
+      item.product.identifier === 'recipe_dost_premium_yearly' ||
+      item.product.identifier === 'recipe_dost_annual'
+    ) ??
       packages.find((item) => item.identifier.toLowerCase().includes('annual')) ??
       packages.find((item) => item.identifier.toLowerCase().includes('year')),
     [packages]
@@ -67,10 +77,47 @@ export default function PaywallRoute() {
     })
   }, [isConfigured, packages.length, track])
 
+  useEffect(() => {
+    if (!isPremium) {
+      return
+    }
+
+    track('premium_paywall_active_viewed', {
+      has_management_url: Boolean(managementUrl),
+    })
+  }, [isPremium, managementUrl, track])
+
   const handleRetry = async () => {
     setActionError(null)
     await refreshCustomerInfo()
     await refreshOfferings()
+  }
+
+  const handleManageSubscription = async () => {
+    track('subscription_manage_tapped', {
+      source: 'paywall',
+      has_management_url: Boolean(managementUrl),
+    })
+
+    if (!managementUrl) {
+      Alert.alert(
+        'Manage subscription',
+        'Subscription management is not available yet for this test purchase. You can manage real subscriptions from Google Play after launch.'
+      )
+      return
+    }
+
+    const canOpenUrl = await Linking.canOpenURL(managementUrl)
+
+    if (canOpenUrl) {
+      await Linking.openURL(managementUrl)
+      return
+    }
+
+    Alert.alert(
+      'Manage subscription',
+      'Subscription management is not available yet for this test purchase. You can manage real subscriptions from Google Play after launch.'
+    )
   }
 
   const handlePurchase = async (selectedPackage: PurchasesPackage) => {
@@ -96,7 +143,10 @@ export default function PaywallRoute() {
           premium_active: true,
         })
         await queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
-        Alert.alert('Premium active', 'Unlimited AI recipes are unlocked on this device.')
+        Alert.alert(
+          'Premium active',
+          'Premium is active with 100 AI recipe cards per month.'
+        )
         router.back()
         return
       }
@@ -156,11 +206,16 @@ export default function PaywallRoute() {
     <Screen compact>
       <AppHeader
         eyebrow="Premium"
-        title="Unlock unlimited AI recipes"
-        subtitle="Turn recipe reels and shorts into clean recipe cards whenever you need."
+        title={isPremium ? 'Premium active' : 'Upgrade to Recipe Dost Premium'}
+        subtitle={
+          isPremium
+            ? 'Your Premium plan is active on this device.'
+            : 'Create up to 100 AI recipe cards per month from reels and shorts.'
+        }
       />
 
-      <Card tone="warm">
+      {!isPremium ? (
+        <Card tone="warm">
         <View style={{ gap: spacing.sm }}>
           {benefits.map((benefit) => (
             <View
@@ -181,18 +236,33 @@ export default function PaywallRoute() {
               </Text>
             </View>
           ))}
+          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+            Videos up to 2 minutes are supported in this beta.
+          </Text>
         </View>
-      </Card>
+        </Card>
+      ) : null}
 
       {isPremium ? (
-        <Card tone="muted">
+        <Card tone="warm">
+          <AppBadge label="Premium active" tone="accent" />
           <Text selectable style={[typography.heading, { color: colors.text }]}>
             Premium active
           </Text>
           <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-            Your local RevenueCat entitlement is active.
+            100 AI recipe cards/month
           </Text>
-          <Button label="Close" fullWidth onPress={() => router.back()} />
+          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+            Videos up to 2 minutes are supported in this beta.
+          </Text>
+          <Button
+            label="Manage subscription"
+            fullWidth
+            variant="secondary"
+            onPress={() => {
+              void handleManageSubscription()
+            }}
+          />
         </Card>
       ) : null}
 
@@ -223,23 +293,34 @@ export default function PaywallRoute() {
               Choose a plan
             </Text>
             {monthlyPackage ? (
-              <PackageButton
+              <PlanCard
                 label="Monthly"
                 selectedPackage={monthlyPackage}
                 isLoading={purchasePackageId === monthlyPackage.identifier}
                 disabled={Boolean(purchasePackageId) || isRestoring}
                 onPress={() => {
+                  track('premium_plan_card_tapped', {
+                    cadence: 'monthly',
+                    package_identifier: monthlyPackage.identifier,
+                    product_identifier: monthlyPackage.product.identifier,
+                  })
                   void handlePurchase(monthlyPackage)
                 }}
               />
             ) : null}
             {yearlyPackage ? (
-              <PackageButton
+              <PlanCard
                 label="Yearly"
+                badge="Best value"
                 selectedPackage={yearlyPackage}
                 isLoading={purchasePackageId === yearlyPackage.identifier}
                 disabled={Boolean(purchasePackageId) || isRestoring}
                 onPress={() => {
+                  track('premium_plan_card_tapped', {
+                    cadence: 'yearly',
+                    package_identifier: yearlyPackage.identifier,
+                    product_identifier: yearlyPackage.product.identifier,
+                  })
                   void handlePurchase(yearlyPackage)
                 }}
               />
@@ -276,31 +357,59 @@ export default function PaywallRoute() {
   )
 }
 
-function PackageButton({
+function PlanCard({
   label,
+  badge,
   selectedPackage,
   isLoading,
   disabled,
   onPress,
 }: {
   label: string
+  badge?: string
   selectedPackage: PurchasesPackage
   isLoading: boolean
   disabled: boolean
   onPress: () => void
 }) {
   return (
-    <Button
-      label={
-        isLoading
-          ? `Starting ${label}...`
-          : `${label} - ${selectedPackage.product.priceString}`
-      }
-      fullWidth
+    <Pressable
+      accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
-      variant={label === 'Yearly' ? 'accent' : 'primary'}
       testID={`paywall-${label.toLowerCase()}-button`}
-    />
+      style={({ pressed }) => ({
+        gap: spacing.sm,
+        borderWidth: 1,
+        borderRadius: radius.md,
+        borderCurve: 'continuous',
+        borderColor: label === 'Yearly' ? colors.accent : colors.border,
+        backgroundColor: label === 'Yearly' ? colors.accentSoft : colors.surfaceMuted,
+        padding: spacing.lg,
+        opacity: disabled ? 0.5 : pressed ? 0.82 : 1,
+      })}
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: spacing.md,
+        }}
+      >
+        <Text selectable={false} style={[typography.heading, { color: colors.text }]}>
+          {label}
+        </Text>
+        {badge ? <AppBadge label={badge} tone="accent" /> : null}
+      </View>
+      <Text selectable={false} style={[typography.body, { color: colors.text }]}>
+        {selectedPackage.product.priceString}
+      </Text>
+      <Text selectable={false} style={[typography.caption, { color: colors.textMuted }]}>
+        {isLoading
+          ? `Starting ${label}...`
+          : '100 AI recipe cards/month'}
+      </Text>
+    </Pressable>
   )
 }

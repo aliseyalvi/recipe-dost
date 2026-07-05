@@ -269,7 +269,15 @@ export function useRevenueCat() {
 }
 
 export function isCustomerPremium(customerInfo: CustomerInfo | null) {
-  return Boolean(customerInfo?.entitlements.active[REVENUECAT_ENTITLEMENT_ID])
+  return Boolean(getPremiumEntitlement(customerInfo))
+}
+
+export function getPremiumEntitlement(customerInfo: CustomerInfo | null) {
+  return customerInfo?.entitlements.active[REVENUECAT_ENTITLEMENT_ID] ?? null
+}
+
+export function getSubscriptionManagementUrl(customerInfo: CustomerInfo | null) {
+  return customerInfo?.managementURL ?? null
 }
 
 export function isRevenueCatCancellation(error: unknown) {

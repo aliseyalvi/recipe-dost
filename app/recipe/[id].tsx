@@ -405,7 +405,7 @@ export default function SavedRecipeRoute() {
         })
         if (isPremium) {
           setMediaJobError(
-            new Error('Premium is active. Final server access sync is coming next.')
+            new Error('Premium active. Monthly usage limits will be enforced server-side.')
           )
         } else {
           setShowCreditLimitState(true)
@@ -730,13 +730,18 @@ export default function SavedRecipeRoute() {
           {isAiLimitReached ? (
             <Text selectable style={[typography.caption, { color: colors.warning }]}>
               {isPremium
-                ? 'Premium is active. Final server access sync is coming next.'
+                ? 'Premium active. Monthly usage limits will be enforced server-side.'
                 : 'No free AI slots left. Upgrade to keep generating AI recipes.'}
             </Text>
           ) : isPremium ? (
-            <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-              Premium is active on this device.
-            </Text>
+            <View style={{ gap: spacing.xs }}>
+              <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+                Premium active.
+              </Text>
+              <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+                Monthly usage limits will be enforced server-side.
+              </Text>
+            </View>
           ) : aiAccess ? (
             <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
               {getAiAvailabilityText(aiAccess)}
@@ -799,7 +804,7 @@ export default function SavedRecipeRoute() {
       {aiAccess ? (
         <UsagePill
           label="AI recipes left"
-          value={isPremium ? 'Pro' : getAiRecipesLeftValue(aiAccess)}
+          value={isPremium ? 'Premium active' : getAiRecipesLeftValue(aiAccess)}
         />
       ) : aiAccessQuery.isLoading ? (
         <UsagePill label="AI recipes left" value="-" />
@@ -993,7 +998,7 @@ function getAiRecipesLeftValue(access: {
   }
 
   if (access.premiumActive) {
-    return 'Pro'
+    return 'Premium active'
   }
 
   if (access.reason === 'limit_reached') {

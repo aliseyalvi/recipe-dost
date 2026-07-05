@@ -1,5 +1,16 @@
 # Recipe Dost Milestones
 
+## M22A.1 - Premium UX Polish and Subscription Management
+
+- Status: Completed.
+- Polished the Premium paywall, Settings subscription section, and Source Detail quota copy around the Premium beta plan.
+- Copy now uses `Premium` instead of `Pro`, and Premium is described as 100 AI recipe cards/month rather than unlimited usage.
+- Paywall now shows a clean Premium active state, plan cards for monthly/yearly RevenueCat packages, restore/retry states, and store subscription management when `customerInfo.managementURL` is available.
+- Settings now shows Free and Premium-specific subscription states, including Manage subscription, Restore purchases, Refresh status, and RevenueCat renewal/access dates when available.
+- Source Detail now shows `Premium active` instead of `Pro` and keeps the M22B server-side monthly quota enforcement note visible.
+- Real server-side monthly quota enforcement and Supabase entitlement sync remain M22B/M22B.1.
+- Google Play real subscription testing remains M22C.
+
 ## M22A - RevenueCat Paywall Foundation
 
 - Status: Completed.
