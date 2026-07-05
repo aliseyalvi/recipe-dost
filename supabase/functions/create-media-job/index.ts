@@ -355,6 +355,8 @@ async function handleCreateMediaJobRequest(request: Request) {
           media_job_id: activeJob.data.id,
           status: activeJob.data.status,
           progress: activeJob.data.progress,
+          media_job: activeJob.data,
+          existing_job: true,
           worker_triggered: false,
           processor_mode: getMediaProcessorMode(),
           duplicate_active_job: true,
@@ -393,8 +395,10 @@ async function handleCreateMediaJobRequest(request: Request) {
       progress: 0,
       thumbnail_url: null,
     })
-    .select("id, status, progress")
-    .single<{ id: string; status: string; progress: number }>();
+    .select(
+      "id, recipe_item_id, status, progress, result_recipe_card_id, error_code, created_at, updated_at",
+    )
+    .single<SafeMediaJobSummary>();
 
   if (jobResult.error || !jobResult.data) {
     return errorResponse(
@@ -428,6 +432,7 @@ async function handleCreateMediaJobRequest(request: Request) {
       media_job_id: jobResult.data.id,
       status: jobResult.data.status,
       progress: jobResult.data.progress,
+      media_job: jobResult.data,
       worker_triggered: workerTriggered,
       processor_mode: processorMode,
       ai_generation_access: toSafeAiGenerationAccessMetadata(access),
@@ -442,14 +447,27 @@ async function getActiveMediaJobForRecipe(
 ) {
   return await adminClient
     .from("media_jobs")
-    .select("id, status, progress")
+    .select(
+      "id, recipe_item_id, status, progress, result_recipe_card_id, error_code, created_at, updated_at",
+    )
     .eq("user_id", userId)
     .eq("recipe_item_id", recipeItemId)
     .in("status", ACTIVE_MEDIA_JOB_STATUSES)
     .order("created_at", { ascending: false })
     .limit(1)
-    .maybeSingle<{ id: string; status: string; progress: number }>();
+    .maybeSingle<SafeMediaJobSummary>();
 }
+
+type SafeMediaJobSummary = {
+  id: string;
+  recipe_item_id: string | null;
+  status: string;
+  progress: number;
+  result_recipe_card_id: string | null;
+  error_code: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
 function getAccessBlockError(access: AiGenerationAccess): {
   code: CreateMediaJobErrorCode;

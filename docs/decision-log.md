@@ -1,6 +1,16 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-05
+- M22B.2A fixed hook order regression in recipe detail screen after AI job reconciliation patch.
+- Validation: `npm run typecheck` and `npx expo config --json` passed.
+- M22B.2 AI job state reconciliation, Premium quota display, and AI auto-open fix completed.
+- Fixed: Source Detail now writes the created/existing media job returned by `create-media-job` into the latest media-job query cache immediately, so the UI stays in starting/analyzing instead of resetting to idle Generate.
+- Fixed: Generate AI Recipe has a local start lock and remains disabled while mutation/start lock/active job is present.
+- Fixed: Active jobs discovered on mount/focus mark the flow for auto-open, so completion with `result_recipe_card_id` replaces Source Detail with AI Recipe detail once navigation is ready.
+- Fixed: Premium helper text uses backend monthly quota remaining/used values when available.
+- Decision: M22B.2 adds no migration and does not change save/share/metadata flow.
+- Deployment notes: run `supabase functions deploy create-media-job`.
+- Validation: `npm run typecheck` and `npx expo config --json` passed.
 - M22B RevenueCat backend entitlement sync and AI quota enforcement completed.
 - Decision: M22B uses the existing `user_profiles` RevenueCat mirror fields and adds only optional safe RevenueCat metadata columns (`revenuecat_product_id`, `revenuecat_expires_at`, `revenuecat_store`).
 - Decision: `sync-revenuecat-entitlement` is the authenticated server-side sync path. It reads RevenueCat with `REVENUECAT_API_KEY`, does not trust client premium flags, and returns safe entitlement fields only.

@@ -155,6 +155,17 @@ type CreateMediaJobResponse =
         media_job_id: string
         status: MediaJobStatus
         progress: number
+        media_job?: {
+          id: string
+          recipe_item_id: string | null
+          status: MediaJobStatus
+          progress: number
+          result_recipe_card_id: string | null
+          error_code: string | null
+          created_at: string
+          updated_at: string
+        }
+        existing_job?: boolean
         worker_triggered: boolean
         processor_mode: 'worker' | 'queue' | 'manual' | 'disabled'
         duplicate_active_job?: boolean

@@ -1,5 +1,23 @@
 # Recipe Dost Milestones
 
+## M22B.2A - Recipe Detail Hook Order Hotfix
+
+- Status: Completed; pending device QA.
+- Fixed the Source Detail hook order regression after M22B.2 by keeping start-lock and active-job effects above conditional returns.
+- Preserved Generate AI Recipe start locking, active job progress, completed-job auto-open, Premium quota helper text, and compact failure UI.
+- No Supabase Function, migration, RevenueCat, save/share, worker, or media-processing changes were made.
+
+## M22B.2 - AI Job State Reconciliation and Premium Quota Display
+
+- Status: Completed.
+- Source Detail now attaches to the created or existing media job returned by `create-media-job` immediately, preventing the UI from falling back to idle Generate state while a job is active.
+- Added a local start lock around Generate AI Recipe so the primary CTA stays disabled until an active job is attached or the mutation fails.
+- Live active jobs discovered on mount/focus continue polling and auto-open the AI Recipe detail once completed with a `result_recipe_card_id`.
+- Premium quota helper text now uses backend monthly remaining and used counts when available.
+- Failure UI remains compact and avoids duplicate large Generate AI Recipe buttons.
+- No migration was added for M22B.2.
+- Deploy note: run `supabase functions deploy create-media-job`.
+
 ## M22B - RevenueCat Backend Entitlement Sync and AI Quota Enforcement
 
 - Status: Completed.
