@@ -149,31 +149,41 @@ export default function SettingsRoute() {
     track('restore_started', { source: 'settings' })
 
     try {
-      const customerInfo = await restorePurchases()
-      const premiumActive = isCustomerPremium(customerInfo)
+      const restoredCustomerInfo = await restorePurchases()
+      const refreshedCustomerInfo = await refreshCustomerInfo()
+      const premiumActive = isCustomerPremium(
+        refreshedCustomerInfo ?? restoredCustomerInfo
+      )
 
       track('restore_completed', {
         source: 'settings',
         premium_active: premiumActive,
       })
 
-      if (premiumActive) {
-        await syncPremiumEntitlement()
-        void queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
-        void aiAccessQuery.refetch()
-        Alert.alert('Premium active', 'Your subscription has been restored.')
-        return
-      }
-
+      const synced = await syncPremiumEntitlement()
+      await queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
       const accessResult = await aiAccessQuery.refetch()
       const backendPremiumActive =
         accessResult.data?.plan === 'premium' ||
         accessResult.data?.premiumActive === true
 
+      if (premiumActive) {
+        Alert.alert('Premium active', 'Your subscription has been restored.')
+        return
+      }
+
       if (subscriptionStatus.isPremium || backendPremiumActive) {
         Alert.alert(
           'Premium access active',
           'Premium access is already active on this app profile.'
+        )
+        return
+      }
+
+      if (!synced) {
+        Alert.alert(
+          'Could not refresh subscription status',
+          'Could not refresh subscription status. Your current app access was not changed.'
         )
         return
       }
@@ -233,16 +243,27 @@ export default function SettingsRoute() {
         : customerInfo
 
       if (nextInfo || !isRevenueCatConfigured) {
-        await syncPremiumEntitlement()
+        const synced = await syncPremiumEntitlement()
         await queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
         if (mountedRef.current) {
           await aiAccessQuery.refetch()
         }
+        if (!synced) {
+          Alert.alert(
+            'Could not refresh subscription status',
+            'Could not refresh subscription status. Your current app access was not changed.'
+          )
+          return
+        }
+
         Alert.alert('Premium status refreshed.')
         return
       }
 
-      Alert.alert('Could not refresh Premium status', 'Please try again.')
+      Alert.alert(
+        'Could not refresh subscription status',
+        'Could not refresh subscription status. Your current app access was not changed.'
+      )
     } finally {
       if (mountedRef.current) {
         setIsRefreshingPremium(false)

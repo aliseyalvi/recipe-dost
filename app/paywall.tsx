@@ -49,6 +49,7 @@ export default function PaywallRoute() {
     refreshOfferings,
     purchasePackage,
     restorePurchases,
+    syncPremiumEntitlement,
   } = useRevenueCat()
   const aiAccessQuery = useQuery({
     enabled: Boolean(user?.id),
@@ -245,8 +246,11 @@ export default function PaywallRoute() {
     track('restore_started')
 
     try {
-      const customerInfo = await restorePurchases()
-      const premiumActive = isCustomerPremium(customerInfo)
+      const restoredCustomerInfo = await restorePurchases()
+      const refreshedCustomerInfo = await refreshCustomerInfo()
+      const premiumActive = isCustomerPremium(
+        refreshedCustomerInfo ?? restoredCustomerInfo
+      )
 
       if (premiumActive) {
         track('restore_completed', { premium_active: true })
@@ -258,6 +262,8 @@ export default function PaywallRoute() {
       }
 
       track('restore_completed', { premium_active: false })
+      const synced = await syncPremiumEntitlement()
+      await queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
       const accessResult = await aiAccessQuery.refetch()
       const backendPremiumActive =
         accessResult.data?.plan === 'premium' ||
@@ -267,6 +273,14 @@ export default function PaywallRoute() {
         Alert.alert(
           'Premium access active',
           'Premium access is already active on this app profile.'
+        )
+        return
+      }
+
+      if (!synced) {
+        Alert.alert(
+          'Could not refresh subscription status',
+          'Could not refresh subscription status. Your current app access was not changed.'
         )
         return
       }

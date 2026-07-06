@@ -1,6 +1,14 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-06
+- M22B.3C fixed mounted-state warning risk and added static QA guards for hook order, forbidden copy, unsafe logs, and lifecycle hazards.
+- Decision: App patches should run and report `npm run qa:static`; the guard combines typecheck, Expo config, and lightweight source scans.
+- Validation: `npm run qa:static` passed.
+- M22B.3A prevented Restore/Refresh from incorrectly downgrading Premium on uncertain RevenueCat state. Backend sync now only deactivates Premium on definitive inactive/expired entitlement for the same app user id.
+- Decision: Restore now waits for RevenueCat readiness, restores, refreshes CustomerInfo, runs safe backend sync, and refetches `get-ai-access` before showing Free/no-subscription copy.
+- Decision: `sync-revenuecat-entitlement` returns safe uncertainty/identity/API error codes without modifying existing active backend Premium on malformed, mismatched, missing, or transient RevenueCat responses.
+- Deployment notes: run `supabase functions deploy sync-revenuecat-entitlement`.
+- Validation: `npm run typecheck`, `npx expo config --json`, and `npm run functions:check` passed. `functions:check` emitted existing Deno warnings about ignored `ignoreDeprecations`.
 - M22B.3 completed monetization/access QA hardening. Settings, Recipe Detail, Paywall, and developer access diagnostics now use backend-first access state for Premium/free display and quota copy.
 - Decision: Test Store monetization/access flow is ready for Google Play product setup; M22C is next for real Google Play subscription setup/testing.
 - Decision: Premium remains 100 AI recipes/month, Free remains 3 successful AI recipes total, active jobs reserve slots, failed jobs do not count, and videos remain limited to 2 minutes in beta.

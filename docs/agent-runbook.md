@@ -57,6 +57,12 @@ Before patching, classify the task as one layer:
 
 ## Validation Order
 
+- Required checks after each patch:
+  - App changes: run `npm run qa:static`.
+  - If `qa:static` is unavailable, run `npm run typecheck`.
+  - Config/native changes: run `npx expo config --json`.
+  - Supabase functions: deploy only the changed function.
+  - Codex must not finish an app patch without reporting whether `qa:static` passed.
 - App code touched: `npm run typecheck`
 - Config touched: `npx expo config --json`
 - Supabase function touched: deploy only the changed function.

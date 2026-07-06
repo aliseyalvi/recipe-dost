@@ -2,6 +2,13 @@
 
 Use this checklist for focused human QA. Keep notes short, and do not paste secrets, full source URLs, CDN URLs, cookies, temp paths, or raw worker payloads.
 
+## Static QA Checks
+
+- Command: `npm run qa:static`
+- Catches: TypeScript errors, Expo config regressions, forbidden Free/Premium copy such as Pro/unlimited in app source, unsafe sensitive console logging, obvious RevenueCat lifecycle side effects, committed secret assignments, and Recipe Detail hook-order regressions.
+- Does not catch: real-device RevenueCat/Test Store behavior, network-specific Supabase failures, worker media extraction behavior, visual overlap, or Android share-intent behavior. Use the human scenarios below for those.
+- Pass/fail notes:
+
 ## 1. Normal Launch
 
 - Steps: Open the Android dev build normally with no share intent.

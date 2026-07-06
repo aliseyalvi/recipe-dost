@@ -57,7 +57,7 @@ export function RevenueCatProvider({ children }: Props) {
   const queryClient = useQueryClient()
   const { user } = useAuth()
   const { track } = usePostHog()
-  const mountedRef = useRef(true)
+  const mountedRef = useRef(false)
   const syncInFlightRef = useRef(false)
   const [isConfigured, setIsConfigured] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -91,6 +91,10 @@ export function RevenueCatProvider({ children }: Props) {
     try {
       const synced = await syncRevenueCatPremiumEntitlement()
 
+      if (!mountedRef.current) {
+        return null
+      }
+
       await queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
       track('premium_entitlement_synced', {
         premium_active: synced.revenuecat_entitlement_active,
@@ -112,6 +116,10 @@ export function RevenueCatProvider({ children }: Props) {
 
     try {
       const nextInfo = await Purchases.getCustomerInfo()
+
+      if (!mountedRef.current) {
+        return nextInfo
+      }
 
       setCustomerInfoSafely(nextInfo)
       track('premium_status_refreshed', {
@@ -141,6 +149,10 @@ export function RevenueCatProvider({ children }: Props) {
       const nextOffering =
         offerings.all[REVENUECAT_OFFERING_ID] ?? offerings.current
 
+      if (!mountedRef.current) {
+        return nextOffering
+      }
+
       if (mountedRef.current) {
         setCurrentOffering(nextOffering)
       }
@@ -164,6 +176,10 @@ export function RevenueCatProvider({ children }: Props) {
 
       const result = await Purchases.purchasePackage(selectedPackage)
 
+      if (!mountedRef.current) {
+        return result.customerInfo
+      }
+
       setCustomerInfoSafely(result.customerInfo)
       if (isCustomerPremium(result.customerInfo)) {
         await syncPremiumEntitlement()
@@ -180,6 +196,10 @@ export function RevenueCatProvider({ children }: Props) {
     }
 
     const nextInfo = await Purchases.restorePurchases()
+
+    if (!mountedRef.current) {
+      return nextInfo
+    }
 
     setCustomerInfoSafely(nextInfo)
     if (isCustomerPremium(nextInfo)) {
@@ -225,6 +245,10 @@ export function RevenueCatProvider({ children }: Props) {
           setConfiguredUserId(user.id)
         } else if (configuredAppUserId !== user.id) {
           const loginResult = await Purchases.logIn(user.id)
+
+          if (!isActive || !mountedRef.current) {
+            return
+          }
 
           configuredAppUserId = user.id
           setConfiguredUserId(user.id)

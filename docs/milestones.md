@@ -1,5 +1,22 @@
 # Recipe Dost Milestones
 
+## M22B.3C - Lifecycle Safety and Static QA Guards
+
+- Status: Completed; pending device QA.
+- Tightened RevenueCat provider mounted guards around configure/login, customer info refresh, offerings, purchase, restore, and entitlement sync paths.
+- Added `scripts/qa-static-guards.mjs` plus `qa:guards` and `qa:static` scripts for hook order, forbidden copy, unsafe logs, secret assignments, and lifecycle hazard smoke checks.
+- Agent runbook now requires reporting `npm run qa:static` after app patches.
+- No migration, worker, RevenueCat dashboard/config, save/share, metadata, or media-processing changes were made.
+
+## M22B.3A - Restore and Refresh Downgrade Guard
+
+- Status: Completed; pending device QA.
+- Restore and Refresh no longer downgrade backend Premium on uncertain RevenueCat local state, missing CustomerInfo, malformed API response, identity mismatch, or transient API failure.
+- Backend entitlement sync only writes inactive when RevenueCat returns a definitive inactive/expired Premium entitlement for the same Supabase app user id.
+- Settings and Paywall restore flows refresh CustomerInfo, run safe backend sync, and refetch `get-ai-access` before showing Free/no-subscription copy.
+- Deploy note: run `supabase functions deploy sync-revenuecat-entitlement`.
+- No migration, worker, RevenueCat dashboard/config, save/share, metadata, or media-processing changes were made.
+
 ## M22B.3 - Monetization and Access QA Hardening
 
 - Status: Completed; pending device QA.

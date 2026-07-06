@@ -43,8 +43,9 @@ type SyncRevenueCatErrorCode =
   | "unauthorized"
   | "server_not_configured"
   | "revenuecat_not_configured"
-  | "revenuecat_request_failed"
-  | "revenuecat_response_invalid"
+  | "revenuecat_api_failed"
+  | "revenuecat_identity_mismatch"
+  | "revenuecat_sync_uncertain"
   | "profile_update_failed"
   | "unexpected_revenuecat_sync_error";
 
@@ -143,22 +144,48 @@ async function handleSyncRevenueCatEntitlementRequest(request: Request) {
 
   if (!revenueCatResult.ok) {
     return errorResponse(
-      "revenuecat_request_failed",
+      "revenuecat_api_failed",
       "Could not sync Premium access. Please try again.",
       revenueCatResult.status,
+    );
+  }
+
+  const existingProfile = await getExistingProfile(clients.adminClient, user.id);
+
+  if (!existingProfile.ok) {
+    return errorResponse(
+      "profile_update_failed",
+      "Could not sync Premium access. Please try again.",
+      500,
+    );
+  }
+
+  const existingPremiumActive =
+    existingProfile.data?.revenuecat_entitlement_active === true;
+  const existingAppUserId = getString(
+    existingProfile.data?.revenuecat_app_user_id,
+  );
+
+  if (existingPremiumActive && existingAppUserId && existingAppUserId !== user.id) {
+    return errorResponse(
+      "revenuecat_identity_mismatch",
+      "Could not sync Premium access. Please try again.",
+      409,
     );
   }
 
   const entitlement = getRevenueCatEntitlement(
     revenueCatResult.data,
     entitlementId,
+    user.id,
+    existingPremiumActive,
   );
 
   if (!entitlement.ok) {
     return errorResponse(
-      "revenuecat_response_invalid",
+      entitlement.code,
       "Could not sync Premium access. Please try again.",
-      502,
+      entitlement.status,
     );
   }
 
@@ -223,23 +250,75 @@ async function fetchRevenueCatSubscriber(
   return { ok: true, data: await response.json() as Json };
 }
 
-function getRevenueCatEntitlement(data: Json, entitlementId: string) {
+function getRevenueCatEntitlement(
+  data: Json,
+  entitlementId: string,
+  appUserId: string,
+  existingPremiumActive: boolean,
+) {
   const subscriber = isRecord(data) && isRecord(data.subscriber)
     ? data.subscriber
     : null;
 
   if (!subscriber) {
-    return { ok: false } as const;
+    return {
+      ok: false,
+      code: "revenuecat_sync_uncertain",
+      status: 502,
+    } as const;
   }
 
-  const entitlements = subscriber && isRecord(subscriber.entitlements)
-    ? subscriber.entitlements
-    : {};
+  const originalAppUserId = getString(subscriber.original_app_user_id);
+
+  if (!originalAppUserId && existingPremiumActive) {
+    return {
+      ok: false,
+      code: "revenuecat_identity_mismatch",
+      status: 409,
+    } as const;
+  }
+
+  if (originalAppUserId && originalAppUserId !== appUserId) {
+    return {
+      ok: false,
+      code: "revenuecat_identity_mismatch",
+      status: 409,
+    } as const;
+  }
+
+  if (!isRecord(subscriber.entitlements)) {
+    return {
+      ok: false,
+      code: "revenuecat_sync_uncertain",
+      status: 502,
+    } as const;
+  }
+
+  const entitlements = subscriber.entitlements;
   const entitlement = getRecord(entitlements[entitlementId]);
+
+  if (!entitlement && existingPremiumActive) {
+    return {
+      ok: false,
+      code: "revenuecat_sync_uncertain",
+      status: 409,
+    } as const;
+  }
+
   const productId = getString(entitlement?.product_identifier);
   const expiresAt = getString(entitlement?.expires_date);
+  const expiresAtTime = expiresAt ? new Date(expiresAt).getTime() : null;
+
+  if (expiresAt && Number.isNaN(expiresAtTime)) {
+    return {
+      ok: false,
+      code: "revenuecat_sync_uncertain",
+      status: 502,
+    } as const;
+  }
+
   const active = Boolean(entitlement) &&
-    (!expiresAt || new Date(expiresAt).getTime() > Date.now());
+    (!expiresAtTime || expiresAtTime > Date.now());
   const subscriptions = subscriber && isRecord(subscriber.subscriptions)
     ? subscriber.subscriptions
     : {};
@@ -255,6 +334,35 @@ function getRevenueCatEntitlement(data: Json, entitlementId: string) {
       store: getString(subscription?.store),
     },
   } as const;
+}
+
+async function getExistingProfile(
+  client: EdgeSupabaseClient,
+  userId: string,
+): Promise<
+  | {
+    ok: true;
+    data: {
+      revenuecat_entitlement_active?: unknown;
+      revenuecat_app_user_id?: unknown;
+    } | null;
+  }
+  | { ok: false }
+> {
+  const result = await client
+    .from("user_profiles")
+    .select("revenuecat_entitlement_active,revenuecat_app_user_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (result.error) {
+    return { ok: false };
+  }
+
+  return {
+    ok: true,
+    data: result.data,
+  };
 }
 
 function createSupabaseClients(authHeader: string) {
