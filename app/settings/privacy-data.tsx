@@ -12,7 +12,7 @@ const privacyPoints = [
   'Video processing is temporary when AI generation needs it.',
   'AI processing may send video or text content to AI providers for recipe generation.',
   'We use Supabase for account, app, recipe, and preference data.',
-  'We expect to use RevenueCat for subscriptions later.',
+  'We use RevenueCat for subscription purchase status and subscription management metadata.',
   'You can request deletion of your account and app data.',
 ] as const
 

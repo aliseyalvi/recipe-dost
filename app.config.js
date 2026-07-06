@@ -19,7 +19,8 @@ module.exports = ({ config }) => {
         supportsTablet: true,
       },
       android: {
-        package: "com.recipedost.dev",
+        package: "com.recipedost.app",
+        versionCode: 1,
         softwareKeyboardLayoutMode: "resize",
         adaptiveIcon: {
           foregroundImage: "./assets/images/adaptive-icon.png",

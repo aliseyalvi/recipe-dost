@@ -1,6 +1,15 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-06
+- M22C.2 cleaned subscription docs/config drift before Google Play internal testing.
+- Decision: Launch checklist now uses entitlement `premium`, planned Google Play product IDs, base plan IDs, offering `default`, and the Google Play/RevenueCat subscription_id:base-plan-id note.
+- Decision: Prompt metadata examples now use `premium`; `get-ai-access` remains the only app access/quota source of truth.
+- Decision: Privacy copy now describes RevenueCat as used for subscription purchase status and subscription management metadata.
+- Validation: `npm run qa:static` passed.
+- M22C.1 finalized Android package and Play AAB build readiness for Google Play internal testing.
+- Decision: Production Android package finalized as `com.recipedost.app`.
+- Decision: Added a production EAS profile that builds a Google Play Android App Bundle with `eas build --platform android --profile production`.
+- Validation: `npm run qa:static` and `npx expo config --json >/dev/null` passed.
 - M22B.3C fixed mounted-state warning risk and added static QA guards for hook order, forbidden copy, unsafe logs, and lifecycle hazards.
 - Decision: App patches should run and report `npm run qa:static`; the guard combines typecheck, Expo config, and lightweight source scans.
 - Validation: `npm run qa:static` passed.

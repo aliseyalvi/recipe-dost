@@ -22,9 +22,11 @@
 ## Monetization
 - RevenueCat project created
 - Android app configured
-- Entitlement: pro
-- Products: recipe_dost_monthly, recipe_dost_annual
+- Entitlement: premium
+- Products: recipe_dost_premium_monthly, recipe_dost_premium_yearly
+- Base plans: monthly-autorenewing, yearly-autorenewing
 - Offering: default
+- Note: Google Play/RevenueCat may identify products as subscription_id:base-plan-id.
 - Paywall after first result
 - Purchase tested
 - Restore tested

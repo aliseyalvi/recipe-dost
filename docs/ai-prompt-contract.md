@@ -44,7 +44,7 @@ You convert user-provided public link metadata, captions, manual notes, and ingr
   "app_context": {
     "platform": "android",
     "app_version": "1.0.0",
-    "subscription_status": "free | pro"
+    "subscription_status": "free | premium"
   }
 }
 
