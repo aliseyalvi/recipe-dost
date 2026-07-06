@@ -1,4 +1,10 @@
 import {
+  getNormalizedSubscriptionStatus,
+  getRecipeSubscriptionAvailabilityText,
+} from '@/features/subscription/normalized-subscription-status'
+import { getAiAccessState } from '@/lib/api/ai-access'
+import { useAuth } from '@/providers/auth-provider'
+import {
   getSubscriptionManagementUrl,
   isCustomerPremium,
   isRevenueCatCancellation,
@@ -13,7 +19,7 @@ import { Card } from '@/ui/card'
 import { ErrorState } from '@/ui/error-state'
 import { LoadingState } from '@/ui/loading-state'
 import { Screen } from '@/ui/screen'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { PurchasesPackage } from '@revenuecat/purchases-typescript-internal'
 import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
@@ -30,6 +36,7 @@ const benefits = [
 export default function PaywallRoute() {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const { user } = useAuth()
   const { track } = usePostHog()
   const {
     isConfigured,
@@ -43,11 +50,25 @@ export default function PaywallRoute() {
     purchasePackage,
     restorePurchases,
   } = useRevenueCat()
+  const aiAccessQuery = useQuery({
+    enabled: Boolean(user?.id),
+    queryKey: ['ai-access-state', user?.id, 'paywall'],
+    queryFn: getAiAccessState,
+  })
   const [purchasePackageId, setPurchasePackageId] = useState<string | null>(null)
   const [isRestoring, setIsRestoring] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null)
   const managementUrl = getSubscriptionManagementUrl(customerInfo)
+  const subscriptionStatus = getNormalizedSubscriptionStatus({
+    aiAccess: aiAccessQuery.data,
+    isAiAccessLoading: aiAccessQuery.isLoading,
+    revenueCatState: {
+      isPremium,
+      isLoading,
+    },
+  })
+  const isPremiumActive = subscriptionStatus.isPremium
   const monthlyPackage = useMemo(
     () => packages.find((item) =>
       item.product.identifier === 'recipe_dost_premium_monthly' ||
@@ -87,14 +108,14 @@ export default function PaywallRoute() {
   }, [isConfigured, packages.length, track])
 
   useEffect(() => {
-    if (!isPremium) {
+    if (!isPremiumActive) {
       return
     }
 
     track('premium_paywall_active_viewed', {
       has_management_url: Boolean(managementUrl),
     })
-  }, [isPremium, managementUrl, track])
+  }, [isPremiumActive, managementUrl, track])
 
   useEffect(() => {
     const preferredPackage = yearlyPackage ?? monthlyPackage
@@ -230,12 +251,26 @@ export default function PaywallRoute() {
       if (premiumActive) {
         track('restore_completed', { premium_active: true })
         await queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
+        void aiAccessQuery.refetch()
         Alert.alert('Premium active', 'Your subscription has been restored.')
         router.back()
         return
       }
 
       track('restore_completed', { premium_active: false })
+      const accessResult = await aiAccessQuery.refetch()
+      const backendPremiumActive =
+        accessResult.data?.plan === 'premium' ||
+        accessResult.data?.premiumActive === true
+
+      if (subscriptionStatus.isPremium || backendPremiumActive) {
+        Alert.alert(
+          'Premium access active',
+          'Premium access is already active on this app profile.'
+        )
+        return
+      }
+
       Alert.alert('No active subscription found.')
     } catch {
       track('restore_failed')
@@ -249,15 +284,15 @@ export default function PaywallRoute() {
     <Screen compact>
       <AppHeader
         eyebrow="PREMIUM"
-        title={isPremium ? 'Premium active' : 'Create recipe cards from reels'}
+        title={isPremiumActive ? 'Premium active' : 'Create recipe cards from reels'}
         subtitle={
-          isPremium
-            ? 'Your Premium plan is active on this device.'
+          isPremiumActive
+            ? 'Your Premium access is active on this app profile.'
             : 'Get up to 100 AI recipe cards/month with Urdu + English recipe help.'
         }
       />
 
-      {!isPremium ? (
+      {!isPremiumActive ? (
         <Card tone="warm">
         <View style={{ gap: spacing.sm }}>
           {benefits.map((benefit) => (
@@ -283,25 +318,23 @@ export default function PaywallRoute() {
         </Card>
       ) : null}
 
-      {isPremium ? (
+      {isPremiumActive ? (
         <Card tone="warm">
           <AppBadge label="Premium active" tone="accent" />
           <Text selectable style={[typography.heading, { color: colors.text }]}>
             Premium active
           </Text>
           <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-            Your Premium plan is active. You can create up to 100 AI recipe cards/month.
+            {getRecipeSubscriptionAvailabilityText(subscriptionStatus)}
           </Text>
-          {managementUrl ? (
-            <Button
-              label="Manage / cancel subscription"
-              fullWidth
-              variant="outline"
-              onPress={() => {
-                void handleManageSubscription()
-              }}
-            />
-          ) : null}
+          <Button
+            label="Manage / cancel subscription"
+            fullWidth
+            variant="outline"
+            onPress={() => {
+              void handleManageSubscription()
+            }}
+          />
           <Button
             label="Close"
             fullWidth
@@ -311,7 +344,7 @@ export default function PaywallRoute() {
         </Card>
       ) : null}
 
-      {!isPremium ? (
+      {!isPremiumActive ? (
         !isConfigured ? (
           <ErrorState
             title="Premium plans unavailable"
@@ -398,7 +431,7 @@ export default function PaywallRoute() {
         </Card>
       ) : null}
 
-      {!isPremium ? (
+      {!isPremiumActive ? (
         <Button
           label="Maybe later"
           fullWidth

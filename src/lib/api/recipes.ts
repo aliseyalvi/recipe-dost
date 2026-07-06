@@ -601,7 +601,7 @@ export async function createMediaJob({
         responseError?.message ??
         getFriendlyApiErrorMessage(
           error,
-          'Could not start AI recipe. Please try again.'
+          'Could not generate AI recipe. Please try again.'
         ),
       status: functionError.status,
       causeName: functionError.name ?? undefined,
@@ -612,7 +612,7 @@ export async function createMediaJob({
   if (!data) {
     throw new RecipeApiError({
       code: 'unexpected_media_job_error',
-      message: 'Could not start AI recipe. Please try again.',
+      message: 'Could not generate AI recipe. Please try again.',
     })
   }
 
@@ -1525,17 +1525,17 @@ function getGenerateRecipeCardErrorMessage(code: string, fallback?: string) {
     case 'missing_openai_key':
       return 'AI generation is not configured yet.'
     case 'missing_gemini_key':
-      return 'Gemini generation is not configured yet.'
+      return 'AI generation is not configured yet.'
     case 'gemini_request_failed':
-      return 'Gemini could not create the recipe card right now.'
+      return 'AI service could not create the recipe card right now.'
     case 'gemini_rate_limited':
-      return 'Gemini is busy right now. Please try again in a few minutes.'
+      return 'AI service is busy right now. Please try again in a few minutes.'
     case 'gemini_bad_request':
-      return 'Gemini could not use this request. Please try again.'
+      return 'AI service could not use this request. Please try again.'
     case 'gemini_invalid_key_or_forbidden':
-      return 'Gemini generation is not allowed with the current key.'
+      return 'AI generation is not allowed with the current key.'
     case 'gemini_model_not_found':
-      return 'Gemini model is not available.'
+      return 'AI model is not available.'
     case 'openai_request_failed':
       return 'AI service could not create the recipe card right now.'
     case 'openai_rate_limited':

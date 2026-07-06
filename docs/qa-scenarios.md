@@ -113,3 +113,17 @@ Use this checklist for focused human QA. Keep notes short, and do not paste secr
 - Expected result: Save/share creates or reuses saved links only; no media job or AI credit reservation occurs.
 - Optional SQL/log check: Confirm no new `media_jobs` row exists for save/share-only actions.
 - Pass/fail notes:
+
+## 17. Monetization / Access State
+
+- Steps: Test Free, local RevenueCat syncing, and backend Premium states across Settings, Paywall, Source Detail, and developer diagnostics.
+- Expected result: Backend `get-ai-access` is the source of truth for plan/quota. Premium users see remaining monthly quota, Manage / cancel subscription, Restore, and Refresh. Free users see Upgrade, Restore, and Refresh. No screen flashes Free when backend access is Premium.
+- Optional SQL/log check: Compare visible quota against safe `get-ai-access` fields only; never paste purchase tokens, raw `customerInfo`, secrets, full source URLs, CDN URLs, cookies, or worker payloads.
+- Pass/fail notes:
+
+## 18. Premium / Free Blocked States
+
+- Steps: Exercise free limit, Premium monthly limit, metadata pending, long-video, active-job, and failed-job states from Source Detail.
+- Expected result: Free limit shows paywall/used-free copy, Premium monthly limit says the 100 Premium recipes were used this month, metadata pending shows preparing-details copy, long video shows the 2-minute beta limit, active jobs stay in progress UI, and failed jobs show one compact friendly retry state.
+- Optional SQL/log check: Confirm successful jobs count, active jobs reserve slots, and failed jobs do not count.
+- Pass/fail notes:

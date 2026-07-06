@@ -165,7 +165,12 @@ export default function SettingsRoute() {
         return
       }
 
-      if (subscriptionStatus.isPremium) {
+      const accessResult = await aiAccessQuery.refetch()
+      const backendPremiumActive =
+        accessResult.data?.plan === 'premium' ||
+        accessResult.data?.premiumActive === true
+
+      if (subscriptionStatus.isPremium || backendPremiumActive) {
         Alert.alert(
           'Premium access active',
           'Premium access is already active on this app profile.'

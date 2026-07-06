@@ -1,5 +1,15 @@
 # Recipe Dost Milestones
 
+## M22B.3 - Monetization and Access QA Hardening
+
+- Status: Completed; pending device QA.
+- Final consistency pass before Google Play subscription setup: Settings, Recipe Detail, Paywall, and developer diagnostics use backend-first access/quota state.
+- Premium quota remains 100 AI recipes/month, Free remains 3 successful AI recipes total, active jobs reserve slots, and failed jobs do not count.
+- Paywall active Premium state now reflects backend access and quota when available while RevenueCat local state remains for purchase, restore, and manage/cancel actions.
+- Test Store monetization/access flow is ready for M22C Google Play real subscription setup/testing.
+- Remaining limitation: videos are still limited to 2 minutes in beta.
+- No migration, worker, RevenueCat dashboard/config, save/share, metadata, or media-processing changes were made.
+
 ## M22B.2E - AI Failure Copy and Subscription Actions
 
 - Status: Completed; pending device QA.

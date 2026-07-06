@@ -1,5 +1,11 @@
 # Recipe Dost Decision Log
 
+## 2026-07-06
+- M22B.3 completed monetization/access QA hardening. Settings, Recipe Detail, Paywall, and developer access diagnostics now use backend-first access state for Premium/free display and quota copy.
+- Decision: Test Store monetization/access flow is ready for Google Play product setup; M22C is next for real Google Play subscription setup/testing.
+- Decision: Premium remains 100 AI recipes/month, Free remains 3 successful AI recipes total, active jobs reserve slots, failed jobs do not count, and videos remain limited to 2 minutes in beta.
+- Validation: `npm run typecheck` and `npx expo config --json` passed.
+
 ## 2026-07-05
 - M22B.2E improved AI extraction failure copy and made Subscription actions plan-aware. Premium users now see Manage / cancel subscription, Restore, and Refresh actions. Cancellation opens store management when managementURL is available.
 - Validation: `npm run typecheck` and `npx expo config --json` passed.
