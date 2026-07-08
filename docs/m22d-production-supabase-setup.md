@@ -9,6 +9,63 @@ This is the production setup plan for Recipe Dost before RevenueCat and Google P
 - Production must be a separate Supabase project with a different project ref, URL, anon key, service-role key, and Edge Function secret set.
 - Never copy the development service-role key, worker shared secret, RevenueCat secret API key, AI provider key, or anon key into production.
 
+## M22D.2A Status
+
+Production Supabase project creation and database migration setup is complete based on the manual operator results provided on 2026-07-08.
+
+- Production project ref: `cjlvkagkcfswsycsblfw`
+- Migrations applied: yes
+- SQL smoke tests passed: yes
+- Reported errors: none
+- Edge Functions deployed: no, intentionally deferred
+- Production Edge Function secrets synced: no, intentionally deferred until production worker and RevenueCat values exist
+- Real production env files changed by Codex: no
+
+Remaining blockers before RevenueCat and Google Play Billing production work:
+
+- M22D.3 production worker setup.
+- Production worker URL and shared secret.
+- Production RevenueCat secret API key and Android public SDK key.
+- Local-only `env/production.env` filled with production values only.
+- Production Supabase Edge Function secrets synced after production values exist.
+- Production Edge Functions deployed and smoke-tested.
+
+Next milestone: M22D.3 production worker setup.
+
+## M22D.5F Production Backend/Worker Smoke Completion
+
+Status date: 2026-07-08.
+
+Production backend and worker smoke testing is complete based on the manual operator results provided on 2026-07-08.
+
+- Production Supabase project ref: `cjlvkagkcfswsycsblfw`
+- Production worker service: `recipe-dost-media-worker-prod`
+- Production worker env group: `recipe-dost-worker-prod`
+- Production app loaded against production Supabase: yes
+- Anonymous auth works in production: yes
+- YouTube AI recipe generation works end to end: yes
+- Instagram AI recipe generation works end to end: yes
+- TikTok AI recipe generation works end to end: yes
+- Production app, Supabase functions, Supabase DB, Render worker, and Gemini pipeline are working end to end: yes
+- Real production env files changed by Codex: no
+
+Root cause resolved during M22D.5E: the production Render env was clean, but the worker Docker image did not include `config/worker.production.json`, so the worker fell back to runtime defaults. The worker Dockerfile now copies `config/`, and production config loads from `/service/config`.
+
+Validated production worker health after the fix included:
+
+- `production_config_loaded=true`
+- `worker_execution_mode=queue`
+- `process_job_mode=queue_wake_compatibility`
+- `enable_unified_ytdlp_stream_extractor=true`
+- `enable_instagram_cookies=true`
+- `enable_ytdlp_cookies=true`
+- `max_video_duration_seconds=120`
+- `raw_url_logging_enabled=false`
+
+Remaining blocker before store monetization release work: RevenueCat and Google Play subscription setup.
+
+Next milestone: M22C.3 RevenueCat + Google Play billing setup.
+
 ## Production Project Settings
 
 Create a new Supabase project for production in the Supabase dashboard.
@@ -312,10 +369,9 @@ Confirm the linked project is development before continuing normal dev deploys.
 14. Run safe function smoke tests.
 15. Relink the local CLI back to development.
 
-## Blockers Before RevenueCat Production
+## Remaining Blocker Before RevenueCat Production
 
-- Production Supabase project ref and keys do not exist in committed docs by design.
-- Production worker URL/shared secret must be created separately.
-- Production RevenueCat secret API key and Android public SDK key must be created separately.
-- Production Google Play Billing setup remains paused until this Supabase setup is complete.
-- Do not change quota/access logic, the `premium` entitlement, RevenueCat offering `default`, or Test Store fallback as part of this setup.
+- Production Supabase, Edge Functions, Render worker, and app smoke tests are complete for anonymous auth plus YouTube, Instagram, and TikTok AI recipe generation.
+- Production RevenueCat secret API key and Android public SDK key must still be created/configured.
+- Production Google Play Billing subscription products must still be configured.
+- Do not change quota/access logic, the `premium` entitlement, RevenueCat offering `default`, or Test Store fallback as part of the billing setup.

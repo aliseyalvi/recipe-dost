@@ -1,6 +1,17 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-08
+- M22D.5F logged production backend/worker smoke-test completion.
+- Decision: Production app, production Supabase, deployed Edge Functions, Render worker `recipe-dost-media-worker-prod`, and Gemini pipeline are now validated end to end for anonymous auth plus YouTube, Instagram, and TikTok AI recipe generation.
+- Decision: The final production worker blocker was config packaging, not Render env override: the worker Docker image did not include `config/worker.production.json`, so it fell back to defaults until the worker Dockerfile copied `config/` and loaded production config from `/service/config`.
+- Remaining blocker: RevenueCat and Google Play subscription setup.
+- Next milestone: M22C.3 RevenueCat + Google Play billing setup.
+- Validation: `npm run qa:static` passed.
+- M22D.2A logged production Supabase project creation and migration smoke-test results.
+- Decision: Production Supabase project `cjlvkagkcfswsycsblfw` is safe to document as the production project ref; no secrets, env files, production data changes, or Edge Function deploys were performed by Codex.
+- Decision: Production database migrations are marked applied and SQL smoke tests are marked passed based on manual operator results; M22D.3 production worker setup is the next milestone.
+- Remaining blockers: production worker URL/shared secret, production RevenueCat values, local-only production env creation, production Supabase secret sync, production Edge Function deploy/smoke tests, and Google Play Billing production setup.
+- Validation: `npm run qa:static` passed.
 - M22D.2 audited Supabase production readiness and added the production setup runbook.
 - Decision: Production Supabase must be a separate project from development project `xvsiuwjidmkdqzkswoki`, with anonymous auth enabled, PostgreSQL 17, migrations applied in committed order, and Edge Function secrets synced only from local-only production env values.
 - Decision: No storage bucket is required for the current production setup; any future bucket must come with a dedicated migration and policy review.

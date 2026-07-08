@@ -1,6 +1,6 @@
 # M22D Environment Separation
 
-M22C Google Play and RevenueCat production setup is paused until Recipe Dost has clean development and production environment separation. The existing Supabase project `xvsiuwjidmkdqzkswoki` is treated as development. A new production Supabase project will be created later.
+M22C Google Play and RevenueCat production setup was paused until Recipe Dost had clean development and production environment separation. The existing Supabase project `xvsiuwjidmkdqzkswoki` is treated as development. The production Supabase project `cjlvkagkcfswsycsblfw` has been created, database migrations passed SQL smoke tests, and production app/backend/worker smoke tests passed for YouTube, Instagram, and TikTok AI recipe generation. RevenueCat production values and Google Play Billing setup remain pending.
 
 ## Source Of Truth
 
@@ -181,12 +181,10 @@ Do not migrate stale public limit envs (`EXPO_PUBLIC_FREE_SAVED_LINK_LIMIT`, `EX
 
 ## M22D Next Steps
 
-- Review the generated `env/development.env` without committing it.
-- Use `npm run dev:android` for local development.
-- Use `npm run build:dev` or `npm run build:preview` for development deployment builds.
-- Validate and dry-run sync for development when needed.
-- Create the production Supabase project.
-- Create production worker environment values.
-- Create `env/production.env` only with production values.
-- Dry-run EAS and Supabase sync for both environments.
-- Resume Google Play and RevenueCat production setup after production Supabase and worker envs exist.
+- Production Supabase project creation and migrations are complete.
+- Production app/backend/worker smoke tests are complete for anonymous auth plus YouTube, Instagram, and TikTok AI recipe generation.
+- Production worker config loading issue is resolved: the worker Docker image now includes `config/`, and production config loads from `/service/config`.
+- Keep real env files local-only and gitignored; do not commit production secrets.
+- Resume Google Play and RevenueCat production setup.
+
+Next milestone: M22C.3 RevenueCat + Google Play billing setup.

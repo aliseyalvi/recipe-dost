@@ -1,5 +1,23 @@
 # Recipe Dost Milestones
 
+## M22D.5F - Production Backend/Worker Smoke Test Completion
+
+- Status: Completed.
+- Production Supabase ref `cjlvkagkcfswsycsblfw`, production Render worker `recipe-dost-media-worker-prod`, production Edge Functions, and the production app are working end to end.
+- Anonymous auth works against production Supabase.
+- YouTube, Instagram, and TikTok AI recipe generation all passed production smoke testing through the app, Supabase DB/functions, Render worker, and Gemini pipeline.
+- Final root cause: production Render env was clean, but the worker Docker image did not include `config/worker.production.json`, so the worker fell back to defaults.
+- Final fix: worker Dockerfile now copies `config/`, and production config loads from `/service/config`.
+- Remaining blocker: RevenueCat and Google Play subscription setup.
+- Next milestone: M22C.3 RevenueCat + Google Play billing setup.
+
+## M22C.3 - RevenueCat + Google Play Billing Setup
+
+- Status: Next.
+- Configure production RevenueCat and Google Play subscription products for the existing `premium` entitlement.
+- Preserve the RevenueCat Test Store fallback for development/testing.
+- Do not change quota/access logic while setting up store billing.
+
 ## M22B.3C - Lifecycle Safety and Static QA Guards
 
 - Status: Completed; pending device QA.
