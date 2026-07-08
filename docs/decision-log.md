@@ -1,6 +1,11 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-08
+- M22D.2 audited Supabase production readiness and added the production setup runbook.
+- Decision: Production Supabase must be a separate project from development project `xvsiuwjidmkdqzkswoki`, with anonymous auth enabled, PostgreSQL 17, migrations applied in committed order, and Edge Function secrets synced only from local-only production env values.
+- Decision: No storage bucket is required for the current production setup; any future bucket must come with a dedicated migration and policy review.
+- Decision: `get-ai-access` and `sync-revenuecat-entitlement` are required production functions even though they do not yet have explicit blocks in `supabase/config.toml`; deploy them explicitly with JWT verification enabled.
+- Validation: `npm run qa:static`, `node scripts/env/validate-env.mjs development`, and `npx supabase --version` passed. Supabase CLI version reported `2.109.1`; the sandboxed `npx` attempt failed DNS resolution, then the approved network run succeeded.
 - M22D.1A added explicit app env loading and guarded build scripts.
 - Decision: Custom env files are loaded through `scripts/env/run-with-env.mjs`; local Android development should use `npm run dev:android` instead of direct `npx expo start`.
 - Decision: Development build scripts validate, sync EAS/Supabase env from the canonical env file, and then run EAS build through the env loader.
