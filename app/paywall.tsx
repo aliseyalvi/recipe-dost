@@ -91,6 +91,8 @@ export default function PaywallRoute() {
     (item): item is PurchasesPackage => Boolean(item)
   )
   const hasPackages = availablePackages.length > 0
+  const plansUnavailable =
+    !isPremiumActive && isConfigured && !isLoading && !hasPackages
   const selectedPackage =
     availablePackages.find((item) => item.identifier === selectedPackageId) ??
     yearlyPackage ??
@@ -117,6 +119,17 @@ export default function PaywallRoute() {
       has_management_url: Boolean(managementUrl),
     })
   }, [isPremiumActive, managementUrl, track])
+
+  useEffect(() => {
+    if (!plansUnavailable) {
+      return
+    }
+
+    track('paywall_plans_unavailable', {
+      configured: isConfigured,
+      has_revenuecat_error: Boolean(error),
+    })
+  }, [error, isConfigured, plansUnavailable, track])
 
   useEffect(() => {
     const preferredPackage = yearlyPackage ?? monthlyPackage
@@ -361,8 +374,8 @@ export default function PaywallRoute() {
       {!isPremiumActive ? (
         !isConfigured ? (
           <ErrorState
-            title="Premium plans unavailable"
-            message="Premium plans are not available right now. Please try again later."
+            title="Plans unavailable right now"
+            message="We could not load subscription plans. Please try again in a moment."
             retryLabel="Retry"
             onRetry={() => {
               void handleRetry()
@@ -370,13 +383,17 @@ export default function PaywallRoute() {
           />
         ) : isLoading ? (
           <LoadingState message="Loading Premium plans..." />
-        ) : !hasPackages ? (
+        ) : plansUnavailable ? (
           <ErrorState
-            title="Premium plans unavailable"
-            message={error ?? 'Premium plans are not available right now. Please try again later.'}
+            title="Plans unavailable right now"
+            message={error ?? 'We could not load subscription plans. Restore purchases still works if you already have Premium.'}
             retryLabel="Retry"
             onRetry={() => {
               void handleRetry()
+            }}
+            secondaryActionLabel={isRestoring ? 'Restoring...' : 'Restore purchases'}
+            onSecondaryAction={() => {
+              void handleRestore()
             }}
           />
         ) : (

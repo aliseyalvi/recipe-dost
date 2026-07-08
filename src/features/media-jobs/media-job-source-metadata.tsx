@@ -1,3 +1,4 @@
+import { shouldShowCustomDevTools } from '@/features/dev-tools/dev-tools-visibility'
 import { RecipePlatform } from '@/features/recipe-draft/types'
 import { MediaJobSourceMetadata } from '@/lib/api/recipes'
 import { colors, spacing, typography } from '@/theme'
@@ -56,7 +57,9 @@ export function MediaJobSourceMetadataSummary({
         {authorLabel ? <AppBadge label={`Creator: ${authorLabel}`} /> : null}
         {sizeLabel ? <AppBadge label={sizeLabel} /> : null}
         {resolverLabel ? <AppBadge label={`Resolver: ${resolverLabel}`} /> : null}
-        {isMockResult && __DEV__ ? <AppBadge label="Mock recipe result" /> : null}
+        {isMockResult && shouldShowCustomDevTools() ? (
+          <AppBadge label="Mock recipe result" />
+        ) : null}
       </View>
 
       {sourceTitle ? (

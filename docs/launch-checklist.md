@@ -27,6 +27,10 @@
 - Base plans: monthly-autorenewing, yearly-autorenewing
 - Offering: default
 - Note: Google Play/RevenueCat may identify products as subscription_id:base-plan-id.
+- Production uses EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY with a real Google Play-backed RevenueCat Android public SDK key
+- Production env validation rejects RevenueCat Test Store keys
+- Development/Test Store keys are used only in development and only after Test Store products are registered manually in RevenueCat
+- Paywall shows "Plans unavailable right now" if offerings/packages are empty and keeps Restore purchases visible
 - Paywall after first result
 - Purchase tested
 - Restore tested

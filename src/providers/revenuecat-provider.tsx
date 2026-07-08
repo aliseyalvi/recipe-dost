@@ -50,6 +50,9 @@ type Props = {
 
 const RevenueCatContext = createContext<RevenueCatContextValue | null>(null)
 
+const PLANS_UNAVAILABLE_MESSAGE =
+  'Plans unavailable right now. Please try again later.'
+
 let didConfigurePurchases = false
 let configuredAppUserId: string | null = null
 
@@ -160,13 +163,14 @@ export function RevenueCatProvider({ children }: Props) {
       return nextOffering
     } catch {
       if (mountedRef.current) {
-        setError('Premium plans are not available right now. Please try again later.')
+        setError(PLANS_UNAVAILABLE_MESSAGE)
         setCurrentOffering(null)
+        track('premium_offerings_refresh_failed')
       }
 
       return null
     }
-  }, [isConfigured])
+  }, [isConfigured, track])
 
   const purchasePackage = useCallback(
     async (selectedPackage: PurchasesPackage) => {
@@ -265,24 +269,38 @@ export function RevenueCatProvider({ children }: Props) {
 
         setIsConfigured(true)
 
-        const [nextInfo, offerings] = await Promise.all([
-          Purchases.getCustomerInfo(),
-          Purchases.getOfferings(),
-        ])
+        const nextInfo = await Purchases.getCustomerInfo()
 
         if (!isActive || !mountedRef.current) {
           return
         }
 
         setCustomerInfo(nextInfo)
-        setCurrentOffering(
-          offerings.all[REVENUECAT_OFFERING_ID] ?? offerings.current
-        )
         track('premium_status_refreshed', {
           is_premium: isCustomerPremium(nextInfo),
         })
         if (isCustomerPremium(nextInfo)) {
           await syncPremiumEntitlement()
+        }
+
+        try {
+          const offerings = await Purchases.getOfferings()
+
+          if (!isActive || !mountedRef.current) {
+            return
+          }
+
+          setCurrentOffering(
+            offerings.all[REVENUECAT_OFFERING_ID] ?? offerings.current
+          )
+        } catch {
+          if (!isActive || !mountedRef.current) {
+            return
+          }
+
+          setCurrentOffering(null)
+          setError(PLANS_UNAVAILABLE_MESSAGE)
+          track('premium_offerings_bootstrap_failed')
         }
       } catch {
         if (isActive && mountedRef.current) {
@@ -290,8 +308,10 @@ export function RevenueCatProvider({ children }: Props) {
           if (!didReachConfiguredSdk) {
             setCustomerInfo(null)
           }
-          setCurrentOffering(null)
-          setError('Premium plans are not available right now. Please try again later.')
+          if (!didReachConfiguredSdk) {
+            setCurrentOffering(null)
+          }
+          setError(PLANS_UNAVAILABLE_MESSAGE)
         }
       } finally {
         if (isActive && mountedRef.current) {

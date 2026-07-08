@@ -5,6 +5,7 @@ import {
   saveCurrentDevIdentity,
   switchToSavedDevIdentity,
 } from '@/features/dev-tools/dev-identities'
+import { shouldShowCustomDevTools } from '@/features/dev-tools/dev-tools-visibility'
 import { getNormalizedSubscriptionStatus } from '@/features/subscription/normalized-subscription-status'
 import { getAiAccessState } from '@/lib/api/ai-access'
 import type { AiAccessState } from '@/lib/api/ai-access'
@@ -20,15 +21,16 @@ import { useEffect, useMemo, useState } from 'react'
 import { Text, View } from 'react-native'
 
 export function shouldShowDevIdentityPanel(access?: AiAccessState | null) {
-  return (
-    __DEV__ ||
-    access?.role === 'admin' ||
-    access?.role === 'tester' ||
-    access?.isTestUser === true
-  )
+  void access
+
+  return shouldShowCustomDevTools()
 }
 
 export function DevIdentityPanel() {
+  if (!shouldShowCustomDevTools()) {
+    return null
+  }
+
   const router = useRouter()
   const queryClient = useQueryClient()
   const { user } = useAuth()

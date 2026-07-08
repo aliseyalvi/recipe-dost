@@ -176,6 +176,22 @@ function validateProductionValues(env) {
   return findings;
 }
 
+function validateRevenueCatStoreKeys(env, environment, useExample) {
+  if (useExample || environment !== "production") {
+    return [];
+  }
+
+  const androidApiKey = env.get("EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY") ?? "";
+
+  return isRevenueCatTestStoreKey(androidApiKey)
+    ? ["Production env must not use a RevenueCat Test Store Android API key."]
+    : [];
+}
+
+function isRevenueCatTestStoreKey(value) {
+  return String(value).trim().toLowerCase().startsWith("test_");
+}
+
 function validateDeprecatedPublicKeys(env) {
   return DEPRECATED_PUBLIC_KEYS.filter((key) => env.has(key));
 }
@@ -208,6 +224,11 @@ const deprecatedPublicKeys = validateDeprecatedPublicKeys(env);
 const placeholderKeys = validatePlaceholderValues(env, requiredKeys, useExample);
 const productionFindings =
   environment === "production" ? validateProductionValues(env) : [];
+const revenueCatFindings = validateRevenueCatStoreKeys(
+  env,
+  environment,
+  useExample,
+);
 
 console.log(
   `Validating ${basename(path)} for ${environment}${useExample ? " template" : ""}`,
@@ -224,7 +245,8 @@ if (
   forbiddenPublicSecrets.length ||
   deprecatedPublicKeys.length ||
   placeholderKeys.length ||
-  productionFindings.length
+  productionFindings.length ||
+  revenueCatFindings.length
 ) {
   console.error("\nEnv validation failed.");
   for (const error of errors) {
@@ -244,6 +266,9 @@ if (
   }
   for (const finding of productionFindings) {
     console.error(`- Production env contains obvious dev value: ${finding}`);
+  }
+  for (const finding of revenueCatFindings) {
+    console.error(`- ${finding}`);
   }
   process.exit(1);
 }

@@ -1,6 +1,12 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-08
+- M22C.3A audited RevenueCat environment sanity and paywall readiness before Google Play setup.
+- Decision: `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY` remains canonical; old `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` remains fallback-only in app code and is rejected from canonical env files by validation.
+- Decision: Production env validation now rejects RevenueCat Test Store Android public SDK keys, while development may use Test Store keys only for documented local/Test Store testing.
+- Decision: Paywall offerings failures now show "Plans unavailable right now" with Retry and Restore purchases, while RevenueCat customer status and backend `get-ai-access` remain the access source of truth.
+- Decision: Entitlement remains `premium`, offering remains `default`, package IDs and quota/access logic were not changed, and Test Store fallback copy stays in place.
+- Validation: `npm run qa:static` and `node scripts/env/validate-env.mjs development` passed; `node scripts/env/validate-env.mjs production` failed as intended on the Test Store key guard until the production RevenueCat key is replaced manually.
 - M22D.5F logged production backend/worker smoke-test completion.
 - Decision: Production app, production Supabase, deployed Edge Functions, Render worker `recipe-dost-media-worker-prod`, and Gemini pipeline are now validated end to end for anonymous auth plus YouTube, Instagram, and TikTok AI recipe generation.
 - Decision: The final production worker blocker was config packaging, not Render env override: the worker Docker image did not include `config/worker.production.json`, so it fell back to defaults until the worker Dockerfile copied `config/` and loaded production config from `/service/config`.

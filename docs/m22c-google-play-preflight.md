@@ -1,6 +1,6 @@
 # M22C Google Play Subscription Preflight Audit
 
-Date: 2026-07-06
+Date: 2026-07-08
 
 ## Scope
 
@@ -8,7 +8,7 @@ Audit-only pass for moving Recipe Dost from RevenueCat Test Store testing toward
 
 ## Summary
 
-Status: M22C.1 package/AAB config readiness patched.
+Status: M22C.3A RevenueCat environment sanity and paywall readiness patched.
 
 The app-side RevenueCat and backend access model is mostly ready: Supabase `user.id` is used as the RevenueCat app user ID, the entitlement remains `premium`, Test Store management fallback copy still exists, paywall plans come from RevenueCat offerings, and `get-ai-access` remains the app-facing source of truth for access/quota.
 
@@ -30,6 +30,15 @@ M22C.2 cleanup:
 - Stale launch checklist subscription docs updated to entitlement `premium`, planned product IDs, base plan IDs, offering `default`, and the Google Play/RevenueCat subscription_id:base-plan-id note.
 - Prompt metadata examples now use `premium` instead of old plan naming. This metadata remains descriptive only and must not grant access.
 - Settings privacy copy now says Recipe Dost uses RevenueCat for subscription purchase status and subscription management metadata.
+
+M22C.3A hardening:
+
+- `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY` remains the canonical mobile RevenueCat Android public SDK key.
+- Old `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` remains an app-code fallback only and is rejected by env validation when present in canonical env files.
+- Production env validation now fails if `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY` is a RevenueCat Test Store key.
+- Development may use a RevenueCat Test Store key only for local/Test Store testing, as documented in the development env template.
+- Paywall bootstrap now keeps RevenueCat customer status separate from offerings loading, so empty/missing offerings show a friendly unavailable state instead of blocking restore/status flows.
+- The duplicate `Purchases.configure` warning was not reproduced from multiple app providers. App code still has one `RevenueCatProvider` and a module-level configure guard; the remaining warning is documented as likely dev reload/native SDK persistence unless it appears in a clean release build.
 
 ## Current Android Package ID
 
@@ -73,6 +82,7 @@ Mobile/public config:
 - `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY`
 - `EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID`, defaults to `premium`
 - `EXPO_PUBLIC_REVENUECAT_OFFERING_ID`, defaults to `default`
+- Deprecated fallback only: `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY`
 
 Backend/Supabase Edge Function config:
 
@@ -82,6 +92,10 @@ Backend/Supabase Edge Function config:
 Android-specific RevenueCat key support: yes. `src/config/revenuecat.ts` exposes `REVENUECAT_ANDROID_API_KEY`, and `src/providers/revenuecat-provider.tsx` configures Purchases only on Android with that key.
 
 iOS-specific RevenueCat key support: no, and that is acceptable for the current Android-first milestone.
+
+Production safety: `scripts/env/validate-env.mjs production` rejects RevenueCat Test Store Android public SDK keys. Use a real Google Play-backed RevenueCat Android public SDK key for production builds.
+
+Development safety: `env/development.example.env` documents that a RevenueCat Test Store key is allowed only for development/Test Store testing. Register Test Store products manually in RevenueCat when using that key.
 
 ## Entitlement and Product Readiness
 
@@ -112,7 +126,7 @@ Readiness: planned product IDs are already supported in the app, but console set
 
 ## Test Store Fallback
 
-Test Store fallback still exists.
+Test Store fallback still exists and was not removed.
 
 Files:
 
@@ -148,10 +162,11 @@ Offering/package empty states are handled.
 
 Evidence:
 
-- Not configured: `Premium plans unavailable` with Retry.
+- Not configured: `Plans unavailable right now` with Retry.
 - Loading: `Loading Premium plans...`.
-- Empty packages: `Premium plans unavailable` with Retry.
-- Provider errors set a friendly `Premium plans are not available right now` message.
+- Empty packages: `Plans unavailable right now` with Retry and Restore purchases.
+- Provider offerings errors set a friendly `Plans unavailable right now` message.
+- Provider startup loads `CustomerInfo` separately from offerings, so an empty/missing offering does not prevent local entitlement status refresh or backend sync.
 
 Readiness: pass, assuming RevenueCat console offering/package setup is correct.
 
@@ -245,11 +260,13 @@ Recommended hardening after console setup is verified:
 - `app/paywall.tsx`: decide whether to keep or remove legacy product fallbacks `recipe_dost_monthly` and `recipe_dost_annual`. Keeping them is useful for Test Store/legacy fallback; removing them reduces drift once Google Play products are confirmed.
 - `scripts/qa-static-guards.mjs`: optionally add a config/docs drift guard for `premium`, the two planned Google Play product IDs, and old plan-name absence in release checklist docs.
 - Done in M22C.2: `docs/ai-prompt-contract.md` prompt metadata cleanup.
+- Done in M22C.3A: `scripts/env/validate-env.mjs` rejects Test Store keys in production.
+- Done in M22C.3A: `app/paywall.tsx` keeps Restore purchases visible when configured offerings/packages are unavailable.
+- Done in M22C.3A: `src/providers/revenuecat-provider.tsx` decouples customer-info bootstrap from offerings bootstrap.
 
 No patch recommended:
 
 - `src/config/revenuecat.ts`: current env var names and `premium`/`default` fallbacks are correct for M22C.
-- `src/providers/revenuecat-provider.tsx`: Android key support, Supabase appUserID, offerings fetch, and sync hooks are in place.
 - `src/lib/api/ai-access.ts`: source-of-truth access call is in place.
 - `src/lib/api/premium-entitlement.ts`: mobile sync call site is in place.
 - `supabase/functions/sync-revenuecat-entitlement/index.ts`: server-side identity and uncertainty safeguards are in place for the audited flow.
@@ -281,7 +298,7 @@ RevenueCat Console:
 6. Attach both products to the `premium` entitlement.
 7. Confirm offering key remains `default` or update `EXPO_PUBLIC_REVENUECAT_OFFERING_ID` consistently.
 8. Add monthly/yearly packages to the active offering.
-9. Copy the Android public SDK key into the app build environment as `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY`.
+9. Copy the real Android public SDK key into the production app build environment as `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY`; do not use a Test Store key for production.
 10. Verify a real Google Play internal-test purchase produces an active `premium` entitlement for the Supabase user ID shown in Settings developer tools.
 
 Supabase / EAS environment:
@@ -303,3 +320,9 @@ Passed in M22C.1:
 Passed in M22C.2:
 
 - `npm run qa:static`
+
+M22C.3A validation:
+
+- `npm run qa:static`
+- `node scripts/env/validate-env.mjs development`
+- `node scripts/env/validate-env.mjs production` failed as intended because the local production env still uses a RevenueCat Test Store Android public SDK key. Do not edit the real env file in code review; replace it manually with the real Google Play-backed RevenueCat Android public SDK key before production build.

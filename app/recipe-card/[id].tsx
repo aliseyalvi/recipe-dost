@@ -3,6 +3,7 @@ import {
   useRecipeContentLanguage,
 } from '@/features/language/content-language'
 import { ContentLanguageControl } from '@/features/language/content-language-control'
+import { shouldShowCustomDevTools } from '@/features/dev-tools/dev-tools-visibility'
 import {
   hasUrduScript,
   selectLocalizedText,
@@ -354,7 +355,7 @@ export default function RecipeCardResultRoute() {
       <StorageSafetySection recipeCard={recipeCard} language={contentLanguage} />
       <MissingInfoSection recipeCard={recipeCard} language={contentLanguage} />
 
-      {__DEV__ ? (
+      {shouldShowCustomDevTools() ? (
         <Card tone="muted">
           <Text selectable style={[typography.heading, { color: colors.text }]}>
             Development details
