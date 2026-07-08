@@ -1,6 +1,11 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-08
+- M22D.1A added explicit app env loading and guarded build scripts.
+- Decision: Custom env files are loaded through `scripts/env/run-with-env.mjs`; local Android development should use `npm run dev:android` instead of direct `npx expo start`.
+- Decision: Development build scripts validate, sync EAS/Supabase env from the canonical env file, and then run EAS build through the env loader.
+- Decision: Production deployment/build scripts are guarded until `env/production.env` exists and refuse the known development Supabase project ref.
+- Validation: `npm run qa:static`, `node scripts/env/validate-env.mjs development`, `node scripts/env/run-with-env.mjs development -- npx expo config --json >/dev/null`, and `node scripts/env/deploy-app-env.mjs development --dry-run` passed. Production dry-run guard stopped safely because `env/production.env` is absent.
 - M22D.0D rationalized the app repo env/config source of truth before migrating real production values.
 - Decision: Canonical mobile env remains limited to actual runtime/build variables; PostHog and Sentry values found in old env candidates stay deprecated until real providers read them.
 - Decision: Supabase sync now has required secrets/config plus optional present allowlisted values, while platform-provided Supabase keys and legacy provider branches are not copied into mobile env.

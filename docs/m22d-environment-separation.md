@@ -79,6 +79,24 @@ The env validator fails if production envs contain obvious development values su
 
 `eas.json` sets `APP_ENV` and `APP_VARIANT` per profile. Production remains an Android App Bundle. Development and preview remain internal APK builds.
 
+## Local App Launch
+
+Do not run `npx expo start` directly for Recipe Dost. Expo/Metro does not automatically load custom files such as `env/development.env`, so direct launches can miss `EXPO_PUBLIC_*` values.
+
+Use:
+
+```sh
+npm run dev:android
+```
+
+This runs `scripts/env/run-with-env.mjs`, loads `env/development.env`, and then starts Expo with `npx expo start --dev-client --clear`.
+
+You can use the loader for one-off commands too:
+
+```sh
+node scripts/env/run-with-env.mjs development -- npx expo config --json
+```
+
 ## Validation
 
 Template validation, safe for CI and commits:
@@ -132,6 +150,23 @@ The script requires `SUPABASE_PROJECT_REF`, writes required Edge Function secret
 
 `MEDIA_WORKER_SHARED_SECRET` is the canonical worker secret name for this source-of-truth flow. Current Edge Functions prefer it while retaining the older worker secret names as temporary fallback during migration.
 
+## Build Commands
+
+Development and preview builds validate the app, sync EAS public vars and Supabase Edge Function secrets/config from `env/development.env`, then run the EAS Android build:
+
+```sh
+npm run build:dev
+npm run build:preview
+```
+
+For future production, use only:
+
+```sh
+npm run build:prod
+```
+
+Production builds are guarded. The script requires `env/production.env`, validates it, refuses the known development Supabase project ref, syncs production env, and then builds the Android app bundle. Use `npm run build:prod:dry` first to validate and dry-run production env sync without building.
+
 ## Migration From Old Env Files
 
 Treat old scattered env files as source candidates only. Do not trust `.env.production` or `supabase/.env.production` by name; either may contain development values.
@@ -147,7 +182,9 @@ Do not migrate stale public limit envs (`EXPO_PUBLIC_FREE_SAVED_LINK_LIMIT`, `EX
 ## M22D Next Steps
 
 - Review the generated `env/development.env` without committing it.
-- Validate and dry-run sync for development.
+- Use `npm run dev:android` for local development.
+- Use `npm run build:dev` or `npm run build:preview` for development deployment builds.
+- Validate and dry-run sync for development when needed.
 - Create the production Supabase project.
 - Create production worker environment values.
 - Create `env/production.env` only with production values.

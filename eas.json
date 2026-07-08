@@ -7,6 +7,7 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "environment": "development",
       "env": {
         "APP_ENV": "development",
         "APP_VARIANT": "development"
@@ -17,6 +18,7 @@
     },
     "preview": {
       "distribution": "internal",
+      "environment": "development",
       "env": {
         "APP_ENV": "development",
         "APP_VARIANT": "preview"
@@ -26,6 +28,7 @@
       }
     },
     "production": {
+      "environment": "production",
       "env": {
         "APP_ENV": "production",
         "APP_VARIANT": "production"
