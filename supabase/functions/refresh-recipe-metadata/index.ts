@@ -517,6 +517,7 @@ function getWorkerConfig():
   | { ok: false; errorCode: "worker_url_missing" | "worker_secret_missing" } {
   const rawWorkerUrl = Deno.env.get("MEDIA_WORKER_URL")?.trim();
   const workerSecret = getFirstPresentEnvValue([
+    "MEDIA_WORKER_SHARED_SECRET",
     "WORKER_API_SECRET",
     "MEDIA_WORKER_SECRET",
   ]);

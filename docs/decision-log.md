@@ -1,5 +1,25 @@
 # Recipe Dost Decision Log
 
+## 2026-07-08
+- M22D.0D rationalized the app repo env/config source of truth before migrating real production values.
+- Decision: Canonical mobile env remains limited to actual runtime/build variables; PostHog and Sentry values found in old env candidates stay deprecated until real providers read them.
+- Decision: Supabase sync now has required secrets/config plus optional present allowlisted values, while platform-provided Supabase keys and legacy provider branches are not copied into mobile env.
+- Decision: `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY` remains canonical with temporary fallback support for old `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY`.
+- Decision: `env/development.env` was generated locally from old source candidates and remains gitignored; stale public limit envs are rejected and are not canonical.
+- Validation: `npm run qa:static`, `npm run env:check`, `APP_ENV=development APP_VARIANT=development npx expo config --json >/dev/null`, `APP_ENV=production APP_VARIANT=production npx expo config --json >/dev/null`, `node scripts/env/validate-env.mjs development`, `npm run env:eas:dev:dry`, and `npm run env:supabase:dev:dry` passed.
+
+## 2026-07-07
+- M22D.0C audited app repo env names before real value migration.
+- Decision: Canonical app repo env variables are documented in `docs/m22d-env-variable-map.md`; `APP_ANDROID_PACKAGE` was removed from templates because runtime package resolution belongs to `app.config.js`.
+- Decision: `SUPABASE_ENV_NAME` is an optional local helper label, while `SUPABASE_PROJECT_REF` remains required for Supabase secret sync.
+- Decision: Edge Function worker secret lookups now prefer canonical `MEDIA_WORKER_SHARED_SECRET` and retain `WORKER_API_SECRET` / `MEDIA_WORKER_SECRET` as migration fallbacks.
+- Validation: `npm run qa:static`, `npm run env:check`, `APP_ENV=development APP_VARIANT=development npx expo config --json >/dev/null`, and `APP_ENV=production APP_VARIANT=production npx expo config --json >/dev/null` passed.
+- M22D.0A established local gitignored env files as the app repo source of truth for development and production separation.
+- Decision: `env/development.env` and `env/production.env` are not committed; committed `.example.env` files define the required key shape without real values.
+- Decision: EAS public/app variables and Supabase Edge Function secrets are synced from allowlisted values only, with masked dry-runs and manual apply commands.
+- Decision: Production Play Billing remains paused until production Supabase and worker envs exist.
+- Validation: `npm run qa:static`, `npm run env:check`, `APP_ENV=development APP_VARIANT=development npx expo config --json >/dev/null`, and `APP_ENV=production APP_VARIANT=production npx expo config --json >/dev/null` passed.
+
 ## 2026-07-06
 - M22C.2 cleaned subscription docs/config drift before Google Play internal testing.
 - Decision: Launch checklist now uses entitlement `premium`, planned Google Play product IDs, base plan IDs, offering `default`, and the Google Play/RevenueCat subscription_id:base-plan-id note.

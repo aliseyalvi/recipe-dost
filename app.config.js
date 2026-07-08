@@ -1,9 +1,19 @@
 module.exports = ({ config }) => {
   const existingExtra = config.extra ?? {};
+  const appEnv = process.env.APP_ENV === "production" ? "production" : "development";
+  const appVariant = process.env.APP_VARIANT ?? appEnv;
+  const isProduction = appEnv === "production" && appVariant === "production";
+  const isPreview = appVariant === "preview";
+  const appName = isProduction
+    ? "Recipe Dost"
+    : isPreview
+      ? "Recipe Dost Preview"
+      : "Recipe Dost Dev";
+  const androidPackage = isProduction ? "com.recipedost.app" : "com.recipedost.dev";
 
   return {
     expo: {
-      name: "Recipe Dost",
+      name: appName,
       slug: "recipe-dost",
       scheme: "recipe-dost",
       version: "1.0.0",
@@ -19,7 +29,7 @@ module.exports = ({ config }) => {
         supportsTablet: true,
       },
       android: {
-        package: "com.recipedost.app",
+        package: androidPackage,
         versionCode: 1,
         softwareKeyboardLayoutMode: "resize",
         adaptiveIcon: {
@@ -66,7 +76,9 @@ module.exports = ({ config }) => {
       ],
       extra: {
         ...existingExtra,
-        telemetryEnabled: process.env.APP_ENV === "production",
+        appEnv,
+        appVariant,
+        telemetryEnabled: isProduction,
         eas: {
           ...(existingExtra.eas ?? {}),
           projectId: "bf6a2714-3cdd-4ecf-98c1-9f9b8c558bf0",

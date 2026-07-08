@@ -31,7 +31,15 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
+.env.local
+.env.development
+.env.production
+.env.*.local
 .env*.local
+env/development.env
+env/production.env
+!env/*.example.env
 
 # typescript
 *.tsbuildinfo
@@ -39,13 +47,17 @@ yarn-error.*
 # generated native folders
 /ios
 /android
-.env
-
-.env.local
 
 # Local environment files
 .env
 .env.local
+.env.bak
+.env.local.bak
+.env.production.bak
+.env.development
+.env.production
+.env.*.local
+.env.*.bak
 supabase/.env.local
 supabase/.env.production
 
