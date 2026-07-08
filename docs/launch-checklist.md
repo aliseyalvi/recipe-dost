@@ -1,6 +1,9 @@
 # Recipe Dost Launch Checklist
 
 ## Store basics
+- Google Play developer identity/phone verification completed
+- Production EAS AAB build completed and artifact available
+- Google Play app created with package ID com.recipedost.app
 - App name selected
 - App icon created
 - 6 Android screenshots created
@@ -9,6 +12,20 @@
 - Privacy policy URL live
 - Terms URL live
 - Support email works
+
+## Google Play verification wait-state
+- External blocker: Google Play developer identity/phone verification is pending
+- Continue while waiting: store listing copy
+- Continue while waiting: screenshots
+- Continue while waiting: privacy policy
+- Continue while waiting: data safety draft
+- Continue while waiting: app access instructions
+- Continue while waiting: content rating draft
+- Continue while waiting: RevenueCat product plan
+- Blocked until verification if Console blocks access: Play app/internal test upload
+- Blocked until verification if Console blocks access: Play subscriptions/base plans
+- Blocked until verification if Console blocks access: RevenueCat Google Play product import
+- Blocked until verification if Console blocks access: sandbox purchase test
 
 ## Compliance
 - App does not claim to download videos

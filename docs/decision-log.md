@@ -1,6 +1,10 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-08
+- M22C.3B.1 documented the Google Play verification wait-state and store prep checklist.
+- Decision: Google Play developer identity/phone verification is an external blocker; Play app/internal test upload, Play subscriptions/base plans, RevenueCat Google Play product import, and sandbox purchase testing may remain blocked until approval.
+- Decision: Production EAS Android App Bundle build has been started and is queued; continue store listing copy, screenshots, privacy policy, data safety draft, app access instructions, content rating draft, and RevenueCat product planning while waiting.
+- Decision: M22C remains in store-prep wait-state with entitlement `premium`, offering `default`, package IDs, quota/access logic, real env files, and Test Store fallback unchanged.
 - M22C.3A audited RevenueCat environment sanity and paywall readiness before Google Play setup.
 - Decision: `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY` remains canonical; old `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` remains fallback-only in app code and is rejected from canonical env files by validation.
 - Decision: Production env validation now rejects RevenueCat Test Store Android public SDK keys, while development may use Test Store keys only for documented local/Test Store testing.

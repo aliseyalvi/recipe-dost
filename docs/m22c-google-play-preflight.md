@@ -8,7 +8,7 @@ Audit-only pass for moving Recipe Dost from RevenueCat Test Store testing toward
 
 ## Summary
 
-Status: M22C.3A RevenueCat environment sanity and paywall readiness patched.
+Status: M22C.3B.1 Google Play verification wait-state and store prep checklist documented.
 
 The app-side RevenueCat and backend access model is mostly ready: Supabase `user.id` is used as the RevenueCat app user ID, the entitlement remains `premium`, Test Store management fallback copy still exists, paywall plans come from RevenueCat offerings, and `get-ai-access` remains the app-facing source of truth for access/quota.
 
@@ -39,6 +39,18 @@ M22C.3A hardening:
 - Development may use a RevenueCat Test Store key only for local/Test Store testing, as documented in the development env template.
 - Paywall bootstrap now keeps RevenueCat customer status separate from offerings loading, so empty/missing offerings show a friendly unavailable state instead of blocking restore/status flows.
 - The duplicate `Purchases.configure` warning was not reproduced from multiple app providers. App code still has one `RevenueCatProvider` and a module-level configure guard; the remaining warning is documented as likely dev reload/native SDK persistence unless it appears in a clean release build.
+
+M22C.3B production readiness guard:
+
+- Custom in-app developer/debug UI is hidden unless `APP_ENV=development` and `__DEV__` are both true.
+- Native dev-client menu behavior is not controlled by app code and may still appear in a development client.
+- Production env validation and static QA passed after production RevenueCat env correction.
+
+M22C.3B.1 wait-state:
+
+- Google Play developer identity/phone verification is an external blocker.
+- Production EAS Android App Bundle build has been started and is queued.
+- No app logic, quota/access logic, RevenueCat entitlement, package IDs, real env files, or Test Store fallback changed in this documentation pass.
 
 ## Current Android Package ID
 
@@ -74,6 +86,33 @@ Build command:
 ```sh
 eas build --platform android --profile production
 ```
+
+Current M22C.3B.1 build state: production EAS AAB build is queued. Keep the build artifact ready for internal testing upload once Google Play Console allows app creation/upload.
+
+## Google Play Verification Wait-State
+
+External blocker:
+
+- Google Play developer account identity/phone verification is pending. App creation, internal testing upload, subscription setup, or other Console actions may be blocked until Google approves the account.
+
+Work that can continue while waiting:
+
+- Store listing copy: app name, short description, full description, support contact, and subscription disclosure copy.
+- Screenshots: prepare 6 Android screenshots from a production-configured build or final visual QA flow.
+- Privacy policy: publish or verify the live URL.
+- Data safety draft: prepare answers for account data, analytics, subscription purchase status, AI-generated content, and link/metadata processing.
+- App access instructions: document anonymous-first access and any tester steps needed for review.
+- Content rating draft: prepare questionnaire answers and avoid medical/diet/weight-loss claims.
+- RevenueCat product plan: keep entitlement `premium`, offering `default`, products `recipe_dost_premium_monthly` and `recipe_dost_premium_yearly`, and base plans `monthly-autorenewing` and `yearly-autorenewing`.
+
+Work blocked until verification if Google Play Console blocks access:
+
+- Creating the Play app or uploading the internal-test AAB.
+- Creating Play subscriptions and base plans.
+- Importing Google Play products into RevenueCat.
+- Running the sandbox/internal-test purchase and restore test.
+
+Readiness stance: stay in store-prep mode until Google Play verification clears, then resume Console setup and purchase testing.
 
 ## RevenueCat Environment Variables
 
@@ -275,18 +314,19 @@ No patch recommended:
 
 Google Play Console:
 
-1. Create/select the Google Play app with package ID `com.recipedost.app`.
-2. Confirm the package ID exactly matches the RevenueCat Android app. Once uploaded, the package name is permanent for that Play app.
-3. Complete required Play app setup for internal testing, including app access, data safety/subscription disclosures, content rating, target audience, privacy policy, and tester access.
-4. Create subscription products:
+1. Wait for Google Play developer identity/phone verification if Console blocks app creation or upload.
+2. Create/select the Google Play app with package ID `com.recipedost.app`.
+3. Confirm the package ID exactly matches the RevenueCat Android app. Once uploaded, the package name is permanent for that Play app.
+4. Complete required Play app setup for internal testing, including app access, data safety/subscription disclosures, content rating, target audience, privacy policy, and tester access.
+5. Upload the queued/successful production Android App Bundle to an internal testing track.
+6. Create subscription products:
    - `recipe_dost_premium_monthly`
    - `recipe_dost_premium_yearly`
-5. Create and activate base plans:
+7. Create and activate base plans:
    - `monthly-autorenewing`
    - `yearly-autorenewing`
-6. Confirm pricing, renewal period, availability, tax/compliance prompts, and active status.
-7. Upload a signed Android App Bundle to an internal testing track.
-8. Add internal testers/license testers and confirm they can install the Play build.
+8. Confirm pricing, renewal period, availability, tax/compliance prompts, and active status.
+9. Add internal testers/license testers and confirm they can install the Play build.
 
 RevenueCat Console:
 
@@ -326,3 +366,13 @@ M22C.3A validation:
 - `npm run qa:static`
 - `node scripts/env/validate-env.mjs development`
 - `node scripts/env/validate-env.mjs production` failed as intended because the local production env still uses a RevenueCat Test Store Android public SDK key. Do not edit the real env file in code review; replace it manually with the real Google Play-backed RevenueCat Android public SDK key before production build.
+
+M22C.3B validation:
+
+- `npm run qa:static`
+- `node scripts/env/run-with-env.mjs production -- npx expo config --json >/dev/null`
+- Production env validation passed after production RevenueCat env correction.
+
+M22C.3B.1 validation:
+
+- `npm run qa:static`
