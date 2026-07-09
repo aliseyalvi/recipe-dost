@@ -1,5 +1,15 @@
 # Recipe Dost Decision Log
 
+## 2026-07-09
+- M22E.0A added release branch and env safety guards before M22E bug fixes.
+- Decision: `main` is production-stable and `develop` is daily development; M22E bug fixes happen on `develop` first, then merge to `main` after QA.
+- Decision: Production Android App Bundle builds must run through `npm run build:prod` from `main`; `ALLOW_NON_MAIN_PROD_BUILD=1` is the explicit emergency override.
+- Decision: Development and preview builds normally run from `develop`, warn on other branches, and continue using `env/development.env`.
+- Decision: `env/development.env` and `env/production.env` remain gitignored source-of-truth files loaded only through `scripts/env/*`; production env should not be manually sourced in a normal terminal.
+- Decision: Env doctor prints only operator-safe summary fields and never raw secret values.
+- Decision: README now documents the normal development workflow, production smoke command, guarded build commands, env deploy commands, and release flow.
+- Validation: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, `node scripts/env/env-doctor.mjs production`, and `node scripts/env/run-with-env.mjs development -- npx expo config --json >/dev/null` passed.
+
 ## 2026-07-08
 - M22C.3B.1 documented the Google Play verification wait-state and store prep checklist.
 - Decision: Google Play developer identity/phone verification is an external blocker; Play app/internal test upload, Play subscriptions/base plans, RevenueCat Google Play product import, and sandbox purchase testing may remain blocked until approval.

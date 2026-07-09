@@ -1,5 +1,15 @@
 # Recipe Dost Milestones
 
+## M22E.0A - Branching and Environment Safety
+
+- Status: Completed.
+- `main` is production-stable and `develop` is daily development.
+- Production AAB builds are guarded to run from `main` unless `ALLOW_NON_MAIN_PROD_BUILD=1` is set explicitly.
+- Development and preview builds normally run from `develop` and warn, without failing, on other branches.
+- `env/development.env` and `env/production.env` remain gitignored source-of-truth files loaded through scripts only.
+- M22E bug fixes happen on `develop` first, then release via `develop` QA, merge to `main`, production build, and Google Play internal update.
+- Validation passed: `npm run qa:static`, both env doctor commands, and the development env-loader Expo config command.
+
 ## M22D.5F - Production Backend/Worker Smoke Test Completion
 
 - Status: Completed.

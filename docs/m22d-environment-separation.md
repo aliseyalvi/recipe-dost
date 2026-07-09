@@ -21,6 +21,17 @@ Committed templates show the required shape without real values:
 
 If `.env.production` exists locally, do not trust the filename. It may contain development values from earlier setup. Migrate those values manually into `env/development.env`, then create a clean `env/production.env` only after the production Supabase project, worker, and RevenueCat production values exist.
 
+## Branch Model
+
+Recipe Dost uses a simple release branch model:
+
+- `main` is production-stable.
+- `develop` is daily development.
+- M22E bug fixes start on `develop` first.
+- Release flow is `develop` QA, merge to `main`, production build from `main`, then Google Play internal update.
+
+Production Android App Bundle builds must run from `main`. The build script refuses production builds from any other branch unless `ALLOW_NON_MAIN_PROD_BUILD=1` is set for an emergency. Development and preview builds normally run from `develop`; other branches warn but do not fail.
+
 ## App Repo Keys
 
 EAS public/app variables:
@@ -91,6 +102,14 @@ npm run dev:android
 
 This runs `scripts/env/run-with-env.mjs`, loads `env/development.env`, and then starts Expo with `npx expo start --dev-client --clear`.
 
+Production smoke launch is intentionally explicit:
+
+```sh
+npm run dev:android:prod-smoke
+```
+
+This loads `env/production.env` through the script loader. Do not manually source production env in a normal terminal session.
+
 You can use the loader for one-off commands too:
 
 ```sh
@@ -111,6 +130,15 @@ Real local env validation after creating gitignored files:
 node scripts/env/validate-env.mjs development
 node scripts/env/validate-env.mjs production
 ```
+
+Operator-safe env summaries:
+
+```sh
+npm run env:doctor:dev
+npm run env:doctor:prod
+```
+
+The env doctor verifies the env file exists, runs validation, and prints only `APP_ENV`, `APP_VARIANT`, Supabase project ref or URL host, RevenueCat key type, Expo-resolved Android package, and current Git branch. It must not print secret values.
 
 ## EAS Sync Flow
 
@@ -165,7 +193,13 @@ For future production, use only:
 npm run build:prod
 ```
 
-Production builds are guarded. The script requires `env/production.env`, validates it, refuses the known development Supabase project ref, syncs production env, and then builds the Android app bundle. Use `npm run build:prod:dry` first to validate and dry-run production env sync without building.
+Production builds are guarded. The script requires branch `main`, requires `env/production.env`, validates it, refuses the known development Supabase project ref, refuses RevenueCat Test Store Android keys, syncs production env, and then builds the Android App Bundle. Use `npm run build:prod:dry` first to validate and dry-run production env sync without building.
+
+Emergency override for a production build from a non-`main` branch must be explicit:
+
+```sh
+ALLOW_NON_MAIN_PROD_BUILD=1 npm run build:prod
+```
 
 ## Migration From Old Env Files
 

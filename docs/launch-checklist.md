@@ -2,6 +2,9 @@
 
 ## Store basics
 - Google Play developer identity/phone verification completed
+- Release branch is `main`
+- `develop` QA completed before merge to `main`
+- Production env checked with `npm run env:doctor:prod`
 - Production EAS AAB build completed and artifact available
 - Google Play app created with package ID com.recipedost.app
 - App name selected
@@ -13,19 +16,12 @@
 - Terms URL live
 - Support email works
 
-## Google Play verification wait-state
-- External blocker: Google Play developer identity/phone verification is pending
-- Continue while waiting: store listing copy
-- Continue while waiting: screenshots
-- Continue while waiting: privacy policy
-- Continue while waiting: data safety draft
-- Continue while waiting: app access instructions
-- Continue while waiting: content rating draft
-- Continue while waiting: RevenueCat product plan
-- Blocked until verification if Console blocks access: Play app/internal test upload
-- Blocked until verification if Console blocks access: Play subscriptions/base plans
-- Blocked until verification if Console blocks access: RevenueCat Google Play product import
-- Blocked until verification if Console blocks access: sandbox purchase test
+## Google Play internal testing state
+- Production backend and worker smoke tests passed
+- RevenueCat production setup working
+- Google Play internal testing working
+- Sandbox purchase test working
+- Next production AAB update follows `develop` QA, merge to `main`, `npm run build:prod`, then Play internal update
 
 ## Compliance
 - App does not claim to download videos
@@ -62,6 +58,9 @@
 - purchase_completed tracked
 
 ## QA
+- M22E bug fixes completed on `develop` first
+- Production AAB created only from `main` with `npm run build:prod`
+- Production env never manually sourced in a normal terminal
 - 50 recipe links tested
 - Metadata fallback success checked
 - Crash-free basic flow

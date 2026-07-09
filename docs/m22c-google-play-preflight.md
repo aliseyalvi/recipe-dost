@@ -52,6 +52,15 @@ M22C.3B.1 wait-state:
 - Production EAS Android App Bundle build has been started and is queued.
 - No app logic, quota/access logic, RevenueCat entitlement, package IDs, real env files, or Test Store fallback changed in this documentation pass.
 
+M22E.0A release workflow guard:
+
+- Production backend, worker, RevenueCat, Google Play internal testing, and sandbox purchase are working.
+- `main` is production-stable and `develop` is daily development.
+- M22E bug fixes happen on `develop` first, then merge to `main` after QA.
+- Production AAB builds use `npm run build:prod` from `main` only unless `ALLOW_NON_MAIN_PROD_BUILD=1` is set for an emergency.
+- Development and preview builds use development env and normally run from `develop`.
+- Custom env files are loaded only through `scripts/env/*`; do not manually source `env/production.env` in a normal terminal.
+
 ## Current Android Package ID
 
 Source: `app.config.js`
@@ -84,10 +93,10 @@ Current profiles:
 Build command:
 
 ```sh
-eas build --platform android --profile production
+npm run build:prod
 ```
 
-Current M22C.3B.1 build state: production EAS AAB build is queued. Keep the build artifact ready for internal testing upload once Google Play Console allows app creation/upload.
+Current release stance: create the next production AAB only through the guarded M22E flow, then upload it to Google Play internal testing as an update.
 
 ## Google Play Verification Wait-State
 
@@ -347,6 +356,15 @@ Supabase / EAS environment:
 2. Set Supabase Edge Function secret `REVENUECAT_ENTITLEMENT_ID=premium` if not relying on the default.
 3. Ensure EAS build environment has `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY`.
 4. Deploy `sync-revenuecat-entitlement` if the currently deployed function is older than the M22B.3 safeguards.
+
+Release workflow:
+
+1. Complete M22E bug fixes on `develop`.
+2. Run QA and env doctor commands against development.
+3. Merge `develop` to `main` after QA.
+4. Run `npm run env:doctor:prod` on `main`.
+5. Run `npm run build:prod` on `main`.
+6. Upload the resulting AAB to Google Play internal testing.
 
 ## Validation
 
