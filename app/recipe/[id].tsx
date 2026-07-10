@@ -525,6 +525,12 @@ export default function SavedRecipeRoute() {
       })
       if (createdJob.media_job?.result_recipe_card_id) {
         void queryClient.invalidateQueries({
+          queryKey: ['recent-recipes'],
+        })
+        void queryClient.invalidateQueries({
+          queryKey: ['recipe-library'],
+        })
+        void queryClient.invalidateQueries({
           queryKey: ['recipe-card', createdJob.media_job.result_recipe_card_id],
         })
       }

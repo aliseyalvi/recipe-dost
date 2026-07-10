@@ -4,8 +4,10 @@ import {
   getRecipeLibrary,
   isMediaJobActive,
   isMediaJobAttentionRequired,
+  shouldRefreshRecipeLibraryItem,
 } from '@/lib/api/recipes'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
+import { useRefetchOnAppForeground } from '@/lib/query/use-refetch-on-app-foreground'
 import { getRecipeCardThumbnail } from '@/lib/recipe-thumbnails'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
@@ -22,8 +24,8 @@ import {
   VisualRecipeStatus,
 } from '@/ui/visual-recipe-card'
 import { useQuery } from '@tanstack/react-query'
-import { useRouter } from 'expo-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useFocusEffect, useRouter } from 'expo-router'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 
 type HomeFilter =
@@ -60,9 +62,7 @@ export default function HomeRoute() {
     queryKey: ['recent-recipes', user?.id],
     queryFn: () => getRecipeLibrary({ limit: 6 }),
     refetchInterval: (query) =>
-      query.state.data?.some((recipe) =>
-          isMediaJobActive(recipe.latest_media_job)
-        )
+      query.state.data?.some((recipe) => shouldRefreshRecipeLibraryItem(recipe))
         ? 5000
         : false,
   })
@@ -76,6 +76,19 @@ export default function HomeRoute() {
   useEffect(() => {
     track('home_viewed')
   }, [track])
+
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.id && !recentRecipesQuery.isLoading) {
+        void recentRecipesQuery.refetch()
+      }
+    }, [recentRecipesQuery.isLoading, recentRecipesQuery.refetch, user?.id])
+  )
+
+  useRefetchOnAppForeground({
+    enabled: Boolean(user?.id),
+    refetch: recentRecipesQuery.refetch,
+  })
 
   const openSaveRecipe = () => {
     track('home_primary_cta_clicked')

@@ -4,8 +4,10 @@ import {
   getRecipeLibrary,
   isMediaJobActive,
   isMediaJobAttentionRequired,
+  shouldRefreshRecipeLibraryItem,
 } from '@/lib/api/recipes'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
+import { useRefetchOnAppForeground } from '@/lib/query/use-refetch-on-app-foreground'
 import { getRecipeCardThumbnail } from '@/lib/recipe-thumbnails'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
@@ -22,8 +24,8 @@ import {
   VisualRecipeStatus,
 } from '@/ui/visual-recipe-card'
 import { useQuery } from '@tanstack/react-query'
-import { useRouter } from 'expo-router'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useFocusEffect, useRouter } from 'expo-router'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FlatList, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -73,9 +75,7 @@ export default function LibraryRoute() {
     queryKey: ['recipe-library', user?.id],
     queryFn: () => getRecipeLibrary(),
     refetchInterval: (query) =>
-      query.state.data?.some((item) =>
-          isMediaJobActive(item.latest_media_job)
-        )
+      query.state.data?.some((item) => shouldRefreshRecipeLibraryItem(item))
         ? 5000
         : false,
   })
@@ -93,6 +93,19 @@ export default function LibraryRoute() {
     [libraryItems, searchQuery, selectedFilters, sortMode]
   )
   const hasQuery = searchQuery.trim().length > 0
+
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.id && !libraryQuery.isLoading) {
+        void libraryQuery.refetch()
+      }
+    }, [libraryQuery.isLoading, libraryQuery.refetch, user?.id])
+  )
+
+  useRefetchOnAppForeground({
+    enabled: Boolean(user?.id),
+    refetch: libraryQuery.refetch,
+  })
 
   useEffect(() => {
     if (didTrackView.current || !libraryQuery.data) {

@@ -1,5 +1,24 @@
 # Recipe Dost Milestones
 
+## M22E.1B - Home/Library Metadata Refresh Stabilization
+
+- Status: Completed; device QA pending.
+- Home and Library now treat saved-link metadata `saving` and `pending` as active list refresh states alongside active media jobs.
+- Active metadata polling is bounded by recent `updated_at` age to avoid unbounded network polling for stuck rows.
+- Home and Library refetch their existing list query keys on screen focus and app foreground resume.
+- Fast AI media-job responses with `result_recipe_card_id` now invalidate Home/Library list keys immediately, while the existing result discovery path continues to invalidate recipe item, recipe card, media job, list, and AI access keys.
+- No backend, worker, quota/access, product limit, RevenueCat entitlement, package ID, or env-file changes were made.
+- Validation passed: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, and `node scripts/env/validate-env.mjs production`.
+
+## M22E.1A - App State Flow Audit
+
+- Status: Audit completed; implementation pending.
+- Audited app startup, anonymous auth bootstrap, onboarding route guards, persisted onboarding profile state, `user_profiles` load/upsert flow, Home/Library/detail query keys, metadata refresh invalidation, AI-card invalidation, and existing launch/QA docs.
+- Likely onboarding root cause: the Play-installed app reused an existing Supabase anonymous session with `user_profiles.onboarding_completed = true`; `/` and `/welcome` redirect to Home from the remote profile row, not from the local Zustand onboarding flag.
+- Likely Home stale metadata root cause: Home/Library list queries poll active `media_jobs` but not `recipe_items.metadata_status = saving/pending`, and they lack navigation focus or foreground refetch when a background metadata refresh completes while the app is not actively invalidating queries.
+- Recommended minimal implementation: app-side metadata active polling plus Home/Library focus/foreground refetch using existing query keys only.
+- Production AAB note: the runtime fix will need Android `versionCode` 2 when released to Google Play; this audit-only docs patch does not.
+
 ## M22E.0A - Branching and Environment Safety
 
 - Status: Completed.

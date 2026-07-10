@@ -1,5 +1,18 @@
 # Recipe Dost Decision Log
 
+## 2026-07-10
+- M22E.1B stabilized Home/Library app-state refresh for saved-link metadata without backend, worker, quota, RevenueCat, package ID, or env changes.
+- Decision: `recipe_items.metadata_status = saving | pending` are active list states for refresh purposes, but metadata polling is bounded by recent `updated_at` age to avoid unbounded network polling if a row is stuck.
+- Decision: Home `['recent-recipes', user.id]` and Library `['recipe-library', user.id]` now refetch on screen focus and app foreground resume, so metadata completed while the app was backgrounded can replace stale Preparing Preview cache state.
+- Decision: Fast AI job responses that already include `result_recipe_card_id` invalidate Home/Library list keys in addition to the recipe-card key; the existing result-ID effect still invalidates recipe item, recipe card, media-job, list, and AI access keys.
+- Validation: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, and `node scripts/env/validate-env.mjs production` passed.
+- M22E.1A audited app startup/onboarding routing and Home/Library stale metadata state without changing runtime behavior.
+- Decision: Welcome skipping is expected for a returning Supabase anonymous session whose `user_profiles.onboarding_completed` is true; a true clean install must be verified by clearing/restoring no prior app data.
+- Decision: Home/Library stale metadata is likely an app-side cache/refetch gap: list queries poll active media jobs but not `recipe_items.metadata_status = saving/pending`, and there is no Home/Library focus or foreground refetch bridge.
+- Decision: The minimal fix should stay app-side: add active metadata polling plus Home/Library focus/foreground refetch for existing list query keys. Do not change quota/access logic, RevenueCat entitlement, backend/worker logic, package IDs, or env files.
+- Decision: A production AAB update for the runtime fix will require Android `versionCode` 2; this audit-only docs patch does not require an AAB.
+- Validation: `npm run qa:static` and `node scripts/env/env-doctor.mjs development` passed.
+
 ## 2026-07-09
 - M22E.0A added release branch and env safety guards before M22E bug fixes.
 - Decision: `main` is production-stable and `develop` is daily development; M22E bug fixes happen on `develop` first, then merge to `main` after QA.

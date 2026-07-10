@@ -740,6 +740,49 @@ export function isMediaJobAttentionRequired(job: MediaJob | null | undefined) {
   return job?.status === 'failed' || job?.status === 'needs_caption'
 }
 
+export function isRecipeMetadataActive(status: string | null | undefined) {
+  return status === 'saving' || status === 'pending'
+}
+
+export function shouldPollRecipeMetadata({
+  status,
+  updatedAt,
+}: {
+  status: string | null | undefined
+  updatedAt: string | null | undefined
+}) {
+  if (!isRecipeMetadataActive(status)) {
+    return false
+  }
+
+  if (!updatedAt) {
+    return true
+  }
+
+  const updatedAtMs = new Date(updatedAt).getTime()
+
+  if (!Number.isFinite(updatedAtMs)) {
+    return true
+  }
+
+  return Date.now() - updatedAtMs <= 3 * 60 * 1000
+}
+
+export function shouldRefreshRecipeLibraryItem(
+  item: Pick<
+    RecipeLibraryItem,
+    'latest_media_job' | 'metadata_status' | 'updated_at'
+  >
+) {
+  return (
+    isMediaJobActive(item.latest_media_job) ||
+    shouldPollRecipeMetadata({
+      status: item.metadata_status,
+      updatedAt: item.updated_at,
+    })
+  )
+}
+
 export async function saveRecipeItem({
   draft,
   userId,
