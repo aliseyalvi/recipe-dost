@@ -73,6 +73,10 @@
 - M22E.1R-C tag tap opens Library with a prefilled query; raw search/tag values are not sent to analytics
 - M22E.1R-C active search rows checked on a small Android screen for thumbnail, badges, time/servings, tag-chip, and no-results overflow
 - M22E.1R-C no-results state checked with clear-search/filters action; older empty-tag recipe cards still open cleanly
+- M22E.1R-D development migration `20260711080652_m22e_recipe_management.sql` applied and verified before production consideration
+- M22E.1R-D favorite/unfavorite checked from saved-link and AI-card detail, including Home/Library persistence after restart
+- M22E.1R-D delete confirmation checked from both detail surfaces; deleted recipe absent from Home, Library/Search, detail, and grocery views
+- M22E.1R-D RLS/ownership checked with a second dev identity; no quota, paywall, RevenueCat, or original-video behavior changed
 - Production AAB created only from `main` with `npm run build:prod`
 - Production env never manually sourced in a normal terminal
 - 50 recipe links tested

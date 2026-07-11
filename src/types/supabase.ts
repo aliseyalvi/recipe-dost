@@ -403,9 +403,11 @@ export type Database = {
         Row: {
           created_at: string
           cuisine: string | null
+          deleted_at: string | null
           description: string | null
           duration_seconds: number | null
           id: string
+          is_favorite: boolean
           manual_ingredients: string | null
           meal_type: string | null
           metadata_status: string | null
@@ -422,9 +424,11 @@ export type Database = {
         Insert: {
           created_at?: string
           cuisine?: string | null
+          deleted_at?: string | null
           description?: string | null
           duration_seconds?: number | null
           id?: string
+          is_favorite?: boolean
           manual_ingredients?: string | null
           meal_type?: string | null
           metadata_status?: string | null
@@ -441,9 +445,11 @@ export type Database = {
         Update: {
           created_at?: string
           cuisine?: string | null
+          deleted_at?: string | null
           description?: string | null
           duration_seconds?: number | null
           id?: string
+          is_favorite?: boolean
           manual_ingredients?: string | null
           meal_type?: string | null
           metadata_status?: string | null

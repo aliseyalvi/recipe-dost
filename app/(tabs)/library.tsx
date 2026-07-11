@@ -306,6 +306,7 @@ export default function LibraryRoute() {
                 thumbnailUrl={getRecipeCardThumbnail(item)}
                 sourceUrl={item.source_url}
                 hasGroceryList={hasAiRecipe(item)}
+                isFavorite={item.is_favorite}
                 progress={item.latest_media_job?.progress}
                 createdAt={item.created_at}
                 onPress={() => openLibraryItem(item)}
@@ -563,6 +564,7 @@ function LibrarySearchResultRow({
             label={hasAiRecipe(item) ? 'AI Recipe' : 'Saved Link'}
             tone={hasAiRecipe(item) ? 'accent' : 'default'}
           />
+          {item.is_favorite ? <AppBadge label="Favorite" tone="accent" /> : null}
         </View>
         <Text
           selectable

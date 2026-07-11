@@ -222,6 +222,7 @@ export default function HomeRoute() {
                   thumbnailUrl={getRecipeCardThumbnail(recipe)}
                   sourceUrl={recipe.source_url}
                   hasGroceryList={hasAiRecipe(recipe)}
+                  isFavorite={recipe.is_favorite}
                   progress={recipe.latest_media_job?.progress}
                   createdAt={recipe.created_at}
                   onPress={() => openRecipe(recipe)}

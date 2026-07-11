@@ -16,11 +16,13 @@ import {
   type MediaJob,
   RecipeApiError,
   createMediaJob,
+  deleteRecipe,
   getLatestMediaJobForRecipe,
   getRecipeCard,
   getSavedRecipeItem,
   isMediaJobActive,
   refreshRecipeMetadata,
+  toggleFavorite,
 } from '@/lib/api/recipes'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { useRevenueCat } from '@/providers/revenuecat-provider'
@@ -45,7 +47,7 @@ import {
   useRouter,
 } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Image, InteractionManager, Linking, Text, View } from 'react-native'
+import { Alert, Image, InteractionManager, Linking, Text, View } from 'react-native'
 
 const MAX_AI_VIDEO_DURATION_SECONDS = 120
 const LONG_VIDEO_MESSAGE =
@@ -69,6 +71,11 @@ export default function SavedRecipeRoute() {
   const [showCreditLimitState, setShowCreditLimitState] = useState(false)
   const [isSyncingPremiumAccess, setIsSyncingPremiumAccess] = useState(false)
   const [isStartLocked, setIsStartLocked] = useState(false)
+  const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false)
+  const [isDeletingRecipe, setIsDeletingRecipe] = useState(false)
+  const [recipeManagementError, setRecipeManagementError] = useState<Error | null>(
+    null
+  )
   const [lastKnownMediaJob, setLastKnownMediaJob] =
     useState<MediaJob | null>(null)
   const didTrackUsageSummary = useRef(false)
@@ -438,6 +445,96 @@ export default function SavedRecipeRoute() {
     }
   }
 
+  const invalidateRecipeManagement = () => {
+    void queryClient.invalidateQueries({ queryKey: ['recent-recipes'] })
+    void queryClient.invalidateQueries({ queryKey: ['recipe-library'] })
+    void queryClient.invalidateQueries({ queryKey: ['recipe-item', recipe.id] })
+    void queryClient.invalidateQueries({ queryKey: ['recipe-card'] })
+    void queryClient.invalidateQueries({ queryKey: ['recipe-grocery-list'] })
+    void queryClient.invalidateQueries({ queryKey: ['recipe-grocery-lists'] })
+  }
+
+  const handleToggleFavorite = async () => {
+    if (isUpdatingFavorite || isDeletingRecipe) {
+      return
+    }
+
+    setIsUpdatingFavorite(true)
+    setRecipeManagementError(null)
+
+    try {
+      const isFavorite = await toggleFavorite(recipe.id, recipe.is_favorite === true)
+
+      queryClient.setQueryData(['recipe-item', recipe.id], {
+        ...recipe,
+        is_favorite: isFavorite,
+      })
+      invalidateRecipeManagement()
+      track('recipe_favorite_toggled', {
+        platform,
+        is_favorite: isFavorite,
+        source: 'saved_recipe_detail',
+      })
+    } catch {
+      setRecipeManagementError(new Error('Could not update this favorite. Please try again.'))
+      track('recipe_favorite_toggle_failed', {
+        platform,
+        source: 'saved_recipe_detail',
+      })
+    } finally {
+      if (mountedRef.current) {
+        setIsUpdatingFavorite(false)
+      }
+    }
+  }
+
+  const handleDeleteRecipe = async () => {
+    if (isDeletingRecipe) {
+      return
+    }
+
+    setIsDeletingRecipe(true)
+    setRecipeManagementError(null)
+
+    try {
+      await deleteRecipe(recipe.id)
+      queryClient.removeQueries({ queryKey: ['recipe-item', recipe.id] })
+      invalidateRecipeManagement()
+      track('recipe_deleted', {
+        platform,
+        source: 'saved_recipe_detail',
+      })
+      router.replace(sourceReturnToRoute ?? '/library')
+    } catch {
+      setRecipeManagementError(new Error('Could not delete this saved recipe. Please try again.'))
+      track('recipe_delete_failed', {
+        platform,
+        source: 'saved_recipe_detail',
+      })
+    } finally {
+      if (mountedRef.current) {
+        setIsDeletingRecipe(false)
+      }
+    }
+  }
+
+  const confirmDeleteRecipe = () => {
+    Alert.alert(
+      'Delete this saved recipe?',
+      'This removes the saved link and recipe card from your library. It does not affect the original video.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete recipe',
+          style: 'destructive',
+          onPress: () => {
+            void handleDeleteRecipe()
+          },
+        },
+      ]
+    )
+  }
+
   const handleMaybeLater = () => {
     if (router.canGoBack()) {
       router.back()
@@ -691,13 +788,24 @@ export default function SavedRecipeRoute() {
         title="Saved Recipe"
         fallbackRoute="/"
         rightActions={
-          <NestedHeaderIconButton
-            accessibilityLabel="Open original video"
-            icon="↗"
-            onPress={() => {
-              void openOriginalVideo()
-            }}
-          />
+          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+            <NestedHeaderIconButton
+              accessibilityLabel={
+                recipe.is_favorite ? 'Remove recipe from favorites' : 'Add recipe to favorites'
+              }
+              icon={recipe.is_favorite ? '♥' : '♡'}
+              onPress={() => {
+                void handleToggleFavorite()
+              }}
+            />
+            <NestedHeaderIconButton
+              accessibilityLabel="Open original video"
+              icon="↗"
+              onPress={() => {
+                void openOriginalVideo()
+              }}
+            />
+          </View>
         }
       />
       <AppHeader
@@ -762,6 +870,7 @@ export default function SavedRecipeRoute() {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           <PlatformBadge platform={platform} />
           <AppBadge label={recipeCard ? 'AI Recipe' : 'Saved Link'} />
+          {recipe.is_favorite ? <AppBadge label="Favorite" tone="accent" /> : null}
         </View>
         <Text selectable style={[typography.heading, { color: colors.text }]}>
           {displaySourceTitle ?? 'Saved recipe link'}
@@ -1046,6 +1155,33 @@ export default function SavedRecipeRoute() {
           </Text>
         </Card>
       ) : null}
+
+      {recipeManagementError ? (
+        <Card tone="muted">
+          <Text selectable style={[typography.heading, { color: colors.warning }]}>
+            Could not update recipe management
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.text }]}>
+            {recipeManagementError.message}
+          </Text>
+        </Card>
+      ) : null}
+
+      <Card tone="muted">
+        <Text selectable style={[typography.heading, { color: colors.danger }]}>
+          Remove from Library
+        </Text>
+        <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+          Remove this saved recipe and its AI card from your active library.
+        </Text>
+        <Button
+          label={isDeletingRecipe ? 'Deleting recipe...' : 'Delete recipe'}
+          fullWidth
+          variant="outline"
+          disabled={isDeletingRecipe}
+          onPress={confirmDeleteRecipe}
+        />
+      </Card>
 
       {aiAccessQuery.error ? (
         <Card tone="muted">

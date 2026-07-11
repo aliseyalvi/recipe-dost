@@ -21,6 +21,7 @@ type Props = {
   sourceUrl?: string | null
   hasGroceryList?: boolean
   hasNotes?: boolean
+  isFavorite?: boolean
   progress?: number | null
   createdAt: string
   onPress: () => void
@@ -34,6 +35,7 @@ export function VisualRecipeCard({
   sourceUrl,
   hasGroceryList = false,
   hasNotes = false,
+  isFavorite = false,
   progress,
   createdAt,
   onPress,
@@ -63,6 +65,18 @@ export function VisualRecipeCard({
         ) : (
           <RecipeFallback isLoading={isLoadingPreview} />
         )}
+        {isFavorite ? (
+          <View
+            style={{
+              position: 'absolute',
+              top: spacing.sm,
+              left: spacing.sm,
+              maxWidth: '72%',
+            }}
+          >
+            <AppBadge label="Favorite" tone="accent" />
+          </View>
+        ) : null}
         <View
           style={{
             position: 'absolute',

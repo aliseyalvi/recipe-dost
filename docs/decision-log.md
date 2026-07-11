@@ -1,5 +1,12 @@
 # Recipe Dost Decision Log
 
+## 2026-07-11
+- M22E.1R-D implemented schema-backed favorite and soft-delete recipe management on `develop`.
+- Decision: favorite and soft-delete state live on `recipe_items`, the shared parent of saved links, AI cards, and media jobs. The migration adds `is_favorite boolean not null default false`, nullable `deleted_at`, and an active-library partial index; `recipe_cards` needs no duplicate state.
+- Decision: keep the existing ownership RLS policies. App mutations additionally filter by current `user_id`, parent `id`, and active `deleted_at` state. Soft delete preserves recipe/job/accounting records but all active Home, Library/Search, detail, and grocery reads now require a non-deleted parent.
+- Decision: no quota/access or RevenueCat behavior changes. A soft-deleted card remains excluded from presentation but is not treated as a reversal of a completed AI generation.
+- Development deploy: after linking the development project once, apply `20260711080652_m22e_recipe_management.sql` with `node scripts/env/run-with-env.mjs development -- supabase db push --linked` after review. Production deployment remains blocked on development QA.
+
 ## 2026-07-10
 - M22E.1R-C implemented professional Library search and tag UX on `develop` without backend or schema changes.
 - Decision: retain client-side search over fetched, user-owned Library data for beta scale. Active text searches use compact result rows and add only existing `time_json`/`servings` fields to the current `recipe_cards` read; no new query key, access rule, or remote search endpoint was introduced.

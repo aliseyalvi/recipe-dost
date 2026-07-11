@@ -107,6 +107,36 @@ M22E.1R-C manual QA:
 - Open older cards with empty tags and confirm no blank tags section or layout issue.
 - Check active search rows on a small Android screen: thumbnail, badges, metadata, and tag chips must not overflow.
 
+## M22E.1R-D Favorite And Delete Recipe Management
+
+Status: implemented on `develop`; development database apply and device QA pending.
+
+Migration: `supabase/migrations/20260711080652_m22e_recipe_management.sql`.
+
+- `recipe_items.is_favorite boolean not null default false` owns favorite state for both saved-link and AI-card surfaces.
+- `recipe_items.deleted_at timestamptz null` provides soft delete. The migration also adds a partial active-library index on `(user_id, created_at desc)` where `deleted_at is null`.
+- No RLS policy changed. Existing select/update RLS policies require the authenticated user to own the `recipe_items` row. Every app mutation also scopes by both `id` and current `user_id`; favorite and delete only affect an active row where `deleted_at is null`.
+- `deleteRecipe()` sets `deleted_at`; it does not delete the original social video, recipe-card data, jobs, or accounting rows. Home, Library, Search, saved-link detail, recipe-card detail, and grocery readers now require an active parent recipe item, so soft-deleted records are not presented again.
+- Favorite/unfavorite is available in both detail headers and is reflected on Home/Library cards. Delete is a confirmed danger action on both detail surfaces and routes to Library after success.
+- Query invalidation covers `['recent-recipes']`, `['recipe-library']` (including active search results), affected recipe-item/card details, and grocery list keys. No quota/access, RevenueCat, paywall, product, or original-video behavior changed.
+
+Development apply command after code review:
+
+```sh
+node scripts/env/run-with-env.mjs development -- supabase db push --linked
+```
+
+Do not apply this migration to production until development migration/device QA passes. Rollback is only appropriate before feature data is relied upon: first revert the app code, then in development run `alter table public.recipe_items drop column if exists deleted_at, drop column if exists is_favorite;`. Do not run that destructive rollback on production without an explicit data-retention decision.
+
+M22E.1R-D manual QA:
+
+- Apply the migration to development, save a new link, and confirm `is_favorite = false` and `deleted_at is null`.
+- Favorite/unfavorite from saved-link and AI-card detail; verify Home and Library badges, background/reopen persistence, and no paywall/access change.
+- Delete from saved-link detail, cancel once, then confirm. Verify Home, Library, active search, saved-link detail, AI-card detail, and grocery views no longer expose the recipe.
+- Repeat deletion from AI-card detail and confirm the app returns safely to Library.
+- Verify a second anonymous/dev user cannot favorite or delete another user's ID through the app/RLS.
+- Confirm older rows load with the migration defaults and empty tags continue to render cleanly.
+
 ## Release Note
 
 This audit-only patch does not require an AAB. Any runtime recovery release for internal testers requires the production versionCode 2 AAB, unless another release consumes that version code first.

@@ -219,7 +219,9 @@ export type SavedRecipeItem = Pick<
   | 'source_metadata'
   | 'created_at'
   | 'updated_at'
->
+> & {
+  is_favorite?: boolean
+}
 
 type RecipeCardRow = Pick<
   Database['public']['Tables']['recipe_cards']['Row'],
@@ -288,6 +290,7 @@ export type RecipeCard = Omit<
   | 'substitutions_json'
   | 'missing_info_json'
 > & {
+  is_favorite: boolean
   source_mode?: AiSourceMode
   recipe_title_en?: string
   recipe_title_ur?: string
@@ -358,6 +361,7 @@ type RecipeLibraryItemRow = Pick<
   | 'manual_ingredients'
   | 'meal_type'
   | 'cuisine'
+  | 'is_favorite'
   | 'created_at'
   | 'updated_at'
 >
@@ -735,6 +739,59 @@ export async function updateSavedRecipeCaption({
   }
 }
 
+export async function toggleFavorite(
+  recipeItemId: string,
+  isFavorite: boolean
+) {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    throw new Error('Could not update this favorite.')
+  }
+
+  const { data, error } = await supabase
+    .from('recipe_items')
+    .update({ is_favorite: !isFavorite })
+    .eq('id', recipeItemId)
+    .eq('user_id', user.id)
+    .is('deleted_at', null)
+    .select('id, is_favorite')
+    .maybeSingle()
+
+  if (error || !data) {
+    throw new Error('Could not update this favorite.')
+  }
+
+  return data.is_favorite
+}
+
+export async function deleteRecipe(recipeItemId: string) {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    throw new Error('Could not delete this saved recipe.')
+  }
+
+  const { data, error } = await supabase
+    .from('recipe_items')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', recipeItemId)
+    .eq('user_id', user.id)
+    .is('deleted_at', null)
+    .select('id')
+    .maybeSingle()
+
+  if (error || !data) {
+    throw new Error('Could not delete this saved recipe.')
+  }
+}
+
 export function isMediaJobActive(job: MediaJob | null | undefined) {
   return (
     job?.status === 'queued' ||
@@ -857,7 +914,13 @@ export async function getRecipeCard(recipeCardId: string) {
     )
   }
 
-  return normalizeRecipeCard(data satisfies RecipeCardRow)
+  const recipeItem = await getActiveRecipeManagementItem({
+    recipeItemId: data.recipe_id,
+    userId: data.user_id,
+    fallbackMessage: 'Could not load this recipe card.',
+  })
+
+  return normalizeRecipeCard(data satisfies RecipeCardRow, recipeItem.is_favorite)
 }
 
 export async function getRecipeGroceryList(recipeCardId: string) {
@@ -886,6 +949,12 @@ export async function getRecipeGroceryList(recipeCardId: string) {
       getFriendlyApiErrorMessage(error, 'Could not load this grocery list.')
     )
   }
+
+  await getActiveRecipeManagementItem({
+    recipeItemId: data.recipe_id,
+    userId: user.id,
+    fallbackMessage: 'Could not load this grocery list.',
+  })
 
   return normalizeRecipeGroceryList(data satisfies RecipeGroceryListRow)
 }
@@ -926,6 +995,7 @@ export async function getRecipeGroceryLists() {
       .from('recipe_items')
       .select('id, thumbnail_url')
       .eq('user_id', user.id)
+      .is('deleted_at', null)
       .in('id', recipeIds)
 
     for (const sourceRow of (sourceRows ?? []) as RecipeGroceryListSourceRow[]) {
@@ -955,6 +1025,7 @@ export async function getRecipeGroceryLists() {
   }
 
   return rows
+    .filter((row) => sourceThumbnailByRecipeId.has(row.recipe_id))
     .map((row) =>
       normalizeRecipeGroceryList(
         row,
@@ -970,9 +1041,10 @@ export async function getSavedRecipeItem(recipeId: string) {
   const { data, error } = await supabase
     .from('recipe_items')
     .select(
-      'id, source_url, platform, title, description, thumbnail_url, duration_seconds, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, metadata_status, source_metadata, created_at, updated_at'
+      'id, source_url, platform, title, description, thumbnail_url, duration_seconds, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, metadata_status, source_metadata, is_favorite, created_at, updated_at'
     )
     .eq('id', recipeId)
+    .is('deleted_at', null)
     .single()
 
   if (error) {
@@ -1005,9 +1077,10 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
   let recipeItemsQuery = supabase
     .from('recipe_items')
     .select(
-      'id, source_url, platform, title, thumbnail_url, metadata_status, source_metadata, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, created_at, updated_at'
+      'id, source_url, platform, title, thumbnail_url, metadata_status, source_metadata, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, is_favorite, created_at, updated_at'
     )
     .eq('user_id', user.id)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
   if (params.limit && params.limit > 0) {
@@ -1083,6 +1156,30 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
 
 const MEDIA_JOB_SELECT =
   'id, recipe_item_id, platform, ai_provider, status, source_mode, source_metadata, progress, error_code, error_message, thumbnail_url, result_recipe_card_id, created_at, updated_at'
+
+async function getActiveRecipeManagementItem({
+  recipeItemId,
+  userId,
+  fallbackMessage,
+}: {
+  recipeItemId: string
+  userId: string
+  fallbackMessage: string
+}) {
+  const { data, error } = await supabase
+    .from('recipe_items')
+    .select('id, is_favorite')
+    .eq('id', recipeItemId)
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .maybeSingle()
+
+  if (error || !data) {
+    throw new Error(fallbackMessage)
+  }
+
+  return data
+}
 
 function normalizeMediaJob(row: MediaJobRow): MediaJob {
   return {
@@ -1176,11 +1273,15 @@ function getMediaJobStatus(value: string): MediaJobStatus {
   return 'failed'
 }
 
-function normalizeRecipeCard(row: RecipeCardRow): RecipeCard {
+function normalizeRecipeCard(
+  row: RecipeCardRow,
+  isFavorite = false
+): RecipeCard {
   const localizedMeta = getLocalizedRecipeMeta(row.missing_info_json)
 
   return {
     ...row,
+    is_favorite: isFavorite,
     source_mode: localizedMeta.source_mode,
     recipe_title_en: localizedMeta.recipe_title_en ?? row.recipe_title ?? undefined,
     recipe_title_ur: localizedMeta.recipe_title_ur ?? undefined,

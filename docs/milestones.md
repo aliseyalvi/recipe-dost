@@ -1,5 +1,14 @@
 # Recipe Dost Milestones
 
+## M22E.1R-D - Favorite And Delete Recipe Management
+
+- Status: Implemented on `develop`; development database apply and device QA pending.
+- Added migration `20260711080652_m22e_recipe_management.sql` with `recipe_items.is_favorite` and soft-delete `recipe_items.deleted_at`, plus an active-library partial index. `recipe_cards` and media jobs remain linked to the parent without duplicate management state.
+- Favorite/unfavorite is available from saved-link and AI-card detail headers and appears as a lightweight Favorite badge on Home/Library cards.
+- Delete requires the approved native confirmation and sets `deleted_at`; it never touches the original video. Active Home/Library/Search, detail, and grocery reads exclude the soft-deleted parent, while job/card/accounting records remain intact.
+- Existing user-owned update RLS remains the enforcement boundary; app mutations additionally scope `id`, current `user_id`, and active rows. No access, paywall, RevenueCat, product, package ID, or env-file behavior changed.
+- After linking development once, apply only to development after review: `node scripts/env/run-with-env.mjs development -- supabase db push --linked`. Do not apply production until development QA passes.
+
 ## M22E.1R-C - Professional Search And Tag UX
 
 - Status: Implemented on `develop`; device QA pending.

@@ -21,8 +21,10 @@ import {
   RecipeCardIngredient,
   RecipeCardStep,
   RecipeCardSubstitution,
+  deleteRecipe,
   getRecipeCard,
   getLatestMediaJobForRecipe,
+  toggleFavorite,
 } from '@/lib/api/recipes'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import { MediaJobSourceMetadataSummary } from '@/features/media-jobs/media-job-source-metadata'
@@ -41,18 +43,24 @@ import {
   NestedScreenHeader,
 } from '@/ui/screen-header'
 import { UrduText } from '@/ui/urdu-text'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import * as Clipboard from 'expo-clipboard'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
-import { Image, Linking, Pressable, Text, View } from 'react-native'
+import { Alert, Image, Linking, Pressable, Text, View } from 'react-native'
 
 export default function RecipeCardResultRoute() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { track } = usePostHog()
   const { language: globalLanguage } = useRecipeContentLanguage()
   const [screenLanguage, setScreenLanguage] =
     useState<RecipeContentLanguage | null>(null)
+  const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false)
+  const [isDeletingRecipe, setIsDeletingRecipe] = useState(false)
+  const [recipeManagementError, setRecipeManagementError] = useState<Error | null>(
+    null
+  )
   const didTrackResultOpened = useRef(false)
   const { id } = useLocalSearchParams<{ id?: string }>()
   const recipeCardId = Array.isArray(id) ? id[0] : id
@@ -205,21 +213,123 @@ export default function RecipeCardResultRoute() {
     router.push(`/library?query=${encodeURIComponent(tag)}`)
   }
 
+  const invalidateRecipeManagement = () => {
+    void queryClient.invalidateQueries({ queryKey: ['recent-recipes'] })
+    void queryClient.invalidateQueries({ queryKey: ['recipe-library'] })
+    void queryClient.invalidateQueries({ queryKey: ['recipe-item', recipeCard.recipe_id] })
+    void queryClient.invalidateQueries({ queryKey: ['recipe-card'] })
+    void queryClient.invalidateQueries({ queryKey: ['recipe-grocery-list'] })
+    void queryClient.invalidateQueries({ queryKey: ['recipe-grocery-lists'] })
+  }
+
+  const handleToggleFavorite = async () => {
+    if (isUpdatingFavorite || isDeletingRecipe) {
+      return
+    }
+
+    setIsUpdatingFavorite(true)
+    setRecipeManagementError(null)
+
+    try {
+      const isFavorite = await toggleFavorite(
+        recipeCard.recipe_id,
+        recipeCard.is_favorite
+      )
+
+      queryClient.setQueryData(['recipe-card', recipeCard.id], {
+        ...recipeCard,
+        is_favorite: isFavorite,
+      })
+      invalidateRecipeManagement()
+      track('recipe_favorite_toggled', {
+        platform: sourcePlatform ?? 'other',
+        is_favorite: isFavorite,
+        source: 'recipe_card_detail',
+      })
+    } catch {
+      setRecipeManagementError(new Error('Could not update this favorite. Please try again.'))
+      track('recipe_favorite_toggle_failed', {
+        platform: sourcePlatform ?? 'other',
+        source: 'recipe_card_detail',
+      })
+    } finally {
+      setIsUpdatingFavorite(false)
+    }
+  }
+
+  const handleDeleteRecipe = async () => {
+    if (isDeletingRecipe) {
+      return
+    }
+
+    setIsDeletingRecipe(true)
+    setRecipeManagementError(null)
+
+    try {
+      await deleteRecipe(recipeCard.recipe_id)
+      queryClient.removeQueries({ queryKey: ['recipe-card', recipeCard.id] })
+      invalidateRecipeManagement()
+      track('recipe_deleted', {
+        platform: sourcePlatform ?? 'other',
+        source: 'recipe_card_detail',
+      })
+      router.replace('/library')
+    } catch {
+      setRecipeManagementError(new Error('Could not delete this saved recipe. Please try again.'))
+      track('recipe_delete_failed', {
+        platform: sourcePlatform ?? 'other',
+        source: 'recipe_card_detail',
+      })
+    } finally {
+      setIsDeletingRecipe(false)
+    }
+  }
+
+  const confirmDeleteRecipe = () => {
+    Alert.alert(
+      'Delete this saved recipe?',
+      'This removes the saved link and recipe card from your library. It does not affect the original video.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete recipe',
+          style: 'destructive',
+          onPress: () => {
+            void handleDeleteRecipe()
+          },
+        },
+      ]
+    )
+  }
+
   return (
     <Screen compact>
       <NestedScreenHeader
         title="AI Recipe"
         fallbackRoute="/"
         rightActions={
-          canOpenSource ? (
+          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
             <NestedHeaderIconButton
-              accessibilityLabel="Open original video"
-              icon="↗"
+              accessibilityLabel={
+                recipeCard.is_favorite
+                  ? 'Remove recipe from favorites'
+                  : 'Add recipe to favorites'
+              }
+              icon={recipeCard.is_favorite ? '♥' : '♡'}
               onPress={() => {
-                void openOriginalSource()
+                void handleToggleFavorite()
               }}
             />
-          ) : null
+            {canOpenSource ? (
+              <NestedHeaderIconButton
+                accessibilityLabel="Open original video"
+                icon="↗"
+                onPress={() => {
+                  void openOriginalSource()
+                }}
+              />
+            ) : null}
+          </View>
         }
       />
       <Card tone="warm">
@@ -278,6 +388,7 @@ export default function RecipeCardResultRoute() {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           {sourcePlatform ? <PlatformBadge platform={sourcePlatform} /> : null}
           <AppBadge label="AI Card" tone="accent" />
+          {recipeCard.is_favorite ? <AppBadge label="Favorite" tone="accent" /> : null}
         </View>
         <AppHeader
           eyebrow="AI recipe card"
@@ -384,6 +495,33 @@ export default function RecipeCardResultRoute() {
           />
         </Card>
       ) : null}
+
+      {recipeManagementError ? (
+        <Card tone="muted">
+          <Text selectable style={[typography.heading, { color: colors.warning }]}>
+            Could not update recipe management
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.text }]}>
+            {recipeManagementError.message}
+          </Text>
+        </Card>
+      ) : null}
+
+      <Card tone="muted">
+        <Text selectable style={[typography.heading, { color: colors.danger }]}>
+          Remove from Library
+        </Text>
+        <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+          Remove this saved recipe and its AI card from your active library.
+        </Text>
+        <Button
+          label={isDeletingRecipe ? 'Deleting recipe...' : 'Delete recipe'}
+          fullWidth
+          variant="outline"
+          disabled={isDeletingRecipe}
+          onPress={confirmDeleteRecipe}
+        />
+      </Card>
 
       <View style={{ gap: spacing.md }}>
         <Button
