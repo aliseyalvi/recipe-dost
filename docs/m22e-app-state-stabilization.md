@@ -8,6 +8,62 @@ Audit-only pass for onboarding launch routing and stale Home/Library metadata st
 
 Current branch workflow is correct for this milestone: M22E fixes are prepared on `develop`, then merged to `main` only after QA for a production AAB update.
 
+## M22E.1D App-Side Search and UX Polish
+
+Status: implemented on `develop`; device QA pending.
+
+Scope shipped:
+
+- Improved Library search over already-fetched app data; no backend search, RLS, schema, worker, quota/access, RevenueCat, package ID, or env changes.
+- AI-generated tags already stored in `recipe_cards.tags_json` are now exposed in list normalization and displayed as chips on the AI recipe detail screen.
+- Library search now covers saved-link title, source URL, source metadata title/description/author/platform/host, platform, notes/caption/manual ingredients, cuisine, meal type, AI recipe title/summary, AI tags, AI ingredients, and AI steps.
+- Saved-link detail now gives stronger "Open Original Video" placement and clearer copy that metadata/AI processing can continue while the user leaves the screen.
+- Paywall now includes a Free vs Premium benefit comparison without changing products, entitlement, or limits.
+
+Favorite/unfavorite, delete with confirmation, manual tags, and any schema-backed favorites/tags are deferred. The audit found `recipe_cards.tags_json` already exists, but `recipe_items` does not currently have an `is_favorite` column. A future favorites slice should add the smallest safe `recipe_items.is_favorite boolean default false` migration only after dev QA approval, then update Supabase generated types and guarded user-owned mutations. Delete can likely use the existing user-owned `recipe_items` delete policy and cascade relationships, but should ship with explicit confirmation copy and list invalidation in a separate low-risk patch.
+
+M22E.1D manual QA checklist:
+
+- Generate a new AI recipe and verify tags appear on the AI recipe detail screen when the card includes `tags_json`.
+- Open an existing AI recipe without tags and confirm the detail screen still opens cleanly.
+- Search by saved-link title.
+- Search by AI recipe title.
+- Search by ingredient.
+- Search by step text.
+- Search by tag.
+- Search by platform/source metadata.
+- Save/share a link, start AI generation, leave the detail screen while processing, and confirm Home/Library eventually show the completed card.
+- Confirm "Open Original Video" is easy to find on saved-link and AI recipe detail.
+- Open paywall and confirm the Free vs Premium comparison preserves Free = 3 successful AI generations, Premium = 100 AI recipes/month, and 2-minute beta video length.
+- Confirm paywall purchase/restore visibility and Premium entitlement name remain unchanged.
+- Fresh install onboarding check remains pending device QA from M22E.1A.
+
+## M22E.1E Processing and Paywall Polish
+
+Status: implemented on `develop`; device QA pending.
+
+Scope shipped:
+
+- AI generation progress now has explicit "Go back to Home/Library" and "Wait here" actions.
+- The leave action keeps the current background-job model and relies on existing Home/Library query refresh to show the completed card.
+- The wait action stays on the detail screen and refetches the current recipe/media-job queries.
+- Saved-link metadata copy now separates saving, pending preview, and failed preview states.
+- Paywall comparison copy now clarifies that free users get 3 total AI recipe cards and unlimited saved links; ingredients, steps, and grocery lists apply to generated AI cards.
+- Paywall usage clarity uses the existing `get-ai-access` query already present on the paywall; no new backend call was added.
+- Tag QA note: M22E.1D app UI can only display/search tags when `recipe_cards.tags_json` is populated. Empty tags on newly generated cards should be handled in a separate prompt/Edge Function contract patch, not in this app-side processing/paywall polish.
+
+M22E.1E manual QA checklist:
+
+- Start AI generation and wait on the detail screen until completion.
+- Start AI generation, tap Go back to Home/Library, and confirm the card updates in the list.
+- Start AI generation, tap Wait here, and confirm the progress state remains visible.
+- Close/reopen during processing and confirm Home/Library refresh.
+- Force or observe a failed AI job and confirm friendly failure plus retry behavior.
+- Save a link with pending metadata and confirm the saved-link detail says "Preparing preview...".
+- Force or observe metadata failure and confirm retry details remains available.
+- Open paywall as a free user and confirm the comparison does not imply unlimited ingredient/step generation.
+- Open paywall as Premium and confirm active state, manage/restore controls, products, and entitlement behavior are unchanged.
+
 ## Fresh Install Expected State Machine
 
 1. Native app launches and `app/_layout.tsx` renders `AppProviders`.
@@ -184,6 +240,55 @@ Refetched or invalidated query keys:
 - Failed metadata state: use a link that fails metadata refresh or force a retry failure, confirm Home/Library show Details unavailable/Saved Link behavior and do not poll forever.
 - Fresh install onboarding check: clear app data or install without restored app data, launch, and confirm `/welcome` appears before onboarding for a new anonymous session.
 
+## M22E.1C Competitor UX Audit
+
+Status: decision log only; implementation deferred to M22E.1D.
+
+Summary:
+
+- ReciMe/Pluck-style apps emphasize fast retrieval, visual confidence, clear saved-state controls, and calm background processing.
+- Recipe Dost should cherry-pick low-risk organizer and clarity improvements that strengthen the existing link-first AI flow.
+- M22E.1D should remain app-side/product-surface focused unless a selected item clearly needs a later schema milestone.
+- The current production stability work remains higher priority than large feature expansion.
+
+Selected M22E.1D improvements:
+
+1. Search across recipe title, ingredients, tags, platform, and source metadata.
+2. Show AI-generated tags as chips on recipe cards/detail where data already exists.
+3. Favorite/unfavorite recipe for quick retrieval.
+4. Delete recipe with confirmation and safe ownership checks.
+5. Better processing state that clearly tells users they can leave while the AI job continues.
+6. Better paywall benefit comparison using the existing `premium` entitlement and current quota model.
+7. Optional usage/credits pill in Home and Settings if it can reuse existing access data without new quota logic.
+8. Stronger placement for Open original video on saved-link/AI recipe surfaces.
+9. New AI Recipe ribbon on newly completed cards.
+10. Basic manual tags add/remove, scoped to simple organization only.
+
+Avoided features for now:
+
+- Nutrition calculator/macros: high trust and liability surface; not required for the link-first MVP.
+- Meal planner: large workflow expansion beyond save/link/library/paywall stability.
+- Recipe scaling: needs ingredient normalization and accuracy guarantees that are not part of M22E.
+- Print/export PDF: export polish is lower priority than core Android app QA.
+- AI edit: would add new AI mutation paths and prompt/version complexity.
+- Photo import: expands input sources beyond public link/caption/manual notes.
+- Folders/cookbooks: heavier organization model; defer until simple tags/favorites prove useful.
+- Push notifications: requires permission strategy, delivery plumbing, and store-policy review.
+- Video downloading/storage: explicitly outside Recipe Dost's compliance stance.
+
+Updated milestone plan:
+
+1. M22E.1C documents the competitor UX decisions only.
+2. M22E.1D should implement the smallest safe subset first: processing-state copy, stronger Open original video placement, AI tag chips if already present, and paywall comparison copy.
+3. Favorites, delete, and manual tags require schema/API review before implementation; broader search can start client-side over fetched user-owned data.
+4. Keep M22E.1D on `develop`, run static QA, then device QA before any production AAB update.
+
+Exact next implementation prompt:
+
+```text
+Implement M22E.1D on develop: cherry-pick the lowest-risk competitor UX improvements for Recipe Dost. Documentation from M22E.1C selected search, AI tag chips, favorite/unfavorite, delete with confirmation, clearer leave-while-processing state, better paywall benefit comparison, optional usage/credits pill from existing access data, stronger Open original video placement, New AI Recipe ribbon, and basic manual tags. Start with app-side/UI-only improvements that require no schema/backend changes: processing-state copy, Open original video placement, AI-generated tag chips when existing data is already available, and paywall benefit comparison. Do not add nutrition, meal planner, scaling, PDF export, AI edit, photo import, folders/cookbooks, push notifications, or video downloading/storage. Do not change quota/access logic, RevenueCat entitlement, backend/worker behavior, package IDs, or env files. Update docs/decision-log.md and docs/milestones.md. Run npm run qa:static.
+```
+
 ## Validation
 
 - M22E.1A: `npm run qa:static` passed.
@@ -191,6 +296,11 @@ Refetched or invalidated query keys:
 - M22E.1B: `npm run qa:static` passed.
 - M22E.1B: `node scripts/env/env-doctor.mjs development` passed on `develop`.
 - M22E.1B: `node scripts/env/validate-env.mjs production` passed with masked production values only.
+- M22E.1C: `npm run qa:static` passed.
+- M22E.1D: `npm run qa:static` passed.
+- M22E.1D: `node scripts/env/env-doctor.mjs development` passed.
+- M22E.1D: `node scripts/env/validate-env.mjs development` passed with masked values only.
+- M22E.1D: `node scripts/env/validate-env.mjs production` passed with masked values only.
 
 Exact next prompt:
 

@@ -362,17 +362,32 @@ type RecipeLibraryItemRow = Pick<
   | 'updated_at'
 >
 
-export type RecipeLibraryCard = Pick<
+type RecipeLibraryCardRow = Pick<
   Database['public']['Tables']['recipe_cards']['Row'],
   | 'id'
   | 'recipe_id'
   | 'recipe_title'
   | 'short_summary'
+  | 'ingredients_json'
+  | 'steps_json'
+  | 'time_json'
+  | 'servings'
+  | 'tags_json'
   | 'confidence'
   | 'model_used'
   | 'created_at'
   | 'updated_at'
 >
+
+export type RecipeLibraryCard = Omit<
+  RecipeLibraryCardRow,
+  'ingredients_json' | 'steps_json' | 'time_json' | 'tags_json'
+> & {
+  ingredients: RecipeCardIngredient[]
+  steps: RecipeCardStep[]
+  time: RecipeCardTime
+  tags: string[]
+}
 
 export type RecipeLibraryItem = RecipeLibraryItemRow & {
   latest_card: RecipeLibraryCard | null
@@ -1029,7 +1044,7 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
   const { data: recipeCards, error: recipeCardsError } = await supabase
     .from('recipe_cards')
     .select(
-      'id, recipe_id, recipe_title, short_summary, confidence, model_used, created_at, updated_at'
+      'id, recipe_id, recipe_title, short_summary, ingredients_json, steps_json, time_json, servings, tags_json, confidence, model_used, created_at, updated_at'
     )
     .eq('user_id', user.id)
     .in('recipe_id', recipeIds)
@@ -1047,9 +1062,9 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
   const latestCardByRecipeId = new Map<string, RecipeLibraryCard>()
   const latestJobByRecipeId = new Map<string, MediaJob>()
 
-  for (const card of recipeCards satisfies RecipeLibraryCard[]) {
-    if (!latestCardByRecipeId.has(card.recipe_id)) {
-      latestCardByRecipeId.set(card.recipe_id, card)
+  for (const row of recipeCards satisfies RecipeLibraryCardRow[]) {
+    if (!latestCardByRecipeId.has(row.recipe_id)) {
+      latestCardByRecipeId.set(row.recipe_id, normalizeRecipeLibraryCard(row))
     }
   }
 
@@ -1185,6 +1200,24 @@ function normalizeRecipeCard(row: RecipeCardRow): RecipeCard {
     missing_info: localizedMeta.missing_info_en,
     missing_info_en: localizedMeta.missing_info_en,
     missing_info_ur: localizedMeta.missing_info_ur,
+  }
+}
+
+function normalizeRecipeLibraryCard(row: RecipeLibraryCardRow): RecipeLibraryCard {
+  return {
+    id: row.id,
+    recipe_id: row.recipe_id,
+    recipe_title: row.recipe_title,
+    short_summary: row.short_summary,
+    servings: row.servings,
+    confidence: row.confidence,
+    model_used: row.model_used,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    ingredients: getIngredients(row.ingredients_json),
+    steps: getSteps(row.steps_json),
+    time: getRecipeCardTime(row.time_json),
+    tags: getStringArray(row.tags_json),
   }
 }
 

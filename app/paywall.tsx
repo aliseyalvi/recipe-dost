@@ -2,7 +2,7 @@ import {
   getNormalizedSubscriptionStatus,
   getRecipeSubscriptionAvailabilityText,
 } from '@/features/subscription/normalized-subscription-status'
-import { getAiAccessState } from '@/lib/api/ai-access'
+import { type AiAccessState, getAiAccessState } from '@/lib/api/ai-access'
 import { useAuth } from '@/providers/auth-provider'
 import {
   getSubscriptionManagementUrl,
@@ -27,8 +27,8 @@ import { Alert, Linking, Pressable, Text, View } from 'react-native'
 
 const benefits = [
   '100 AI recipe cards/month',
-  'Save recipe links free forever',
-  'Ingredients, steps, and grocery lists',
+  'Saved recipe links included',
+  'Ingredients, steps, and grocery lists on generated cards',
   'Urdu + English recipe insights',
   'Videos up to 2 minutes in beta',
 ]
@@ -321,29 +321,36 @@ export default function PaywallRoute() {
 
       {!isPremiumActive ? (
         <Card tone="warm">
-        <View style={{ gap: spacing.sm }}>
-          {benefits.map((benefit) => (
-            <View
-              key={benefit}
-              style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' }}
-            >
+          <View style={{ gap: spacing.sm }}>
+            {benefits.map((benefit) => (
               <View
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: radius.pill,
-                  backgroundColor: colors.accent,
-                  marginTop: 8,
-                }}
-              />
-              <Text selectable style={[typography.body, { flex: 1, color: colors.text }]}>
-                {benefit}
-              </Text>
-            </View>
-          ))}
-        </View>
+                key={benefit}
+                style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' }}
+              >
+                <View
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: radius.pill,
+                    backgroundColor: colors.accent,
+                    marginTop: 8,
+                  }}
+                />
+                <Text selectable style={[typography.body, { flex: 1, color: colors.text }]}>
+                  {benefit}
+                </Text>
+              </View>
+            ))}
+          </View>
         </Card>
       ) : null}
+
+      {!isPremiumActive ? <BenefitComparison /> : null}
+      <UsageCard
+        aiAccess={aiAccessQuery.data}
+        isLoading={aiAccessQuery.isLoading}
+        subscriptionStatus={subscriptionStatus}
+      />
 
       {isPremiumActive ? (
         <Card tone="warm">
@@ -472,6 +479,149 @@ export default function PaywallRoute() {
         />
       ) : null}
     </Screen>
+  )
+}
+
+function BenefitComparison() {
+  const rows = [
+    {
+      label: 'AI recipe cards',
+      free: '3 total',
+      premium: '100/month',
+    },
+    {
+      label: 'Saved recipe links',
+      free: 'Included',
+      premium: 'Included',
+    },
+    {
+      label: 'Ingredients + steps',
+      free: 'On 3 AI cards',
+      premium: 'On 100/month',
+    },
+    {
+      label: 'Grocery lists',
+      free: 'From generated cards',
+      premium: 'From generated cards',
+    },
+    {
+      label: 'Urdu + English',
+      free: 'On generated cards',
+      premium: 'On generated cards',
+    },
+    {
+      label: 'Beta video length',
+      free: 'Up to 2 min',
+      premium: 'Up to 2 min',
+    },
+  ]
+
+  return (
+    <Card>
+      <Text selectable style={[typography.heading, { color: colors.text }]}>
+        Free vs Premium
+      </Text>
+      <View style={{ gap: spacing.sm }}>
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <ComparisonCell label="" muted />
+          <ComparisonCell label="Free" emphasized />
+          <ComparisonCell label="Premium" emphasized accent />
+        </View>
+        {rows.map((row) => (
+          <View key={row.label} style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <ComparisonCell label={row.label} muted />
+            <ComparisonCell label={row.free} />
+            <ComparisonCell label={row.premium} accent />
+          </View>
+        ))}
+      </View>
+    </Card>
+  )
+}
+
+function UsageCard({
+  aiAccess,
+  isLoading,
+  subscriptionStatus,
+}: {
+  aiAccess: AiAccessState | undefined
+  isLoading: boolean
+  subscriptionStatus: ReturnType<typeof getNormalizedSubscriptionStatus>
+}) {
+  if (isLoading && !aiAccess) {
+    return null
+  }
+
+  if (!aiAccess) {
+    return null
+  }
+
+  const isPremium = subscriptionStatus.isPremium
+  const limit = isPremium ? aiAccess.premiumMonthlyLimit : aiAccess.freeLimit
+  const used = isPremium
+    ? aiAccess.premiumMonthlySuccessfulUsed
+    : aiAccess.freeSuccessfulUsed
+  const reserved = isPremium
+    ? aiAccess.premiumMonthlyActiveReserved
+    : aiAccess.freeActiveReserved
+  const remaining = isPremium
+    ? aiAccess.premiumMonthlyRemainingToStart
+    : aiAccess.freeRemainingToStart
+
+  return (
+    <Card tone="muted">
+      <Text selectable style={[typography.heading, { color: colors.text }]}>
+        {isPremium ? 'Premium usage' : 'Free AI recipes'}
+      </Text>
+      <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+        {isPremium
+          ? `${remaining} of ${limit} AI recipe cards left this month.`
+          : `${remaining} of ${limit} free AI recipe cards left.`}
+      </Text>
+      <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+        {used}/{limit} successful AI recipe cards used
+        {reserved > 0 ? `, ${reserved} currently processing` : ''}
+      </Text>
+    </Card>
+  )
+}
+
+function ComparisonCell({
+  label,
+  emphasized = false,
+  muted = false,
+  accent = false,
+}: {
+  label: string
+  emphasized?: boolean
+  muted?: boolean
+  accent?: boolean
+}) {
+  return (
+    <View
+      style={{
+        flex: 1,
+        minHeight: 42,
+        justifyContent: 'center',
+        borderRadius: radius.sm,
+        backgroundColor: accent ? colors.accentSoft : colors.surfaceMuted,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+      }}
+    >
+      <Text
+        selectable
+        style={[
+          typography.caption,
+          {
+            color: accent ? colors.accent : muted ? colors.textMuted : colors.text,
+            fontWeight: emphasized ? '800' : '500',
+          },
+        ]}
+      >
+        {label}
+      </Text>
+    </View>
   )
 }
 

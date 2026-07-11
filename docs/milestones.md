@@ -1,5 +1,57 @@
 # Recipe Dost Milestones
 
+## M22E.1R-C - Professional Search And Tag UX
+
+- Status: Implemented on `develop`; device QA pending.
+- Library text search remains client-side over user-owned rows and now renders active searches as compact thumbnail rows with title, platform, AI Recipe/Saved Link state, available time/servings, and up to three tag chips. Existing grid browsing, filters, and sorting remain unchanged.
+- Search covers saved and AI titles, source metadata/author/platform, ingredients, steps, tags, notes/captions/manual ingredients, cuisine/meal type, and source URL.
+- Recipe-card detail renders up to eight rounded existing tags; a tag opens Library with the tag prefilled as a query. Raw tags/search text are not sent to analytics.
+- Added clear-search affordance and a query-aware “No recipes found” state. Empty-tag legacy cards remain supported.
+- No schema, worker, quota/access, RevenueCat, package ID, or env-file change was made. Tag search depends on the external worker populating `recipe_cards.tags_json` for newly generated cards.
+- Validation passed: `npm run typecheck`, `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, and `node scripts/env/validate-env.mjs production`.
+
+## M22E.1R-A - Professional UX Recovery Audit
+
+- Status: Audit complete on `develop`; implementation pending.
+- `recipe_cards.tags_json` exists and mobile reads it, but current media-job cards are written by the external Render media worker rather than the legacy in-repo `generate-card` path. The worker contract/persistence mapper must generate and write tags before tag UI/search can meet acceptance criteria.
+- Library search is client-side and technically broad, but is Library-only, has no visible/tappable tag discovery, and currently depends on empty tags in the active generation path.
+- Favorite needs one small `recipe_items.is_favorite` migration. Confirmed hard delete can use existing user-owned `recipe_items` delete RLS/cascades, with an explicit decision for `grocery_lists.source_recipe_ids` cleanup.
+- Keep M22E.1B stale-state refresh and M22E.1D normalization. Replace the paywall benefit-list/equal-cell comparison, weak search/tag presentation, and processing-card composition in the next implementation sequence.
+- No runtime, schema, worker, quota/access, RevenueCat, package ID, or env-file change was made in this audit. A runtime recovery release needs the versionCode 2 production AAB after development/device QA.
+- Validation passed: `npm run qa:static` and `node scripts/env/env-doctor.mjs development`.
+
+## M22E.1E - Processing State and Paywall Polish
+
+- Status: Implemented on `develop`; device QA pending.
+- AI generation processing now tells users they can leave while work continues and provides explicit "Go back to Home/Library" and "Wait here" actions.
+- Saved-link metadata states now use separate saving, pending, and failed copy; "Preparing preview..." is reserved for pending metadata preview fetches.
+- Failed metadata keeps the existing retry-details path, and AI failed jobs keep the existing friendly failure/retry behavior.
+- Paywall comparison now clarifies Free = 3 total AI recipe cards and unlimited saved links, while ingredients/steps/grocery lists are available on generated AI cards. Premium remains 100 AI recipe cards/month with the existing `premium` entitlement and current Google Play subscription UI.
+- Paywall now shows an optional usage card from the already-loaded `get-ai-access` query; no new backend call, quota/access logic, product, entitlement, package ID, or env-file change was added.
+- Tag QA note: tag chips/search depend on `recipe_cards.tags_json`; if generated cards have empty tags, fix that in a separate prompt/Edge Function contract patch.
+- Validation passed: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, and `node scripts/env/validate-env.mjs production`.
+
+## M22E.1D - App-Side Search and UX Polish
+
+- Status: Implemented on `develop`; device QA pending.
+- Improved Library search client-side over fetched user-owned rows: saved-link title, source URL, source metadata title/description/author/platform/host, platform, notes/caption/manual ingredients, cuisine, meal type, AI recipe title/summary, AI tags, ingredients, and steps.
+- Displayed existing AI-generated `recipe_cards.tags_json` as chips on the AI recipe detail screen; older cards without tags remain supported.
+- Strengthened saved-link detail Open Original Video placement and processing copy so users know metadata/AI jobs continue while they leave the screen.
+- Added a Free vs Premium paywall comparison while preserving Free = 3 successful AI generations, Premium = 100 AI recipes/month, `premium` entitlement, existing products, and the 2-minute beta video limit.
+- No schema migration, backend/worker change, quota/access change, RevenueCat change, package ID change, env-file change, video download/storage, nutrition, meal planner, scaling, PDF export, AI edit, photo import, folders/cookbooks, social login, or push notification work was added.
+- Favorite/unfavorite, delete with confirmation, and manual tags are deferred to a separate schema/API review patch.
+- Validation passed: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, `node scripts/env/validate-env.mjs development`, and `node scripts/env/validate-env.mjs production`.
+
+## M22E.1C - Competitor UX Cherry-Pick Decision Log
+
+- Status: Documentation complete.
+- Reviewed ReciMe/Pluck-style competitor patterns and selected low-risk Recipe Dost improvements for a future M22E.1D implementation.
+- Selected: broader search, AI-generated tag chips, favorite/unfavorite, delete with confirmation, clearer leave-while-processing state, better Premium benefit comparison, optional usage/credits pill from existing access data, stronger Open original video placement, New AI Recipe ribbon, and basic manual tags.
+- Avoided for now: nutrition/macros, meal planner, recipe scaling, PDF export, AI edit, photo import, folders/cookbooks, push notifications, and video downloading/storage.
+- M22E.1D should begin with app-side/UI-only work that does not require schema/backend changes, while favorites/delete/manual tags get schema/API review before implementation.
+- No runtime, env, quota/access, RevenueCat entitlement, backend, worker, or package ID changes were made.
+- Validation passed: `npm run qa:static`.
+
 ## M22E.1B - Home/Library Metadata Refresh Stabilization
 
 - Status: Completed; device QA pending.

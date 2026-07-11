@@ -59,6 +59,20 @@
 
 ## QA
 - M22E bug fixes completed on `develop` first
+- M22E.1C competitor UX decisions documented before implementation
+- Competitor UX cherry-picks avoid nutrition, meal planner, scaling, PDF export, AI edit, photo import, folders/cookbooks, push notifications, and video downloading/storage
+- M22E.1D app-side/UI-only implementation complete before schema/backend work
+- M22E.1D Library search checked by title, ingredient, tag, platform/source, and AI step text
+- M22E.1D AI tag chips checked on new cards and old cards without tags
+- M22E.1D paywall comparison checked without changing products, entitlement, or quota limits
+- M22E.1D favorite/delete/manual tags remain deferred until a separate schema-backed dev QA patch
+- M22E.1E processing actions checked: Go back to Home/Library, Wait here, complete auto-open, and failed retry state
+- M22E.1E paywall copy checked: Free = 3 total AI recipe cards, unlimited saved links, Premium = 100 AI recipe cards/month
+- M22E.1E usage card checked against backend access state without changing quota/access logic
+- M22E.1R-C Library search checked by title, AI title, source author/platform, ingredient, step, and generated tag
+- M22E.1R-C tag tap opens Library with a prefilled query; raw search/tag values are not sent to analytics
+- M22E.1R-C active search rows checked on a small Android screen for thumbnail, badges, time/servings, tag-chip, and no-results overflow
+- M22E.1R-C no-results state checked with clear-search/filters action; older empty-tag recipe cards still open cleanly
 - Production AAB created only from `main` with `npm run build:prod`
 - Production env never manually sourced in a normal terminal
 - 50 recipe links tested

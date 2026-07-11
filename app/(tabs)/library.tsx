@@ -1,3 +1,4 @@
+import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { RecipePlatform } from '@/features/recipe-draft/types'
 import {
   RecipeLibraryItem,
@@ -12,7 +13,8 @@ import { getRecipeCardThumbnail } from '@/lib/recipe-thumbnails'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
-import { colors, spacing, typography } from '@/theme'
+import { colors, radius, spacing, typography } from '@/theme'
+import { AppBadge } from '@/ui/app-badge'
 import { Button } from '@/ui/button'
 import { EmptyState } from '@/ui/empty-state'
 import { ErrorState } from '@/ui/error-state'
@@ -24,9 +26,17 @@ import {
   VisualRecipeStatus,
 } from '@/ui/visual-recipe-card'
 import { useQuery } from '@tanstack/react-query'
-import { useFocusEffect, useRouter } from 'expo-router'
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FlatList, RefreshControl, ScrollView, Text, View } from 'react-native'
+import {
+  FlatList,
+  Image,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 type ContentFilter =
@@ -65,11 +75,13 @@ export default function LibraryRoute() {
   const { user } = useAuth()
   const { track } = usePostHog()
   const { openSaveRecipeModal } = useSaveRecipeModal()
+  const { query } = useLocalSearchParams<{ query?: string }>()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedFilters, setSelectedFilters] = useState<ContentFilter[]>([])
   const [sortMode, setSortMode] = useState<SortMode>('newest')
   const didTrackView = useRef(false)
   const didTrackSearch = useRef(false)
+  const appliedRouteQuery = useRef<string | null>(null)
   const libraryQuery = useQuery({
     enabled: Boolean(user?.id),
     queryKey: ['recipe-library', user?.id],
@@ -93,6 +105,18 @@ export default function LibraryRoute() {
     [libraryItems, searchQuery, selectedFilters, sortMode]
   )
   const hasQuery = searchQuery.trim().length > 0
+
+  useEffect(() => {
+    const nextQuery = Array.isArray(query) ? query[0] : query
+    const normalizedQuery = nextQuery?.trim()
+
+    if (!normalizedQuery || normalizedQuery === appliedRouteQuery.current) {
+      return
+    }
+
+    appliedRouteQuery.current = normalizedQuery
+    setSearchQuery(normalizedQuery)
+  }, [query])
 
   useFocusEffect(
     useCallback(() => {
@@ -175,15 +199,33 @@ export default function LibraryRoute() {
     router.push(`/recipe/${item.id}?returnTo=/library`)
   }
 
+  const clearSearch = () => {
+    setSearchQuery('')
+    appliedRouteQuery.current = null
+
+    if (query) {
+      router.replace('/library')
+    }
+  }
+
+  const clearSearchAndFilters = () => {
+    clearSearch()
+    setSelectedFilters([])
+    track('library_search_cleared', {
+      had_filters: selectedFilters.length > 0,
+    })
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <FlatList
+        key={hasQuery ? 'library-search-results' : 'library-grid'}
         data={filteredItems}
         keyExtractor={(item) => item.id}
-        numColumns={2}
+        numColumns={hasQuery ? 1 : 2}
         contentInsetAdjustmentBehavior="automatic"
         style={{ flex: 1, backgroundColor: colors.background }}
-        columnWrapperStyle={{ gap: spacing.md }}
+        columnWrapperStyle={hasQuery ? undefined : { gap: spacing.md }}
         contentContainerStyle={{
           flexGrow: 1,
           gap: spacing.md,
@@ -202,6 +244,7 @@ export default function LibraryRoute() {
         ListHeaderComponent={
           <LibraryHeader
             searchQuery={searchQuery}
+            hasQuery={hasQuery}
             selectedFilters={selectedFilters}
             sortMode={sortMode}
             resultCount={filteredItems.length}
@@ -214,6 +257,7 @@ export default function LibraryRoute() {
                 : null
             }
             onSearchChange={setSearchQuery}
+            onClearSearch={clearSearch}
             onContentFilterToggle={(filter) => {
               const nextFilters =
                 filter === 'all'
@@ -237,28 +281,38 @@ export default function LibraryRoute() {
             isLoading={libraryQuery.isLoading}
             error={libraryQuery.error}
             hasItems={hasLibraryItems}
+            hasQuery={hasQuery}
+            hasActiveFilters={selectedFilters.length > 0}
             onRetry={() => {
               void libraryQuery.refetch()
             }}
             onSaveRecipe={openSaveRecipeModal}
+            onClearSearchAndFilters={clearSearchAndFilters}
           />
         }
-        renderItem={({ item }) => (
-          <View style={{ width: '47.8%' }}>
-            <VisualRecipeCard
-              title={getLibraryTitle(item)}
-              subtitle={getLibrarySubtitle(item)}
-              platform={getRecipePlatform(item.platform)}
-              status={getRecipeVisualStatus(item)}
-              thumbnailUrl={getRecipeCardThumbnail(item)}
-              sourceUrl={item.source_url}
-              hasGroceryList={hasAiRecipe(item)}
-              progress={item.latest_media_job?.progress}
-              createdAt={item.created_at}
+        renderItem={({ item }) =>
+          hasQuery ? (
+            <LibrarySearchResultRow
+              item={item}
               onPress={() => openLibraryItem(item)}
             />
-          </View>
-        )}
+          ) : (
+            <View style={{ width: '47.8%' }}>
+              <VisualRecipeCard
+                title={getLibraryTitle(item)}
+                subtitle={getLibrarySubtitle(item)}
+                platform={getRecipePlatform(item.platform)}
+                status={getRecipeVisualStatus(item)}
+                thumbnailUrl={getRecipeCardThumbnail(item)}
+                sourceUrl={item.source_url}
+                hasGroceryList={hasAiRecipe(item)}
+                progress={item.latest_media_job?.progress}
+                createdAt={item.created_at}
+                onPress={() => openLibraryItem(item)}
+              />
+            </View>
+          )
+        }
       />
     </View>
   )
@@ -266,21 +320,25 @@ export default function LibraryRoute() {
 
 function LibraryHeader({
   searchQuery,
+  hasQuery,
   selectedFilters,
   sortMode,
   resultCount,
   offlineMessage,
   onSearchChange,
+  onClearSearch,
   onContentFilterToggle,
   onSortModeChange,
   onSaveRecipe,
 }: {
   searchQuery: string
+  hasQuery: boolean
   selectedFilters: ContentFilter[]
   sortMode: SortMode
   resultCount: number
   offlineMessage: string | null
   onSearchChange: (value: string) => void
+  onClearSearch: () => void
   onContentFilterToggle: (value: ContentChip) => void
   onSortModeChange: (value: SortMode) => void
   onSaveRecipe: () => void
@@ -300,14 +358,34 @@ function LibraryHeader({
       </View>
 
       <Input
-        label="Search"
+        label="Search your saved recipes"
         value={searchQuery}
-        placeholder="Search recipes, ingredients, notes"
+        placeholder="Recipes, ingredients, tags, or Instagram"
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"
         onChangeText={onSearchChange}
+        style={{ borderRadius: radius.pill }}
       />
+
+      {hasQuery ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <Text selectable style={[typography.caption, { flex: 1, color: colors.textMuted }]}>
+            Matching recipe titles, ingredients, steps, tags, and sources
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Clear search"
+            hitSlop={8}
+            onPress={onClearSearch}
+            style={({ pressed }) => ({ opacity: pressed ? 0.72 : 1 })}
+          >
+            <Text selectable={false} style={[typography.caption, { color: colors.accent }]}>
+              Clear
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <ScrollView
         horizontal
@@ -337,6 +415,7 @@ function LibraryHeader({
       </ScrollView>
 
       <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+        {hasQuery ? 'Search results: ' : ''}
         {resultCount} {resultCount === 1 ? 'recipe' : 'recipes'}
       </Text>
       {offlineMessage ? <NonBlockingNetworkNotice message={offlineMessage} /> : null}
@@ -366,14 +445,20 @@ function LibraryEmptyState({
   isLoading,
   error,
   hasItems,
+  hasQuery,
+  hasActiveFilters,
   onRetry,
   onSaveRecipe,
+  onClearSearchAndFilters,
 }: {
   isLoading: boolean
   error: Error | null
   hasItems: boolean
+  hasQuery: boolean
+  hasActiveFilters: boolean
   onRetry: () => void
   onSaveRecipe: () => void
+  onClearSearchAndFilters: () => void
 }) {
   if (isLoading) {
     return <LoadingState message="Loading library..." />
@@ -393,8 +478,16 @@ function LibraryEmptyState({
   if (hasItems) {
     return (
       <EmptyState
-        title="No matching recipes"
-        message="Try another chip or search term."
+        title="No recipes found"
+        message="Try chicken, pasta, Pakistani, dessert, or Instagram."
+        actionLabel={
+          hasQuery && hasActiveFilters
+            ? 'Clear search and filters'
+            : hasQuery
+              ? 'Clear search'
+              : 'Clear filters'
+        }
+        onActionPress={onClearSearchAndFilters}
       />
     )
   }
@@ -406,6 +499,110 @@ function LibraryEmptyState({
       actionLabel="Save Recipe"
       onActionPress={onSaveRecipe}
     />
+  )
+}
+
+function LibrarySearchResultRow({
+  item,
+  onPress,
+}: {
+  item: RecipeLibraryItem
+  onPress: () => void
+}) {
+  const thumbnailUrl = getRecipeCardThumbnail(item)
+  const tags = getLibraryTags(item)
+  const metadata = getSearchResultMetadata(item)
+  const platform = getRecipePlatform(item.platform)
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${getLibraryTitle(item)}`}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        gap: spacing.md,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: radius.md,
+        borderCurve: 'continuous',
+        backgroundColor: colors.surface,
+        opacity: pressed ? 0.84 : 1,
+        padding: spacing.sm,
+      })}
+    >
+      <View
+        style={{
+          width: 92,
+          minHeight: 112,
+          overflow: 'hidden',
+          borderRadius: radius.sm,
+          borderCurve: 'continuous',
+          backgroundColor: colors.surfaceMuted,
+        }}
+      >
+        {thumbnailUrl ? (
+          <Image
+            source={{ uri: thumbnailUrl }}
+            style={{ width: '100%', height: '100%' }}
+          />
+        ) : (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <Text selectable={false} style={{ color: colors.textMuted, fontSize: 28, fontWeight: '900' }}>
+              RD
+            </Text>
+          </View>
+        )}
+      </View>
+
+      <View style={{ flex: 1, minWidth: 0, gap: spacing.xs, paddingVertical: spacing.xs }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+          <PlatformBadge platform={platform} />
+          <AppBadge
+            label={hasAiRecipe(item) ? 'AI Recipe' : 'Saved Link'}
+            tone={hasAiRecipe(item) ? 'accent' : 'default'}
+          />
+        </View>
+        <Text
+          selectable
+          numberOfLines={2}
+          style={[typography.body, { color: colors.text, fontWeight: '800' }]}
+        >
+          {getLibraryTitle(item)}
+        </Text>
+        {metadata ? (
+          <Text selectable numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
+            {metadata}
+          </Text>
+        ) : null}
+        {tags.length > 0 ? (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+            {tags.slice(0, 3).map((tag) => (
+              <SearchTagChip key={tag} label={formatTag(tag)} />
+            ))}
+          </View>
+        ) : null}
+      </View>
+    </Pressable>
+  )
+}
+
+function SearchTagChip({ label }: { label: string }) {
+  return (
+    <View
+      style={{
+        maxWidth: 112,
+        borderRadius: radius.pill,
+        backgroundColor: colors.primarySoft,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 3,
+      }}
+    >
+      <Text selectable numberOfLines={1} style={[typography.caption, { color: colors.primary }]}>
+        {label}
+      </Text>
+    </View>
   )
 }
 
@@ -435,17 +632,9 @@ function getFilteredLibraryItems({
         return true
       }
 
-      return [
-        item.title,
-        item.latest_card?.recipe_title,
-        item.latest_card?.short_summary,
-        item.user_note,
-        item.pasted_caption,
-        item.manual_ingredients,
-        item.cuisine,
-        item.meal_type,
-        item.platform,
-      ].some((value) => value?.toLowerCase().includes(normalizedQuery))
+      return getLibrarySearchValues(item).some((value) =>
+        value.toLowerCase().includes(normalizedQuery)
+      )
     })
     .sort((firstItem, secondItem) => {
       const firstTime = new Date(firstItem.created_at).getTime()
@@ -455,6 +644,95 @@ function getFilteredLibraryItems({
         ? secondTime - firstTime
         : firstTime - secondTime
     })
+}
+
+function getLibrarySearchValues(item: RecipeLibraryItem) {
+  return [
+    item.title,
+    item.source_url,
+    item.latest_card?.recipe_title,
+    item.latest_card?.short_summary,
+    item.user_note,
+    item.pasted_caption,
+    item.manual_ingredients,
+    item.cuisine,
+    item.meal_type,
+    item.platform,
+    ...getSourceMetadataSearchValues(item.source_metadata),
+    ...(item.latest_card?.tags ?? []),
+    ...(item.latest_card?.ingredients.flatMap((ingredient) => [
+      ingredient.name,
+      ingredient.name_en,
+      ingredient.name_ur,
+      ingredient.quantity,
+      ingredient.notes,
+      ingredient.notes_en,
+      ingredient.notes_ur,
+    ]) ?? []),
+    ...(item.latest_card?.steps.flatMap((step) => [
+      step.instruction,
+      step.instruction_en,
+      step.instruction_ur,
+      step.tip_en,
+      step.tip_ur,
+      step.urdu_or_roman_urdu_tip,
+    ]) ?? []),
+  ].filter((value): value is string => Boolean(value?.trim()))
+}
+
+function getLibraryTags(item: RecipeLibraryItem) {
+  return Array.from(
+    new Set(
+      (item.latest_card?.tags ?? [])
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    )
+  )
+}
+
+function getSearchResultMetadata(item: RecipeLibraryItem) {
+  if (!item.latest_card) {
+    return null
+  }
+
+  const minutes =
+    (item.latest_card.time.prep_time_minutes ?? 0) +
+    (item.latest_card.time.cook_time_minutes ?? 0)
+  const values = [
+    minutes > 0 ? `${minutes} min` : null,
+    item.latest_card.servings?.trim()
+      ? `Serves ${item.latest_card.servings.trim()}`
+      : null,
+  ].filter((value): value is string => Boolean(value))
+
+  return values.length > 0 ? values.join(' · ') : null
+}
+
+function formatTag(tag: string) {
+  return tag
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+function getSourceMetadataSearchValues(value: RecipeLibraryItem['source_metadata']) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return []
+  }
+
+  const metadata = value as Record<string, unknown>
+
+  return [
+    metadata.title,
+    metadata.description,
+    metadata.platform,
+    metadata.author,
+    metadata.author_username,
+    metadata.authorUsername,
+    metadata.host,
+    metadata.source_host,
+  ].filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
 }
 
 function itemMatchesFilter(item: RecipeLibraryItem, filter: ContentFilter) {

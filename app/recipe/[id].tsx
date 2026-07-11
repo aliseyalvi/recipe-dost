@@ -447,6 +447,24 @@ export default function SavedRecipeRoute() {
     router.replace(sourceReturnToRoute ?? '/home')
   }
 
+  const handleLeaveProcessing = () => {
+    track('processing_leave_tapped', {
+      platform,
+      destination: sourceReturnToRoute ?? '/home',
+      status: activeMediaJob?.status ?? 'metadata_pending',
+    })
+    router.replace(sourceReturnToRoute ?? '/home')
+  }
+
+  const handleWaitHere = () => {
+    track('processing_wait_here_tapped', {
+      platform,
+      status: activeMediaJob?.status ?? 'metadata_pending',
+    })
+    void mediaJobQuery.refetch()
+    void recipeQuery.refetch()
+  }
+
   const handleCreateMediaJob = async () => {
     if (isGenerateDisabled) {
       if (durationBlockMessage) {
@@ -761,7 +779,7 @@ export default function SavedRecipeRoute() {
         <Button
           label="Open Original Video"
           fullWidth
-          variant="outline"
+          variant="accent"
           onPress={() => {
             void openOriginalVideo()
           }}
@@ -785,7 +803,8 @@ export default function SavedRecipeRoute() {
             Details unavailable
           </Text>
           <Text selectable style={[typography.body, { color: colors.text }]}>
-            Details unavailable. You can retry details or generate the AI recipe.
+            We could not prepare the preview for this link. You can retry
+            details or generate the AI recipe from the saved link.
           </Text>
           <Button
             label={isRefreshingMetadata ? 'Retrying details...' : 'Retry details'}
@@ -799,10 +818,27 @@ export default function SavedRecipeRoute() {
         </Card>
       ) : null}
 
+      {recipe.metadata_status === 'saving' ? (
+        <Card tone="muted">
+          <Text selectable style={[typography.heading, { color: colors.text }]}>
+            Saving link...
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+            Recipe Dost is saving this link. You can leave and check Library
+            again in a moment.
+          </Text>
+        </Card>
+      ) : null}
+
       {recipe.metadata_status === 'pending' ? (
         <Card tone="muted">
+          <Text selectable style={[typography.heading, { color: colors.text }]}>
+            Preparing preview...
+          </Text>
           <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-            Fetching details...
+            Recipe Dost is fetching the title, thumbnail, and basic details.
+            You can leave this screen; Home and Library refresh when the
+            preview is ready.
           </Text>
         </Card>
       ) : null}
@@ -831,7 +867,9 @@ export default function SavedRecipeRoute() {
             Analyzing
           </Text>
           <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-            Recipe Dost is generating your AI recipe card.
+            Recipe Dost is generating your AI recipe card. You can leave this
+            screen while it finishes; Home and Library will update when it is
+            ready.
           </Text>
           <View
             accessibilityRole="progressbar"
@@ -854,6 +892,20 @@ export default function SavedRecipeRoute() {
           <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
             {activeMediaJob.progress}% complete
           </Text>
+          <View style={{ gap: spacing.sm }}>
+            <Button
+              label={getBackToListLabel(sourceReturnToRoute)}
+              fullWidth
+              variant="secondary"
+              onPress={handleLeaveProcessing}
+            />
+            <Button
+              label="Wait here"
+              fullWidth
+              variant="outline"
+              onPress={handleWaitHere}
+            />
+          </View>
         </Card>
       ) : resultRecipeCardId ? (
         <Card tone="warm">
@@ -957,7 +1009,8 @@ export default function SavedRecipeRoute() {
                 Preparing video details...
               </Text>
               <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-                You can generate the AI recipe once the preview check finishes.
+                You can leave this screen while the preview finishes. Home and
+                Library will refresh when details are ready.
               </Text>
             </View>
           ) : null}
@@ -1017,6 +1070,10 @@ export default function SavedRecipeRoute() {
       ) : null}
     </Screen>
   )
+}
+
+function getBackToListLabel(route: string | null) {
+  return route === '/library' ? 'Go back to Library' : 'Go back to Home'
 }
 
 function getRecipePlatform(platform: string | null): RecipePlatform {

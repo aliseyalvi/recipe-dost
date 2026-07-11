@@ -45,7 +45,7 @@ import { useQuery } from '@tanstack/react-query'
 import * as Clipboard from 'expo-clipboard'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
-import { Image, Linking, Text, View } from 'react-native'
+import { Image, Linking, Pressable, Text, View } from 'react-native'
 
 export default function RecipeCardResultRoute() {
   const router = useRouter()
@@ -198,6 +198,13 @@ export default function RecipeCardResultRoute() {
     }
   }
 
+  const openTagSearch = (tag: string) => {
+    track('recipe_tag_search_opened', {
+      tag_count: recipeCard.tags.length,
+    })
+    router.push(`/library?query=${encodeURIComponent(tag)}`)
+  }
+
   return (
     <Screen compact>
       <NestedScreenHeader
@@ -326,6 +333,7 @@ export default function RecipeCardResultRoute() {
         />
       </Card>
 
+      <TagsSection tags={recipeCard.tags} onTagPress={openTagSearch} />
       <InfoGrid recipeCard={recipeCard} />
       <IngredientsSection
         ingredients={recipeCard.ingredients}
@@ -413,6 +421,40 @@ function InfoGrid({ recipeCard }: { recipeCard: RecipeCard }) {
         <AppBadge label={`Cook: ${cookTime}`} />
         <AppBadge label={`Servings: ${recipeCard.servings || 'Not specified'}`} />
         <AppBadge label={`Difficulty: ${titleCase(recipeCard.difficulty)}`} />
+      </View>
+    </Card>
+  )
+}
+
+function TagsSection({
+  tags,
+  onTagPress,
+}: {
+  tags: string[]
+  onTagPress: (tag: string) => void
+}) {
+  if (tags.length === 0) {
+    return null
+  }
+
+  return (
+    <Card>
+      <Text selectable style={[typography.heading, { color: colors.text }]}>
+        Tags
+      </Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        {tags.slice(0, 8).map((tag) => (
+          <Pressable
+            key={tag}
+            accessibilityRole="button"
+            accessibilityLabel={`Search for ${titleCase(tag)} recipes`}
+            hitSlop={4}
+            onPress={() => onTagPress(tag)}
+            style={({ pressed }) => ({ opacity: pressed ? 0.72 : 1 })}
+          >
+            <AppBadge label={titleCase(tag)} tone="primary" />
+          </Pressable>
+        ))}
       </View>
     </Card>
   )

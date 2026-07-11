@@ -1,6 +1,35 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-10
+- M22E.1R-C implemented professional Library search and tag UX on `develop` without backend or schema changes.
+- Decision: retain client-side search over fetched, user-owned Library data for beta scale. Active text searches use compact result rows and add only existing `time_json`/`servings` fields to the current `recipe_cards` read; no new query key, access rule, or remote search endpoint was introduced.
+- Decision: detail tags are rounded, capped at eight, and navigate to `/library?query=<tag>`. Analytics records safe interaction/count metadata only; raw tags and search text remain untracked.
+- Decision: Home remains a browsing surface, while Library is the dedicated text-search surface. Existing grid browsing, content filters, sort modes, refetch behavior, and empty-tag compatibility remain intact.
+- Validation: `npm run typecheck`, `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, and `node scripts/env/validate-env.mjs production` passed.
+- M22E.1R-A completed a documentation-only professional UX recovery audit on `develop` after M22E.1D/E QA feedback.
+- Decision: `recipe_cards.tags_json` exists and the mobile app reads it conditionally, but the active media-job card writer is the external Render media worker. The legacy in-repo `generate-card` function writes tags but is not the user-facing generation path. Fix the worker recipe-card prompt/schema and persistence mapper before re-evaluating tag UI/search.
+- Decision: keep M22E.1B app-state refresh and M22E.1D list normalization, but replace the current search/tag presentation, paywall comparison composition, and processing-state visual hierarchy. Do not revert original-video placement or existing retry behavior.
+- Decision: favorite requires `recipe_items.is_favorite boolean not null default false` plus regenerated types. Confirmed hard delete is feasible with existing user-owned RLS/cascades, but must handle or explicitly accept stale IDs in `grocery_lists.source_recipe_ids`.
+- Decision: paywall recovery centers Free = 3 AI recipe cards total and Premium = 100 AI recipe cards/month, then explains shared generated-card benefits once. Do not change Google Play products, access logic, or RevenueCat entitlement `premium`.
+- Validation: `npm run qa:static` and `node scripts/env/env-doctor.mjs development` passed.
+- M22E.1E polished processing and paywall copy after QA feedback.
+- Decision: AI processing now shows explicit leave/wait actions while keeping current auto-open-on-complete behavior. Leaving returns to Home/Library and relies on the existing Home/Library focus/foreground refresh from M22E.1B.
+- Decision: Metadata pending copy now uses "Preparing preview..." only for pending preview fetches; saving and failed metadata states have separate friendly copy, and failed metadata keeps the existing retry path.
+- Decision: Paywall comparison now avoids implying free users get unlimited ingredient/step generation. Free copy is 3 total AI recipe cards, unlimited saved links, and ingredients/steps/grocery data only on generated AI cards; Premium remains 100 AI recipe cards/month with existing products and entitlement.
+- Decision: Usage clarity uses the existing `get-ai-access` query already loaded on Paywall. No new backend call, quota/access logic, product, or entitlement change was added.
+- QA note: M22E.1D tag search/chips only surface existing `recipe_cards.tags_json`. If newly generated cards still have empty tags, that requires a separate prompt/Edge Function contract patch; M22E.1E stays app-side only.
+- Validation: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, and `node scripts/env/validate-env.mjs production` passed.
+- M22E.1D shipped the first low-risk competitor UX cherry-picks as app-side/UI-only changes on `develop`.
+- Decision: Library search now stays client-side over fetched user-owned rows and includes title, source metadata, platform/source URL, notes/caption/manual ingredients, cuisine/meal type, AI recipe title/summary, tags, ingredients, and steps. This avoids new backend search, RLS, or indexing risk for the beta dataset.
+- Decision: AI tags reuse existing `recipe_cards.tags_json`; no tags schema migration or Edge Function prompt contract change was made in this patch.
+- Decision: Favorite/unfavorite, delete with confirmation, and manual tags remain deferred because they need a schema/API review. Do not add `recipe_items.is_favorite` or destructive delete UI until a separate dev-QA migration patch is approved.
+- Decision: Processing copy now tells users they can leave while AI/metadata work continues, Open Original Video has stronger saved-link detail placement, and paywall comparison copy preserves Free = 3 successful AI generations, Premium = 100 AI recipes/month, and 2-minute beta video length.
+- Validation: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, `node scripts/env/validate-env.mjs development`, and `node scripts/env/validate-env.mjs production` passed.
+- M22E.1C documented competitor UX cherry-pick decisions from ReciMe/Pluck-style recipe app review without runtime changes.
+- Decision: Selected low-risk improvements are broader recipe search, AI tag chips, favorites, delete with confirmation, clearer leave-while-processing state, better Premium benefit comparison, optional usage/credits pill from existing access data, stronger Open original video placement, New AI Recipe ribbon, and basic manual tags.
+- Decision: Avoid nutrition/macros, meal planner, recipe scaling, PDF export, AI edit, photo import, folders/cookbooks, push notifications, and video downloading/storage for now because they expand scope, trust/liability, permissions, data model, or compliance risk beyond M22E.
+- Decision: M22E.1D should start with app-side/UI-only improvements that do not require schema/backend changes, then separately review favorites/delete/manual tags if they need database or API work.
+- Validation: `npm run qa:static` passed for M22E.1C.
 - M22E.1B stabilized Home/Library app-state refresh for saved-link metadata without backend, worker, quota, RevenueCat, package ID, or env changes.
 - Decision: `recipe_items.metadata_status = saving | pending` are active list states for refresh purposes, but metadata polling is bounded by recent `updated_at` age to avoid unbounded network polling if a row is stuck.
 - Decision: Home `['recent-recipes', user.id]` and Library `['recipe-library', user.id]` now refetch on screen focus and app foreground resume, so metadata completed while the app was backgrounded can replace stale Preparing Preview cache state.
