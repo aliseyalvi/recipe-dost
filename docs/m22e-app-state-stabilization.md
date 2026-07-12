@@ -8,6 +8,71 @@ Audit-only pass for onboarding launch routing and stale Home/Library metadata st
 
 Current branch workflow is correct for this milestone: M22E fixes are prepared on `develop`, then merged to `main` only after QA for a production AAB update.
 
+## M22E.1R-LIBRARY1B Library card icon and action-menu polish
+
+Status: implemented on `develop`; Android device QA pending.
+
+Automated validation passed: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, `node scripts/env/validate-env.mjs development`, and `node scripts/env/validate-env.mjs production`.
+
+Icon and card-overlay decisions:
+
+- The repo has no usable installed icon dependency: `@expo/vector-icons`, Lucide, `react-native-vector-icons`, and `react-native-svg` are absent from app dependencies/runtime resolution. LIBRARY1B adds no package. A local typed `EditorialIcon` helper uses the app's existing code-native symbol approach for link/source, clock, creator, sparkle, heart, hourglass, retry, more, external-link, book, delete, and close treatments.
+- Instagram, TikTok, YouTube, and Facebook use compact boxed `IG`, `TT`, `YT`, and `FB` platform marks with their explicit text label. Generic sources use the non-directional chain/source mark. Creator chips use `@`; duration uses a clock. The previous directional arrow beside source/creator metadata is removed.
+- Every card now has a 44px outline/filled Favorite button at top left, a nearby state badge with semantic icon (AI Recipe + sparkle, Saved Link + source, Preparing/active work + hourglass, caption/retry + retry), and the existing 44px three-dot button at top right. Nested actions stop propagation so card-body navigation is unchanged.
+- The bottom metadata row is standardized as small translucent platform, creator, and duration chips. It uses only existing platform, normalized creator, AI time, or saved source-video duration data; no sample metadata is introduced.
+
+Themed action-menu behavior:
+
+- Replaced the native `Alert` options popup with a React Native `Modal` rendered as an Obsidian bottom action sheet: 72% backdrop, continuous rounded top corners, subtle coral border, safe-area padding, drag affordance, recipe context, icon rows, inline mutation errors, outside-tap close, close button, and Android `onRequestClose` support.
+- Open original video is shown only when `source_url` exists, uses existing `Linking` behavior, never displays or logs the URL, and keeps failures inside the themed sheet.
+- Generated rows show View AI Recipe. Saved rows show Generate AI Recipe; active saving/metadata/media work shows View progress. All use the existing Library navigation mapper, so the saved-parent route owns generation/access/retry logic and generated rows keep their AI-card route. No generation logic is duplicated in the menu.
+- Favorite/Unfavorite uses the existing ownership-scoped `toggleFavorite()` mutation backed by `recipe_items.is_favorite`. Delete uses the existing ownership-scoped soft-delete helper backed by `deleted_at`; the themed confirmation says removal affects Recipe Dost Library only, not the original video.
+- Successful Favorite/Delete actions update the exact Library cache, invalidate Home/Library/detail/card/grocery management queries, and retain existing analytics without raw values. Delete removes the active row locally before background refetch.
+- Favorite/Delete are not deferred: M22E.1R-D already delivered the schema, ownership filters, RLS behavior, and helpers. A new M22E.1R-LIBRARY2 schema/API milestone is unnecessary for this patch.
+
+M22E.1R-LIBRARY1B manual QA checklist:
+
+- [ ] Verify every normal/search card shows Favorite, semantic state badge, and three-dot controls without overlap.
+- [ ] Verify AI, Saved Link, Preparing, Needs retry, platform, creator, and duration icons/marks on small Android widths.
+- [ ] Toggle Favorite from the card and menu; confirm Recent/Favorites/Home/detail persistence and no card-navigation leak.
+- [ ] Open/close the themed menu by three-dot, outside tap, close button, and Android back.
+- [ ] Verify Open original, Generate AI Recipe, View progress, and View AI Recipe route to the existing correct flows.
+- [ ] Confirm Delete shows themed confirmation, cancellation preserves the row, confirmation soft-deletes it, and the original video is unaffected.
+- [ ] Regression-check search, tabs, bottom navigation, Home, Add/share, paywall/Premium access, and processing refresh.
+
+## M22E.1R-LIBRARY1 Stitch editorial Library redesign
+
+Status: implemented and automatically validated on `develop`; Android device QA pending.
+
+Automated validation passed: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, `node scripts/env/validate-env.mjs development`, and `node scripts/env/validate-env.mjs production`.
+
+Library presentation and behavior:
+
+- Replaced the compact two-column grid with a native Stitch-inspired Obsidian editorial surface: centered coral serif-slot Library title, existing `get-ai-access` usage pill, divider, glass search treatment, horizontal chips, serif tabs, and full-width 318px image cards with a dark readability gradient. The supplied HTML, Tailwind, sample recipes, remote sample imagery, and font imports remain design references only and do not ship in the app.
+- Normal mode uses a focusable glass search pill, useful real-query chips (Dinner, Quick, Healthy, Pasta, Chicken, Instagram, TikTok, and YouTube), and Recent, Favorites, and AI Recipes tabs. Recent is all active library rows sorted newest first. Favorites uses the existing persisted `recipe_items.is_favorite`. AI Recipes requires a real `recipe_cards` row or completed media-job result ID.
+- Active search uses a native Android-safe `TextInput`, Cancel action, coral underline, active-query clear chip, and up to three suggestions derived from existing AI tags, meal type, cuisine, or platform values. The Filters label is presentational; no unsupported filter sheet or fake result set was added. Chip taps apply the same real client-side search path.
+- Search remains client-side over the already-loaded user-owned Library rows. Coverage includes normalized display title, saved/source title and description, source metadata author/creator/channel/uploader/platform/host fields, notes, pasted caption, manual ingredients, cuisine, meal type, AI title/summary, tags, ingredient fields, step fields, and platform. Quick additionally uses real AI prep + cook minutes when present.
+- Search results use the same large image-card treatment as normal browsing and add the Stitch narrative heading and dynamic saved-recipe count. Empty results, empty Favorites, empty AI Recipes, initial empty Library, loading, blocking error/retry, and background-refresh warning states are explicit.
+
+Card and navigation decisions:
+
+- Cards reuse the HOME2 title normalizer so raw URLs, weak creator-only titles, and “Video by” / “Post by” fallbacks do not become primary titles. Existing thumbnails are used in worker, uploaded, then saved-item order; missing/failed images use a native placeholder without external dummy assets.
+- Real card content supplies summary, platform/meal type, AI recipe time or source-video duration when available, and creator/source metadata. Saving/pending metadata shows Preparing; active AI work shows its existing stage; failed metadata/media jobs show Needs retry; caption-required jobs remain explicit.
+- Navigation is unchanged: a real/latest completed AI card opens `/recipe-card/[id]?returnTo=/library`; saved, preparing, caption-required, and failed parent rows open `/recipe/[id]?returnTo=/library`. Bounded polling, focus refetch, foreground refetch, and pull-to-refresh remain intact.
+- Favorites are implemented from existing schema-backed data. LIBRARY1 initially kept Favorite/Delete mutations on detail surfaces; LIBRARY1B now safely reuses those same existing mutations from the card overlay and themed Library menu. No export, print, or fake action was introduced.
+- The usage pill reuses the existing access function, shows Free remaining or Premium, records plan category only, and opens the unchanged `/paywall`. Bottom content padding clears the existing floating tab bar and center Add flow.
+
+M22E.1R-LIBRARY1 manual QA checklist:
+
+- [ ] Verify normal Library header, usage pill, search pill, chips, tabs, large cards, and final-card tab-bar clearance on a small Android device.
+- [ ] Verify Free/Premium usage labels and unchanged `/paywall`, purchase, and restore behavior.
+- [ ] Search by title, ingredient, generated tag, platform, creator/source, note/caption, and AI step; verify the narrative count and zero-results state.
+- [ ] Verify Dinner/Quick/Healthy/Pasta/Chicken/platform chip queries and active-query clear/Cancel keyboard behavior.
+- [ ] Verify Recent newest-first order, real Favorites only, and completed/generated rows only in AI Recipes.
+- [ ] Verify saved, preparing, failed, active AI, and completed AI card states route to the existing correct detail/progress/retry surface.
+- [ ] Verify View recipe and Open original menu actions without raw URL analytics or a destructive Library action.
+- [ ] Regression-check Home, center Add/share sheet, Grocery, Settings, bottom tabs, AI completion refresh, and paywall/Premium sync.
+
 ## M22E.1R-HOME2 Home processing cleanup and title normalization
 
 Status: implemented and automatically validated on `develop`; Android device QA pending.

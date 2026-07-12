@@ -1,0 +1,243 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Recipe Dost - Library Search State</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&amp;family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-surface": "#e5e2e1",
+                        "surface-dim": "#131313",
+                        "outline": "#aa8987",
+                        "on-primary-fixed": "#410006",
+                        "background": "#131313",
+                        "primary": "#ffb3b0",
+                        "error-container": "#93000a",
+                        "tertiary-container": "#006a85",
+                        "on-primary-container": "#ffd3d1",
+                        "secondary-container": "#454747",
+                        "surface-container": "#201f1f",
+                        "on-error-container": "#ffdad6",
+                        "primary-fixed": "#ffdad8",
+                        "on-secondary-fixed-variant": "#454747",
+                        "on-tertiary": "#003544",
+                        "surface-variant": "#353534",
+                        "surface": "#131313",
+                        "on-secondary": "#2f3131",
+                        "surface-tint": "#ffb3b0",
+                        "on-tertiary-container": "#abe6ff",
+                        "primary-fixed-dim": "#ffb3b0",
+                        "on-secondary-container": "#b4b5b5",
+                        "on-primary-fixed-variant": "#930019",
+                        "primary-container": "#be1e2d",
+                        "error": "#ffb4ab",
+                        "surface-container-high": "#2a2a2a",
+                        "surface-bright": "#3a3939",
+                        "inverse-on-surface": "#313030",
+                        "on-primary": "#68000f",
+                        "secondary": "#c6c6c7",
+                        "on-tertiary-fixed-variant": "#004d62",
+                        "outline-variant": "#5b403f",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "on-error": "#690005",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "tertiary": "#85d1ef",
+                        "on-surface-variant": "#e3bebb",
+                        "on-tertiary-fixed": "#001f29",
+                        "tertiary-fixed": "#baeaff",
+                        "tertiary-fixed-dim": "#85d1ef",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface-container-highest": "#353534",
+                        "inverse-surface": "#e5e2e1",
+                        "surface-container-low": "#1c1b1b",
+                        "secondary-fixed": "#e2e2e2",
+                        "on-background": "#e5e2e1",
+                        "inverse-primary": "#b91a2a"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "section-margin": "40pt",
+                        "page-padding": "16pt",
+                        "element-gap": "12pt",
+                        "structural-gap": "20pt"
+                    },
+                    fontFamily: {
+                        "metadata": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"],
+                        "display-lg-mobile": ["Bodoni Moda"],
+                        "label-caps": ["Hanken Grotesk"],
+                        "display-lg": ["Bodoni Moda"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "headline-md": ["Bodoni Moda"]
+                    },
+                    fontSize: {
+                        "metadata": ["14px", { lineHeight: "1.4", fontWeight: "500" }],
+                        "body-md": ["16px", { lineHeight: "1.5", fontWeight: "400" }],
+                        "display-lg-mobile": ["32px", { lineHeight: "1.2", fontWeight: "700" }],
+                        "label-caps": ["12px", { lineHeight: "1", letterSpacing: "0.1em", fontWeight: "600" }],
+                        "display-lg": ["48px", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "body-lg": ["18px", { lineHeight: "1.6", fontWeight: "400" }],
+                        "headline-md": ["24px", { lineHeight: "1.3", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background-color: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-pill {
+            background-color: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .text-shadow-premium {
+            text-shadow: 0 4px 12px rgba(0,0,0,0.8);
+        }
+        .gradient-mask {
+            mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="bg-surface/80 backdrop-blur-lg dark:bg-surface/80 fixed top-0 w-full z-50 border-b border-white/10 flat no shadows flex justify-between items-center px-page-padding py-4 w-full max-w-7xl mx-auto md:hidden">
+<div class="w-[100px]"></div>
+<h1 class="font-display-lg-mobile text-[28px] font-bold text-primary tracking-tighter absolute left-1/2 -translate-x-1/2">Library</h1>
+<button class="hover:opacity-80 transition-opacity active:scale-95 transition-transform text-primary font-metadata text-metadata px-4 py-2 glass-pill rounded-full z-10">
+            120 Credits
+        </button>
+</header>
+<header class="hidden md:flex bg-surface/80 backdrop-blur-lg dark:bg-surface/80 fixed top-0 w-full z-50 flat no shadows justify-between items-center px-page-padding py-4 max-w-7xl mx-auto left-0 right-0">
+<div class="flex items-center gap-8">
+<h1 class="font-display-lg text-display-lg text-primary tracking-tighter">Library</h1>
+<nav class="flex gap-6">
+<a class="text-secondary hover:opacity-80 transition-opacity font-label-caps text-label-caps tracking-widest uppercase" href="#">Home</a>
+<a class="text-primary hover:opacity-80 transition-opacity font-label-caps text-label-caps tracking-widest uppercase border-b-2 border-primary pb-1" href="#">Library</a>
+<a class="text-secondary hover:opacity-80 transition-opacity font-label-caps text-label-caps tracking-widest uppercase" href="#">Grocery</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button aria-label="add_circle" class="text-secondary hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">add_circle</span>
+</button>
+<button aria-label="settings" class="text-secondary hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+</button>
+<button class="hover:opacity-80 transition-opacity active:scale-95 transition-transform text-primary font-metadata text-metadata px-4 py-2 glass-pill rounded-full ml-4">
+                120 Credits
+            </button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-28 md:pt-36 px-page-padding max-w-7xl mx-auto">
+<!-- Search Section -->
+<section class="mb-section-margin max-w-3xl mx-auto">
+<div class="flex items-center gap-4">
+<div class="relative flex-1 group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary opacity-80" style="font-variation-settings: 'FILL' 0;">search</span>
+<input autofocus="" class="w-full bg-transparent border-0 border-b border-primary text-on-surface font-body-lg text-body-lg pl-12 pr-4 py-4 focus:ring-0 focus:border-primary transition-colors focus:outline-none placeholder:text-secondary/50" placeholder="Search recipes, ingredients, tags..." type="text" value="Pasta">
+<button aria-label="clear search" class="absolute right-4 top-1/2 -translate-y-1/2 text-secondary hover:text-primary transition-colors opacity-0 group-focus-within:opacity-100">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">close</span>
+</button>
+</div>
+<button class="font-metadata text-metadata text-secondary hover:text-primary transition-colors whitespace-nowrap">
+                    Cancel
+                </button>
+</div>
+<!-- Tags Filter -->
+<div class="mt-structural-gap flex flex-wrap gap-3">
+<button class="glass-pill px-4 py-2 rounded-full font-label-caps text-label-caps text-on-surface hover:border-primary transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 0;">tune</span>
+                    Filters
+                </button>
+<div class="w-[1px] h-8 bg-white/10 mx-1"></div>
+<button class="bg-primary-container text-white px-5 py-2 rounded-full font-label-caps text-label-caps shadow-lg flex items-center gap-2 transition-transform active:scale-95">
+                    Pasta
+                    <span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 0;">close</span>
+</button>
+<button class="glass-pill px-5 py-2 rounded-full font-label-caps text-label-caps text-secondary hover:text-on-surface hover:border-white/30 transition-all">
+                    Vegetarian
+                </button>
+<button class="glass-pill px-5 py-2 rounded-full font-label-caps text-label-caps text-secondary hover:text-on-surface hover:border-white/30 transition-all">
+                    Under 30 Min
+                </button>
+<button class="glass-pill px-5 py-2 rounded-full font-label-caps text-label-caps text-secondary hover:text-on-surface hover:border-white/30 transition-all">
+                    Italian
+                </button>
+</div>
+</section>
+<!-- Search Results Narrative -->
+<section class="mb-structural-gap border-b border-white/10 pb-4">
+<h2 class="font-headline-md text-headline-md text-on-surface flex items-baseline gap-2">
+                Showing results for <span class="text-primary italic font-display-lg text-[28px]">"Pasta"</span>
+</h2>
+<p class="font-metadata text-metadata text-secondary mt-1">12 exclusive recipes found</p>
+</section>
+<!-- Bento Grid Results -->
+<section class="grid grid-cols-1 md:grid-cols-12 gap-structural-gap">
+<!-- Featured Result (Spans 8 cols on desktop) -->
+<article class="md:col-span-8 group cursor-pointer relative overflow-hidden rounded-[20px] aspect-[4/3] md:aspect-[16/9]"><img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHmSnbg1YOq3WFxUre_amJcDvQADxPEycbpD40vMtMGdgOIbazGdRA2W1TBLoJfc1mFiAAN1vzUVIiLNxPoq22ijTnf8GeoCiVQAMv9OVyetvxOofVjccvYVpEEERyujV_GyoEuJ1GMzmFs_q-OFMAuSgwTgcWxnWk0v9747F-k4RPmLdEjUXEjFnl0GotOvMzvhIhb4zdHdyYm3zORw3AAiHLgzMwpt4WM080GFO6Q_pwPbN8D5mizeaF-HipJVy5i90v9JyMia8t"><div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div><div class="absolute top-4 left-4"><button class="text-white hover:text-primary transition-colors p-1 bg-black/20 backdrop-blur-sm rounded-full"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span></button></div><div class="absolute top-4 right-4"><button class="text-white hover:text-primary transition-colors p-1 bg-black/20 backdrop-blur-sm rounded-full"><span class="material-symbols-outlined">more_vert</span></button></div><div class="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-2"><h3 class="font-headline-md text-headline-md text-white group-hover:text-primary transition-colors">Wild Mushroom &amp; Black Truffle Pappardelle</h3><p class="font-metadata text-metadata text-secondary line-clamp-2 mb-2">Hand-rolled pappardelle enveloped in a rich, umami-dense porcini and black truffle cream sauce.</p><div class="flex items-center gap-3 mt-auto"><span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">restaurant</span> Dinner</span><span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">timer</span> 45m</span><span class="text-xs font-label-caps text-primary uppercase tracking-wider flex items-center gap-1 ml-auto"><span class="material-symbols-outlined text-[14px]">link</span> Chef Mario</span></div></div></article>
+<!-- Standard Result 1 (Spans 4 cols on desktop) -->
+<article class="md:col-span-4 group cursor-pointer relative overflow-hidden rounded-[20px] aspect-square md:aspect-auto"><img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpm1JBZTWGVUhEWdP155uIaAMuTlgN9Yltz5F-j1cOfnoqPb2VU7r5o9pyQK56uUW-LaC7tk9JJmVikVSt7-Sjj4f1aI8T5l3F9EfBqyjhx6cD-vPrmSm_qyiRzdOzA-rcpjqS-c_Vw8elVf0DSwA5LiARU-N7itxbD82JN7jGlgiUJOp2L2WDqrK9W4RtjhVwRXcAgVlLeeU_EwPfUzNpP_hBVCccnEDNZCjTe2U0aIqD6A26pfFlcCW_BgevarWV8eV0_gsNyweb"><div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div><div class="absolute top-4 left-4"><button class="text-white hover:text-primary transition-colors p-1 bg-black/20 backdrop-blur-sm rounded-full"><span class="material-symbols-outlined">favorite</span></button></div><div class="absolute top-4 right-4"><button class="text-white hover:text-primary transition-colors p-1 bg-black/20 backdrop-blur-sm rounded-full"><span class="material-symbols-outlined">more_vert</span></button></div><div class="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-2"><h3 class="font-headline-md text-headline-md text-white group-hover:text-primary transition-colors">Ligurian Basil Pesto Trofie</h3><p class="font-metadata text-metadata text-secondary line-clamp-2 mb-2">Vibrant green pesto pasta twisted perfectly onto a matte black slate plate.</p><div class="flex items-center gap-3 mt-auto"><span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">restaurant</span> Lunch</span><span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">timer</span> 20m</span><span class="text-xs font-label-caps text-primary uppercase tracking-wider flex items-center gap-1 ml-auto"><span class="material-symbols-outlined text-[14px]">link</span> Gina</span></div></div></article>
+<!-- Standard Result 2 -->
+<article class="md:col-span-4 group cursor-pointer relative overflow-hidden rounded-[20px] aspect-square"><img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuARTnYP-vKKLrcfCbdhSbIn4oGnVVAswqTzI6xpXJ0FvysEgNuW_Hx5Zqg0JUdRPVkuqO6u6q3uycbp58wOwHSuRhEcP9uQuYlUR37bS7BwXyrc6WezNN3gS976-tPqEJ_C3wMOp6DIHqiR0TdC7pnwaANdJVuAgeyp38Ib6cfIbzWbvtAUE7ld9IBYomNJzQfj5unM1r_BTKyxd-vDAC8_VSSv_qssEels7mN_QnJTpxI5IBnXoJsmYGZEl0mUxVz7bFmaquiPOuRS"><div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div><div class="absolute top-4 left-4"><button class="text-white hover:text-primary transition-colors p-1 bg-black/20 backdrop-blur-sm rounded-full"><span class="material-symbols-outlined">favorite</span></button></div><div class="absolute top-4 right-4"><button class="text-white hover:text-primary transition-colors p-1 bg-black/20 backdrop-blur-sm rounded-full"><span class="material-symbols-outlined">more_vert</span></button></div><div class="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-2"><h3 class="font-headline-md text-headline-md text-white group-hover:text-primary transition-colors">Fiery Arrabbiata</h3><p class="font-metadata text-metadata text-secondary line-clamp-2 mb-2">Spicy penne with crushed red pepper flakes and a sprig of fresh parsley.</p><div class="flex items-center gap-3 mt-auto"><span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">restaurant</span> Dinner</span><span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">timer</span> 30m</span><span class="text-xs font-label-caps text-primary uppercase tracking-wider flex items-center gap-1 ml-auto"><span class="material-symbols-outlined text-[14px]">link</span> Lucia</span></div></div></article>
+<!-- Standard Result 3 -->
+<article class="md:col-span-4 group cursor-pointer relative overflow-hidden rounded-[20px] aspect-square"><img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJg1vy9vOpcpVVT5f7IPpHHSygFTsFCrYvcFGiBe2Kh8HxDUgsNEYSsGTejw-n6gPJIpIJhyPsPjFqEAEMmIcg8mFImEsy5UPPy0nkapbtDWxBN_IUaa3xxDS9Ki4eTNVwdIchzN7FwCOcZfBzbKmHKukdVUqKW4kVgov9qyULH5yhAo9cZhuTD2Q9ZzVlSomzJR0KDfej1fey7ForOc3voX2-0ub8dsQbAijqxoMhd9Q99Xls2EWNSGXVhKJTWv0TIdDn7Jp8KGYm"><div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div><div class="absolute top-4 left-4"><button class="text-white hover:text-primary transition-colors p-1 bg-black/20 backdrop-blur-sm rounded-full"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span></button></div><div class="absolute top-4 right-4"><button class="text-white hover:text-primary transition-colors p-1 bg-black/20 backdrop-blur-sm rounded-full"><span class="material-symbols-outlined">more_vert</span></button></div><div class="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-2"><h3 class="font-headline-md text-headline-md text-white group-hover:text-primary transition-colors">Authentic Roman Carbonara</h3><p class="font-metadata text-metadata text-secondary line-clamp-2 mb-2">Crispy guanciale pieces and a perfectly intact raw egg yolk sit atop creamy spaghetti.</p><div class="flex items-center gap-3 mt-auto"><span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">restaurant</span> Dinner</span><span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">timer</span> 25m</span><span class="text-xs font-label-caps text-primary uppercase tracking-wider flex items-center gap-1 ml-auto"><span class="material-symbols-outlined text-[14px]">link</span> Chef Luigi</span></div></div></article>
+<!-- Standard Result 4 -->
+<article class="md:col-span-4 group cursor-pointer relative overflow-hidden rounded-[20px] aspect-square"><img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9_nRIm5vjfRZB99Neggs9AwBXe6bGHxbdLzu14aLt4u5974Q5giKAlqLB7wCAl5Aa-GbUVn6X7ACvhXViiGO4KENipWVoqMkbRYCba4t1LS_YLUxyVN7e0V_wp36oro9GNHw6uKA6g1vIzn8-0pB2Nc3AJvkdqKqFwmFNzEv00NklcOM85mbMPCytRwvuPKJNZYXbYtrvoJX-PtY1Wj7IUNCsOfRAEiLDQUb3pZHnMSZA3dhXmj9EPN5-WqVVlRGZT705a48u7mNN"><div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div><div class="absolute top-4 left-4"><button class="text-white hover:text-primary transition-colors p-1 bg-black/20 backdrop-blur-sm rounded-full"><span class="material-symbols-outlined">favorite</span></button></div><div class="absolute top-4 right-4"><button class="text-white hover:text-primary transition-colors p-1 bg-black/20 backdrop-blur-sm rounded-full"><span class="material-symbols-outlined">more_vert</span></button></div><div class="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-2"><h3 class="font-headline-md text-headline-md text-white group-hover:text-primary transition-colors">Linguine allo Scoglio</h3><p class="font-metadata text-metadata text-secondary line-clamp-2 mb-2">A delicate serving of seafood linguine featuring plump mussels, clams, and shrimp.</p><div class="flex items-center gap-3 mt-auto"><span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">restaurant</span> Dinner</span><span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">timer</span> 50m</span><span class="text-xs font-label-caps text-primary uppercase tracking-wider flex items-center gap-1 ml-auto"><span class="material-symbols-outlined text-[14px]">link</span> Sophia</span></div></div></article>
+</section>
+<!-- Loading More Indicator -->
+<div class="w-full flex justify-center items-center py-section-margin">
+<div class="w-12 h-12 border-2 border-surface-variant border-t-primary rounded-full animate-spin"></div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-surface/80 backdrop-blur-lg dark:bg-surface/80 fixed bottom-0 w-full z-50 border-t border-white/10 flat no shadows fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-page-padding pb-8 pt-4">
+<a class="flex flex-col items-center justify-center text-secondary opacity-60 hover:text-primary transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">home</span>
+<span class="font-label-caps text-[10px]">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary font-bold hover:text-primary transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">import_contacts</span>
+<span class="font-label-caps text-[10px]">Library</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary opacity-60 hover:text-primary transition-colors active:scale-90 transition-transform -mt-6" href="#">
+<div class="bg-primary-container text-white p-3 rounded-full shadow-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 0;">add_circle</span>
+</div>
+<span class="font-label-caps text-[10px] mt-2">Add</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary opacity-60 hover:text-primary transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">shopping_basket</span>
+<span class="font-label-caps text-[10px]">Grocery</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary opacity-60 hover:text-primary transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">settings</span>
+<span class="font-label-caps text-[10px]">Settings</span>
+</a>
+</nav>
+
+
+</body></html>

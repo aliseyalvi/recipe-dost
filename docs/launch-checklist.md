@@ -113,6 +113,22 @@
 - M22E.1R-HOME2 creator chip checked across author/creator/channel/uploader/username metadata variants with platform fallback and no raw URL output
 - M22E.1R-HOME2 latest item does not immediately repeat in Favorites or AI Generated; another real item may populate those sections
 - M22E.1R-HOME2 focus, foreground, save/metadata/AI invalidation, Add/share, usage-pill Paywall, RevenueCat, and production-log regressions checked
+- M22E.1R-LIBRARY1 normal Library checked on small Android: centered title, real usage pill, glass search, query chips, tabs, large cards, loading/error/retry/empty states, and last-card clearance above floating tabs
+- M22E.1R-LIBRARY1 active search checked with Android keyboard, Cancel/clear, route-prefilled query, dynamic result count, zero results, and title/ingredient/tag/platform/creator/note/caption/step coverage
+- M22E.1R-LIBRARY1 Dinner/Quick/Healthy/Pasta/Chicken/Instagram/TikTok/YouTube chips checked against real loaded data; suggestions never create fake results
+- M22E.1R-LIBRARY1 Recent checked newest first, Favorites checked against persisted `is_favorite`, and AI Recipes checked against real generated/completed cards only
+- M22E.1R-LIBRARY1 saved, preparing, failed, caption-needed, active AI, and completed AI cards checked for correct `/recipe/[id]` or `/recipe-card/[id]` routing
+- M22E.1R-LIBRARY1 card title/summary/metadata checked for missing thumbnails, weak creator titles, raw URL suppression, platform/time/source metadata, and readable image gradients
+- M22E.1R-LIBRARY1 menu checked for View recipe/Open original only; favorite/delete mutations remain on detail screens and no destructive Library action was added
+- M22E.1R-LIBRARY1 regression checked: usage pill Paywall, purchases/restore, Home, Add/share sheet, bottom tabs, Grocery, Settings, polling/foreground refresh, and no raw URL analytics
+- M22E.1R-LIBRARY1B every normal/search card checked for 44px Favorite, semantic state badge, three-dot control, and no nested-control card-navigation leak
+- M22E.1R-LIBRARY1B AI sparkle, Saved Link source, Preparing hourglass, retry, IG/TT/YT/FB/generic platform, creator, and duration marks checked without the old directional source arrow
+- M22E.1R-LIBRARY1B themed action sheet checked for dark backdrop/surface, rounded border, context title, outside tap, close button, Android back, gesture safe area, and inline error state
+- M22E.1R-LIBRARY1B Open original checked only with `source_url`; raw URL remains hidden/unlogged and failure copy stays themed
+- M22E.1R-LIBRARY1B Generate AI Recipe/View progress checked through saved detail and View AI Recipe checked through generated detail; no generation/access logic duplicated
+- M22E.1R-LIBRARY1B Favorite/Unfavorite checked from card and menu across Recent/Favorites/Home/detail after cache invalidation
+- M22E.1R-LIBRARY1B Delete checked for themed confirmation, cancel, RLS-safe soft deletion, Library/Home/detail/grocery removal, and unchanged original video
+- M22E.1R-LIBRARY1B regression checked: search, tabs, card routing, bottom navigation, Add/share, Home, processing refresh, Paywall, purchases, restore, and Premium sync
 - Production AAB created only from `main` with `npm run build:prod`
 - Production env never manually sourced in a normal terminal
 - 50 recipe links tested

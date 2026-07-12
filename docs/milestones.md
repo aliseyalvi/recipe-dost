@@ -1,5 +1,21 @@
 # Recipe Dost Milestones
 
+## M22E.1R-LIBRARY1B - Library Card Icons, Badges, and Action Menu Polish
+- Replaced the weak directional source mark with typed code-native editorial symbols and explicit IG/TT/YT/FB platform marks; no icon package or dependency was added because no usable icon library is installed.
+- Standardized every Library card with a 44px Favorite control, semantic icon + state badge, top-right menu, and platform/creator/duration metadata chips using only real loaded fields.
+- Replaced the native action Alert with a dark React Native Modal bottom action sheet with safe-area spacing, backdrop/Android-back dismissal, rounded surface, contextual recipe title/platform, inline errors, and themed delete confirmation.
+- Enabled only existing safe actions: conditional Open original, Generate AI Recipe or View progress through saved detail, View AI Recipe through generated detail, schema-backed Favorite/Unfavorite, and ownership-scoped soft Delete.
+- Reuses M22E.1R-D `is_favorite`, `deleted_at`, mutations, and active-row reads. Relevant Library, Home, detail, card, and grocery query caches are updated/invalidated; no backend, worker, access/quota, RevenueCat, package, env, source-URL logging, or new generation logic changed.
+- Automated static and environment validation passed on `develop`; Android manual and regression QA remains pending.
+
+## M22E.1R-LIBRARY1 - Stitch Editorial Library Redesign
+- Rebuilt the existing Library tab as a native Obsidian/coral editorial surface using the current Recipe Dost theme, safe serif fallback, real thumbnails, centered title, real AI usage pill, glass search, horizontal query chips, section tabs, and full-width image-first cards.
+- Preserved `getRecipeLibrary()`, bounded active-state polling, focus/foreground refresh, pull-to-refresh, saved-parent detail routing, completed AI-card routing, existing Paywall access logic, and the global Add/share sheet.
+- Added Recent (all rows newest first), Favorites (persisted `recipe_items.is_favorite`), and AI Recipes (real/completed cards) tabs with polished, honest empty states.
+- Kept search client-side over loaded saved/source metadata, notes/captions/manual ingredients, meal/cuisine/platform, AI title/summary/tags/ingredients/steps, and creator/source fields. Chips apply real queries; dynamic suggestions use only existing tags/metadata.
+- Added active search input/Cancel/clear treatment, narrative result count, large result cards, card status badges, real favorite indicators, and a non-destructive View recipe/Open original menu. No fake recipes, destructive Library delete, remote sample images, schema/backend/worker/access/RevenueCat/env/package change, or new dependency was added.
+- Automated validation passed on `develop`; Android manual and regression QA remains pending.
+
 ## M22E.1R-HOME2 - Home duplicate processing cleanup and title normalization
 
 - Status: Implemented and automatically validated on `develop`; Android device QA pending.

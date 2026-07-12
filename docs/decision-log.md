@@ -1,6 +1,20 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-12
+- M22E.1R-LIBRARY1B polished Library icons, card controls, and the action menu on `develop`; Android device QA is pending.
+- Decision: do not install an icon dependency. None of `@expo/vector-icons`, Lucide, `react-native-vector-icons`, or `react-native-svg` resolves as an installed app package. Use a typed local editorial-symbol helper and explicit boxed IG/TT/YT/FB marks; remove the directional arrow from source/creator metadata.
+- Decision: every card shows a real Favorite control, semantic state badge, and three-dot menu control. Platform, creator, and duration become consistent translucent metadata chips backed only by existing fields.
+- Decision: replace the native action Alert with a dark safe-area-aware React Native Modal bottom sheet. It supports backdrop/close/Android-back dismissal, inline mutation errors, and an in-sheet destructive confirmation.
+- Decision: show Open original only with a source URL; use the existing saved-detail route for Generate/View progress and existing AI-card route for View AI Recipe. Do not duplicate AI creation, access, or retry logic in Library.
+- Decision: Favorite and Delete are enabled because M22E.1R-D already provides persisted `is_favorite`, soft `deleted_at`, ownership-scoped mutations, and RLS-safe reads. Update/invalidate Library, Home, detail, card, and grocery caches; never log the source URL. No LIBRARY2 schema/API milestone is needed.
+- Validation: `npm run qa:static`, development env doctor, and both development/production env validators passed with masked output; Android interaction and visual regression QA remains pending.
+- M22E.1R-LIBRARY1 implemented the Stitch-inspired editorial Library and search redesign on `develop`; Android device QA is pending.
+- Decision: keep `getRecipeLibrary()` and `['recipe-library', user.id]` as the only Library data path. Recent uses all rows newest first, Favorites uses persisted `recipe_items.is_favorite`, and AI Recipes requires a real card/completed result; no sample recipes, backend search, schema, worker, quota, RevenueCat, product, package, or env change is allowed.
+- Decision: normal chips execute real client-side queries and active suggestions come only from loaded tags, meal type, cuisine, and platform. Quick may additionally match real AI prep + cook time of 30 minutes or less. The visual Filters label does not claim an unsupported filter sheet.
+- Decision: reuse HOME2 display title/creator normalization and existing thumbnails. Full-width image cards map saving/pending, active AI stages, failed/needs-caption, saved-link, and AI-card states without changing their detail routes or bounded refresh behavior.
+- Decision: Favorites are implemented because M22E.1R-D already supplies schema-backed favorite data. Favorite/delete mutation stays on detail screens. The Library card menu is non-destructive and contains only View recipe and Open original.
+- Decision: the usage pill reuses `get-ai-access` and opens the existing Paywall. The Stitch HTML/Tailwind, sample content/images, and unbundled fonts remain references only; native theme tokens and the safe serif fallback are used.
+- Validation: `npm run qa:static`, development env doctor, and both development/production env validators passed with masked output; Android visual, keyboard, navigation, share-sheet, and paywall regression QA remains pending.
 - M22E.1R-HOME2 removed duplicate Home processing presentation and normalized editorial card titles on `develop`; Android device QA is pending.
 - Root cause: Home independently selected the same newest library row as both `processingRecipe` and `recentRecipe`, so one saved item rendered in Currently Processing and Recent. Decision: remove the separate section and keep all preparing/processing presentation and navigation inside Recent.
 - Decision: title precedence is AI card title, meaningful media/source metadata title, cleaned stored caption/description, non-weak item title, then platform recipe-link fallback. Reject creator-only “Video by” / “Post by” text, creator-equivalent titles, platform-only text, and raw URLs without changing stored values.

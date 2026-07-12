@@ -1,0 +1,278 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Recipe Dost - Library View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&amp;family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#e5e2e1",
+                        "surface-dim": "#131313",
+                        "outline": "#aa8987",
+                        "on-primary-fixed": "#410006",
+                        "background": "#131313",
+                        "primary": "#ffb3b0",
+                        "error-container": "#93000a",
+                        "tertiary-container": "#006a85",
+                        "on-primary-container": "#ffd3d1",
+                        "secondary-container": "#454747",
+                        "surface-container": "#201f1f",
+                        "on-error-container": "#ffdad6",
+                        "primary-fixed": "#ffdad8",
+                        "on-secondary-fixed-variant": "#454747",
+                        "on-tertiary": "#003544",
+                        "surface-variant": "#353534",
+                        "surface": "#131313",
+                        "on-secondary": "#2f3131",
+                        "surface-tint": "#ffb3b0",
+                        "on-tertiary-container": "#abe6ff",
+                        "primary-fixed-dim": "#ffb3b0",
+                        "on-secondary-container": "#b4b5b5",
+                        "on-primary-fixed-variant": "#930019",
+                        "primary-container": "#be1e2d",
+                        "error": "#ffb4ab",
+                        "surface-container-high": "#2a2a2a",
+                        "surface-bright": "#3a3939",
+                        "inverse-on-surface": "#313030",
+                        "on-primary": "#68000f",
+                        "secondary": "#c6c6c7",
+                        "on-tertiary-fixed-variant": "#004d62",
+                        "outline-variant": "#5b403f",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "on-error": "#690005",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "tertiary": "#85d1ef",
+                        "on-surface-variant": "#e3bebb",
+                        "on-tertiary-fixed": "#001f29",
+                        "tertiary-fixed": "#baeaff",
+                        "tertiary-fixed-dim": "#85d1ef",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface-container-highest": "#353534",
+                        "inverse-surface": "#e5e2e1",
+                        "surface-container-low": "#1c1b1b",
+                        "secondary-fixed": "#e2e2e2",
+                        "on-background": "#e5e2e1",
+                        "inverse-primary": "#b91a2a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "section-margin": "40pt",
+                        "page-padding": "16pt",
+                        "element-gap": "12pt",
+                        "structural-gap": "20pt"
+                    },
+                    "fontFamily": {
+                        "metadata": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"],
+                        "display-lg-mobile": ["Bodoni Moda"],
+                        "label-caps": ["Hanken Grotesk"],
+                        "display-lg": ["Bodoni Moda"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "headline-md": ["Bodoni Moda"]
+                    },
+                    "fontSize": {
+                        "metadata": ["14px", { "lineHeight": "1.4", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display-lg-mobile": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md min-h-screen flex flex-col antialiased selection:bg-primary-container selection:text-white pb-32">
+<!-- Top Navigation (Web) -->
+<header class="hidden md:flex fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-lg border-b border-white/10 flex justify-between items-center px-page-padding py-4 max-w-7xl mx-auto left-0 right-0">
+<div class="flex items-center gap-4">
+<h1 class="font-display-lg text-display-lg text-primary tracking-tighter">Library</h1>
+</div>
+<div class="flex items-center gap-8">
+<nav class="flex gap-6">
+<a class="font-label-caps text-label-caps text-secondary hover:text-primary transition-colors" href="#">Home</a>
+<a class="font-label-caps text-label-caps text-primary hover:opacity-80 transition-opacity" href="#">Library</a>
+<a class="font-label-caps text-label-caps text-secondary hover:text-primary transition-colors" href="#">Grocery</a>
+</nav>
+<button class="font-label-caps text-label-caps text-on-surface hover:opacity-80 transition-opacity active:scale-95 transition-transform flex items-center gap-1 px-4 py-2 rounded-full glass-panel border border-primary/20 shadow-sm bg-white/5">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<span class="font-semibold">120 Credits</span>
+</button>
+</div>
+</header>
+<!-- TopAppBar (Mobile) -->
+<header class="md:hidden fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-lg border-b border-white/10 flex justify-between items-center px-page-padding py-4 max-w-7xl mx-auto left-0 right-0">
+<div class="flex-1"></div>
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-primary tracking-tighter absolute left-1/2 -translate-x-1/2">Library</h1>
+<div class="flex-1 flex justify-end">
+<button class="font-label-caps text-label-caps text-on-surface hover:opacity-80 transition-opacity active:scale-95 transition-transform flex items-center gap-1 px-3 py-1 rounded-full glass-panel border border-primary/20 shadow-sm bg-white/5">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<span class="font-semibold">120 Credits</span>
+</button>
+</div>
+</header>
+<main class="flex-grow pt-24 md:pt-32 px-page-padding max-w-7xl mx-auto w-full">
+<!-- Search Bar -->
+<div class="mb-structural-gap">
+<div class="relative w-full max-w-2xl mx-auto">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-secondary text-[20px]">search</span>
+</div>
+<input class="w-full bg-white/5 backdrop-blur-md border border-white/10 rounded-full py-4 pl-12 pr-4 text-on-surface font-body-md focus:outline-none focus:border-primary-container focus:bg-white/10 transition-all shadow-[0_4px_30px_rgba(0,0,0,0.1)] placeholder-secondary" placeholder="Search recipes, ingredients..." type="text">
+</div>
+</div>
+<!-- Horizontal Tags -->
+<div class="mb-section-margin overflow-x-auto hide-scrollbar w-full max-w-2xl mx-auto pb-2">
+<div class="flex gap-3 w-max px-2">
+<button class="px-5 py-2 rounded-full bg-white/12 backdrop-blur-md border border-white/10 font-metadata text-metadata text-on-surface hover:bg-white/20 transition-colors whitespace-nowrap">Dinner</button>
+<button class="px-5 py-2 rounded-full bg-white/12 backdrop-blur-md border border-white/10 font-metadata text-metadata text-on-surface hover:bg-white/20 transition-colors whitespace-nowrap">Quick</button>
+<button class="px-5 py-2 rounded-full bg-white/12 backdrop-blur-md border border-white/10 font-metadata text-metadata text-on-surface hover:bg-white/20 transition-colors whitespace-nowrap">Healthy</button>
+<button class="px-5 py-2 rounded-full bg-white/12 backdrop-blur-md border border-white/10 font-metadata text-metadata text-on-surface hover:bg-white/20 transition-colors whitespace-nowrap">Pasta</button>
+<button class="px-5 py-2 rounded-full bg-white/12 backdrop-blur-md border border-white/10 font-metadata text-metadata text-on-surface hover:bg-white/20 transition-colors whitespace-nowrap">Spicy</button>
+<button class="px-5 py-2 rounded-full bg-white/12 backdrop-blur-md border border-white/10 font-metadata text-metadata text-on-surface hover:bg-white/20 transition-colors whitespace-nowrap">Vegetarian</button>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<div class="mb-structural-gap border-b border-white/10 flex justify-between w-full max-w-2xl mx-auto">
+<button class="flex-1 pb-3 border-b-2 border-primary-container font-headline-md text-headline-md text-on-surface tracking-tight transition-colors text-center">Recent</button>
+<button class="flex-1 pb-3 border-b-2 border-transparent font-headline-md text-headline-md text-secondary hover:text-on-surface tracking-tight transition-colors text-center">Favorites</button>
+<button class="flex-1 pb-3 border-b-2 border-transparent font-headline-md text-headline-md text-secondary hover:text-on-surface tracking-tight transition-colors text-center whitespace-nowrap">AI Recipes</button>
+</div>
+<!-- Content Grid (Frameless Layout) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-structural-gap max-w-5xl mx-auto">
+<!-- Recipe Item 1 -->
+<div class="group cursor-pointer relative overflow-hidden rounded-xl aspect-[4/5] bg-surface-container">
+<img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A top-down view of a beautifully plated pan-seared salmon fillet resting on a bed of vibrant green asparagus and quinoa. The dish is presented on a matte black ceramic plate. The lighting is cinematic, highlighting the golden crust of the salmon. Ultra-premium, editorial dark mode culinary photography style with rich colors and deep shadows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7eViBWTI9d2N9K2Gn0p0Tf5IZ2X1h437oOxkP5HQi2TCmL8QqxHlhlMcSDkR5XIxJtF_JGSvMdTXYuU0OalZ2Qiw3z8u5z3lgzcV3WUCE5lBo7Tvkyt5TeMNhqalEiUMuSE8G6cKtdufkptO-l4sYKdVBsba_5FYwS5nraiCeimcccO7HSiJVeFz8ENEogZar1bTk1hGVNQO-Q6hm36aUvAR6tQbBTr0DzPVK7URlswhx3K8dKH46rWWnscyWIzgAShsw-G4rL6P8">
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+<div class="absolute top-4 right-4 flex gap-2">
+<button class="text-white hover:text-primary transition-colors p-1 bg-black/20 backdrop-blur-sm rounded-full">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-2">
+<h3 class="font-headline-md text-headline-md text-white group-hover:text-primary transition-colors">Pan-Seared Salmon</h3>
+<p class="font-metadata text-metadata text-secondary line-clamp-2 mb-2">Crispy skin salmon with lemon herb butter sauce and roasted asparagus.</p>
+<div class="flex items-center gap-3 mt-auto">
+<span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">restaurant</span> Dinner</span>
+<span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">timer</span> 25m</span>
+<span class="text-xs font-label-caps text-primary uppercase tracking-wider flex items-center gap-1 ml-auto"><span class="material-symbols-outlined text-[14px]">link</span> NYT Cooking</span>
+</div>
+</div>
+</div>
+<!-- Recipe Item 2 -->
+<div class="group cursor-pointer relative overflow-hidden rounded-xl aspect-[4/5] bg-surface-container">
+<img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A close-up side angle shot of a towering, perfectly constructed gourmet burger. It features a thick, juicy beef patty, melting aged cheddar cheese, caramelized onions, crisp lettuce, and a glossy brioche bun. The background is a moody, dark grey slate surface with scattered peppercorns. Lighting emphasizes the textures and shiny sauces in an editorial culinary style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqM5iPIvqBCEer5cjOZ2WEw94ehuhUQF8F4fRm3JVOuyD7SDypumjt6fc66Bbz7k2S8-8MZNO9XF08h5FfQy3plylkx8X59th3ZDx_f4q0EbIc5KGFS4lqXdAmeiJBI7Zzczk9i3imAzK0IltT14niL5G7yyeCvUqd82F-n5MzrAnzxHHT3ybP0nIGBiZSPX6OyxyV6JYsZZKn3B1z-s1SLybnTTE1RdqWR5XPmf-ak3HZDHnhmoQ36TgsyAp99g8Wc8wpYsAuIPos">
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+<div class="absolute top-4 right-4 flex gap-2">
+<button class="text-white hover:text-primary transition-colors p-1 bg-black/20 backdrop-blur-sm rounded-full">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-2">
+<h3 class="font-headline-md text-headline-md text-white group-hover:text-primary transition-colors">Wagyu Truffle Burger</h3>
+<p class="font-metadata text-metadata text-secondary line-clamp-2 mb-2">Premium beef patty with black truffle aioli and aged cheddar on brioche.</p>
+<div class="flex items-center gap-3 mt-auto">
+<span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">restaurant</span> Lunch</span>
+<span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">timer</span> 40m</span>
+<span class="text-xs font-label-caps text-primary uppercase tracking-wider flex items-center gap-1 ml-auto"><span class="material-symbols-outlined text-[14px]">link</span> Gordon Ramsay</span>
+</div>
+</div>
+</div>
+<!-- Recipe Item 3 -->
+<div class="group cursor-pointer relative overflow-hidden rounded-xl aspect-[4/5] bg-surface-container">
+<img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="An elegant, dimly lit shot of a handmade pasta dish twirled perfectly in the center of a shallow, textured grey bowl. The pasta is coated in a rich, dark red arrabbiata sauce, sprinkled with fresh green basil leaves and a dusting of parmesan cheese. The scene is shot from a 45-degree angle with dramatic shadows, showcasing the 'quiet luxury' Michelin-star aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUGRCoBIny_VBfwSszZja_RyL8prnlryyS1YMtjcv3dPvjx1LlQWgkp1B8-WuGkk0vPXbZbSIH0gshwBCsb0_DlvqP9dbBhoop3eGz5vuFcGyjj4DAcnSSwli1IL3VJqqhexS5QGfh3tlUBP-UsTTjb0kObFB7JEbVgL0Dgy6kDl9x73UC19q6ENidJrHp7w3g6Rfh3IRZgEDlseLfZAshX934E8nbB-u2xG7p3MGOMt7H2ORJF0zeKQSrgb0nN63FnRCsjLcK_C_O">
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+<div class="absolute top-4 right-4 flex gap-2">
+<button class="text-white hover:text-primary transition-colors p-1 bg-black/20 backdrop-blur-sm rounded-full">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-2">
+<h3 class="font-headline-md text-headline-md text-white group-hover:text-primary transition-colors">Spicy Arrabbiata</h3>
+<p class="font-metadata text-metadata text-secondary line-clamp-2 mb-2">Handmade fresh pasta tossed in a robust, fiery tomato and garlic sauce.</p>
+<div class="flex items-center gap-3 mt-auto">
+<span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">restaurant</span> Dinner</span>
+<span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">timer</span> 35m</span>
+<span class="text-xs font-label-caps text-primary uppercase tracking-wider flex items-center gap-1 ml-auto"><span class="material-symbols-outlined text-[14px]">link</span> Pasta Grannies</span>
+</div>
+</div>
+</div>
+<!-- Recipe Item 4 -->
+<div class="group cursor-pointer relative overflow-hidden rounded-xl aspect-[4/5] bg-surface-container">
+<img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A moody, overhead shot of a vibrant bowl of ramen. The dark broth reflects minimal light, highlighting the vibrant yellow noodles, a perfectly soft-boiled egg with a bright orange yolk, sliced scallions, and tender slices of char siu pork. The bowl is dark ceramic, sitting on a rustic wooden table in a dimly lit, high-end Japanese restaurant setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAoH5Me31w87d14Ln5E6JY6s2kBp4_7TtM8K3NqZeIpTeXJE_Blr3kWLKZhA-xAj5YxCxgr4vY77KmJqtyEJFopP-HxVYEygBtsNl9aMy8hk2gWY8UAHcD2WcH0AwaNFmAtac7sF7UaH8_oprRjBwzrU8bZzXq2-D0U4g57jr-SR-Onner66s9GCJwWlk1WDvb4KJXSUTX_As7dz73ltlhby6lmTqvoe7W9ofevV4FDiwaHy6GxKK8RTI891PcISan4t2JX9KMCQ2LF">
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+<div class="absolute top-4 right-4 flex gap-2">
+<button class="text-white hover:text-primary transition-colors p-1 bg-black/20 backdrop-blur-sm rounded-full">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-2">
+<h3 class="font-headline-md text-headline-md text-white group-hover:text-primary transition-colors">Tonkotsu Ramen</h3>
+<p class="font-metadata text-metadata text-secondary line-clamp-2 mb-2">Rich pork bone broth with handmade noodles, char siu, and an ajitsuke tamago.</p>
+<div class="flex items-center gap-3 mt-auto">
+<span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">restaurant</span> Dinner</span>
+<span class="text-xs font-label-caps text-secondary uppercase tracking-wider flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">timer</span> 1h 20m</span>
+<span class="text-xs font-label-caps text-primary uppercase tracking-wider flex items-center gap-1 ml-auto"><span class="material-symbols-outlined text-[14px]">link</span> Serious Eats</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation (Mobile) -->
+<nav class="md:hidden glass-panel fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-8 border-t border-outline-variant/10 bg-surface/80 backdrop-blur-xl">
+<!-- Home -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 w-16 hover:bg-surface-variant/10 rounded-full transition-all py-1" href="#">
+<span class="material-symbols-outlined text-[24px]">home</span>
+<span class="text-[10px] mt-1 font-label-sm">Home</span>
+</a>
+<!-- Library (Active) -->
+<a class="flex flex-col items-center justify-center text-primary font-bold w-16 hover:bg-surface-variant/10 rounded-full transition-all py-1" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+<span class="text-[10px] mt-1 font-label-sm">Library</span>
+</a>
+<!-- Add FAB -->
+<div class="relative -top-6">
+<button class="bg-primary-container text-on-primary-container w-14 h-14 rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(190,30,45,0.4)] hover:scale-95 transition-transform duration-200 border-4 border-surface">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</div>
+<!-- Grocery -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 w-16 hover:bg-surface-variant/10 rounded-full transition-all py-1" href="#">
+<span class="material-symbols-outlined text-[24px]">shopping_cart</span>
+<span class="text-[10px] mt-1 font-label-sm">Grocery</span>
+</a>
+<!-- Settings -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 w-16 hover:bg-surface-variant/10 rounded-full transition-all py-1" href="#">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+<span class="text-[10px] mt-1 font-label-sm">Settings</span>
+</a>
+</nav>
+
+
+</body></html>
