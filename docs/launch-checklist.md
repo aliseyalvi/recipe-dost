@@ -72,11 +72,30 @@
 - M22E.1R-C Library search checked by title, AI title, source author/platform, ingredient, step, and generated tag
 - M22E.1R-C tag tap opens Library with a prefilled query; raw search/tag values are not sent to analytics
 - M22E.1R-C active search rows checked on a small Android screen for thumbnail, badges, time/servings, tag-chip, and no-results overflow
+- M22E.1R-C tag-search rows checked: matched tags appear first, the correct item state is shown, and fixed cover thumbnails do not stretch with row content
 - M22E.1R-C no-results state checked with clear-search/filters action; older empty-tag recipe cards still open cleanly
 - M22E.1R-D development migration `20260711080652_m22e_recipe_management.sql` applied and verified before production consideration
 - M22E.1R-D favorite/unfavorite checked from saved-link and AI-card detail, including Home/Library persistence after restart
 - M22E.1R-D delete confirmation checked from both detail surfaces; deleted recipe absent from Home, Library/Search, detail, and grocery views
 - M22E.1R-D RLS/ownership checked with a second dev identity; no quota, paywall, RevenueCat, or original-video behavior changed
+- M22E.1R-F checked: saving/pending metadata, every active AI stage, Go to Library, Wait here refresh feedback, completed-card update after leaving, close/reopen, and friendly failed/retry states
+- M22E.1R-E checked as Free, Premium active, and offering-unavailable: Free remains 3 total AI cards, generated-card-only recipe details are clear, monthly/yearly purchase still works, and Restore purchases remains visible
+- M22E.1R-G Stitch reference translated into native components only; no HTML/Tailwind or sample recipes/images ship in Home
+- M22E.1R-G Home checked with empty, loading, retry/error, background-refresh warning, active processing, favorite, and real AI-generated states
+- M22E.1R-G usage pill checked against `get-ai-access` for Free and Premium monthly remaining values, including loading/unavailable neutral state
+- M22E.1R-G processing card checked for metadata saving/pending and every active AI stage; it disappears after polling, focus return, and app resume completion
+- M22E.1R-G Favorites checked with persisted favorite; no fake favorite appears
+- M22E.1R-G AI hero checked with valid, missing, and failed thumbnail; card and View All open real detail/Library routes
+- M22E.1R-G tabs checked on a small Android device for Home/Library/Add/Grocery/Settings, gesture safe area, no hidden content, and unchanged save modal flow
+- M22E.1R-G screenshots captured: empty Home, active processing, populated favorite/AI card, Free usage pill, Premium usage pill, and small-device tab safe area
+- M22E.1R-G regression checked: save/share, metadata preview, AI generation, Library, Grocery, Settings, paywall, Premium sync, and production dev-tool guards
+- M22E.1R-G2 empty Home checked: Recent empty state appears and no fake Processing, Favorite, Recent, or AI cards render
+- M22E.1R-G2 processing card checked: card tap opens `/recipe/[id]` progress/detail while its Open Library button opens `/library`
+- M22E.1R-G2 Recent checked after metadata and AI completion, app resume, and Home focus; latest activity appears without stale processing or unbounded polling
+- M22E.1R-G2 Recent routing checked: saved link opens saved-recipe detail and generated card opens AI recipe detail
+- M22E.1R-G2 usage pill checked for Free, Premium, loading, and unavailable states; every state opens `/paywall` without changing purchase/restore behavior
+- M22E.1R-G2 Favorites checked below Recent when persisted data exists and hidden when no favorite exists; no schema/API added
+- M22E.1R-G2 tabs, bottom safe area, save/share, AI generation, Grocery, Settings, Premium sync, and production guards regression-checked
 - Production AAB created only from `main` with `npm run build:prod`
 - Production env never manually sourced in a normal terminal
 - 50 recipe links tested

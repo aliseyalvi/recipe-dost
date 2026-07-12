@@ -1,6 +1,27 @@
 # Recipe Dost Decision Log
 
+## 2026-07-12
+- M22E.1R-G2 corrected Home behavior after the editorial redesign without changing its visual direction.
+- Decision: Home order is processing when active, Recent, conditional Favorites, then AI Generated. Recent is the primary retrieval surface and sorts real library items by the newest parent/card/job activity timestamp.
+- Decision: tapping Currently Processing opens `/recipe/[id]?returnTo=/home` using the parent item ID so the existing saving/preview/job state remains visible; only the explicit Open Library button routes to `/library`.
+- Decision: Recent routes saved links to `/recipe/[id]` and real/completed AI cards to `/recipe-card/[id]`. Existing bounded polling, focus/foreground refetch, and list invalidations are sufficient; no new endpoint or infinite polling was added.
+- Decision: the AI usage pill opens the existing `/paywall` route for every access state and records plan category only. Favorites is hidden without a real persisted favorite; no favorite/delete schema or fake empty card was added.
+- Validation: `npm run qa:static`, development env doctor, and both development/production env validators passed with masked output; device behavior QA remains pending.
+- M22E.1R-G implemented the editorial design foundation and real-data Home redesign on `develop`; device QA and screenshot review are pending.
+- Decision: treat the Stitch Home HTML, Tailwind, screenshot recipes, and imagery as visual reference only. Native typed components use the Obsidian/coral palette, serif heading slot, translucent surfaces, 20px cards, image fallback, and editorial section rhythm without importing sample/static recipes or dummy image URLs.
+- Decision: Home shares `['recipe-library', user.id]` with Library so actual active metadata/jobs, persisted `is_favorite`, and newest generated cards stay synchronized. The usage pill calls the existing `get-ai-access` client only; quota/access and Premium logic are unchanged.
+- Decision: keep startup-safe `serif` and system-sans font slots because Bodoni Moda/Work Sans packages or bundled assets are absent. Add exact bundled fonts only in a later dependency-reviewed patch.
+- Decision: preserve all tab route names and the current save modal; the center Add FAB is presentation and analytics only. Do not bump versionCode on `develop`; versionCode 2 is required when this runtime/UI update is prepared for Play from `main`.
+- Validation: `npm run qa:static`, development env doctor, and both development/production env validators passed with masked output; device UI QA remains pending.
+
 ## 2026-07-11
+- M22E.1R-F implemented the professional app-side processing-state recovery on `develop`; device QA is pending.
+- Decision: a shared detail panel maps the existing metadata and media-job statuses to Saving link, Preparing preview, Watching video, Extracting recipe, Creating recipe card, Ready, and Failed. It uses only backend-supplied numeric progress, otherwise shows an indeterminate status check; it does not invent timing or completion claims.
+- Decision: Go to Library only changes route and leaves the active job running. Wait here performs one explicit recipe/media-job refetch with an in-button checking state. Existing bounded polling, Home/Library focus refetch, foreground refetch, completed-card invalidation, failure retry, and auto-open behavior remain unchanged.
+- M22E.1R-E implemented the professional app-side paywall redesign on `develop`; device QA is pending.
+- Decision: the paywall now separates Free and Premium in a compact table: Free has saved links, Library search, and 3 total AI recipe cards; ingredient, step, recipe-help, and grocery content applies only to those generated cards. Premium retains 100 AI recipe cards/month, Urdu + English recipe help, ingredients/steps/grocery lists, up-to-2-minute beta support, and priority beta improvements.
+- Decision: retain the existing `get-ai-access` query for the usage card and existing RevenueCat selection, purchase, restore, management, unavailable, and active-Premium code. The new bottom purchase area is presentation-only; it does not change products or the `premium` entitlement.
+- M22E.1R-C follow-up: Library tag-search rows now prioritize tags that match the active query, render the same pending/failed/AI state as grid cards, and use a fixed 92 by 92 thumbnail with cover scaling so row content cannot stretch image geometry.
 - M22E.1R-D implemented schema-backed favorite and soft-delete recipe management on `develop`.
 - Decision: favorite and soft-delete state live on `recipe_items`, the shared parent of saved links, AI cards, and media jobs. The migration adds `is_favorite boolean not null default false`, nullable `deleted_at`, and an active-library partial index; `recipe_cards` needs no duplicate state.
 - Decision: keep the existing ownership RLS policies. App mutations additionally filter by current `user_id`, parent `id`, and active `deleted_at` state. Soft delete preserves recipe/job/accounting records but all active Home, Library/Search, detail, and grocery reads now require a non-deleted parent.

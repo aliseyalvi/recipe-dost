@@ -24,17 +24,11 @@ import type { PurchasesPackage } from '@revenuecat/purchases-typescript-internal
 import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import { Alert, Linking, Pressable, Text, View } from 'react-native'
-
-const benefits = [
-  '100 AI recipe cards/month',
-  'Saved recipe links included',
-  'Ingredients, steps, and grocery lists on generated cards',
-  'Urdu + English recipe insights',
-  'Videos up to 2 minutes in beta',
-]
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function PaywallRoute() {
   const router = useRouter()
+  const insets = useSafeAreaInsets()
   const queryClient = useQueryClient()
   const { user } = useAuth()
   const { track } = usePostHog()
@@ -93,6 +87,8 @@ export default function PaywallRoute() {
   const hasPackages = availablePackages.length > 0
   const plansUnavailable =
     !isPremiumActive && isConfigured && !isLoading && !hasPackages
+  const shouldShowPurchaseFooter =
+    !isPremiumActive && isConfigured && !isLoading && hasPackages
   const selectedPackage =
     availablePackages.find((item) => item.identifier === selectedPackageId) ??
     yearlyPackage ??
@@ -308,42 +304,17 @@ export default function PaywallRoute() {
   }
 
   return (
-    <Screen compact>
+    <View style={{ flex: 1 }}>
+      <Screen compact>
       <AppHeader
         eyebrow="PREMIUM"
         title={isPremiumActive ? 'Premium active' : 'Create recipe cards from reels'}
         subtitle={
           isPremiumActive
             ? 'Your Premium access is active on this app profile.'
-            : 'Get up to 100 AI recipe cards/month with Urdu + English recipe help.'
+            : 'Save links for free. Use AI when you want a clean recipe card.'
         }
       />
-
-      {!isPremiumActive ? (
-        <Card tone="warm">
-          <View style={{ gap: spacing.sm }}>
-            {benefits.map((benefit) => (
-              <View
-                key={benefit}
-                style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' }}
-              >
-                <View
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: radius.pill,
-                    backgroundColor: colors.accent,
-                    marginTop: 8,
-                  }}
-                />
-                <Text selectable style={[typography.body, { flex: 1, color: colors.text }]}>
-                  {benefit}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </Card>
-      ) : null}
 
       {!isPremiumActive ? <BenefitComparison /> : null}
       <UsageCard
@@ -408,6 +379,9 @@ export default function PaywallRoute() {
             <Text selectable style={[typography.heading, { color: colors.text }]}>
               Choose a plan
             </Text>
+            <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+              Select a Google Play plan. You can restore an existing purchase below.
+            </Text>
             {monthlyPackage ? (
               <PlanCard
                 label="Monthly"
@@ -431,32 +405,6 @@ export default function PaywallRoute() {
                 }}
               />
             ) : null}
-            <Button
-              label={
-                purchasePackageId && selectedPackageLabel
-                  ? `Starting ${selectedPackageLabel}...`
-                  : selectedPackageLabel
-                    ? `Continue with ${selectedPackageLabel}`
-                    : 'Continue'
-              }
-              fullWidth
-              variant="accent"
-              disabled={!selectedPackage || Boolean(purchasePackageId) || isRestoring}
-              onPress={() => {
-                if (selectedPackage) {
-                  void handlePurchase(selectedPackage)
-                }
-              }}
-            />
-            <Button
-              label={isRestoring ? 'Restoring...' : 'Restore purchases'}
-              fullWidth
-              variant="outline"
-              disabled={Boolean(purchasePackageId) || isRestoring}
-              onPress={() => {
-                void handleRestore()
-              }}
-            />
           </Card>
         )
       ) : null}
@@ -478,21 +426,52 @@ export default function PaywallRoute() {
           onPress={() => router.back()}
         />
       ) : null}
-    </Screen>
+      {shouldShowPurchaseFooter ? <View style={{ height: 180 + insets.bottom }} /> : null}
+      </Screen>
+
+      {shouldShowPurchaseFooter ? (
+        <StickyPurchaseFooter
+          selectedPackageLabel={selectedPackageLabel}
+          selectedPackagePrice={selectedPackage?.product.priceString ?? null}
+          isPurchasing={Boolean(purchasePackageId)}
+          isRestoring={isRestoring}
+          isDisabled={!selectedPackage}
+          bottomInset={insets.bottom}
+          onPurchase={() => {
+            if (selectedPackage) {
+              void handlePurchase(selectedPackage)
+            }
+          }}
+          onRestore={() => {
+            void handleRestore()
+          }}
+        />
+      ) : null}
+    </View>
   )
 }
 
 function BenefitComparison() {
   const rows = [
     {
+      label: 'Save recipe links',
+      free: 'Included',
+      premium: 'Included',
+    },
+    {
+      label: 'Search your library',
+      free: 'Included',
+      premium: 'Included',
+    },
+    {
       label: 'AI recipe cards',
       free: '3 total',
       premium: '100/month',
     },
     {
-      label: 'Saved recipe links',
-      free: 'Included',
-      premium: 'Included',
+      label: 'Recipe help',
+      free: 'On 3 AI cards',
+      premium: 'Urdu + English',
     },
     {
       label: 'Ingredients + steps',
@@ -501,41 +480,46 @@ function BenefitComparison() {
     },
     {
       label: 'Grocery lists',
-      free: 'From generated cards',
-      premium: 'From generated cards',
+      free: 'From AI cards',
+      premium: 'Included',
     },
     {
-      label: 'Urdu + English',
-      free: 'On generated cards',
-      premium: 'On generated cards',
-    },
-    {
-      label: 'Beta video length',
-      free: 'Up to 2 min',
+      label: 'Video support',
+      free: 'Saved links',
       premium: 'Up to 2 min',
+    },
+    {
+      label: 'Priority beta improvements',
+      free: 'Not included',
+      premium: 'Included',
     },
   ]
 
   return (
-    <Card>
-      <Text selectable style={[typography.heading, { color: colors.text }]}>
+    <View style={{ gap: spacing.md }}>
+      <View style={{ gap: spacing.xs }}>
+        <Text selectable style={[typography.heading, { color: colors.text }]}>
         Free vs Premium
-      </Text>
-      <View style={{ gap: spacing.sm }}>
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <ComparisonCell label="" muted />
-          <ComparisonCell label="Free" emphasized />
-          <ComparisonCell label="Premium" emphasized accent />
-        </View>
+        </Text>
+        <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+          Save links and search your Library on either plan. AI recipe-card access is different.
+        </Text>
+      </View>
+      <View
+        style={{
+          overflow: 'hidden',
+          borderWidth: 1,
+          borderRadius: radius.md,
+          borderCurve: 'continuous',
+          borderColor: colors.border,
+        }}
+      >
+        <ComparisonRow label="" free="Free" premium="Premium" header />
         {rows.map((row) => (
-          <View key={row.label} style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <ComparisonCell label={row.label} muted />
-            <ComparisonCell label={row.free} />
-            <ComparisonCell label={row.premium} accent />
-          </View>
+          <ComparisonRow key={row.label} {...row} />
         ))}
       </View>
-    </Card>
+    </View>
   )
 }
 
@@ -571,12 +555,12 @@ function UsageCard({
   return (
     <Card tone="muted">
       <Text selectable style={[typography.heading, { color: colors.text }]}>
-        {isPremium ? 'Premium usage' : 'Free AI recipes'}
+        {isPremium ? 'Premium AI card usage' : 'Free AI card credit'}
       </Text>
       <Text selectable style={[typography.body, { color: colors.textMuted }]}>
         {isPremium
-          ? `${remaining} of ${limit} AI recipe cards left this month.`
-          : `${remaining} of ${limit} free AI recipe cards left.`}
+          ? `${remaining} of ${limit} AI recipe cards available this month.`
+          : `${remaining} of ${limit} AI recipe cards available in total.`}
       </Text>
       <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
         {used}/{limit} successful AI recipe cards used
@@ -586,27 +570,57 @@ function UsageCard({
   )
 }
 
-function ComparisonCell({
+function ComparisonRow({
   label,
-  emphasized = false,
-  muted = false,
-  accent = false,
+  free,
+  premium,
+  header = false,
 }: {
   label: string
-  emphasized?: boolean
-  muted?: boolean
-  accent?: boolean
+  free: string
+  premium: string
+  header?: boolean
 }) {
   return (
     <View
       style={{
-        flex: 1,
-        minHeight: 42,
+        flexDirection: 'row',
+        minHeight: header ? 42 : 56,
+        borderBottomWidth: header ? 1 : 0,
+        borderTopWidth: header ? 0 : 1,
+        borderColor: colors.border,
+        backgroundColor: header ? colors.surfaceMuted : colors.surface,
+      }}
+    >
+      <ComparisonText value={label} width={1.2} muted={!header} header={header} />
+      <ComparisonText value={free} width={0.9} header={header} />
+      <ComparisonText value={premium} width={1} accent header={header} />
+    </View>
+  )
+}
+
+function ComparisonText({
+  value,
+  width,
+  muted = false,
+  accent = false,
+  header = false,
+}: {
+  value: string
+  width: number
+  muted?: boolean
+  accent?: boolean
+  header?: boolean
+}) {
+  return (
+    <View
+      style={{
+        flex: width,
         justifyContent: 'center',
-        borderRadius: radius.sm,
-        backgroundColor: accent ? colors.accentSoft : colors.surfaceMuted,
+        borderLeftWidth: width === 1.2 ? 0 : 1,
+        borderColor: colors.border,
         paddingHorizontal: spacing.sm,
-        paddingVertical: spacing.xs,
+        paddingVertical: spacing.sm,
       }}
     >
       <Text
@@ -615,12 +629,81 @@ function ComparisonCell({
           typography.caption,
           {
             color: accent ? colors.accent : muted ? colors.textMuted : colors.text,
-            fontWeight: emphasized ? '800' : '500',
+            fontWeight: header ? '800' : '500',
           },
         ]}
       >
-        {label}
+        {value}
       </Text>
+    </View>
+  )
+}
+
+function StickyPurchaseFooter({
+  selectedPackageLabel,
+  selectedPackagePrice,
+  isPurchasing,
+  isRestoring,
+  isDisabled,
+  bottomInset,
+  onPurchase,
+  onRestore,
+}: {
+  selectedPackageLabel: string | null
+  selectedPackagePrice: string | null
+  isPurchasing: boolean
+  isRestoring: boolean
+  isDisabled: boolean
+  bottomInset: number
+  onPurchase: () => void
+  onRestore: () => void
+}) {
+  const purchaseLabel = isPurchasing && selectedPackageLabel
+    ? `Starting ${selectedPackageLabel}...`
+    : selectedPackageLabel
+      ? `Continue with ${selectedPackageLabel}`
+      : 'Continue'
+
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        right: 0,
+        bottom: 0,
+        left: 0,
+        gap: spacing.sm,
+        borderTopWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.background,
+        paddingHorizontal: spacing.xl,
+        paddingTop: spacing.md,
+        paddingBottom: Math.max(bottomInset, spacing.md),
+      }}
+    >
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md }}>
+        <Text selectable style={[typography.caption, { flex: 1, color: colors.textMuted }]}>
+          {selectedPackageLabel ? `${selectedPackageLabel} plan` : 'Choose a plan'}
+        </Text>
+        {selectedPackagePrice ? (
+          <Text selectable style={[typography.caption, { color: colors.text, fontWeight: '800' }]}>
+            {selectedPackagePrice}
+          </Text>
+        ) : null}
+      </View>
+      <Button
+        label={purchaseLabel}
+        fullWidth
+        variant="accent"
+        disabled={isDisabled || isPurchasing || isRestoring}
+        onPress={onPurchase}
+      />
+      <Button
+        label={isRestoring ? 'Restoring purchases...' : 'Restore purchases'}
+        fullWidth
+        variant="ghost"
+        disabled={isPurchasing || isRestoring}
+        onPress={onRestore}
+      />
     </View>
   )
 }

@@ -8,6 +8,76 @@ Audit-only pass for onboarding launch routing and stale Home/Library metadata st
 
 Current branch workflow is correct for this milestone: M22E fixes are prepared on `develop`, then merged to `main` only after QA for a production AAB update.
 
+## M22E.1R-G2 Home Editorial Behavior Correction
+
+Status: implemented on `develop`; device QA pending.
+
+Automated validation passed: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, `node scripts/env/validate-env.mjs development`, and `node scripts/env/validate-env.mjs production`.
+
+Home section order and navigation decisions:
+
+- Home order is Header, Currently Processing when active, Recent, Favorites only when a persisted favorite exists, then AI Generated. This keeps retrieval and in-progress work above optional organization surfaces.
+- The Currently Processing card uses the real parent `recipe_items.id` from `getRecipeLibrary()` and opens `/recipe/[id]?returnTo=/home`, where the existing saving, Preparing preview, and AI-job progress UI lives. Its separate Open Library button still opens `/library`; Library is no longer the card-tap destination.
+- Recent shows one full-width editorial card selected from real library items by the newest activity across `recipe_items.created_at/updated_at`, latest `recipe_cards.created_at/updated_at`, and latest `media_jobs.created_at/updated_at`. It includes both saved links and completed AI cards, uses existing thumbnails only, and never creates display-only recipe records.
+- A Recent saved link opens `/recipe/[id]?returnTo=/home`. A Recent item with a real `recipe_cards` row opens `/recipe-card/[id]?returnTo=/home`; the existing completed-job result ID is the fallback card target. View Library opens `/library` because Library does not currently expose a route-param AI filter.
+- Active metadata/media-job states retain the existing bounded five-second list polling. Home also retains focus and app-foreground refetch, while save metadata completion and AI result discovery continue invalidating `['recipe-library']`. This makes the completed item eligible for Recent without adding unbounded polling or a new data request.
+- The usage pill is now a pressable control with the label “View AI recipe usage and Premium options.” It opens the existing `/paywall` access/subscription screen for Free, Premium, loading, and temporarily unavailable states without changing access logic, products, purchase, restore, or the `premium` entitlement.
+- Favorites is hidden when there is no real `recipe_items.is_favorite` row. Existing schema-backed favorites from M22E.1R-D remain supported, but this patch adds no favorite/delete schema, mutation, or placeholder content.
+
+M22E.1R-G2 manual QA checklist:
+
+- [ ] Empty Home shows no fake cards and shows the Recent add-recipe empty state.
+- [ ] Saving/sharing a URL shows Currently Processing; card tap opens saved-recipe detail and Open Library still opens Library.
+- [ ] Background/reopen during metadata work refreshes the stage without unbounded polling.
+- [ ] Metadata completion removes stale processing and moves the latest item into Recent.
+- [ ] AI completion shows the generated card in Recent and AI Generated.
+- [ ] Recent saved links open saved-recipe detail; generated cards open AI recipe detail.
+- [ ] Usage pill opens Paywall/access for both Free and Premium states.
+- [ ] Favorites is absent with no persisted favorite and appears below Recent with real favorite data.
+- [ ] All tabs, safe-area spacing, paywall purchase/restore, Premium sync, and save/generate flows remain unchanged.
+
+Release note: this is a runtime behavior correction and requires Android `versionCode` 2 when shipped through the guarded production release from `main`. The develop config remains at versionCode 1.
+
+## M22E.1R-G Editorial Design System and Home Redesign
+
+Status: implemented on `develop`; small-device Android QA and screenshot review pending.
+
+Automated validation passed: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, `node scripts/env/validate-env.mjs development`, and `node scripts/env/validate-env.mjs production`.
+
+Design reference summary:
+
+- `docs/design/stitch-home/screen.png`, `DESIGN.md`, and `code.html` are visual references only. The implementation translates the Obsidian palette, culinary coral accents, editorial serif hierarchy, translucent surfaces, 20px recipe cards, section rhythm, and centered Add control into typed React Native components; it does not reuse HTML, Tailwind, or sample recipe content.
+- Central theme tokens now cover semantic dark colors, spacing, typography slots, radii, borders, and shadows. Existing token aliases remain available so screens outside this milestone stay readable while later redesigns migrate deliberately.
+- Bodoni Moda and Work Sans packages are not installed in this repository. The theme exposes editorial and body font slots using startup-safe Android `serif` and system sans fallbacks. Adding bundled Expo-compatible font assets remains a later visual refinement and is not required for this stable patch.
+
+Home data and behavior:
+
+- Home and Library share `['recipe-library', user.id]` and `getRecipeLibrary()`. Home derives Currently Processing from active metadata/media-job states, Favorites from the existing `recipe_items.is_favorite`, and AI Generated from the newest item with an actual `recipe_cards` row or completed `result_recipe_card_id`.
+- The usage pill uses the existing `get-ai-access` Edge Function through `getAiAccessState()` and displays free total or Premium monthly remaining-to-start values. It adds no endpoint and changes no quota/access logic.
+- Active-state polling, focus refetch, foreground refetch, detail routing, Library navigation, save modal behavior, and safe analytics remain intact. Processing is hidden when no active work exists, and no static/sample recipes or external dummy images are used.
+- The bottom tab bar preserves Home, Library, Grocery, Settings, and the existing center save modal flow while adding the visible Add label, coral FAB, translucent dark surface, safe-area spacing, and interaction analytics.
+
+Home redesign acceptance checklist:
+
+- [ ] Header is centered, subtitle is readable, and the usage pill shows the correct Free/Premium remaining count.
+- [ ] Currently Processing appears only for active metadata/media-job work and clears after focus/foreground/poll refresh.
+- [ ] Favorites shows only persisted favorite data and is hidden when none exists.
+- [ ] AI Generated shows the newest real generated card, handles a missing/broken thumbnail, and opens the correct detail.
+- [ ] Loading, blocking error with Retry, background refresh warning, and empty states are readable on a small Android device.
+- [ ] Home, Library, Add, Grocery, and Settings navigate correctly; content and controls clear the gesture/tab area.
+- [ ] Save/share, AI generation, paywall, Premium sync, and production dev-tool guards still behave as before.
+- [ ] Capture Home screenshots for empty library, active processing, populated Favorites/AI, free usage, Premium usage, and small-device bottom safe area.
+
+Known deferred items:
+
+- Tags end-to-end generation/persistence quality.
+- Favorite/delete schema changes beyond the already-supported M22E.1R-D fields and UI.
+- Library/search redesign.
+- Recipe detail redesign.
+- Paywall redesign beyond the existing M22E.1R-E work.
+
+Release note: shipping this runtime/UI milestone through Google Play requires Android `versionCode` 2. This develop-branch implementation intentionally leaves `app.config.js` at versionCode 1 until the guarded production update is prepared from `main`.
+
 ## M22E.1D App-Side Search and UX Polish
 
 Status: implemented on `develop`; device QA pending.

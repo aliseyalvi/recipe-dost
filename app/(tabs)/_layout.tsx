@@ -1,5 +1,5 @@
 import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
-import { colors, radius, spacing, typography } from '@/theme'
+import { borders, colors, radius, shadows, spacing, typography } from '@/theme'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { Tabs } from 'expo-router'
 import { Pressable, Text, View } from 'react-native'
@@ -7,8 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const tabIcons = {
   home: '⌂',
-  library: '▰',
-  grocery: '▤',
+  library: '▥',
+  grocery: '⌑',
   settings: '⚙',
 } as const
 
@@ -56,20 +56,19 @@ function RecipeDostTabBar({
       style={{
         position: 'absolute',
         right: spacing.lg,
-        bottom: spacing.md + insets.bottom,
+        bottom: spacing.sm + insets.bottom,
         left: spacing.lg,
-        minHeight: 76,
+        minHeight: 74,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: radius.lg,
+        borderRadius: radius.card,
         borderCurve: 'continuous',
-        backgroundColor: colors.surface,
+        ...borders.subtle,
+        ...shadows.floating,
+        backgroundColor: colors.glassSurface,
         paddingHorizontal: spacing.sm,
         paddingVertical: spacing.sm,
-        boxShadow: '0 18px 40px rgba(0, 0, 0, 0.45)',
       }}
     >
       <TabButton
@@ -149,10 +148,11 @@ function TabButton({
       <Text
         selectable={false}
         style={{
-          color: isActive ? colors.primary : colors.textMuted,
+          color: isActive ? colors.primary : colors.onSurfaceVariant,
           fontSize: route.name === 'settings' ? 22 : 24,
           lineHeight: 26,
           fontWeight: '800',
+          opacity: isActive ? 1 : 0.62,
         }}
       >
         {tabIcons[route.name]}
@@ -164,9 +164,10 @@ function TabButton({
         style={[
           typography.caption,
           {
-            color: isActive ? colors.primary : colors.textMuted,
+            color: isActive ? colors.primary : colors.onSurfaceVariant,
             fontWeight: isActive ? '800' : '700',
             textAlign: 'center',
+            opacity: isActive ? 1 : 0.62,
           },
         ]}
       >
@@ -184,36 +185,58 @@ function isTabRoute(
 
 function CenterSaveButton() {
   const { openSaveRecipeModal } = useSaveRecipeModal()
+  const { track } = usePostHog()
 
   return (
-    <Pressable
-      accessibilityLabel="Save Recipe"
-      accessibilityRole="button"
-      onPress={() => openSaveRecipeModal()}
-      style={({ pressed }) => ({
-        width: 72,
-        height: 72,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: radius.pill,
-        backgroundColor: colors.primary,
-        opacity: pressed ? 0.84 : 1,
-        transform: [{ translateY: -18 }],
-        boxShadow: '0 12px 28px rgba(255, 73, 61, 0.34)',
-      })}
-    >
+    <View style={{ width: 68, alignItems: 'center' }}>
+      <Pressable
+        accessibilityLabel="Add recipe"
+        accessibilityRole="button"
+        onPress={() => {
+          track('tab_changed', { tab: 'add' })
+          openSaveRecipeModal()
+        }}
+        style={({ pressed }) => ({
+          width: 60,
+          height: 60,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: 3,
+          borderColor: colors.background,
+          borderRadius: radius.pill,
+          backgroundColor: colors.primaryContainer,
+          opacity: pressed ? 0.84 : 1,
+          transform: [{ translateY: -17 }],
+          ...shadows.fab,
+        })}
+      >
+        <Text
+          selectable={false}
+          style={{
+            color: colors.onPrimaryContainer,
+            fontSize: 36,
+            lineHeight: 40,
+            fontWeight: '400',
+          }}
+        >
+          +
+        </Text>
+      </Pressable>
       <Text
         selectable={false}
-        style={{
-          color: colors.primaryText,
-          fontSize: 40,
-          lineHeight: 44,
-          fontWeight: '500',
-        }}
+        style={[
+          typography.caption,
+          {
+            position: 'absolute',
+            bottom: 1,
+            color: colors.primary,
+            fontWeight: '800',
+          },
+        ]}
       >
-        +
+        Add
       </Text>
-    </Pressable>
+    </View>
   )
 }
 

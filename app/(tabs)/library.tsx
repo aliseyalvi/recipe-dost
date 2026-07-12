@@ -1,5 +1,6 @@
 import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { RecipePlatform } from '@/features/recipe-draft/types'
+import { getMediaJobProcessingStage } from '@/features/media-jobs/processing-stage'
 import {
   RecipeLibraryItem,
   getRecipeLibrary,
@@ -294,6 +295,7 @@ export default function LibraryRoute() {
           hasQuery ? (
             <LibrarySearchResultRow
               item={item}
+              query={searchQuery}
               onPress={() => openLibraryItem(item)}
             />
           ) : (
@@ -303,6 +305,7 @@ export default function LibraryRoute() {
                 subtitle={getLibrarySubtitle(item)}
                 platform={getRecipePlatform(item.platform)}
                 status={getRecipeVisualStatus(item)}
+                statusLabel={getLibraryRecipeStatusLabel(item)}
                 thumbnailUrl={getRecipeCardThumbnail(item)}
                 sourceUrl={item.source_url}
                 hasGroceryList={hasAiRecipe(item)}
@@ -505,15 +508,19 @@ function LibraryEmptyState({
 
 function LibrarySearchResultRow({
   item,
+  query,
   onPress,
 }: {
   item: RecipeLibraryItem
+  query: string
   onPress: () => void
 }) {
   const thumbnailUrl = getRecipeCardThumbnail(item)
   const tags = getLibraryTags(item)
+  const visibleTags = getSearchResultTags(tags, query)
   const metadata = getSearchResultMetadata(item)
   const platform = getRecipePlatform(item.platform)
+  const resultState = getSearchResultState(item)
 
   return (
     <Pressable
@@ -522,6 +529,7 @@ function LibrarySearchResultRow({
       onPress={onPress}
       style={({ pressed }) => ({
         flexDirection: 'row',
+        alignItems: 'flex-start',
         gap: spacing.md,
         overflow: 'hidden',
         borderWidth: 1,
@@ -536,7 +544,8 @@ function LibrarySearchResultRow({
       <View
         style={{
           width: 92,
-          minHeight: 112,
+          height: 92,
+          flexShrink: 0,
           overflow: 'hidden',
           borderRadius: radius.sm,
           borderCurve: 'continuous',
@@ -546,6 +555,7 @@ function LibrarySearchResultRow({
         {thumbnailUrl ? (
           <Image
             source={{ uri: thumbnailUrl }}
+            resizeMode="cover"
             style={{ width: '100%', height: '100%' }}
           />
         ) : (
@@ -561,8 +571,8 @@ function LibrarySearchResultRow({
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
           <PlatformBadge platform={platform} />
           <AppBadge
-            label={hasAiRecipe(item) ? 'AI Recipe' : 'Saved Link'}
-            tone={hasAiRecipe(item) ? 'accent' : 'default'}
+            label={resultState.label}
+            tone={resultState.tone}
           />
           {item.is_favorite ? <AppBadge label="Favorite" tone="accent" /> : null}
         </View>
@@ -578,10 +588,14 @@ function LibrarySearchResultRow({
             {metadata}
           </Text>
         ) : null}
-        {tags.length > 0 ? (
+        {visibleTags.length > 0 ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-            {tags.slice(0, 3).map((tag) => (
-              <SearchTagChip key={tag} label={formatTag(tag)} />
+            {visibleTags.map((tag) => (
+              <SearchTagChip
+                key={tag}
+                label={formatTag(tag)}
+                matched={tag.toLowerCase().includes(query.trim().toLowerCase())}
+              />
             ))}
           </View>
         ) : null}
@@ -590,18 +604,22 @@ function LibrarySearchResultRow({
   )
 }
 
-function SearchTagChip({ label }: { label: string }) {
+function SearchTagChip({ label, matched = false }: { label: string; matched?: boolean }) {
   return (
     <View
       style={{
         maxWidth: 112,
         borderRadius: radius.pill,
-        backgroundColor: colors.primarySoft,
+        backgroundColor: matched ? colors.accentSoft : colors.primarySoft,
         paddingHorizontal: spacing.sm,
         paddingVertical: 3,
       }}
     >
-      <Text selectable numberOfLines={1} style={[typography.caption, { color: colors.primary }]}>
+      <Text
+        selectable
+        numberOfLines={1}
+        style={[typography.caption, { color: matched ? colors.accent : colors.primary }]}
+      >
         {label}
       </Text>
     </View>
@@ -692,6 +710,50 @@ function getLibraryTags(item: RecipeLibraryItem) {
   )
 }
 
+function getSearchResultTags(tags: string[], query: string) {
+  const normalizedQuery = query.trim().toLowerCase()
+
+  if (!normalizedQuery) {
+    return tags.slice(0, 3)
+  }
+
+  const matchingTags = tags.filter((tag) =>
+    tag.toLowerCase().includes(normalizedQuery)
+  )
+  const remainingTags = tags.filter(
+    (tag) => !tag.toLowerCase().includes(normalizedQuery)
+  )
+
+  return [...matchingTags, ...remainingTags].slice(0, 3)
+}
+
+function getSearchResultState(item: RecipeLibraryItem): {
+  label: string
+  tone: 'default' | 'primary' | 'accent' | 'warning'
+} {
+  const status = getRecipeVisualStatus(item)
+
+  switch (status) {
+    case 'ai_card':
+      return { label: 'AI Recipe', tone: 'accent' }
+    case 'processing':
+      return {
+        label: getMediaJobProcessingStage(item.latest_media_job?.status).label,
+        tone: 'primary',
+      }
+    case 'ai_failed':
+      return { label: 'AI failed', tone: 'warning' }
+    case 'saving':
+      return { label: 'Saving link', tone: 'primary' }
+    case 'fetching_details':
+      return { label: 'Preparing preview', tone: 'primary' }
+    case 'failed':
+      return { label: 'Preview failed', tone: 'warning' }
+    case 'saved_link':
+      return { label: 'Saved Link', tone: 'default' }
+  }
+}
+
 function getSearchResultMetadata(item: RecipeLibraryItem) {
   if (!item.latest_card) {
     return null
@@ -771,7 +833,7 @@ function getLibrarySubtitle(item: RecipeLibraryItem) {
   }
 
   if (isMediaJobActive(item.latest_media_job)) {
-    return `${source} · Analyzing`
+    return `${source} · ${getMediaJobProcessingStage(item.latest_media_job?.status).label}`
   }
 
   if (item.latest_media_job?.status === 'needs_caption') {
@@ -795,6 +857,14 @@ function getLibrarySubtitle(item: RecipeLibraryItem) {
   }
 
   return source
+}
+
+function getLibraryRecipeStatusLabel(item: RecipeLibraryItem) {
+  if (isMediaJobActive(item.latest_media_job)) {
+    return getMediaJobProcessingStage(item.latest_media_job?.status).label
+  }
+
+  return undefined
 }
 
 function getRecipePlatform(platform: string | null): RecipePlatform {

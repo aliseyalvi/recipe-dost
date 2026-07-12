@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&amp;family=Work+Sans:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"/><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline-variant": "#5b403f",
+                    "on-surface-variant": "#e3bebb",
+                    "primary-fixed-dim": "#ffb3b0",
+                    "on-tertiary-fixed": "#1c1b1b",
+                    "inverse-surface": "#e3e2e7",
+                    "primary-fixed": "#ffdad8",
+                    "secondary-container": "#494946",
+                    "surface-tint": "#ffb3b0",
+                    "tertiary-container": "#626161",
+                    "on-primary-fixed-variant": "#930019",
+                    "tertiary": "#c8c6c5",
+                    "tertiary-fixed-dim": "#c8c6c5",
+                    "on-error": "#690005",
+                    "inverse-on-surface": "#2f3034",
+                    "surface": "#121317",
+                    "outline": "#aa8987",
+                    "error-container": "#93000a",
+                    "on-error-container": "#ffdad6",
+                    "tertiary-fixed": "#e5e2e1",
+                    "surface-container-highest": "#343539",
+                    "inverse-primary": "#b91a2a",
+                    "surface-container": "#1e1f23",
+                    "surface-bright": "#38393d",
+                    "on-surface": "#e3e2e7",
+                    "surface-dim": "#121317",
+                    "surface-container-lowest": "#0d0e12",
+                    "on-background": "#e3e2e7",
+                    "primary-container": "#be1e2d",
+                    "surface-container-high": "#292a2e",
+                    "on-primary-fixed": "#410006",
+                    "background": "#121317",
+                    "on-tertiary": "#313030",
+                    "on-secondary-container": "#b9b8b4",
+                    "on-secondary": "#30312e",
+                    "secondary": "#c8c6c2",
+                    "on-primary-container": "#ffd3d1",
+                    "surface-container-low": "#1a1b1f",
+                    "secondary-fixed-dim": "#c8c6c2",
+                    "on-secondary-fixed-variant": "#474744",
+                    "on-tertiary-container": "#dfdddc",
+                    "primary": "#ffb3b0",
+                    "secondary-fixed": "#e4e2dd",
+                    "on-tertiary-fixed-variant": "#474746",
+                    "surface-variant": "#343539",
+                    "error": "#ffb4ab",
+                    "on-secondary-fixed": "#1b1c19",
+                    "on-primary": "#68000f"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px",
+                    "2xl": "1.25rem",
+                    "3xl": "1.5rem"
+            },
+            "spacing": {
+                    "margin-desktop": "40px",
+                    "margin-mobile": "16px",
+                    "sm": "16px",
+                    "md": "20px",
+                    "gutter": "20px",
+                    "base": "4px",
+                    "xs": "8px",
+                    "xl": "48px",
+                    "lg": "32px",
+                    "safe": "env(safe-area-inset-bottom)"
+            },
+            "fontFamily": {
+                    "body-md": [
+                            "Work Sans"
+                    ],
+                    "label-sm": [
+                            "Work Sans"
+                    ],
+                    "display-lg-mobile": [
+                            "Bodoni Moda"
+                    ],
+                    "headline-md": [
+                            "Bodoni Moda"
+                    ],
+                    "display-lg": [
+                            "Bodoni Moda"
+                    ],
+                    "body-lg": [
+                            "Work Sans"
+                    ]
+            },
+            "fontSize": {
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-lg-mobile": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "56px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    }catch(_e){}</script><meta charset="utf-8"/></head><body class="bg-background text-on-surface font-body-md antialiased pb-24 md:pb-0 min-h-screen flex flex-col">
+<!-- Header Section -->
+<header class="docked full-width top-0 sticky z-50 bg-surface/90 backdrop-blur-xl border-b border-outline-variant/10 flex flex-col items-center justify-center w-full px-margin-mobile md:px-margin-desktop py-4 pt-8 md:pt-6"><div class="absolute right-4 md:right-margin-desktop top-4 md:top-6 flex items-center gap-1 px-3 py-1 rounded-full glass-panel border border-primary/20 shadow-sm bg-surface-container-high/50">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<span class="text-label-sm font-label-sm text-on-surface font-semibold">5 left</span>
+</div>
+<h1 class="text-headline-md font-headline-md font-bold text-on-surface">Recipe Dost</h1>
+<p class="text-body-md font-body-md text-on-surface-variant mt-1">Save your favorite recipes</p>
+</header>
+<!-- Main Content Canvas -->
+<main class="w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-gutter grid grid-cols-1 md:grid-cols-12 gap-gutter flex-grow">
+<!-- Content Area -->
+<div class="col-span-1 md:col-span-8 lg:col-span-9 space-y-lg">
+<!-- Section 1: Currently Processing -->
+<section>
+<h2 class="text-headline-md font-headline-md text-on-surface mb-sm">Currently Processing</h2>
+<div class="bg-surface-container rounded-2xl border border-outline-variant/20 shadow-sm overflow-hidden flex flex-col sm:flex-row p-4 gap-4 items-center">
+<div class="w-24 h-24 rounded-lg overflow-hidden shrink-0 relative shimmer bg-surface-container-highest">
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant/50 text-3xl animate-pulse">hourglass_empty</span>
+</div>
+</div>
+<div class="flex-1 space-y-2 w-full">
+<div class="flex items-center gap-2">
+<span class="px-2 py-1 rounded-full text-xs font-label-sm bg-surface-container-highest text-on-surface-variant border border-outline-variant/20 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">sync</span> Processing
+                            </span>
+</div>
+<div class="h-4 bg-surface-container-highest rounded w-3/4 shimmer"></div>
+<div class="h-4 bg-surface-container-highest rounded w-1/2 shimmer"></div>
+</div>
+</div>
+<button class="mt-sm w-full md:w-auto bg-transparent border border-primary text-primary hover:bg-primary/5 font-label-sm text-label-sm py-3 px-6 rounded-full transition-colors duration-200 text-center">
+                    Open Library
+                </button>
+</section>
+<!-- Bento Grid Container for Sections 2 & 3 -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Section 2: Favorites -->
+<section class="flex flex-col h-full">
+<div class="flex justify-between items-end mb-sm">
+<h2 class="text-headline-md font-headline-md text-on-surface">Favorites</h2>
+</div>
+<div class="bg-surface-container rounded-2xl border border-outline-variant/20 shadow-sm overflow-hidden flex-1 group cursor-pointer relative">
+<div class="absolute top-4 left-4 z-10 flex gap-2">
+<span class="glass-panel text-on-surface px-3 py-1 rounded-full text-xs font-label-sm flex items-center gap-1 font-semibold bg-surface/50 backdrop-blur-md">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">favorite</span> Favorite
+                            </span>
+</div>
+<div class="aspect-[4/3] w-full relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent z-0"></div>
+<img alt="Favorite Recipe" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" data-alt="A beautifully plated rustic Italian pasta dish, rich tomato sauce, fresh basil leaves, dusting of parmesan cheese, shot from slightly above in natural window light, warm wooden table setting, editorial food photography style, light mode aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBiaEK3tpS10rOlhuVggTbMFc96gLGT1b6XiN9TjGpqw1GdyjbbFaFsufSZRaGD9FigWMnOIgs9IOey6PwP2IT9GtmJ_UfGkjBiXntUV2_qypMQ5N5I6WbuQFFhXp9EkbjJpBD0tpeVzXGMuDVc7VvXhmbJee29IPAZRFonaJGdCkWaq7Hau61mJaL3IrJgUCwsmDhzyxLhAdH43cVANf8YEoT9bpztFP0K9Oqzw36ca6v3j8236DnH0MvBNdxSTLnfmW8Y-fnu4_Js"/>
+</div>
+<div class="p-5 relative z-10 bg-surface-container">
+<h3 class="text-body-lg font-body-lg font-semibold text-on-surface mb-1 line-clamp-2">Rustic Tuscan Penne Arrabbiata</h3>
+<p class="text-label-sm font-label-sm text-on-surface-variant flex items-center gap-2">
+<span class="">YouTube</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="">Dinner</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="">Jul 10</span>
+</p>
+</div>
+</div>
+<button class="mt-sm w-full bg-transparent border border-primary text-primary hover:bg-primary/5 font-label-sm text-label-sm py-3 px-6 rounded-full transition-colors duration-200 text-center">
+                        View All Favorites
+                    </button>
+</section>
+<!-- Section 3: AI Generated -->
+<section class="flex flex-col h-full">
+<div class="flex justify-between items-end mb-sm">
+<h2 class="text-headline-md font-headline-md text-on-surface">AI Generated</h2>
+</div>
+<div class="bg-surface-container rounded-2xl border border-outline-variant/20 shadow-sm overflow-hidden flex-1 group cursor-pointer relative">
+<div class="absolute top-4 left-4 z-10 flex gap-2">
+<span class="glass-panel text-on-surface px-3 py-1 rounded-full text-xs font-label-sm flex items-center gap-1 font-semibold bg-surface/50 backdrop-blur-md">
+<span class="material-symbols-outlined text-[14px] text-primary">auto_awesome</span> AI Recipe
+                            </span>
+</div>
+<div class="aspect-[4/3] w-full relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent z-0"></div>
+<img alt="AI Recipe" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" data-alt="A modern minimalist plate of seared salmon with a vibrant citrus glaze, sitting on a bed of quinoa, bright white plate, clean marble countertop, high-key lighting, editorial styling, light mode aesthetic, pristine and fresh" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDu5SfA9xKoVgj0Q202UcI0jfjcakET8fGxlBz8a_Whwk1KdiPwD-4znWiV63ludCM-621YrWyWyHi7u6MkO_CacQ3kYnc_fPTW4GFrRIFh8iOnnbOzwBCpkygKXd18H0_AAkUuN4pNC5B2W4gkcsC0oMacC5j79eQQpSpFOdXT9N5WGpyrFxc19xUUuevxDHEEZFeoib8y5_YO81p9ad8py65sw_RZERqAJMZpdaAav_dCA0NAiz7-fT2Ohe9aKJwyrdHC2SkPhxr9"/>
+</div>
+<div class="p-5 relative z-10 bg-surface-container">
+<h3 class="text-body-lg font-body-lg font-semibold text-on-surface mb-1 line-clamp-2">Citrus Glazed Salmon Bowl</h3>
+<p class="text-label-sm font-label-sm text-on-surface-variant flex items-center gap-2">
+<span class="">AI Generated</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="">Lunch</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="">Jul 09</span>
+</p>
+</div>
+</div>
+<button class="mt-sm w-full bg-transparent border border-primary text-primary hover:bg-primary/5 font-label-sm text-label-sm py-3 px-6 rounded-full transition-colors duration-200 text-center">
+                        View All AI Recipes
+                    </button>
+</section>
+</div>
+</div>
+<!-- Desktop Side Nav Spacer (Hidden on Mobile) -->
+<div class="hidden md:block col-span-4 lg:col-span-3 border-l border-outline-variant/10 pl-gutter h-full">
+<!-- Space reserved for future desktop side panel or ad content -->
+</div>
+</main>
+<!-- Bottom Navigation Bar (Mobile Only) -->
+<nav class="md:hidden glass-panel fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe border-t border-outline-variant/10 bg-surface/80 backdrop-blur-xl">
+<!-- Home (Active) -->
+<a class="flex flex-col items-center justify-center text-primary font-bold w-16 hover:bg-surface-variant/10 rounded-full transition-all py-1" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="text-[10px] mt-1 font-label-sm">Home</span>
+</a>
+<!-- Library -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 w-16 hover:bg-surface-variant/10 rounded-full transition-all py-1" href="#">
+<span class="material-symbols-outlined text-[24px]">menu_book</span>
+<span class="text-[10px] mt-1 font-label-sm">Library</span>
+</a>
+<!-- Add FAB -->
+<div class="relative -top-6">
+<button class="bg-primary-container text-on-primary-container w-14 h-14 rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(190,30,45,0.4)] hover:scale-95 transition-transform duration-200 border-4 border-surface">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</div>
+<!-- Grocery -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 w-16 hover:bg-surface-variant/10 rounded-full transition-all py-1" href="#">
+<span class="material-symbols-outlined text-[24px]">shopping_cart</span>
+<span class="text-[10px] mt-1 font-label-sm">Grocery</span>
+</a>
+<!-- Settings -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 w-16 hover:bg-surface-variant/10 rounded-full transition-all py-1" href="#">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+<span class="text-[10px] mt-1 font-label-sm">Settings</span>
+</a>
+</nav>
+</body></html>

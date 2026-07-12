@@ -1,5 +1,43 @@
 # Recipe Dost Milestones
 
+## M22E.1R-G2 - Home Editorial Behavior Correction
+
+- Status: Implemented on `develop`; device QA pending.
+- Corrected Currently Processing so the card opens the existing saved-recipe detail/progress route with the real parent item ID; its independent Open Library action remains unchanged.
+- Added Recent above Favorites. It selects one real item by latest item/card/job activity, supports saved links and completed AI cards, uses the existing editorial card/fallback, and opens the matching saved or generated detail route.
+- Preserved M22E.1B bounded active polling, Home focus/foreground refetch, and save/AI completion invalidations so completed work replaces stale processing and becomes eligible for Recent.
+- Made the existing `get-ai-access` usage pill pressable to `/paywall` for Free and Premium users, with safe analytics and the required accessibility label.
+- Favorites now appears only when existing persisted `is_favorite` data exists and remains below Recent. No favorite/delete schema or API work was added.
+- No backend/worker, quota/access, RevenueCat entitlement/products, package ID, env file, video storage, or production guard behavior changed. Shipping requires versionCode 2; the develop config remains unchanged.
+- Validation passed: `npm run qa:static`, development env doctor, and development/production env validation. Manual Android QA remains pending.
+
+## M22E.1R-G - Editorial Design System and Home Screen Redesign
+
+- Status: Implemented on `develop`; device QA and screenshot review pending.
+- Added centralized Obsidian/coral semantic tokens for colors, typography slots, spacing, radii, borders, and elevation, with compatibility aliases for screens awaiting later redesign.
+- Added typed React Native editorial Home components for the screen/header/usage pill, section headings, processing state, real recipe hero cards, outline pills, empty states, and static skeleton placeholders. Stitch HTML/Tailwind and sample content were not copied.
+- Home now uses the shared full `recipe-library` query for actual active work, persisted favorites, and the newest real AI card, plus the existing `get-ai-access` query for the Free/Premium remaining pill. Existing polling, focus/foreground recovery, navigation, save modal, and analytics are preserved.
+- The existing custom Expo Router tab bar now uses a translucent dark container, coral active state, centered labeled Add FAB, and Android safe-area spacing without changing route names or the add/share/paste flow.
+- Bodoni Moda and Work Sans are represented by centralized font slots with safe `serif`/system sans fallbacks because no font package/assets are currently installed. Bundled brand fonts are deferred rather than adding startup risk.
+- No backend/worker, schema, quota/access, RevenueCat entitlement/products, package ID, env file, video storage, or production guard behavior changed. A shipped Play update requires versionCode 2, but the bump is deferred to the guarded production release from `main`.
+- Validation passed: `npm run qa:static`, development env doctor, and development/production env validation. Small-device manual QA remains pending.
+
+## M22E.1R-F - Professional Processing And Background Job UX
+
+- Status: Implemented on `develop`; device QA pending.
+- Saved-link and AI-job detail states now share a stage-aware dark processing panel. Existing statuses map to Saving link, Preparing preview, Watching video, Extracting recipe, Creating recipe card, Ready, and Failed; determinate progress appears only when supplied by the existing media job.
+- The panel explicitly confirms that work continues after navigating away, routes Go to Library without cancelling the job, and makes Wait here perform a one-off refetch with visible checking feedback. Existing bounded polling, foreground/focus refresh, completed-card updates, friendly failure copy, and retry paths remain unchanged.
+- Home and Library now show the current media-job stage in their pending card labels while retaining their existing active-state polling and failure states.
+- No backend/worker, push notification, quota/access, RevenueCat, product, package ID, or env-file behavior changed.
+
+## M22E.1R-E - Professional Paywall Redesign
+
+- Status: Implemented on `develop`; device QA pending.
+- Replaced the mixed benefit list/equal-cell layout with a concise Free vs Premium table, an existing-access usage card, selectable monthly/yearly RevenueCat plan cards, and a safe-area-aware bottom purchase/restore area.
+- Free is stated as saved links, Library search, and 3 total AI recipe cards. Ingredients, steps, recipe help, and grocery lists are explicitly limited to those generated cards. Premium is stated as 100 AI recipe cards/month, Urdu + English help, ingredients/steps/grocery lists, videos up to two minutes in beta, and priority beta improvements.
+- Existing offering loading/unavailable states, package IDs, Google Play purchase/restore handlers, `premium` entitlement, and Premium-active state are unchanged. Active Premium never receives a purchase CTA.
+- No RevenueCat product, access/quota, backend, package ID, or env-file change was made.
+
 ## M22E.1R-D - Favorite And Delete Recipe Management
 
 - Status: Implemented on `develop`; development database apply and device QA pending.
@@ -16,6 +54,7 @@
 - Search covers saved and AI titles, source metadata/author/platform, ingredients, steps, tags, notes/captions/manual ingredients, cuisine/meal type, and source URL.
 - Recipe-card detail renders up to eight rounded existing tags; a tag opens Library with the tag prefilled as a query. Raw tags/search text are not sent to analytics.
 - Added clear-search affordance and a query-aware “No recipes found” state. Empty-tag legacy cards remain supported.
+- Follow-up: tag-search rows prioritize matching chips, show the same pending/failed/AI state as the grid, and lock thumbnail geometry to 92 by 92 with cover scaling on Android.
 - No schema, worker, quota/access, RevenueCat, package ID, or env-file change was made. Tag search depends on the external worker populating `recipe_cards.tags_json` for newly generated cards.
 - Validation passed: `npm run typecheck`, `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, and `node scripts/env/validate-env.mjs production`.
 

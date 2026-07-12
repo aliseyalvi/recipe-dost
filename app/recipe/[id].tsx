@@ -1,6 +1,11 @@
 import { getPlatformLabel } from '@/features/recipe-draft/platform'
 import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { RecipePlatform } from '@/features/recipe-draft/types'
+import {
+  getMediaJobProcessingStage,
+  getMetadataProcessingStage,
+} from '@/features/media-jobs/processing-stage'
+import { ProcessingStatusPanel } from '@/features/media-jobs/processing-status-panel'
 import { useUserProfileQuery } from '@/features/onboarding/use-user-profile-query'
 import {
   getNormalizedSubscriptionStatus,
@@ -67,6 +72,7 @@ export default function SavedRecipeRoute() {
   const sourceReturnToRoute = getSafeReturnToRoute(returnTo)
   const [isCreatingMediaJob, setIsCreatingMediaJob] = useState(false)
   const [isRefreshingMetadata, setIsRefreshingMetadata] = useState(false)
+  const [isCheckingProcessing, setIsCheckingProcessing] = useState(false)
   const [mediaJobError, setMediaJobError] = useState<Error | null>(null)
   const [showCreditLimitState, setShowCreditLimitState] = useState(false)
   const [isSyncingPremiumAccess, setIsSyncingPremiumAccess] = useState(false)
@@ -547,19 +553,26 @@ export default function SavedRecipeRoute() {
   const handleLeaveProcessing = () => {
     track('processing_leave_tapped', {
       platform,
-      destination: sourceReturnToRoute ?? '/home',
+      destination: '/library',
       status: activeMediaJob?.status ?? 'metadata_pending',
     })
-    router.replace(sourceReturnToRoute ?? '/home')
+    router.replace('/library')
   }
 
-  const handleWaitHere = () => {
+  const handleWaitHere = async () => {
     track('processing_wait_here_tapped', {
       platform,
       status: activeMediaJob?.status ?? 'metadata_pending',
     })
-    void mediaJobQuery.refetch()
-    void recipeQuery.refetch()
+    setIsCheckingProcessing(true)
+
+    try {
+      await Promise.all([mediaJobQuery.refetch(), recipeQuery.refetch()])
+    } finally {
+      if (mountedRef.current) {
+        setIsCheckingProcessing(false)
+      }
+    }
   }
 
   const handleCreateMediaJob = async () => {
@@ -928,28 +941,25 @@ export default function SavedRecipeRoute() {
       ) : null}
 
       {recipe.metadata_status === 'saving' ? (
-        <Card tone="muted">
-          <Text selectable style={[typography.heading, { color: colors.text }]}>
-            Saving link...
-          </Text>
-          <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-            Recipe Dost is saving this link. You can leave and check Library
-            again in a moment.
-          </Text>
-        </Card>
+        <ProcessingStatusPanel
+          stage={getMetadataProcessingStage(recipe.metadata_status)}
+          isChecking={isCheckingProcessing}
+          onGoToLibrary={handleLeaveProcessing}
+          onWaitHere={() => {
+            void handleWaitHere()
+          }}
+        />
       ) : null}
 
       {recipe.metadata_status === 'pending' ? (
-        <Card tone="muted">
-          <Text selectable style={[typography.heading, { color: colors.text }]}>
-            Preparing preview...
-          </Text>
-          <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-            Recipe Dost is fetching the title, thumbnail, and basic details.
-            You can leave this screen; Home and Library refresh when the
-            preview is ready.
-          </Text>
-        </Card>
+        <ProcessingStatusPanel
+          stage={getMetadataProcessingStage(recipe.metadata_status)}
+          isChecking={isCheckingProcessing}
+          onGoToLibrary={handleLeaveProcessing}
+          onWaitHere={() => {
+            void handleWaitHere()
+          }}
+        />
       ) : null}
 
       {mediaJobQuery.isLoading && !displayMediaJob ? (
@@ -971,54 +981,18 @@ export default function SavedRecipeRoute() {
       ) : null}
 
       {activeMediaJob ? (
-        <Card tone="warm">
-          <Text selectable style={[typography.heading, { color: colors.text }]}>
-            Analyzing
-          </Text>
-          <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-            Recipe Dost is generating your AI recipe card. You can leave this
-            screen while it finishes; Home and Library will update when it is
-            ready.
-          </Text>
-          <View
-            accessibilityRole="progressbar"
-            accessibilityValue={{ min: 0, max: 100, now: activeMediaJob.progress }}
-            style={{
-              overflow: 'hidden',
-              height: 8,
-              borderRadius: radius.pill,
-              backgroundColor: colors.border,
-            }}
-          >
-            <View
-              style={{
-                width: `${activeMediaJob.progress}%`,
-                height: '100%',
-                backgroundColor: colors.primary,
-              }}
-            />
-          </View>
-          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-            {activeMediaJob.progress}% complete
-          </Text>
-          <View style={{ gap: spacing.sm }}>
-            <Button
-              label={getBackToListLabel(sourceReturnToRoute)}
-              fullWidth
-              variant="secondary"
-              onPress={handleLeaveProcessing}
-            />
-            <Button
-              label="Wait here"
-              fullWidth
-              variant="outline"
-              onPress={handleWaitHere}
-            />
-          </View>
-        </Card>
+        <ProcessingStatusPanel
+          stage={getMediaJobProcessingStage(activeMediaJob.status)}
+          progress={activeMediaJob.progress}
+          isChecking={isCheckingProcessing}
+          onGoToLibrary={handleLeaveProcessing}
+          onWaitHere={() => {
+            void handleWaitHere()
+          }}
+        />
       ) : resultRecipeCardId ? (
         <Card tone="warm">
-          <AppBadge label="AI Recipe ready" tone="accent" />
+          <AppBadge label="Ready" tone="accent" />
           <Text selectable style={[typography.heading, { color: colors.text }]}>
             {recipeCard?.recipe_title?.trim() || 'AI recipe ready'}
           </Text>
@@ -1066,6 +1040,7 @@ export default function SavedRecipeRoute() {
             </View>
           ) : mediaJobFailureCopy ? (
             <View style={{ gap: spacing.xs }}>
+              <AppBadge label="Failed" tone="warning" />
               <Text selectable style={[typography.heading, { color: colors.text }]}>
                 {mediaJobFailureCopy.title}
               </Text>
@@ -1206,10 +1181,6 @@ export default function SavedRecipeRoute() {
       ) : null}
     </Screen>
   )
-}
-
-function getBackToListLabel(route: string | null) {
-  return route === '/library' ? 'Go back to Library' : 'Go back to Home'
 }
 
 function getRecipePlatform(platform: string | null): RecipePlatform {

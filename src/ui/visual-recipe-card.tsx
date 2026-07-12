@@ -23,6 +23,7 @@ type Props = {
   hasNotes?: boolean
   isFavorite?: boolean
   progress?: number | null
+  statusLabel?: string
   createdAt: string
   onPress: () => void
 }
@@ -37,6 +38,7 @@ export function VisualRecipeCard({
   hasNotes = false,
   isFavorite = false,
   progress,
+  statusLabel,
   createdAt,
   onPress,
 }: Props) {
@@ -86,7 +88,7 @@ export function VisualRecipeCard({
           }}
         >
           <AppBadge
-            label={getStatusLabel(status)}
+            label={statusLabel ?? getStatusLabel(status)}
             tone={getStatusTone(status)}
           />
         </View>
@@ -169,17 +171,17 @@ function MiniPill({ label }: { label: string }) {
 function getStatusLabel(status: VisualRecipeStatus) {
   switch (status) {
     case 'saving':
-      return 'Saving'
+      return 'Saving link'
     case 'fetching_details':
-      return 'Fetching details'
+      return 'Preparing preview'
     case 'ai_card':
       return 'AI Recipe'
     case 'processing':
-      return 'Analyzing'
+      return 'Working'
     case 'ai_failed':
       return 'AI failed'
     case 'failed':
-      return 'Saved Link'
+      return 'Preview failed'
     case 'saved_link':
       return 'Saved Link'
   }

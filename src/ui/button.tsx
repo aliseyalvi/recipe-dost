@@ -14,8 +14,8 @@ type Props = {
 
 const variantStyles: Record<ButtonVariant, ViewStyle> = {
   primary: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.primaryContainer,
+    borderColor: colors.primaryContainer,
   },
   secondary: {
     backgroundColor: colors.primarySoft,
@@ -47,6 +47,8 @@ export function Button({
   const textColor =
     variant === 'accent'
       ? '#21150B'
+      : variant === 'primary'
+        ? colors.onPrimaryContainer
       : variant === 'outline'
         ? colors.textMuted
         : isFilled
