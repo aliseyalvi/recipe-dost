@@ -353,7 +353,9 @@ type RecipeLibraryItemRow = Pick<
   | 'source_url'
   | 'platform'
   | 'title'
+  | 'description'
   | 'thumbnail_url'
+  | 'duration_seconds'
   | 'metadata_status'
   | 'source_metadata'
   | 'user_note'
@@ -1077,7 +1079,7 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
   let recipeItemsQuery = supabase
     .from('recipe_items')
     .select(
-      'id, source_url, platform, title, thumbnail_url, metadata_status, source_metadata, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, is_favorite, created_at, updated_at'
+      'id, source_url, platform, title, description, thumbnail_url, duration_seconds, metadata_status, source_metadata, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, is_favorite, created_at, updated_at'
     )
     .eq('user_id', user.id)
     .is('deleted_at', null)
@@ -1214,7 +1216,17 @@ function normalizeMediaJobSourceMetadata(
     platform: getStringValue(value.platform),
     resolver: getStringValue(value.resolver),
     author_username: getStringValue(
-      value.author_username ?? value.authorUsername ?? value.author
+      value.author_username ??
+        value.authorUsername ??
+        value.author_name ??
+        value.author ??
+        value.creator ??
+        value.channel_name ??
+        value.channel ??
+        value.uploader ??
+        value.username ??
+        value.handle ??
+        value.ownerUsername
     ),
     duration_seconds: getNumberValue(value.duration_seconds),
     is_too_long: getBooleanValue(value.is_too_long ?? value.isTooLong),

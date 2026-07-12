@@ -26,6 +26,8 @@ export const colors = {
   glassSurface: 'rgba(18, 19, 23, 0.94)',
   glassElevated: 'rgba(41, 42, 46, 0.72)',
   glassBadge: 'rgba(52, 53, 57, 0.84)',
+  modalBackdrop: 'rgba(0, 0, 0, 0.60)',
+  inputSurface: 'rgba(52, 53, 57, 0.34)',
   primaryOutline: 'rgba(255, 179, 176, 0.72)',
   primaryOutlineSoft: 'rgba(255, 179, 176, 0.24)',
   primaryWash: 'rgba(255, 179, 176, 0.08)',

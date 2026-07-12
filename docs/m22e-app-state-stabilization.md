@@ -8,6 +8,116 @@ Audit-only pass for onboarding launch routing and stale Home/Library metadata st
 
 Current branch workflow is correct for this milestone: M22E fixes are prepared on `develop`, then merged to `main` only after QA for a production AAB update.
 
+## M22E.1R-HOME2 Home processing cleanup and title normalization
+
+Status: implemented and automatically validated on `develop`; Android device QA pending.
+
+Automated validation passed: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, `node scripts/env/validate-env.mjs development`, and `node scripts/env/validate-env.mjs production`.
+
+Home presentation decisions:
+
+- Removed the separate Currently Processing section. Its duplicate came from selecting the same newest `recipe_items` row independently as both `processingRecipe` and `recentRecipe`, then rendering both. Processing now appears once inside Recent with the real thumbnail or hourglass fallback, compact preparing/processing badge, creator chip, status metadata, and a subtle progress treatment.
+- The Recent item keeps the same parent recipe ID while metadata or AI state changes. Saved/processing rows open `/recipe/[id]?returnTo=/home`; rows with a real recipe card or completed result ID open `/recipe-card/[id]?returnTo=/home`.
+- The current Recent item is excluded from the immediate Favorites and AI Generated feature slots. Those sections show another real row when available; AI Generated stays hidden when its only item is already Recent, preventing the same hero card from repeating near the top.
+- Existing `['recipe-library', user.id]` polling, save/metadata/AI invalidation, Home focus refetch, and app-foreground refetch remain unchanged. No endpoint or query key was added.
+- The AI usage pill remains pressable and routes to the existing `/paywall` flow for every access state.
+
+Display-title precedence:
+
+1. Real `recipe_cards.recipe_title` for an AI card.
+2. Meaningful title from normalized media-job or source metadata.
+3. A display-only title derived from the first useful description/caption line, with URLs, mentions, hashtags, excess emoji, and common “full recipe below” tails removed and a 58-character card cap.
+4. Existing `recipe_items.title` only when it is not a weak creator/platform/URL fallback.
+5. Instagram recipe link, TikTok recipe link, YouTube recipe link, or Recipe link.
+
+Titles beginning with “Video by” or “Post by”, raw URLs, platform-only values, and titles equal to the creator/channel are rejected as primary card titles. Database values are not mutated.
+
+Creator/channel behavior:
+
+- Creator chips use existing safe metadata variants: `author_name`, `author_username`, `authorUsername`, `author`, `creator`, `channel_name`, `channel`, `uploader`, `username`, `handle`, and `ownerUsername`. Normalized media-job creator metadata is checked first; Instagram/TikTok handles receive an `@` presentation when appropriate.
+- If creator data is absent, the chip shows the safe platform label. URLs and private extraction data are never used or logged.
+- The app library query previously omitted the existing `recipe_items.description` and `duration_seconds` columns. HOME2 adds them to the same query so caption fallback can use the stored description without a schema/backend change. Some providers may still return no meaningful title or description; those rows intentionally use the platform fallback and may need a later worker/provider metadata improvement.
+
+M22E.1R-HOME2 manual QA checklist:
+
+- [ ] Empty or inactive Home has no Currently Processing section.
+- [ ] New Instagram, TikTok, and YouTube saves each appear once in Recent and open saved-recipe detail while preparing.
+- [ ] Metadata completion updates the same Recent card title, thumbnail, badge, and status without a duplicate/glitch.
+- [ ] AI completion updates Recent routing to AI detail and does not immediately repeat the same card in AI Generated.
+- [ ] “Video by …” / “Post by …” titles fall through to caption or platform copy; creator remains visible as a chip.
+- [ ] YouTube uses a meaningful stored/oEmbed title when present.
+- [ ] Add/share, focus/foreground refresh, AI usage pill to Paywall, RevenueCat, and production-safe logging remain unchanged.
+
+## M22E.1R-K0 Add/share entry regression recovery
+
+Status: implemented and automatically validated on `develop`; Android device QA pending.
+
+Automated validation passed: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, `node scripts/env/validate-env.mjs development`, and `node scripts/env/validate-env.mjs production`.
+
+Root cause and recovery:
+
+- The K redesign kept both Add entry points connected to the globally mounted `SaveRecipeModalProvider`, but moved the Gorhom `present()` / `dismiss()` state transition from that stable provider into the extracted `ImportRecipeSheet`. This lifecycle ownership change removed the previously proven provider-level open transition and caused both center Add and Android share to reach state without visibly presenting the sheet.
+- K0 restores the provider-owned `isOpen` transition and previous-open guard. `ImportRecipeSheet` remains mounted under the global `BottomSheetModalProvider` and is presentation-only, preserving the editorial UI without a route fallback or new dependency.
+- Center Add uses the restored sheet from Home, Library, and other tabs. Native Android share intent and the `/share-recipe` compatibility route use the same sheet with `initialUrl` prefilled. `/save-recipe` remains a compatibility redirect to `/home`.
+- Android back, backdrop, cross, and swipe continue using the existing safe close path. No raw URL logging was added.
+
+Preserved save behavior:
+
+- URL validation/normalization, clipboard handling, duplicate detection, `save-recipe-link`, metadata refresh, and Home/Library invalidation are unchanged.
+- Confirmed saves close the sheet and navigate to `/recipe/[id]?returnTo=/home`, where the existing Preparing preview state is shown. Saving a link does not create a media job.
+- Backend/worker, schema, access/quota, RevenueCat entitlement/products, package IDs, env files, and the Home redesign were not changed.
+
+M22E.1R-K0 manual QA checklist:
+
+- [ ] Center Add opens the Import Recipe sheet every time from Home and Library.
+- [ ] Android back closes the open sheet safely.
+- [ ] Instagram, TikTok, and YouTube native shares open the app, present the sheet, and prefill the URL.
+- [ ] Valid, invalid, clear, clipboard paste, duplicate, network, and save states retain friendly behavior.
+- [ ] Confirmed save opens `/recipe/[id]`, shows Preparing preview, and refreshes Home/Library.
+- [ ] No raw URL is logged; Premium/paywall, Home, tabs, and metadata behavior remain unchanged.
+
+No temporary route fallback is active. Follow-up visual polish is unnecessary unless device QA finds a separate small-screen issue.
+
+## M22E.1R-K Add / Share Recipe Modal Redesign
+
+Status: implemented on `develop`; Android device QA pending.
+
+Automated validation passed: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, `node scripts/env/validate-env.mjs development`, and `node scripts/env/validate-env.mjs production`.
+
+Import sheet redesign:
+
+- The existing `SaveRecipeModalProvider` remains the single Add/share orchestration surface. Its Gorhom UI is now extracted into a typed `ImportRecipeSheet` with the M22E editorial Obsidian/coral theme, 60% backdrop, rounded top sheet, drag handle, centered serif “Import Recipe” title, close action, numbered instructions, focused URL field, clear action, clipboard paste, inline feedback, and full-width Save Recipe CTA.
+- Center Add still opens the provider with an empty URL. Both the native Android `expo-share-intent` handler and `/share-recipe` compatibility route still open the same sheet with the extracted URL and “Shared from another app” hint. `/save-recipe` route compatibility is unchanged.
+- Visible guidance emphasizes Instagram, TikTok, and YouTube. Existing Facebook and backend-safe `other` HTTP(S) links remain accepted by the unchanged validator/platform detector/save Edge Function; this UI patch does not narrow backend support.
+- The sheet reuses `validateRecipeUrl`, `normalizeRecipeSourceUrl`, duplicate cache detection, `saveRecipeLink`, `refreshRecipeMetadata`, and existing Home/Library cache invalidation. Paste keeps meaningful URL query parameters; no raw URL is sent to analytics or console output.
+
+Submit and error decisions:
+
+- Save no longer dismisses optimistically or claims success before the Edge Function responds. While saving, the sheet remains visible with a disabled “Saving…” action. A confirmed new item updates/invalidate list caches, starts the existing metadata refresh, closes the sheet, and navigates to `/recipe/[id]?returnTo=/home` so the existing Preparing preview state is visible.
+- Saving a link remains free and does not create a `media_job`; AI generation remains a later explicit detail-screen action governed by existing access logic.
+- Invalid URL, empty/failed clipboard, duplicate, missing session, and API/network failures render inline friendly copy. Raw Edge Function messages, URLs, secrets, tokens, and session data are never displayed or tracked.
+- Keyboard behavior uses the existing bottom-sheet text input, extend/adjust-resize behavior, scrollable content, safe-area padding, swipe/back/close handling, and keyboard dismissal on drag. Closing is blocked during an active save.
+
+Deferred items:
+
+- Photo import.
+- Push notifications.
+- Further tags/search redesign.
+- Further favorite/delete redesign or schema work.
+
+M22E.1R-K manual QA checklist:
+
+- [ ] Center Add opens an empty Import Recipe sheet; backdrop, close, swipe-down, and Android back dismiss cleanly.
+- [ ] Valid Instagram/TikTok/YouTube and existing Facebook URLs enable Save; invalid text shows the supported-link message.
+- [ ] Clear removes the URL and disables Save; Paste fills a clipboard URL and handles empty clipboard gracefully.
+- [ ] Confirmed save closes the sheet, opens saved-recipe detail, shows Preparing preview, and refreshes Home/Library.
+- [ ] Duplicate, network/API, and missing-session paths show only friendly inline messages.
+- [ ] Android share-to-app and `/share-recipe` prefill the same redesigned sheet.
+- [ ] Keyboard and CTA remain usable on a small Android device with gesture navigation.
+- [ ] No save action creates a media job; Premium, paywall, products, quota/access, and AI generation remain unchanged.
+
+Release note: this runtime/UI change requires Android `versionCode` 2 when shipped through the guarded production release from `main`. The develop config remains at versionCode 1.
+
 ## M22E.1R-G2 Home Editorial Behavior Correction
 
 Status: implemented on `develop`; device QA pending.

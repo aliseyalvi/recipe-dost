@@ -2,23 +2,16 @@ import { validateRecipeUrl } from "@/features/recipe-draft/validation";
 import { detectRecipePlatform } from "@/features/recipe-draft/platform";
 import {
   RecipeLibraryItem,
+  RecipeApiError,
   SavedRecipeItem,
   refreshRecipeMetadata,
   saveRecipeLink,
 } from "@/lib/api/recipes";
-import { getFriendlyApiErrorMessage } from "@/lib/api/errors";
 import { normalizeRecipeSourceUrl } from "@/lib/recipe-source-url";
 import { useAuth } from "@/providers/auth-provider";
 import { usePostHog } from "@/providers/posthog-placeholder-provider";
 import { colors, radius, spacing, typography } from "@/theme";
-import { Button } from "@/ui/button";
-import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetScrollView,
-  BottomSheetTextInput,
-} from "@gorhom/bottom-sheet";
-import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
+import { ImportRecipeSheet } from "@/features/save-recipe/import-recipe-sheet";
 import type { BottomSheetModalMethods } from "@gorhom/bottom-sheet/lib/typescript/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
@@ -61,13 +54,12 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
   const previousIsOpenRef = useRef(false);
   const isClosingRef = useRef(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const snapPoints = useMemo(() => ["58%", "88%"], []);
+  const snapPoints = useMemo(() => ["72%", "92%"], []);
   const [isOpen, setIsOpen] = useState(false);
   const [sourceUrl, setSourceUrl] = useState("");
   const [modalSource, setModalSource] =
     useState<SaveRecipeModalOpenOptions["source"]>("manual");
   const [sourceHint, setSourceHint] = useState<string | null>(null);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [bannerMessage, setBannerMessage] = useState<string | null>(null);
@@ -77,8 +69,7 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
   );
   const validationMessage = validationResult.success
     ? null
-    : (validationResult.error.issues[0]?.message ??
-      "Enter a valid recipe link.");
+    : "Paste a valid Instagram, TikTok, or YouTube recipe link.";
 
   const openSaveRecipeModal = useCallback(
     (options?: SaveRecipeModalOpenOptions) => {
@@ -111,7 +102,6 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
       setIsOpen(true);
       setBannerMessage(null);
       setErrorMessage(null);
-      setHasSubmitted(false);
       track("save_recipe_modal_opened", {
         source: options?.source ?? "manual",
         has_initial_url: Boolean(initialUrl),
@@ -155,7 +145,6 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
     setSourceUrl("");
     setModalSource("manual");
     setSourceHint(null);
-    setHasSubmitted(false);
     setErrorMessage(null);
   }, []);
 
@@ -169,23 +158,6 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
       Keyboard.dismiss();
     }
   }, []);
-
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Close save recipe modal"
-        onPress={() => requestCloseSheet()}
-        style={[
-          props.style,
-          {
-            backgroundColor: "rgba(0, 0, 0, 0.55)",
-          },
-        ]}
-      />
-    ),
-    [requestCloseSheet],
-  );
 
   useEffect(() => {
     const wasOpen = previousIsOpenRef.current;
@@ -252,33 +224,6 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
     [queryClient, user?.id],
   );
 
-  const removeSavedItemFromCache = useCallback(
-    (savedItem: RecipeLibraryItem) => {
-      if (!user?.id) {
-        return;
-      }
-
-      const savedSourceKey = getRecipeSourceKey(savedItem);
-      const removeItem = (currentItems: RecipeLibraryItem[] | undefined) =>
-        (currentItems ?? []).filter(
-          (item) =>
-            item.id !== savedItem.id &&
-            item.source_url !== savedItem.source_url &&
-            (!savedSourceKey || getRecipeSourceKey(item) !== savedSourceKey),
-        );
-
-      queryClient.setQueryData<RecipeLibraryItem[]>(
-        ["recent-recipes", user.id],
-        removeItem,
-      );
-      queryClient.setQueryData<RecipeLibraryItem[]>(
-        ["recipe-library", user.id],
-        removeItem,
-      );
-    },
-    [queryClient, user?.id],
-  );
-
   const refetchRecipeLists = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["recent-recipes"] });
     void queryClient.invalidateQueries({ queryKey: ["recipe-library"] });
@@ -318,10 +263,21 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setHasSubmitted(true);
     setErrorMessage(null);
 
     if (!validationResult.success) {
+      setErrorMessage(
+        "Paste a valid Instagram, TikTok, or YouTube recipe link.",
+      );
+      return;
+    }
+
+    if (!user?.id) {
+      setErrorMessage("Could not prepare your app profile. Please retry.");
+      track("save_recipe_link_failed", {
+        source: modalSource ?? "manual",
+        reason: "missing_session",
+      });
       return;
     }
 
@@ -329,7 +285,9 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
     const normalizedSourceKey = normalizeRecipeSourceUrl(recipeUrl);
 
     if (!normalizedSourceKey) {
-      setErrorMessage("Enter a valid recipe link.");
+      setErrorMessage(
+        "Paste a valid Instagram, TikTok, or YouTube recipe link.",
+      );
       return;
     }
 
@@ -344,66 +302,70 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
         platform: existingItem.platform ?? savedPlatformFromUrl(recipeUrl),
         source: modalSource ?? "manual",
       });
-      requestCloseSheet({ force: true });
       upsertSavedItemInCache(existingItem);
-      setBannerMessage("This recipe is already saved.");
-      router.navigate("/home");
+      setErrorMessage("This recipe is already saved.");
       return;
     }
 
     const recipePlatform = savedPlatformFromUrl(recipeUrl);
-    const optimisticSourceUrl = normalizeRecipeDisplayUrl(recipeUrl);
-    const optimisticItem = createOptimisticRecipeLibraryItem({
-      sourceUrl: optimisticSourceUrl,
-      platform: recipePlatform,
-      normalizedSourceKey,
-    });
 
     setIsSaving(true);
-    track("save_recipe_link_submitted");
+    track("save_recipe_link_submitted", {
+      platform: recipePlatform,
+      source: modalSource ?? "manual",
+    });
     if (modalSource === "share_intent") {
       track("shared_recipe_save_started", {
         platform: recipePlatform,
       });
     }
 
-    requestCloseSheet({ force: true });
-    upsertSavedItemInCache(optimisticItem);
-    router.navigate("/home");
-
     try {
       const saveResult = await saveRecipeLink(recipeUrl);
       const savedItem = saveResult.recipe_item;
 
+      upsertSavedItemInCache(savedItem);
+      refetchRecipeLists();
+
+      if (saveResult.duplicate === true) {
+        track("save_recipe_duplicate_found", {
+          platform: savedItem.platform ?? recipePlatform,
+          source: modalSource ?? "manual",
+        });
+        setErrorMessage("This recipe is already saved.");
+        return;
+      }
+
       track("save_recipe_link_saved", {
         platform: savedItem.platform ?? "other",
         metadata_status: savedItem.metadata_status ?? "pending",
-        duplicate: saveResult.duplicate === true,
+        duplicate: false,
       });
       if (modalSource === "share_intent") {
         track("shared_recipe_save_completed", {
           platform: savedItem.platform ?? recipePlatform,
           metadata_status: savedItem.metadata_status ?? "pending",
-          duplicate: saveResult.duplicate === true,
+          duplicate: false,
         });
-      }
-      removeSavedItemFromCache(optimisticItem);
-      upsertSavedItemInCache(savedItem);
-      refetchRecipeLists();
-      if (saveResult.duplicate === true) {
-        setBannerMessage("This recipe is already saved.");
-        return;
       }
 
       void refreshMetadataInBackground(savedItem.id);
+      requestCloseSheet({ force: true });
+      router.navigate(`/recipe/${savedItem.id}?returnTo=/home`);
     } catch (caughtError) {
-      removeSavedItemFromCache(optimisticItem);
-      setBannerMessage(
-        getFriendlyApiErrorMessage(
-          caughtError,
-          "Could not save this link. Please try again.",
-        ),
-      );
+      const errorCategory = getSaveRecipeErrorCategory(caughtError);
+      setErrorMessage(getSaveRecipeErrorMessage(caughtError));
+      track("save_recipe_link_failed", {
+        platform: recipePlatform,
+        source: modalSource ?? "manual",
+        reason: errorCategory,
+      });
+      if (modalSource === "share_intent") {
+        track("shared_recipe_save_failed", {
+          platform: recipePlatform,
+          reason: errorCategory,
+        });
+      }
       refetchRecipeLists();
     } finally {
       setIsSaving(false);
@@ -449,184 +411,28 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
           </Pressable>
         </View>
       ) : null}
-      <BottomSheetModal
-        ref={bottomSheetRef}
-        backdropComponent={renderBackdrop}
-        bottomInset={0}
-        enableContentPanningGesture={false}
-        enableDismissOnClose
-        enableDynamicSizing={false}
-        enableHandlePanningGesture
-        enableOverDrag={false}
-        enablePanDownToClose
-        index={0}
-        keyboardBehavior="extend"
-        keyboardBlurBehavior="none"
-        android_keyboardInputMode="adjustResize"
+      <ImportRecipeSheet
+        sheetRef={bottomSheetRef}
+        inputRef={urlInputRef}
+        snapPoints={snapPoints}
+        bottomInset={insets.bottom}
+        sourceUrl={sourceUrl}
+        sourceHint={sourceHint}
+        isSaving={isSaving}
+        validationMessage={validationMessage}
+        errorMessage={errorMessage}
+        onChangeUrl={setSourceUrl}
+        onClientError={setErrorMessage}
+        onClipboardResult={(result) => {
+          track("save_recipe_clipboard_used", { result });
+        }}
+        onSubmit={() => {
+          void submitRecipeLink();
+        }}
+        onRequestClose={() => requestCloseSheet()}
         onDismiss={handleSheetDismiss}
         onChange={handleSheetChange}
-        snapPoints={snapPoints}
-        backgroundStyle={{
-          borderTopLeftRadius: radius.lg,
-          borderTopRightRadius: radius.lg,
-          backgroundColor: colors.surface,
-        }}
-        handleIndicatorStyle={{
-          width: 42,
-          height: 4,
-          borderRadius: radius.pill,
-          backgroundColor: colors.border,
-        }}
-        handleStyle={{
-          paddingTop: spacing.md,
-          paddingBottom: spacing.sm,
-        }}
-      >
-        <BottomSheetScrollView
-          keyboardShouldPersistTaps="handled"
-          bounces={false}
-          contentContainerStyle={{
-            gap: spacing.lg,
-            paddingHorizontal: spacing.xl,
-            paddingTop: spacing.sm,
-            paddingBottom: spacing.xxxl + spacing.xxl + insets.bottom,
-          }}
-        >
-          <View style={{ gap: spacing.sm }}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: spacing.md,
-              }}
-            >
-              <Text
-                selectable
-                style={[typography.title, { color: colors.text }]}
-              >
-                Save recipe video
-              </Text>
-              <Pressable
-                accessibilityLabel="Close save recipe modal"
-                accessibilityRole="button"
-                onPress={() => requestCloseSheet()}
-                style={({ pressed }) => ({
-                  width: 36,
-                  height: 36,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderRadius: radius.pill,
-                  backgroundColor: colors.surfaceMuted,
-                  opacity: pressed ? 0.72 : 1,
-                })}
-              >
-                <Text
-                  selectable={false}
-                  style={[
-                    typography.body,
-                    { color: colors.text, fontWeight: "900" },
-                  ]}
-                >
-                  x
-                </Text>
-              </Pressable>
-            </View>
-            <Text
-              selectable
-              style={[typography.body, { color: colors.textMuted }]}
-            >
-              Paste a TikTok, Instagram, YouTube, or Facebook recipe link.
-            </Text>
-            {sourceHint ? (
-              <Text
-                selectable
-                style={[typography.caption, { color: colors.primary }]}
-              >
-                {sourceHint}
-              </Text>
-            ) : null}
-          </View>
-
-          <View style={{ gap: spacing.sm }}>
-            <Text
-              selectable
-              style={[typography.caption, { color: colors.textMuted }]}
-            >
-              URL
-            </Text>
-            <BottomSheetTextInput
-              ref={urlInputRef}
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isSaving}
-              keyboardType="url"
-              onChangeText={(value) => {
-                setSourceUrl(value);
-                if (errorMessage) {
-                  setErrorMessage(null);
-                }
-              }}
-              onFocus={() => {
-                bottomSheetRef.current?.snapToIndex(1);
-              }}
-              onSubmitEditing={() => {
-                void submitRecipeLink();
-              }}
-              placeholder="https://www.instagram.com/reel/..."
-              placeholderTextColor={colors.textMuted}
-              returnKeyType="done"
-              style={[
-                typography.body,
-                {
-                  minHeight: 52,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  borderRadius: radius.md,
-                  backgroundColor: colors.surfaceMuted,
-                  color: colors.text,
-                  paddingHorizontal: spacing.lg,
-                },
-              ]}
-              value={sourceUrl}
-            />
-          </View>
-
-          {hasSubmitted && validationMessage ? (
-            <Text
-              selectable
-              style={[typography.caption, { color: colors.danger }]}
-            >
-              {validationMessage}
-            </Text>
-          ) : null}
-
-          {errorMessage ? (
-            <Text
-              selectable
-              style={[typography.caption, { color: colors.danger }]}
-            >
-              {errorMessage}
-            </Text>
-          ) : null}
-
-          <Button
-            label="Save Recipe"
-            fullWidth
-            disabled={isSaving}
-            onPress={() => {
-              void submitRecipeLink();
-            }}
-          />
-
-          <Text
-            selectable
-            style={[typography.caption, { color: colors.textMuted }]}
-          >
-            We save links and recipe cards, not videos.
-          </Text>
-        </BottomSheetScrollView>
-      </BottomSheetModal>
+      />
     </SaveRecipeModalContext.Provider>
   );
 }
@@ -649,7 +455,9 @@ function toRecipeLibraryItem(savedItem: SavedRecipeItem): RecipeLibraryItem {
     source_url: savedItem.source_url,
     platform: savedItem.platform,
     title: savedItem.title,
+    description: savedItem.description,
     thumbnail_url: savedItem.thumbnail_url,
+    duration_seconds: savedItem.duration_seconds,
     metadata_status: savedItem.metadata_status,
     source_metadata: savedItem.source_metadata,
     user_note: savedItem.user_note,
@@ -689,51 +497,6 @@ function upsertRecipeLibraryItem(
 
 function savedPlatformFromUrl(sourceUrl: string) {
   return detectRecipePlatform(sourceUrl);
-}
-
-function createOptimisticRecipeLibraryItem({
-  sourceUrl,
-  platform,
-  normalizedSourceKey,
-}: {
-  sourceUrl: string;
-  platform: ReturnType<typeof detectRecipePlatform>;
-  normalizedSourceKey: string;
-}): RecipeLibraryItem {
-  const timestamp = new Date().toISOString();
-
-  return {
-    id: `optimistic:${normalizedSourceKey}`,
-    source_url: sourceUrl,
-    platform,
-    title: "Saving recipe link...",
-    thumbnail_url: null,
-    metadata_status: "saving",
-    source_metadata: {
-      normalized_source_key: normalizedSourceKey,
-    },
-    user_note: null,
-    pasted_caption: null,
-    manual_ingredients: null,
-    meal_type: null,
-    cuisine: null,
-    is_favorite: false,
-    created_at: timestamp,
-    updated_at: timestamp,
-    latest_card: null,
-    latest_media_job: null,
-  };
-}
-
-function normalizeRecipeDisplayUrl(sourceUrl: string) {
-  try {
-    const parsedUrl = new URL(sourceUrl.trim());
-    parsedUrl.hostname = parsedUrl.hostname.toLowerCase().replace(/^www\./, "");
-
-    return parsedUrl.toString();
-  } catch {
-    return sourceUrl.trim();
-  }
 }
 
 function findDuplicateSavedItemInCache({
@@ -782,4 +545,26 @@ function getNormalizedSourceKeyFromMetadata(value: unknown) {
     .normalized_source_key;
 
   return typeof key === "string" && key.trim().length > 0 ? key.trim() : null;
+}
+
+function getSaveRecipeErrorMessage(error: unknown) {
+  if (
+    error instanceof RecipeApiError &&
+    (error.code === "unauthorized" || error.status === 401)
+  ) {
+    return "Could not prepare your app profile. Please retry.";
+  }
+
+  return "Could not save this link. Please try again.";
+}
+
+function getSaveRecipeErrorCategory(error: unknown) {
+  if (
+    error instanceof RecipeApiError &&
+    (error.code === "unauthorized" || error.status === 401)
+  ) {
+    return "auth";
+  }
+
+  return error instanceof RecipeApiError ? "api" : "network_or_unknown";
 }

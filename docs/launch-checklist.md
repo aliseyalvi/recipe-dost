@@ -96,6 +96,23 @@
 - M22E.1R-G2 usage pill checked for Free, Premium, loading, and unavailable states; every state opens `/paywall` without changing purchase/restore behavior
 - M22E.1R-G2 Favorites checked below Recent when persisted data exists and hidden when no favorite exists; no schema/API added
 - M22E.1R-G2 tabs, bottom safe area, save/share, AI generation, Grocery, Settings, Premium sync, and production guards regression-checked
+- M22E.1R-K center Add checked: empty Import Recipe sheet opens with editorial layout and closes by backdrop, cross, swipe, and Android back
+- M22E.1R-K input checked: valid Instagram/TikTok/YouTube/Facebook links, query parameters, invalid text, clear action, and empty/valid clipboard behavior
+- M22E.1R-K confirmed save checked: Saving state remains honest, sheet closes only after success, `/recipe/[id]` opens Preparing preview, and Home/Library refresh
+- M22E.1R-K duplicate, network/API, and missing-session failures checked for friendly inline copy with no raw URLs or backend messages
+- M22E.1R-K Android native share and `/share-recipe` compatibility checked for prefilled sheet and successful save
+- M22E.1R-K small Android keyboard/gesture-safe-area checked; input, paste, clear, close, and CTA remain reachable
+- M22E.1R-K verified save/share creates no media job and does not alter Premium, paywall, products, quota/access, package IDs, or production guards
+- M22E.1R-K0 center Add regression checked from Home and Library: every tap visibly presents the globally mounted Import Recipe sheet
+- M22E.1R-K0 Android share regression checked with Instagram, TikTok, and YouTube: app opens, sheet presents, and extracted URL is prefilled without raw URL logging
+- M22E.1R-K0 Android back, backdrop, cross, and swipe close paths checked after restoring provider-owned presentation
+- M22E.1R-K0 confirmed save checked for `/recipe/[id]` Preparing preview navigation plus Home/Library refresh; no media job, Premium, paywall, or Home regression
+- M22E.1R-HOME2 verified Home never renders a separate Currently Processing section; each new Instagram/TikTok/YouTube save appears once in Recent
+- M22E.1R-HOME2 processing Recent card checked for thumbnail/hourglass, compact status, correct `/recipe/[id]` navigation, and in-place metadata completion update
+- M22E.1R-HOME2 title precedence checked with AI title, real metadata title, caption fallback, weak “Video by” / “Post by” title, creator-equivalent title, raw URL, and platform fallback cases
+- M22E.1R-HOME2 creator chip checked across author/creator/channel/uploader/username metadata variants with platform fallback and no raw URL output
+- M22E.1R-HOME2 latest item does not immediately repeat in Favorites or AI Generated; another real item may populate those sections
+- M22E.1R-HOME2 focus, foreground, save/metadata/AI invalidation, Add/share, usage-pill Paywall, RevenueCat, and production-log regressions checked
 - Production AAB created only from `main` with `npm run build:prod`
 - Production env never manually sourced in a normal terminal
 - 50 recipe links tested

@@ -6,13 +6,17 @@ export function EditorialRecipeCard({
   title,
   thumbnailUrl,
   badge,
+  creatorLabel,
   metadata,
+  isProcessing = false,
   onPress,
 }: {
   title: string
   thumbnailUrl: string | null
   badge: string
+  creatorLabel?: string | null
   metadata: string[]
+  isProcessing?: boolean
   onPress: () => void
 }) {
   const [imageFailed, setImageFailed] = useState(false)
@@ -57,9 +61,12 @@ export function EditorialRecipeCard({
           >
             <Text
               selectable={false}
-              style={[typography.heading, { color: colors.onSurfaceVariant, opacity: 0.72 }]}
+              style={[
+                typography.heading,
+                { color: colors.onSurfaceVariant, opacity: 0.72 },
+              ]}
             >
-              Recipe Dost
+              {isProcessing ? '⧖' : 'Recipe Dost'}
             </Text>
           </View>
         )}
@@ -78,7 +85,7 @@ export function EditorialRecipeCard({
             top: spacing.lg,
             left: spacing.lg,
             borderRadius: radius.pill,
-            backgroundColor: colors.glassBadge,
+            backgroundColor: isProcessing ? colors.primaryWash : colors.glassBadge,
             paddingHorizontal: spacing.md,
             paddingVertical: spacing.xs,
           }}
@@ -97,6 +104,27 @@ export function EditorialRecipeCard({
         >
           {title}
         </Text>
+        {creatorLabel ? (
+          <View
+            style={{
+              alignSelf: 'flex-start',
+              borderRadius: radius.pill,
+              borderWidth: 1,
+              borderColor: colors.outlineVariant,
+              backgroundColor: colors.surfaceContainerHigh,
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.xs,
+            }}
+          >
+            <Text
+              selectable
+              numberOfLines={1}
+              style={[typography.caption, { color: colors.onSurfaceVariant }]}
+            >
+              {creatorLabel}
+            </Text>
+          </View>
+        ) : null}
         <Text
           selectable
           numberOfLines={2}
@@ -107,6 +135,18 @@ export function EditorialRecipeCard({
         >
           {metadata.join('  ·  ')}
         </Text>
+        {isProcessing ? (
+          <View
+            accessibilityLabel="Recipe preview is processing"
+            style={{
+              width: '44%',
+              height: 3,
+              borderRadius: radius.pill,
+              backgroundColor: colors.primary,
+              opacity: 0.56,
+            }}
+          />
+        ) : null}
       </View>
     </Pressable>
   )

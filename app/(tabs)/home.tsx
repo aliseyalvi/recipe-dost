@@ -5,8 +5,11 @@ import {
   OutlinePillButton,
   SectionHeading,
 } from '@/features/home/editorial-layout'
+import {
+  getRecipeCreatorLabel,
+  getRecipeDisplayTitle,
+} from '@/features/home/recipe-display-metadata'
 import { EditorialRecipeCard } from '@/features/home/editorial-recipe-card'
-import { ProcessingCard } from '@/features/home/processing-card'
 import {
   getMediaJobProcessingStage,
   getMetadataProcessingStage,
@@ -52,21 +55,23 @@ export default function HomeRoute() {
     queryFn: getAiAccessState,
   })
   const items = libraryQuery.data ?? []
-  const processingRecipe = useMemo(
-    () => items.find(isRecipeProcessing) ?? null,
-    [items]
-  )
   const recentRecipe = useMemo(
     () => getMostRecentlyActiveRecipe(items),
     [items]
   )
   const favoriteRecipe = useMemo(
-    () => getMostRecentlyActiveRecipe(items.filter((item) => item.is_favorite)),
-    [items]
+    () =>
+      getMostRecentlyActiveRecipe(
+        items.filter(
+          (item) => item.is_favorite && item.id !== recentRecipe?.id
+        )
+      ),
+    [items, recentRecipe?.id]
   )
+  const hasAiRecipes = useMemo(() => items.some(hasAiRecipe), [items])
   const latestAiRecipe = useMemo(
-    () => getLatestAiRecipe(items),
-    [items]
+    () => getLatestAiRecipe(items.filter((item) => item.id !== recentRecipe?.id)),
+    [items, recentRecipe?.id]
   )
   const hasLibraryItems = items.length > 0
 
@@ -94,9 +99,7 @@ export default function HomeRoute() {
     refetch: refetchHome,
   })
 
-  const openLibrary = (
-    source: 'processing' | 'recent' | 'favorites' | 'ai_recipes'
-  ) => {
+  const openLibrary = (source: 'recent' | 'favorites' | 'ai_recipes') => {
     track('home_section_opened', { section: source, destination: 'library' })
     router.push('/library')
   }
@@ -111,25 +114,6 @@ export default function HomeRoute() {
             : 'unknown',
     })
     router.push('/paywall')
-  }
-
-  const openProcessingRecipe = (recipe: RecipeLibraryItem) => {
-    if (!recipe.id) {
-      track('home_processing_card_opened', {
-        destination: 'library',
-        reason: 'missing_recipe_item_id',
-      })
-      router.push('/library')
-      return
-    }
-
-    track('home_processing_card_opened', {
-      destination: 'saved_recipe_detail',
-      platform: recipe.platform ?? 'other',
-      metadata_status: recipe.metadata_status,
-      media_job_status: recipe.latest_media_job?.status ?? 'none',
-    })
-    router.push(`/recipe/${recipe.id}?returnTo=/home`)
   }
 
   const openSaveRecipe = (source: 'recent_empty' | 'ai_generated_empty') => {
@@ -201,25 +185,16 @@ export default function HomeRoute() {
 
       {!libraryQuery.isLoading && (libraryQuery.data || libraryQuery.error) ? (
         <>
-          {processingRecipe ? (
-            <HomeSection title="Currently Processing">
-              <ProcessingCard
-                stageLabel={getProcessingLabel(processingRecipe)}
-                progress={processingRecipe.latest_media_job?.progress}
-                onPress={() => openProcessingRecipe(processingRecipe)}
-                onOpenLibrary={() => openLibrary('processing')}
-              />
-            </HomeSection>
-          ) : null}
-
           <HomeSection title="Recent">
             {recentRecipe ? (
               <>
                 <EditorialRecipeCard
-                  title={getRecipeTitle(recentRecipe)}
+                  title={getRecipeDisplayTitle(recentRecipe)}
                   thumbnailUrl={getRecipeCardThumbnail(recentRecipe)}
                   badge={getRecentBadge(recentRecipe)}
+                  creatorLabel={getRecipeCreatorLabel(recentRecipe)}
                   metadata={getRecentMetadata(recentRecipe)}
+                  isProcessing={isRecipeProcessing(recentRecipe)}
                   onPress={() => openRecipe(recentRecipe, 'recent')}
                 />
                 <OutlinePillButton
@@ -240,39 +215,43 @@ export default function HomeRoute() {
           {favoriteRecipe ? (
             <HomeSection title="Favorites">
               <EditorialRecipeCard
-                title={getRecipeTitle(favoriteRecipe)}
+                title={getRecipeDisplayTitle(favoriteRecipe)}
                 thumbnailUrl={getRecipeCardThumbnail(favoriteRecipe)}
                 badge="♡ Favorite"
+                creatorLabel={getRecipeCreatorLabel(favoriteRecipe)}
                 metadata={getFavoriteMetadata(favoriteRecipe)}
                 onPress={() => openRecipe(favoriteRecipe, 'favorites')}
               />
             </HomeSection>
           ) : null}
 
-          <HomeSection title="AI Generated">
-            {latestAiRecipe ? (
-              <>
-                <EditorialRecipeCard
-                  title={getRecipeTitle(latestAiRecipe)}
-                  thumbnailUrl={getRecipeCardThumbnail(latestAiRecipe)}
-                  badge="✦ AI Recipe"
-                  metadata={getAiMetadata(latestAiRecipe)}
-                  onPress={() => openRecipe(latestAiRecipe, 'ai_generated')}
+          {latestAiRecipe || !hasAiRecipes ? (
+            <HomeSection title="AI Generated">
+              {latestAiRecipe ? (
+                <>
+                  <EditorialRecipeCard
+                    title={getRecipeDisplayTitle(latestAiRecipe)}
+                    thumbnailUrl={getRecipeCardThumbnail(latestAiRecipe)}
+                    badge="✦ AI Recipe"
+                    creatorLabel={getRecipeCreatorLabel(latestAiRecipe)}
+                    metadata={getAiMetadata(latestAiRecipe)}
+                    onPress={() => openRecipe(latestAiRecipe, 'ai_generated')}
+                  />
+                  <OutlinePillButton
+                    label="View All AI Recipes"
+                    onPress={() => openLibrary('ai_recipes')}
+                  />
+                </>
+              ) : (
+                <EmptySectionCard
+                  title="Your first AI recipe is waiting"
+                  message="Save a recipe link, then create an AI recipe card from its details."
+                  actionLabel="Add Recipe"
+                  onActionPress={() => openSaveRecipe('ai_generated_empty')}
                 />
-                <OutlinePillButton
-                  label="View All AI Recipes"
-                  onPress={() => openLibrary('ai_recipes')}
-                />
-              </>
-            ) : (
-              <EmptySectionCard
-                title="Your first AI recipe is waiting"
-                message="Save a recipe link, then create an AI recipe card from its details."
-                actionLabel="Add Recipe"
-                onActionPress={() => openSaveRecipe('ai_generated_empty')}
-              />
-            )}
-          </HomeSection>
+              )}
+            </HomeSection>
+          ) : null}
 
           {!hasLibraryItems ? (
             <Text selectable style={[typography.caption, { color: colors.onSurfaceVariant }]}>
@@ -391,15 +370,6 @@ function getProcessingLabel(recipe: RecipeLibraryItem) {
   return getMetadataProcessingStage(recipe.metadata_status).label
 }
 
-function getRecipeTitle(recipe: RecipeLibraryItem) {
-  return (
-    recipe.latest_card?.recipe_title?.trim() ||
-    recipe.latest_media_job?.source_metadata.title?.trim() ||
-    recipe.title?.trim() ||
-    'Saved recipe'
-  )
-}
-
 function getFavoriteMetadata(recipe: RecipeLibraryItem) {
   return [getPlatformLabel(recipe.platform), formatDate(getLatestActivityAt(recipe))]
 }
@@ -417,7 +387,7 @@ function getRecentBadge(recipe: RecipeLibraryItem) {
   }
 
   if (isRecipeProcessing(recipe)) {
-    return getProcessingLabel(recipe)
+    return `⧖ ${getProcessingLabel(recipe)}`
   }
 
   return getPlatformLabel(recipe.platform)

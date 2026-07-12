@@ -1,5 +1,36 @@
 # Recipe Dost Milestones
 
+## M22E.1R-HOME2 - Home duplicate processing cleanup and title normalization
+
+- Status: Implemented and automatically validated on `develop`; Android device QA pending.
+- Removed the separate Currently Processing section that independently rendered the same newest row already shown by Recent. Preparing/processing status now lives only in the real Recent editorial card and retains saved-detail routing.
+- Centralized Home title precedence: AI card title, meaningful media/source metadata title, cleaned caption/description line, non-weak item title, then platform recipe-link fallback. Creator-based titles, platform-only values, and raw URLs are rejected without mutating stored data.
+- Added creator/channel chips from existing safe author/creator/channel/uploader/username variants, with platform fallback and no URL/private metadata output.
+- Added existing `recipe_items.description` and `duration_seconds` to the unchanged library query so display fallback can use stored caption metadata. No schema, backend, worker, query-key, access/quota, RevenueCat, product, package, dependency, or env change was made.
+- Recent is excluded from the immediate Favorite/AI hero slots to avoid repeating one row at the top. Existing polling, invalidation, focus/foreground refresh, saved/AI detail routes, and usage-pill Paywall action remain intact.
+- Some providers may omit both meaningful title and description; those items safely display the platform fallback pending a later worker/provider metadata-quality patch.
+- Validation passed: `npm run qa:static`, development env doctor, and development/production env validation. Manual Android lifecycle/share QA remains pending.
+
+## M22E.1R-K0 - Add/share entry regression recovery
+
+- Status: Implemented and automatically validated on `develop`; Android device QA pending.
+- Root cause: K moved the proven Gorhom `present()` / `dismiss()` transition from the stable global `SaveRecipeModalProvider` into the extracted sheet, breaking the visible presentation path shared by center Add and Android share intent.
+- Restored provider-owned sheet presentation while keeping `ImportRecipeSheet` mounted globally and retaining its editorial UI. No route fallback or dependency was added.
+- Center Add and native share intent again use the same sheet; `/share-recipe` prefills it, `/save-recipe` remains compatible, and confirmed saves still navigate to `/recipe/[id]?returnTo=/home` after cache invalidation and metadata refresh.
+- No backend/worker, schema, quota/access, RevenueCat, product, package ID, env, media-job, or Home behavior changed. Shipping this runtime correction requires versionCode 2; the develop config remains unchanged.
+- Validation passed: `npm run qa:static`, development env doctor, and development/production env validation. Manual Android entry/share/save QA remains pending.
+
+## M22E.1R-K - Add / Share Recipe Modal Redesign
+
+- Status: Implemented on `develop`; Android device QA pending.
+- Extracted a reusable Gorhom `ImportRecipeSheet` from the existing provider and translated the Stitch reference into native editorial components using centralized Obsidian/coral tokens, serif heading slot, numbered instructions, minimal URL field, clear/clipboard controls, inline errors, and safe-area-aware CTA.
+- Preserved center Add, native Android share intent, `/share-recipe`, `/save-recipe`, URL validation/normalization, duplicate detection, `save-recipe-link`, metadata refresh, and list invalidation paths. UI copy emphasizes Instagram/TikTok/YouTube while existing Facebook and `other` HTTP(S) support remains intact.
+- Changed post-submit UX to wait for confirmed save, then update/invalidate Home/Library, start existing metadata refresh, close the sheet, and navigate to `/recipe/[id]?returnTo=/home`. Saving still creates no media job.
+- Added friendly inline invalid-link, clipboard, duplicate, auth/session, and API/network states plus safe analytics properties that never include the URL.
+- No dependency, backend/worker, schema, quota/access, RevenueCat entitlement/product, package ID, env file, video storage, or production guard change was made. Photo import, push notifications, further tags/search, and further favorite/delete work remain deferred.
+- Shipping requires versionCode 2; the develop config remains unchanged.
+- Validation passed: `npm run qa:static`, development env doctor, and development/production env validation. Manual Android save/share QA remains pending.
+
 ## M22E.1R-G2 - Home Editorial Behavior Correction
 
 - Status: Implemented on `develop`; device QA pending.

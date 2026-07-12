@@ -1,6 +1,25 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-12
+- M22E.1R-HOME2 removed duplicate Home processing presentation and normalized editorial card titles on `develop`; Android device QA is pending.
+- Root cause: Home independently selected the same newest library row as both `processingRecipe` and `recentRecipe`, so one saved item rendered in Currently Processing and Recent. Decision: remove the separate section and keep all preparing/processing presentation and navigation inside Recent.
+- Decision: title precedence is AI card title, meaningful media/source metadata title, cleaned stored caption/description, non-weak item title, then platform recipe-link fallback. Reject creator-only “Video by” / “Post by” text, creator-equivalent titles, platform-only text, and raw URLs without changing stored values.
+- Decision: show creator/channel separately using existing safe author, creator, channel, uploader, username, handle, and ownerUsername variants; use platform as the chip fallback and never expose or track source URLs.
+- Decision: include existing `recipe_items.description` and `duration_seconds` in the same `recipe-library` query. Preserve its query key, bounded processing polling, save/AI invalidation, focus/foreground refetch, saved/AI detail routes, and `/paywall` usage-pill action.
+- Deferred: providers that supply neither a meaningful title nor caption/description will use safe platform fallback until a separate worker/provider metadata-quality patch is approved.
+- Validation: `npm run qa:static`, development env doctor, and both development/production env validators passed with masked output; Android visual/lifecycle QA remains pending.
+- M22E.1R-K0 recovered the P0 Add/share entry regression on `develop`; Android device QA is pending.
+- Root cause: the K extraction moved imperative Gorhom presentation ownership out of the stable global provider and into the visual child. Both center Add and share intent still called the provider, but the proven provider state-to-sheet transition had been removed.
+- Decision: restore `SaveRecipeModalProvider` as the sole owner of `isOpen` to `present()` / `dismiss()` transitions and keep `ImportRecipeSheet` presentation-only. Retain the editorial UI; no route fallback is needed.
+- Decision: center Add and native share intent share the restored sheet. `/share-recipe` passes the extracted URL into it, `/save-recipe` compatibility is unchanged, and confirmed saves still open `/recipe/[id]?returnTo=/home` after list invalidation and metadata refresh.
+- Decision: do not add diagnostic URL logging, dependencies, backend/schema changes, media-job creation, or quota/RevenueCat/product changes for this regression fix.
+- Validation: `npm run qa:static`, development env doctor, and both development/production env validators passed with masked output; Android interaction and live native-share QA remain pending.
+- M22E.1R-K redesigned the existing Add/share bottom sheet on `develop`; Android device QA is pending.
+- Decision: retain `SaveRecipeModalProvider` as the single orchestration path and extract only the native Gorhom presentation into `ImportRecipeSheet`. Center Add, native share intent, `/share-recipe`, and `/save-recipe` compatibility remain intact.
+- Decision: visible copy emphasizes Instagram, TikTok, and YouTube, while unchanged validation/backend behavior continues accepting Facebook and backend-safe `other` HTTP(S) links. Do not add a new dependency or restrict an existing supported flow.
+- Decision: wait for confirmed `save-recipe-link` success, then update/invalidate recipe lists, start existing metadata refresh, close, and navigate to `/recipe/[id]?returnTo=/home`. Do not create a media job or fake processing success at save time.
+- Decision: invalid URL, clipboard, duplicate, auth/session, and API/network failures stay inline and friendly. Analytics records source/platform/result categories only and never raw URLs.
+- Validation: `npm run qa:static`, development env doctor, and both development/production env validators passed with masked output; Android interaction and live save/share QA remain pending.
 - M22E.1R-G2 corrected Home behavior after the editorial redesign without changing its visual direction.
 - Decision: Home order is processing when active, Recent, conditional Favorites, then AI Generated. Recent is the primary retrieval surface and sorts real library items by the newest parent/card/job activity timestamp.
 - Decision: tapping Currently Processing opens `/recipe/[id]?returnTo=/home` using the parent item ID so the existing saving/preview/job state remains visible; only the explicit Open Library button routes to `/library`.
