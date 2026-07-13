@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400..900&amp;family=Hanken+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#131313",
+                        "inverse-on-surface": "#362f2e",
+                        "surface-container-highest": "#3a3333",
+                        "error-container": "#93000a",
+                        "on-surface-variant": "#e3bebb",
+                        "surface-bright": "#3a3939",
+                        "on-error": "#690005",
+                        "tertiary-fixed": "#b9eaff",
+                        "surface-dim": "#181212",
+                        "primary-container": "#be1e2d",
+                        "primary-fixed": "#ffdad8",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-high": "#2f2828",
+                        "error": "#ffb4ab",
+                        "on-tertiary-container": "#005a71",
+                        "inverse-surface": "#ece0df",
+                        "on-tertiary-fixed-variant": "#004d62",
+                        "on-primary": "#512121",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "outline-variant": "#5b403f",
+                        "surface-container": "#241e1e",
+                        "on-tertiary-fixed": "#001f29",
+                        "on-primary-container": "#7b4241",
+                        "tertiary": "#85d1ef",
+                        "surface-container-low": "#201a1a",
+                        "primary": "#ffdad8",
+                        "tertiary-container": "#85d1ef",
+                        "surface-container-lowest": "#0e0e0e",
+                        "inverse-primary": "#894e4c",
+                        "secondary-container": "#454748",
+                        "on-secondary": "#2f3132",
+                        "on-tertiary": "#003544",
+                        "on-background": "#ece0df",
+                        "secondary": "#c6c6c7",
+                        "secondary-fixed": "#e3e2e3",
+                        "outline": "#aa8987",
+                        "on-primary-fixed-variant": "#6d3736",
+                        "surface-tint": "#ffb3b0",
+                        "background": "#0A0A0A",
+                        "tertiary-fixed-dim": "#85d1ef",
+                        "on-secondary-fixed": "#1a1c1d",
+                        "on-surface": "#e5e2e1",
+                        "on-secondary-container": "#b5b5b6",
+                        "surface-variant": "#3a3333",
+                        "on-secondary-fixed-variant": "#454748",
+                        "primary-fixed-dim": "#ffb3b0",
+                        "on-primary-fixed": "#370d0e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "2xl": "1.25rem"
+                    },
+                    "spacing": {
+                        "page-padding": "16pt",
+                        "element-gap": "12pt",
+                        "structural-gap": "20pt",
+                        "section-margin": "40pt"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"],
+                        "metadata": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "headline-md": ["Bodoni Moda"],
+                        "display-lg-mobile": ["Bodoni Moda"],
+                        "display-lg": ["Bodoni Moda"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["12px", { "lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "metadata": ["14px", { "lineHeight": "1.4", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "display-lg-mobile": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .icon-box {
+            background: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen pb-32">
+<!-- TopAppBar (Suppressed as per rules for Settings, but leaving structural space) -->
+<header class="pt-12 px-page-padding pb-6 flex justify-between items-center sticky top-0 bg-background/80 backdrop-blur-md z-40">
+<div>
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-on-surface tracking-tight">Settings</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 max-w-sm">Manage your app profile, preferences, privacy, and support.</p>
+</div>
+<div class="h-12 w-12 rounded-full icon-box flex items-center justify-center border border-white/10">
+<span class="material-symbols-outlined text-on-surface">settings</span>
+</div>
+</header>
+<main class="px-page-padding max-w-3xl mx-auto space-y-section-margin">
+<!-- PROFILE -->
+<section>
+<h2 class="font-label-caps text-label-caps text-on-surface-variant mb-4 tracking-widest uppercase">Profile</h2>
+<div class="glass-panel rounded-2xl p-5 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full icon-box flex items-center justify-center flex-shrink-0">
+<span class="font-body-lg text-body-lg text-primary font-bold">P</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface">Your saved recipes are linked to this app profile.</p>
+</div>
+<span class="font-metadata text-metadata text-on-surface-variant truncate w-24 text-right">2a8c197b...</span>
+</div>
+</section>
+<!-- SUBSCRIPTION -->
+<section>
+<h2 class="font-label-caps text-label-caps text-on-surface-variant mb-4 tracking-widest uppercase">Subscription</h2>
+<div class="glass-panel rounded-2xl p-6 relative overflow-hidden">
+<!-- Subtle gradient glow -->
+<div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 blur-3xl rounded-full pointer-events-none"></div>
+<div class="inline-block px-3 py-1 bg-surface-container-high rounded-full border border-outline-variant/30 mb-4">
+<span class="font-metadata text-metadata text-on-surface-variant">Free plan</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2">Free plan</h3>
+<p class="font-body-md text-body-md text-on-surface mb-1">3 free AI recipe cards included.</p>
+<p class="font-metadata text-metadata text-on-surface-variant mb-6">Save recipe links, metadata preview, library search, and grocery viewing stay free.</p>
+<div class="space-y-4">
+<button class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors group">
+<div class="flex items-center gap-4 text-left">
+<div class="w-10 h-10 rounded-full icon-box flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-primary text-sm">add</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface font-semibold">Upgrade to Premium</h4>
+<p class="font-metadata text-metadata text-on-surface-variant">100 AI recipe cards/month.</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors group">
+<div class="flex items-center gap-4 text-left">
+<div class="w-10 h-10 rounded-full icon-box flex items-center justify-center flex-shrink-0">
+<span class="font-body-md text-body-md text-tertiary font-bold">R</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface font-semibold">Restore purchases</h4>
+<p class="font-metadata text-metadata text-on-surface-variant">Restore an active subscription.</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-tertiary transition-colors">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors group">
+<div class="flex items-center gap-4 text-left">
+<div class="w-10 h-10 rounded-full icon-box flex items-center justify-center flex-shrink-0">
+<span class="font-body-md text-body-md text-secondary font-bold">S</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface font-semibold">Refresh status</h4>
+<p class="font-metadata text-metadata text-on-surface-variant">Check the latest store and AI access status.</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-secondary transition-colors">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+<!-- RECIPE PREFERENCES -->
+<section>
+<h2 class="font-label-caps text-label-caps text-on-surface-variant mb-4 tracking-widest uppercase">Recipe Preferences</h2>
+<div class="glass-panel rounded-2xl p-2">
+<button class="w-full flex items-center justify-between p-4 rounded-xl hover:bg-white/5 transition-colors group">
+<div class="flex items-center gap-4 text-left">
+<div class="w-10 h-10 rounded-full icon-box flex items-center justify-center flex-shrink-0">
+<span class="font-body-md text-body-md text-on-surface font-bold">L</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface font-semibold">Secondary recipe language</h4>
+<p class="font-metadata text-metadata text-on-surface-variant">Urdu / اردو</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">chevron_right</span>
+</button>
+</div>
+</section>
+<!-- APPEARANCE -->
+<section>
+<h2 class="font-label-caps text-label-caps text-on-surface-variant mb-4 tracking-widest uppercase">Appearance</h2>
+<div class="glass-panel rounded-2xl p-2">
+<button class="w-full flex items-center justify-between p-4 rounded-xl hover:bg-white/5 transition-colors group">
+<div class="flex items-center gap-4 text-left">
+<div class="w-10 h-10 rounded-full icon-box flex items-center justify-center flex-shrink-0">
+<span class="font-body-md text-body-md text-on-surface font-bold">T</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface font-semibold">Theme</h4>
+<p class="font-metadata text-metadata text-on-surface-variant">System default</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">chevron_right</span>
+</button>
+</div>
+</section>
+<!-- PRIVACY & DATA -->
+<section>
+<h2 class="font-label-caps text-label-caps text-on-surface-variant mb-4 tracking-widest uppercase">Privacy &amp; Data</h2>
+<div class="glass-panel rounded-2xl p-2 space-y-2">
+<button class="w-full flex items-center justify-between p-4 rounded-xl hover:bg-white/5 transition-colors group">
+<div class="flex items-center gap-4 text-left">
+<div class="w-10 h-10 rounded-full icon-box flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-tertiary text-sm">info</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface font-semibold">Privacy &amp; data usage</h4>
+<p class="font-metadata text-metadata text-on-surface-variant">Plain-language details before launch.</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-tertiary transition-colors">chevron_right</span>
+</button>
+<div class="h-px bg-white/5 mx-4"></div>
+<button class="w-full flex items-center justify-between p-4 rounded-xl hover:bg-error/10 transition-colors group">
+<div class="flex items-center gap-4 text-left">
+<div class="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-error text-sm">priority_high</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md text-error font-semibold">Delete account &amp; data</h4>
+<p class="font-metadata text-metadata text-error/70">Request deletion before backend automation.</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-error/50 group-hover:text-error transition-colors">chevron_right</span>
+</button>
+</div>
+</section>
+<!-- SUPPORT -->
+<section class="pb-12">
+<h2 class="font-label-caps text-label-caps text-on-surface-variant mb-4 tracking-widest uppercase">Support</h2>
+<div class="glass-panel rounded-2xl p-2 space-y-2">
+<button class="w-full flex items-center justify-between p-4 rounded-xl hover:bg-white/5 transition-colors group">
+<div class="flex items-center gap-4 text-left">
+<div class="w-10 h-10 rounded-full icon-box flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-on-surface text-sm">help</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface font-semibold">Contact support</h4>
+<p class="font-metadata text-metadata text-on-surface-variant">Support contact is coming soon.</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">chevron_right</span>
+</button>
+<div class="h-px bg-white/5 mx-4"></div>
+<div class="w-full flex items-center justify-between p-4 rounded-xl">
+<div class="flex items-center gap-4 text-left">
+<div class="w-10 h-10 rounded-full icon-box flex items-center justify-center flex-shrink-0">
+<span class="font-body-md text-body-md text-on-surface font-bold">V</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface font-semibold">App version</h4>
+<p class="font-metadata text-metadata text-on-surface-variant">1.0.0</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-surface-container-low dark:bg-surface-container-low fixed bottom-0 w-full z-50 rounded-t-xl bg-surface-container dark:bg-surface-container-high flat tonal stacking fixed bottom-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 md:hidden border-t border-white/5">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform mb-1">explore</span>
+<span class="font-label-caps text-label-caps">Explore</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform mb-1">bookmark</span>
+<span class="font-label-caps text-label-caps">Saved</span>
+</a>
+<!-- Central FAB-style Add Button -->
+<a class="flex flex-col items-center justify-center -mt-6 group" href="#">
+<div class="w-14 h-14 bg-primary-container rounded-full flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-on-primary-container text-3xl">add</span>
+</div>
+<span class="font-label-caps text-label-caps mt-2 text-on-surface-variant group-hover:text-primary transition-colors">Create</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform mb-1">restaurant</span>
+<span class="font-label-caps text-label-caps">Cook</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim hover:text-primary transition-all group scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label-caps text-label-caps">Profile</span>
+</a>
+</nav>
+</body></html>

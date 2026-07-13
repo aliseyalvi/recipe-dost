@@ -1,0 +1,133 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>AI Recipes - Recipe Dost</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&amp;family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#d7c2c0",
+                        "outline": "#aa8987",
+                        "on-primary-container": "#7b4241",
+                        "on-tertiary-fixed-variant": "#004d62",
+                        "surface-dim": "#131313",
+                        "primary-fixed-dim": "#ffb3b0",
+                        "surface-variant": "#3a3333",
+                        "primary": "#ffdad8",
+                        "surface-container-lowest": "#0A0A0A", /* Deep obsidian override based on prompt */
+                        "outline-variant": "#524342",
+                        "on-secondary": "#2f3132",
+                        "tertiary": "#85d1ef",
+                        "secondary": "#c6c6c7",
+                        "surface-container-high": "#2a2a2a",
+                        "surface-container-low": "#201a1a",
+                        "on-tertiary-fixed": "#001f29",
+                        "secondary-fixed": "#e3e2e3",
+                        "on-tertiary": "#003544",
+                        "on-primary-fixed": "#370d0e",
+                        "inverse-surface": "#ece0df",
+                        "on-surface": "#e5e2e1",
+                        "error-container": "#93000a",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "tertiary-container": "#85d1ef",
+                        "on-primary": "#512121",
+                        "surface-container": "#241e1e",
+                        "on-secondary-container": "#b5b5b6",
+                        "surface-container-highest": "#353534",
+                        "on-error-container": "#ffdad6",
+                        "primary-fixed": "#ffdad8",
+                        "surface-tint": "#ffb3b0",
+                        "on-background": "#ece0df",
+                        "on-tertiary-container": "#005a71",
+                        "surface-bright": "#3f3737",
+                        "tertiary-fixed-dim": "#85d1ef",
+                        "on-primary-fixed-variant": "#6d3736",
+                        "background": "#0A0A0A", /* Deep obsidian override */
+                        "on-error": "#690005",
+                        "inverse-on-surface": "#362f2e",
+                        "tertiary-fixed": "#b9eaff",
+                        "primary-container": "#be1e2d",
+                        "on-secondary-fixed": "#1a1c1d",
+                        "secondary-container": "#454748",
+                        "error": "#ffb4ab",
+                        "inverse-primary": "#894e4c",
+                        "on-secondary-fixed-variant": "#454748",
+                        "surface": "#131313"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "20pt": "20px" /* Added specific radius from prompt */
+                    },
+                    "spacing": {
+                        "section-margin": "40pt",
+                        "page-padding": "16pt",
+                        "element-gap": "12pt",
+                        "structural-gap": "20pt"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Hanken Grotesk"],
+                        "display-lg-mobile": ["Bodoni Moda"],
+                        "label-caps": ["Hanken Grotesk"],
+                        "display-lg": ["Bodoni Moda"],
+                        "metadata": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "headline-md": ["Bodoni Moda"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "display-lg-mobile": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "metadata": ["14px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #0A0A0A; /* Deep obsidian background */
+        }
+        /* Hide scrollbar for carousel but keep functionality */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen pb-32">
+<!-- TopAppBar Component -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-surface/80 backdrop-blur-md bg-surface-container-low dark:bg-surface-container-low flex justify-between items-center px-page-padding py-4 w-full"><h1 class="font-display-lg-mobile text-display-lg-mobile text-primary">AI Recipes</h1><div class="bg-surface-container-highest/20 backdrop-blur-md border border-white/10 rounded-full px-3 py-1 flex items-center gap-1"><span class="material-symbols-outlined text-primary text-xs">bolt</span><span class="font-label-caps text-[10px] text-on-surface">5 left</span></div></header>
+<main class="pt-24 px-page-padding md:px-8 max-w-7xl mx-auto">
+<!-- Page Header -->
+<section class="mb-8"><div class="relative mb-4"><input class="w-full bg-surface-container-high border-none rounded-full py-3 px-6 text-on-surface placeholder:text-on-surface-variant font-body-md focus:ring-1 focus:ring-primary/50" placeholder="Search recipes, ingredients..." type="text"><span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span></div><div class="flex gap-2 overflow-x-auto hide-scrollbar -mx-page-padding px-page-padding"><button class="bg-surface-container-high text-on-surface px-5 py-1.5 rounded-full font-label-caps text-label-caps border border-white/5 flex items-center gap-1"><span class="material-symbols-outlined text-xs">favorite</span> Favorites</button><button class="bg-surface-container-high text-on-surface px-5 py-1.5 rounded-full font-label-caps text-label-caps border border-white/5">Dinner</button><button class="bg-surface-container-high text-on-surface px-5 py-1.5 rounded-full font-label-caps text-label-caps border border-white/5">Quick</button><button class="bg-surface-container-high text-on-surface px-5 py-1.5 rounded-full font-label-caps text-label-caps border border-white/5">Healthy</button><button class="bg-surface-container-high text-on-surface px-5 py-1.5 rounded-full font-label-caps text-label-caps border border-white/5">Pasta</button></div></section>
+<!-- Recently Generated Section (Horizontal Carousel) -->
+<!-- AI Library Section (Vertical Grid) -->
+<section class="mb-section-margin"><div class="grid grid-cols-1 gap-6"><article class="relative rounded-20pt overflow-hidden h-80 group"><button class="absolute top-4 left-4 z-10 w-10 h-10 flex items-center justify-center bg-white/10 backdrop-blur-md border border-white/10 rounded-full text-white hover:bg-white/20 transition-colors"><span class="material-symbols-outlined text-sm">favorite_border</span></button><div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAWvApfPmgUgEqordcmKC3PghaC1COF_Tr4mDghSe-EZYs9PMfAT4L7XxPt0gx4tVsW5z3zP7jnZ5JSfAc_w-Cy4VxHrnQ9a0vhrXdW8VEtG_jaEbmXlxfwKBPaXyqd6i2I4tk0tJs1Qer3rULYnm63G_qiQbPzxfmtWfz_GRK5wEAFRrR_SzEEL4mKG9i5h8IbhaGip62bzqONnv1Ej4rfcNL4UEGXYkem4iaCpI2fZMSBfqc3uyu6GmSjqo2JmMYx5sRVt2QcrCk')"></div><div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div><div class="absolute top-4 right-4"><span class="material-symbols-outlined text-white">more_vert</span></div><div class="absolute bottom-0 p-6 w-full"><h4 class="font-headline-md text-white mb-1">Saffron Infused Risotto</h4><p class="text-white/80 text-sm mb-3">A luxurious, creamy Italian classic elevated with premium saffron.</p><div class="flex items-center gap-4 text-white/60 text-xs font-metadata"><span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">restaurant</span> DINNER</span><span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">schedule</span> 45M</span><span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">link</span> NYT COOKING</span></div></div></article><article class="relative rounded-20pt overflow-hidden h-80 group"><button class="absolute top-4 left-4 z-10 w-10 h-10 flex items-center justify-center bg-white/10 backdrop-blur-md border border-white/10 rounded-full text-white hover:bg-white/20 transition-colors"><span class="material-symbols-outlined text-sm">favorite_border</span></button><div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAjqnKycQ8joXljJlMn1ZuLyqTqtZOAJHd5xJuJgR14WAGUaY1mUPS-w85jNi2q5H4d3xFBpdT7-r_837VkdhEcqPH4IwGHnXB9FYInGXqu_BCOaf6XDo3SFr6TD17itJULcSw52rNQ6LzWVmrg5ihbLhM-bc_hA9ebAHXSUVWGxOKZsoAWlCTyUc_p_eZKvNEFKw6_WHkAIxIkkj-uuocotxuepZcIlx0q9cOxoVuRu5mgnNwYNUoShdhyQ9oVlGN4UI306ZjxcVc')"></div><div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div><div class="absolute top-4 right-4"><span class="material-symbols-outlined text-white">more_vert</span></div><div class="absolute bottom-0 p-6 w-full"><h4 class="font-headline-md text-white mb-1">Herb-Crusted Salmon</h4><p class="text-white/80 text-sm mb-3">Wild-caught salmon baked to perfection with a vibrant crust.</p><div class="flex items-center gap-4 text-white/60 text-xs font-metadata"><span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">restaurant</span> DINNER</span><span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">schedule</span> 30M</span><span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">link</span> GORDON RAMSAY</span></div></div></article></div></section>
+</main>
+<!-- BottomNavBar Component -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-surface-container/70 dark:bg-surface-container/70 backdrop-blur-xl bg-surface-container-highest/20 dark:bg-surface-container-highest/20 md:hidden rounded-t-xl"><button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1"><span class="material-symbols-outlined mb-1">home</span><span class="font-label-caps text-[10px]">Home</span></button><button class="flex flex-col items-center justify-center text-primary px-4 py-1"><span class="material-symbols-outlined mb-1">menu_book</span><span class="font-label-caps text-[10px]">Library</span></button><div class="relative -top-6"><button class="bg-primary-container w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-primary-container/40 border-4 border-background"><span class="material-symbols-outlined text-white text-3xl">add</span></button></div><button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1"><span class="material-symbols-outlined mb-1">shopping_cart</span><span class="font-label-caps text-[10px]">Grocery</span></button><button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1"><span class="material-symbols-outlined mb-1">settings</span><span class="font-label-caps text-[10px]">Settings</span></button></nav>
+
+
+
+
+</body></html>

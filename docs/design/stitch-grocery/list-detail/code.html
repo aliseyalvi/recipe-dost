@@ -1,0 +1,257 @@
+<!DOCTYPE html><html lang="en" class="dark" style=""><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""><link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&amp;family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#d7c2c0",
+                        "outline": "#aa8987",
+                        "on-primary-container": "#7b4241",
+                        "on-tertiary-fixed-variant": "#004d62",
+                        "surface-dim": "#131313",
+                        "primary-fixed-dim": "#ffb3b0",
+                        "surface-variant": "#3a3333",
+                        "primary": "#ffdad8",
+                        "surface-container-lowest": "#0e0e0e",
+                        "outline-variant": "#524342",
+                        "on-secondary": "#2f3132",
+                        "tertiary": "#85d1ef",
+                        "secondary": "#c6c6c7",
+                        "surface-container-high": "#2a2a2a",
+                        "surface-container-low": "#201a1a",
+                        "on-tertiary-fixed": "#001f29",
+                        "secondary-fixed": "#e3e2e3",
+                        "on-tertiary": "#003544",
+                        "on-primary-fixed": "#370d0e",
+                        "inverse-surface": "#ece0df",
+                        "on-surface": "#e5e2e1",
+                        "error-container": "#93000a",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "tertiary-container": "#85d1ef",
+                        "on-primary": "#512121",
+                        "surface-container": "#241e1e",
+                        "on-secondary-container": "#b5b5b6",
+                        "surface-container-highest": "#353534",
+                        "on-error-container": "#ffdad6",
+                        "primary-fixed": "#ffdad8",
+                        "surface-tint": "#ffb3b0",
+                        "on-background": "#ece0df",
+                        "on-tertiary-container": "#005a71",
+                        "surface-bright": "#3f3737",
+                        "tertiary-fixed-dim": "#85d1ef",
+                        "on-primary-fixed-variant": "#6d3736",
+                        "background": "#181212",
+                        "on-error": "#690005",
+                        "inverse-on-surface": "#362f2e",
+                        "tertiary-fixed": "#b9eaff",
+                        "primary-container": "#be1e2d",
+                        "on-secondary-fixed": "#1a1c1d",
+                        "secondary-container": "#454748",
+                        "error": "#ffb4ab",
+                        "inverse-primary": "#894e4c",
+                        "on-secondary-fixed-variant": "#454748",
+                        "surface": "#131313"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "section-margin": "40pt",
+                        "page-padding": "16pt",
+                        "element-gap": "12pt",
+                        "structural-gap": "20pt",
+                        "safe": "env(safe-area-inset-bottom)"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Hanken Grotesk"],
+                        "display-lg-mobile": ["Bodoni Moda"],
+                        "label-caps": ["Hanken Grotesk"],
+                        "display-lg": ["Bodoni Moda"],
+                        "metadata": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "headline-md": ["Bodoni Moda"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display-lg-mobile": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "metadata": ["14px", { "lineHeight": "1.4", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    }catch(_e){}</script></head><body class="bg-background text-on-surface font-body-md min-h-screen pb-32 antialiased selection:bg-primary-container selection:text-on-primary-container">
+
+    <!-- TopAppBar -->
+    <header class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-surface/80 backdrop-blur-md bg-surface-container-low dark:bg-surface-container-low">
+        <div class="flex justify-between items-center px-page-padding py-4 w-full">
+            <button class="hover:opacity-80 transition-opacity active:scale-95 transition-transform text-primary dark:text-primary-fixed" aria-label="Go back">
+                <span class="material-symbols-outlined text-[28px]">arrow_back</span>
+            </button>
+            <h1 class="font-display-lg-mobile text-display-lg-mobile text-primary dark:text-primary-fixed truncate px-4">Recipe Dost</h1>
+            
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="pt-[90px] px-page-padding max-w-3xl mx-auto">
+        
+        <!-- Recipe-->
+        <div class="mb-section-margin text-center">
+            <h2 class="font-headline-md text-headline-md text-on-surface mb-2">Cheesy Chicken Handi</h2>
+            <p class="font-metadata text-metadata text-on-surface-variant">Shopping List</p>
+        </div>
+
+        <!-- Language Toggle (Glassmorphic) -->
+        <div class="flex justify-center mb-8">
+            <div class="inline-flex bg-surface-container-high/50 backdrop-blur-md rounded-full p-1 border border-white/10 shadow-lg">
+                <button class="font-label-caps text-label-caps px-6 py-2 rounded-full bg-surface-container-highest text-on-surface shadow-sm transition-colors" aria-current="true">English</button>
+                <button class="font-label-caps text-label-caps px-6 py-2 rounded-full text-on-surface-variant hover:text-on-surface transition-colors">Urdu</button>
+                <button class="font-label-caps text-label-caps px-6 py-2 rounded-full text-on-surface-variant hover:text-on-surface transition-colors">Both</button>
+            </div>
+        </div>
+
+        <!-- Ingredients Checklist -->
+        <div class="space-y-structural-gap mb-section-margin" id="ingredients-list">
+            
+            <!-- Category Header: Proteins -->
+            <div>
+                <h3 class="font-label-caps text-label-caps text-tertiary mb-element-gap pl-2 tracking-wider">Proteins</h3>
+                <div class="space-y-3">
+                    
+                    <!-- Ingredient Card -->
+                    <label class="ingredient-card flex items-center justify-between p-4 bg-surface-container/60 backdrop-blur-sm rounded-[20pt] border border-white/10 cursor-pointer hover:bg-surface-container-high/60 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <input type="checkbox" class="custom-checkbox">
+                            <div class="flex flex-col">
+                                <span class="ingredient-name font-body-lg text-body-lg text-on-surface font-medium">Boneless Chicken</span>
+                                <span class="font-metadata text-metadata text-on-surface-variant">Cube cut</span>
+                            </div>
+                        </div>
+                        <span class="ingredient-qty font-metadata text-metadata text-secondary-fixed bg-surface-container-lowest px-3 py-1 rounded-full border border-outline-variant/30">500g</span>
+                    </label>
+
+                </div>
+            </div>
+
+            <!-- Category Header: Dairy -->
+            <div>
+                <h3 class="font-label-caps text-label-caps text-tertiary mb-element-gap pl-2 tracking-wider">Dairy</h3>
+                <div class="space-y-3">
+                    
+                    <!-- Ingredient Card -->
+                    <label class="ingredient-card flex items-center justify-between p-4 bg-surface-container/60 backdrop-blur-sm rounded-[20pt] border border-white/10 cursor-pointer hover:bg-surface-container-high/60 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <input type="checkbox" class="custom-checkbox">
+                            <div class="flex flex-col">
+                                <span class="ingredient-name font-body-lg text-body-lg text-on-surface font-medium">Cheddar Cheese</span>
+                                <span class="font-metadata text-metadata text-on-surface-variant">Grated</span>
+                            </div>
+                        </div>
+                        <span class="ingredient-qty font-metadata text-metadata text-secondary-fixed bg-surface-container-lowest px-3 py-1 rounded-full border border-outline-variant/30">100g</span>
+                    </label>
+
+                    <!-- Ingredient Card -->
+                    <label class="ingredient-card flex items-center justify-between p-4 bg-surface-container/60 backdrop-blur-sm rounded-[20pt] border border-white/10 cursor-pointer hover:bg-surface-container-high/60 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <input type="checkbox" class="custom-checkbox">
+                            <div class="flex flex-col">
+                                <span class="ingredient-name font-body-lg text-body-lg text-on-surface font-medium">Heavy Cream</span>
+                                <span class="font-metadata text-metadata text-on-surface-variant">Fresh</span>
+                            </div>
+                        </div>
+                        <span class="ingredient-qty font-metadata text-metadata text-secondary-fixed bg-surface-container-lowest px-3 py-1 rounded-full border border-outline-variant/30">200ml</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Category Header: Spices & Pantry -->
+            <div>
+                <h3 class="font-label-caps text-label-caps text-tertiary mb-element-gap pl-2 tracking-wider">Spices &amp; Pantry</h3>
+                <div class="space-y-3">
+                    
+                    <!-- Ingredient Card -->
+                    <label class="ingredient-card flex items-center justify-between p-4 bg-surface-container/60 backdrop-blur-sm rounded-[20pt] border border-white/10 cursor-pointer hover:bg-surface-container-high/60 transition-colors checked">
+                        <div class="flex items-center gap-4">
+                            <input type="checkbox" class="custom-checkbox" checked="">
+                            <div class="flex flex-col">
+                                <span class="ingredient-name font-body-lg text-body-lg text-on-surface font-medium">Ginger Garlic Paste</span>
+                                <span class="font-metadata text-metadata text-on-surface-variant">Lehsan Adrak</span>
+                            </div>
+                        </div>
+                        <span class="ingredient-qty font-metadata text-metadata text-secondary-fixed bg-surface-container-lowest px-3 py-1 rounded-full border border-outline-variant/30">2 tbsp</span>
+                    </label>
+                    
+                    <!-- Ingredient Card -->
+                    <label class="ingredient-card flex items-center justify-between p-4 bg-surface-container/60 backdrop-blur-sm rounded-[20pt] border border-white/10 cursor-pointer hover:bg-surface-container-high/60 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <input type="checkbox" class="custom-checkbox">
+                            <div class="flex flex-col">
+                                <span class="ingredient-name font-body-lg text-body-lg text-on-surface font-medium">Black Pepper</span>
+                                <span class="font-metadata text-metadata text-on-surface-variant">Crushed</span>
+                            </div>
+                        </div>
+                        <span class="ingredient-qty font-metadata text-metadata text-secondary-fixed bg-surface-container-lowest px-3 py-1 rounded-full border border-outline-variant/30">1 tsp</span>
+                    </label>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Floating Action Button: Copy List -->
+    <div class="fixed bottom-[90px] left-0 w-full flex justify-center z-40 px-page-padding pointer-events-none"><div class="flex items-center gap-3 w-full max-w-sm pointer-events-auto">
+    <button class="flex-1 flex items-center justify-center gap-2 bg-primary-container text-on-primary-container font-label-caps text-label-caps px-6 py-4 rounded-full shadow-lg shadow-black/50 hover:opacity-90 active:scale-95 transition-all border border-white/10 text-white">
+        <span class="material-symbols-outlined text-[20px]">content_copy</span>
+        Copy List
+    </button>
+    <button class="flex-shrink-0 flex items-center justify-center bg-surface-container-highest text-on-surface rounded-full w-[52px] h-[52px] shadow-lg shadow-black/50 hover:opacity-90 active:scale-95 transition-all border border-white/10" aria-label="Share List">
+        <span class="material-symbols-outlined text-[24px]">share</span>
+    </button>
+</div></div>
+
+    <!-- BottomNavBar -->
+    <nav class="fixed bottom-0 w-full z-50 rounded-t-xl bg-surface-container/70 dark:bg-surface-container/70 backdrop-blur-xl bg-surface-container-highest/20 dark:bg-surface-container-highest/20 md:hidden"><div class="flex justify-around items-end px-4 pb-safe w-full relative">
+    <!-- Home -->
+    <button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-3 hover:text-primary transition-all">
+        <span class="material-symbols-outlined mb-1 text-[24px]">home</span>
+        <span class="font-label-caps text-[10px]">Home</span>
+    </button>
+    <!-- Library -->
+    <button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-3 hover:text-primary transition-all">
+        <span class="material-symbols-outlined mb-1 text-[24px]">menu_book</span>
+        <span class="font-label-caps text-[10px]">Library</span>
+    </button>
+    <!-- Central Add Button -->
+    <div class="relative -top-6">
+        <button class="flex items-center justify-center bg-primary-container text-white rounded-full w-16 h-16 shadow-lg shadow-black/50 active:scale-90 transition-transform border-4 border-background">
+            <span class="material-symbols-outlined text-[32px]">add</span>
+        </button>
+    </div>
+    <!-- Grocery (Active) -->
+    <button class="flex flex-col items-center justify-center text-primary px-4 py-3 transition-all">
+        <span class="material-symbols-outlined mb-1 text-[24px]" style="font-variation-settings: 'FILL' 1;">shopping_cart</span>
+        <span class="font-label-caps text-[10px]">Grocery</span>
+    </button>
+    <!-- Settings -->
+    <button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-3 hover:text-primary transition-all">
+        <span class="material-symbols-outlined mb-1 text-[24px]">settings</span>
+        <span class="font-label-caps text-[10px]">Settings</span>
+    </button>
+</div></nav>
+
+    <!-- Interactive Script for Checkboxes -->
+    <script class="">
+        document.addEventListener('DOMContentLoaded', () => {
+            const checkboxes = document.querySelectorAll('.custom-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const card</script></body></html>
