@@ -147,6 +147,14 @@
 - M22E.1R-DETAIL2 Home View Recent Recipes opens Recent, View Favorite Recipes opens Favorites, and View All AI Recipes opens AI Recipes
 - M22E.1R-DETAIL2 Library invalid/missing tab param and bottom-tab entry default to Recent; manual tabs, search/filter mode, card routing, and center Add remain stable
 - M22E.1R-DETAIL2 metadata ready/loading, AI processing, failed, Paywall/RevenueCat, Premium sync, Home/Library, Add/share, and small Android regressions checked
+- M22E.1R-GROCERY1 overview checked with empty/loading/error/retry/background-refresh, populated real cards, missing thumbnails, AI usage pill, and final-card clearance above floating tabs
+- M22E.1R-GROCERY1 search checked by recipe title, safe source title/creator/platform, English/Urdu ingredient, quantity, real note, and real category without raw query/URL analytics
+- M22E.1R-GROCERY1 All/Active/Completed/Recent filters checked against loaded item state; non-persisted completion is never represented as cross-screen saved progress
+- M22E.1R-GROCERY1 card and themed menu checked for Open shopping list, Open recipe, Copy, Share, backdrop/close/Android-back dismissal, and no unsupported Delete
+- M22E.1R-GROCERY1 detail checked for Grocery back route, Recipe Dost header, English/Urdu/Both availability, real-category/Ingredients fallback, checkbox strike-through/dimming, quantity pills, and matched real notes
+- M22E.1R-GROCERY1 Copy/Share checked for selected-language categorized text with no internal IDs or URLs, plus friendly native failure handling
+- M22E.1R-GROCERY1 confirms checked state remains local/reset as before; persisted progress, generated categories, pantry, meal planning, nutrition, and custom units remain deferred
+- M22E.1R-GROCERY1 regression checked: recipe-card Grocery route, Home, Library/search/tabs, Add/share, recipe detail, Paywall/RevenueCat/Premium sync, bottom tabs, and no raw URL logs
 - Production AAB created only from `main` with `npm run build:prod`
 - Production env never manually sourced in a normal terminal
 - 50 recipe links tested

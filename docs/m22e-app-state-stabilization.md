@@ -8,6 +8,48 @@ Audit-only pass for onboarding launch routing and stale Home/Library metadata st
 
 Current branch workflow is correct for this milestone: M22E fixes are prepared on `develop`, then merged to `main` only after QA for a production AAB update.
 
+## M22E.1R-GROCERY1 Grocery overview and shopping-list detail redesign
+
+Status: implemented and automatically validated on `develop`; Android device QA pending.
+
+Automated validation passed: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, `node scripts/env/validate-env.mjs development`, and `node scripts/env/validate-env.mjs production`.
+
+Data, routes, and state:
+
+- Grocery remains the existing `app/(tabs)/grocery.tsx` tab. Overview uses `/grocery`; a selected generated card uses the compatible `/grocery?recipeCardId=[recipe-card-id]` detail state, and recipe-card Grocery actions keep that route contract. Detail back intentionally clears selection to `/grocery`; Open recipe remains an explicit safe action.
+- Grocery lists continue to come from owned `recipe_cards` through `getRecipeGroceryLists()` / `getRecipeGroceryList()` with query keys `['recipe-grocery-lists']` and `['recipe-grocery-list', recipeCardId]`. No `grocery_lists` table write, schema change, Edge Function, or worker change was added.
+- Overview enrichment reads only existing owned, non-deleted `recipe_items` and latest media-job fields for real thumbnail, platform, creator, duration, and safe source title. Ingredient notes already present in `ingredients_json` are retained when they match grocery entries; no AI content is invented.
+- Checked IDs remain route-local memory exactly as before, reset when list selection changes, and are not stored in Supabase or device storage. Cards therefore honestly begin at zero checked. Active/Completed use only loaded checked values; persisted cross-screen completion is deferred rather than simulated.
+
+Overview presentation and behavior:
+
+- Adapted the supplied overview reference's visual structure only—the semantically incorrect AI Recipes title and all Stitch sample recipes/images remain excluded. The real Grocery screen uses the shared Obsidian/coral theme, centered Grocery title, existing AI-access pill to unchanged Paywall, glass search, real-state chips, and full-width shopping-list image cards.
+- Search is client-side and memoized over safe recipe/list title, source title, platform label, creator, English/Urdu ingredient names, quantity, real notes, and real categories. Raw source URLs and search text are not analytics properties. Loading, blocking error/retry, pull-to-refresh, background error, initial empty, filtered empty, and missing-thumbnail states are explicit.
+- Filters are All, Active, Completed, and Recent. Active means at least one loaded unchecked item, Completed means all loaded valid items checked, and Recent sorts existing lists newest first. No meal, health, or platform filter is fabricated.
+- Cards show real thumbnail or stable Grocery placeholder, Shopping List badge, title, item/checked counts, progress, platform, safe creator, duration, date, and a three-dot control. The Library-matched dark Modal exposes only Open shopping list, Open recipe, Copy list, and Share list; no unsupported delete action appears.
+
+Shopping-list detail:
+
+- Replaced the generic scrolling card with a safe-area-aware `SectionList`: centered Recipe Dost app bar, recipe title and Shopping List context, English/Urdu/Both segmented control, progress summary, glass checklist rows, quantity pills, checked strike-through/dimming, and floating Copy/Share actions above the existing tab bar.
+- Urdu and Both are disabled when no real Urdu-script ingredient exists. Screen selection remains local and defaults from the existing content-language preference. No translation is generated or persisted.
+- Real categories are used when present. The active AI grocery contract has no category field, so uncategorized data appears under one honest Ingredients group. Real preparation notes from matched ingredient data are shown when available.
+- Copy and native text Share use the selected language and clean `Recipe title / Shopping List / Category / - quantity ingredient` formatting. Internal IDs and URLs are excluded. Clipboard/share success, dismissal, and friendly failures are tracked with safe counts/booleans only.
+
+Deferred:
+
+- Persisted checkbox progress, reliable AI-generated grocery categories, list deletion, pantry management, meal planning, nutrition, custom units, and a standalone grocery-list schema/API remain separate milestones. No dependency or icon package was added; Grocery uses the established code-native editorial glyph treatment.
+
+M22E.1R-GROCERY1 manual QA checklist:
+
+- [ ] Verify empty, loading, error/retry, background refresh, missing-thumbnail, and populated overview states on a small Android device.
+- [ ] Search by recipe, English/Urdu ingredient, safe creator, and platform; clear search and verify no-results recovery.
+- [ ] Verify All/Active/Completed/Recent reflect loaded state honestly and never claim persistence after leaving a list.
+- [ ] Open cards and all four themed menu actions; close by outside tap, close button, and Android back.
+- [ ] Verify detail back returns to Grocery, Open recipe works, and no duplicate bottom tab renders.
+- [ ] Verify English/Urdu/Both availability, real-category/Ingredients fallback, item check/uncheck, strike-through, quantity, and real notes.
+- [ ] Verify Copy List and Share List text excludes IDs/URLs and uses the selected language/grouping.
+- [ ] Regression-check Home, Library/search/tabs, Add/share, recipe detail, Paywall/RevenueCat/Premium sync, and floating tab clearance.
+
 ## M22E.1R-DETAIL2 Recipe Detail visual QA and header/menu cleanup
 
 Status: implemented on `develop`; Android device QA pending.

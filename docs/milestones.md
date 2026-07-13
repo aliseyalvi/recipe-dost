@@ -1,5 +1,14 @@
 # Recipe Dost Milestones
 
+## M22E.1R-GROCERY1 - Grocery Overview and Shopping List Detail Redesign
+- Rebuilt the existing Grocery tab as a native Obsidian/coral editorial `FlatList` with centered Grocery title, unchanged AI-access/Paywall pill, glass search, All/Active/Completed/Recent filters, explicit async/empty states, and full-width real shopping-list cards.
+- Adapted only the visual composition of the supplied AI Recipes overview reference. No Stitch title, HTML/Tailwind, sample recipe, remote image, meal filter, or fake list ships in the app.
+- Preserved `/grocery` and `/grocery?recipeCardId=...`, owned `recipe_cards` reads, and existing Grocery query keys. Existing recipe-item/media reads now provide real thumbnail/platform/creator/duration/source-title metadata, while matched real ingredient notes flow into checklist rows.
+- Rebuilt selected-list detail with a safe-area-aware `SectionList`, Recipe Dost header, recipe title/Shopping List context, real English/Urdu/Both availability, real category grouping with Ingredients fallback, local checkbox styling, quantities, progress, clipboard copy, and native text Share.
+- Checked state remains local and resets exactly as before; Active/Completed are based only on loaded values. Persisted completion, generated categories, deletion, pantry/meal planning, nutrition, and custom-unit work remain deferred without schema/API changes.
+- Added a Library-matched dark action Modal with only Open shopping list, Open recipe, Copy list, and Share list. No dependency, backend/worker, Edge Function, quota/access, RevenueCat, product, entitlement, package ID, env, or raw-URL logging change was made.
+- Automated static and development/production environment validation passed. Android manual/regression QA remains pending. VersionCode 2 is required only when this runtime update is shipped.
+
 ## M22E.1R-DETAIL2 - Recipe Detail Visual QA and Header/Menu Cleanup
 - Replaced the AI-ready header open arrow with an accessible ellipsis and moved conditional Open Original into a Library-matched dark action Modal alongside View Saved Source, schema-backed Favorite, and confirmed soft Delete.
 - Removed the redundant bottom Open Original CTA and all rendered Development details diagnostics. Added real platform, safe creator, duration, and source-availability chips below the hero with no raw URL text.

@@ -331,6 +331,10 @@ export type GroceryItem = {
   label_en?: string
   label_ur?: string
   quantity?: string
+  notes?: string
+  notes_en?: string
+  notes_ur?: string
+  category?: string
   checked: boolean
 }
 
@@ -340,12 +344,29 @@ export type RecipeGroceryList = Omit<
 > & {
   grocery_items: GroceryItem[]
   thumbnail_url: string | null
+  platform: string | null
+  creator: string | null
+  duration_seconds: number | null
+  source_title: string | null
 }
 
 type RecipeGroceryListSourceRow = Pick<
   Database['public']['Tables']['recipe_items']['Row'],
-  'id' | 'thumbnail_url'
+  | 'id'
+  | 'thumbnail_url'
+  | 'platform'
+  | 'title'
+  | 'duration_seconds'
+  | 'source_metadata'
 >
+
+type RecipeGroceryListSource = {
+  thumbnail_url: string | null
+  platform: string | null
+  creator: string | null
+  duration_seconds: number | null
+  source_title: string | null
+}
 
 type RecipeLibraryItemRow = Pick<
   Database['public']['Tables']['recipe_items']['Row'],
@@ -952,13 +973,16 @@ export async function getRecipeGroceryList(recipeCardId: string) {
     )
   }
 
-  await getActiveRecipeManagementItem({
+  const sourceItem = await getActiveRecipeManagementItem({
     recipeItemId: data.recipe_id,
     userId: user.id,
     fallbackMessage: 'Could not load this grocery list.',
   })
 
-  return normalizeRecipeGroceryList(data satisfies RecipeGroceryListRow)
+  return normalizeRecipeGroceryList(
+    data satisfies RecipeGroceryListRow,
+    normalizeRecipeGroceryListSource(sourceItem)
+  )
 }
 
 export async function getRecipeGroceryLists() {
@@ -989,19 +1013,24 @@ export async function getRecipeGroceryLists() {
 
   const rows = data satisfies RecipeGroceryListRow[]
   const recipeIds = rows.map((item) => item.recipe_id)
-  const sourceThumbnailByRecipeId = new Map<string, string | null>()
-  const mediaThumbnailByRecipeId = new Map<string, string | null>()
+  const sourceByRecipeId = new Map<string, RecipeGroceryListSource>()
+  const mediaByRecipeId = new Map<string, MediaJob>()
 
   if (recipeIds.length > 0) {
     const { data: sourceRows } = await supabase
       .from('recipe_items')
-      .select('id, thumbnail_url')
+      .select(
+        'id, thumbnail_url, platform, title, duration_seconds, source_metadata'
+      )
       .eq('user_id', user.id)
       .is('deleted_at', null)
       .in('id', recipeIds)
 
     for (const sourceRow of (sourceRows ?? []) as RecipeGroceryListSourceRow[]) {
-      sourceThumbnailByRecipeId.set(sourceRow.id, sourceRow.thumbnail_url)
+      sourceByRecipeId.set(
+        sourceRow.id,
+        normalizeRecipeGroceryListSource(sourceRow)
+      )
     }
 
     const { data: mediaJobs } = await supabase
@@ -1012,30 +1041,25 @@ export async function getRecipeGroceryLists() {
       .order('created_at', { ascending: false })
 
     for (const row of (mediaJobs ?? []) as MediaJobRow[]) {
-      if (!row.recipe_item_id || mediaThumbnailByRecipeId.has(row.recipe_item_id)) {
+      if (!row.recipe_item_id || mediaByRecipeId.has(row.recipe_item_id)) {
         continue
       }
 
-      const mediaJob = normalizeMediaJob(row)
-      mediaThumbnailByRecipeId.set(
-        row.recipe_item_id,
-        mediaJob.thumbnail_url ??
-          mediaJob.source_metadata.uploaded_thumbnail_url ??
-          null
-      )
+      mediaByRecipeId.set(row.recipe_item_id, normalizeMediaJob(row))
     }
   }
 
   return rows
-    .filter((row) => sourceThumbnailByRecipeId.has(row.recipe_id))
-    .map((row) =>
-      normalizeRecipeGroceryList(
+    .filter((row) => sourceByRecipeId.has(row.recipe_id))
+    .map((row) => {
+      const source = sourceByRecipeId.get(row.recipe_id)
+      const mediaJob = mediaByRecipeId.get(row.recipe_id)
+
+      return normalizeRecipeGroceryList(
         row,
-        mediaThumbnailByRecipeId.get(row.recipe_id) ??
-          sourceThumbnailByRecipeId.get(row.recipe_id) ??
-          null
+        mergeRecipeGroceryListSource(source, mediaJob)
       )
-    )
+    })
     .filter((item) => item.grocery_items.length > 0)
 }
 
@@ -1170,7 +1194,9 @@ async function getActiveRecipeManagementItem({
 }) {
   const { data, error } = await supabase
     .from('recipe_items')
-    .select('id, is_favorite')
+    .select(
+      'id, is_favorite, thumbnail_url, platform, title, duration_seconds, source_metadata'
+    )
     .eq('id', recipeItemId)
     .eq('user_id', userId)
     .is('deleted_at', null)
@@ -1376,7 +1402,7 @@ function getAiSourceMode(value: unknown): AiSourceMode | undefined {
 
 function normalizeRecipeGroceryList(
   row: RecipeGroceryListRow,
-  thumbnailUrl: string | null = null
+  source: RecipeGroceryListSource = emptyRecipeGroceryListSource
 ): RecipeGroceryList {
   return {
     id: row.id,
@@ -1386,21 +1412,28 @@ function normalizeRecipeGroceryList(
     source_link: row.source_link,
     created_at: row.created_at,
     updated_at: row.updated_at,
-    thumbnail_url: thumbnailUrl,
+    thumbnail_url: source.thumbnail_url,
+    platform: source.platform,
+    creator: source.creator,
+    duration_seconds: source.duration_seconds,
+    source_title: source.source_title,
     grocery_items: getGroceryItems(row.grocery_list_json, row.ingredients_json),
   }
 }
 
 function getGroceryItems(groceryListValue: Json, ingredientsValue: Json) {
+  const ingredients = getIngredients(ingredientsValue)
   const groceryItems = getArray(groceryListValue)
     .map((item, index) => getGroceryItemFromUnknown(item, index, 'grocery'))
     .filter((item): item is GroceryItem => Boolean(item))
 
   if (groceryItems.length > 0) {
-    return groceryItems
+    return groceryItems.map((item) =>
+      mergeGroceryItemWithIngredient(item, ingredients)
+    )
   }
 
-  return getIngredients(ingredientsValue).map((ingredient, index) => {
+  return ingredients.map((ingredient, index) => {
     const item: GroceryItem = {
       id: `ingredient-${index}`,
       label: ingredient.name,
@@ -1415,6 +1448,15 @@ function getGroceryItems(groceryListValue: Json, ingredientsValue: Json) {
     }
     if (ingredient.quantity) {
       item.quantity = ingredient.quantity
+    }
+    if (ingredient.notes) {
+      item.notes = ingredient.notes
+    }
+    if (ingredient.notes_en) {
+      item.notes_en = ingredient.notes_en
+    }
+    if (ingredient.notes_ur) {
+      item.notes_ur = ingredient.notes_ur
     }
 
     return item
@@ -1459,6 +1501,13 @@ function getGroceryItemFromUnknown(
     getString(record?.quantity) ||
     getString(record?.amount) ||
     getString(record?.measure)
+  const notesEn = getString(record?.notes_en)
+  const notesUr = getString(record?.notes_ur)
+  const notes = notesEn || getString(record?.notes) || notesUr
+  const category =
+    getString(record?.category) ||
+    getString(record?.group) ||
+    getString(record?.section)
   const item: GroceryItem = {
     id: `${source}-${index}`,
     label,
@@ -1475,8 +1524,97 @@ function getGroceryItemFromUnknown(
   if (labelUr) {
     item.label_ur = labelUr
   }
+  if (notes) {
+    item.notes = notes
+  }
+  if (notesEn) {
+    item.notes_en = notesEn
+  }
+  if (notesUr) {
+    item.notes_ur = notesUr
+  }
+  if (category) {
+    item.category = category
+  }
 
   return item
+}
+
+const emptyRecipeGroceryListSource: RecipeGroceryListSource = {
+  thumbnail_url: null,
+  platform: null,
+  creator: null,
+  duration_seconds: null,
+  source_title: null,
+}
+
+function normalizeRecipeGroceryListSource(
+  row: RecipeGroceryListSourceRow
+): RecipeGroceryListSource {
+  const metadata = normalizeMediaJobSourceMetadata(row.source_metadata)
+
+  return {
+    thumbnail_url: row.thumbnail_url,
+    platform: row.platform ?? metadata.platform ?? null,
+    creator: metadata.author_username ?? null,
+    duration_seconds: row.duration_seconds ?? metadata.duration_seconds ?? null,
+    source_title: row.title ?? metadata.title ?? null,
+  }
+}
+
+function mergeRecipeGroceryListSource(
+  source: RecipeGroceryListSource | undefined,
+  mediaJob: MediaJob | undefined
+): RecipeGroceryListSource {
+  return {
+    thumbnail_url:
+      mediaJob?.thumbnail_url ??
+      mediaJob?.source_metadata.uploaded_thumbnail_url ??
+      source?.thumbnail_url ??
+      null,
+    platform:
+      source?.platform ??
+      mediaJob?.source_metadata.platform ??
+      mediaJob?.platform ??
+      null,
+    creator:
+      source?.creator ?? mediaJob?.source_metadata.author_username ?? null,
+    duration_seconds:
+      source?.duration_seconds ??
+      mediaJob?.source_metadata.duration_seconds ??
+      null,
+    source_title:
+      source?.source_title ?? mediaJob?.source_metadata.title ?? null,
+  }
+}
+
+function mergeGroceryItemWithIngredient(
+  item: GroceryItem,
+  ingredients: RecipeCardIngredient[]
+) {
+  const itemNames = [item.label, item.label_en, item.label_ur]
+    .map(normalizeIngredientMatchValue)
+    .filter(Boolean)
+  const ingredient = ingredients.find((candidate) =>
+    [candidate.name, candidate.name_en, candidate.name_ur]
+      .map(normalizeIngredientMatchValue)
+      .some((name) => Boolean(name) && itemNames.includes(name))
+  )
+
+  if (!ingredient) {
+    return item
+  }
+
+  return {
+    ...item,
+    notes: item.notes ?? ingredient.notes,
+    notes_en: item.notes_en ?? ingredient.notes_en,
+    notes_ur: item.notes_ur ?? ingredient.notes_ur,
+  }
+}
+
+function normalizeIngredientMatchValue(value: string | undefined) {
+  return value?.trim().toLocaleLowerCase() ?? ''
 }
 
 function getIngredients(value: Json): RecipeCardIngredient[] {

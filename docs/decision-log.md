@@ -1,5 +1,16 @@
 # Recipe Dost Decision Log
 
+## 2026-07-13
+- M22E.1R-GROCERY1 redesigned the existing Grocery overview and selected-list state on `develop`; final automated validation and Android QA are pending.
+- Decision: preserve `/grocery` and `/grocery?recipeCardId=[recipe-card-id]`, `recipe_cards` as the list source, the existing Grocery query keys, and route-local non-persisted checked IDs. Do not write the unused `grocery_lists` table or imply cross-screen completion persistence.
+- Decision: treat the Stitch overview as visual structure only because it is semantically an AI Recipes screen. Use real Grocery title/data, client-side safe search, All/Active/Completed/Recent filters, real thumbnail/source enrichment, progress, and an honest empty state; never ship sample recipes/images or fake meal filters.
+- Decision: reuse existing `recipe_items`/media metadata for thumbnail, platform, creator, duration, and safe source title, and preserve real ingredient notes when grocery names match. Reject URL-like visible titles/creators and never track query text or source URLs.
+- Decision: render detail with a `SectionList`, local English/Urdu/Both selection, only real Urdu text, real categories when present, and one Ingredients group otherwise. Current generated grocery data has no reliable category, separate unit, or persisted checked field; schema/API work is deferred.
+- Decision: keep clipboard copy and add text-only native `Share.share` with friendly failures. The dark overview menu exposes Open shopping list, Open recipe, Copy list, and Share list only; no delete action or new dependency is added.
+- Decision: reuse the existing `get-ai-access` function for the Grocery header pill and unchanged `/paywall`; quota/access, RevenueCat, products, entitlement, worker, Edge Functions, schema, package ID, and env files remain unchanged.
+- Release decision: this runtime/UI milestone requires Android `versionCode` 2 only when promoted from `develop` and shipped; the patch does not bump it.
+- Validation: `npm run qa:static`, development env doctor, and both development/production env validators passed with masked output; Android interaction, clipboard/share, filter-state, and visual regression QA remains pending.
+
 ## 2026-07-12
 - M22E.1R-DETAIL2 cleaned the AI-ready header/menu, source metadata, unknown stats, and Home-to-Library section navigation on `develop`; Android QA is pending.
 - Decision: replace the AI-ready external-arrow header action with one ellipsis and move Open Original into a themed detail Modal. Include only existing safe Open Original, View Saved Source, Favorite, and soft Delete actions; hide Share and Generate because no ready-detail share flow exists and generation is already complete.

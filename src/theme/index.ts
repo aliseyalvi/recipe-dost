@@ -16,6 +16,8 @@ export const colors = {
   onPrimary: '#68000F',
   primaryContainer: '#BE1E2D',
   onPrimaryContainer: '#FFD3D1',
+  tertiary: '#85D1EF',
+  onTertiary: '#003544',
   error: '#FFB4AB',
   onError: '#690005',
   errorContainer: '#93000A',
