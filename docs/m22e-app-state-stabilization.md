@@ -8,6 +8,83 @@ Audit-only pass for onboarding launch routing and stale Home/Library metadata st
 
 Current branch workflow is correct for this milestone: M22E fixes are prepared on `develop`, then merged to `main` only after QA for a production AAB update.
 
+## M22E.1R-DETAIL2 Recipe Detail visual QA and header/menu cleanup
+
+Status: implemented on `develop`; Android device QA pending.
+
+Automated validation passed: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, `node scripts/env/validate-env.mjs development`, and `node scripts/env/validate-env.mjs production`.
+
+AI-ready header and menu:
+
+- Replaced the AI-ready top-right external/open arrow with one accessible `Recipe options` ellipsis control. The bottom Open Original Video CTA is removed from the AI-ready layout, so the action is no longer duplicated.
+- Added `RecipeDetailActionMenu`, a safe-area-aware Obsidian React Native `Modal` matching the Library action sheet: dark 72% backdrop, rounded top surface, coral border, context title/source, outside/close/Android-back dismissal, icon rows, inline mutation errors, and themed destructive confirmation.
+- Enabled only existing safe actions: Open Original Video when `source_link` is valid, View Saved Source through `/recipe/[recipe_id]`, persisted Favorite/Unfavorite, and ownership-scoped soft Delete. Generate is absent because the card is already ready; Share remains hidden because no existing detail share flow is implemented. Raw URLs are never menu text or analytics properties.
+- No usable icon package resolves in the repo (`@expo/vector-icons`, Lucide, `react-native-vector-icons`, and `react-native-svg` are absent), so DETAIL2 adds no dependency. It continues the typed/code-native visual language with ellipsis, chain/source, saved-source, heart, and delete marks; directional arrows are removed from detail source/open affordances.
+
+AI-ready content cleanup:
+
+- Added a polished real-data chip row below the hero for platform, safe creator/channel handle, source-video duration, and Original source availability. Raw/URL-like creator values are rejected. Empty fields disappear without gaps.
+- Difficulty and servings are emitted only when their trimmed values are real. Empty, `unknown`, `not specified`, and `n/a` values are hidden in both the editorial stat grid and legacy compatibility grid, eliminating Difficulty Unknown.
+- Renamed Culinary Method to Recipe Steps without changing English/Urdu step data.
+- Removed Development details/source-model diagnostics from the rendered AI-ready experience and compatibility layout. User-useful source fields moved to the hero chip row; provider/model/debug data remains in code/data only.
+
+Home and Library navigation:
+
+- Home Recent now shows View Recent Recipes, visible Favorites shows View Favorite Recipes, and AI Generated retains View All AI Recipes. Each pushes the existing `/library` route with validated `tab=recent`, `tab=favorites`, or `tab=ai_recipes`.
+- Library reads the optional tab parameter and falls back to Recent for missing/invalid values. Manual tab presses still update local selection normally.
+- The bottom Library tab explicitly navigates with `tab=recent`, so normal tab entry always defaults to Recent instead of inheriting a Home deep link. No duplicate Library route or navigation shell was added.
+
+M22E.1R-DETAIL2 manual QA checklist:
+
+- [ ] AI-ready header shows ellipsis only; menu opens/closes by button, outside tap, close, and Android back.
+- [ ] Menu Open Original, View Saved Source, Favorite/Unfavorite, Delete cancel/confirm, and inline failure states behave correctly.
+- [ ] AI-ready bottom has no Open Original CTA and no Development details card.
+- [ ] Hero chips show only real platform, creator, duration, and source availability without raw URLs or arrows.
+- [ ] Unknown/missing difficulty and servings produce no chip or layout gap; Recipe Steps preserves bilingual content.
+- [ ] Metadata ready/loading, AI processing, failed states, Generate/access/Paywall, Grocery, Favorite/Delete, and back routing regressions pass.
+- [ ] Home Recent/Favorites/AI buttons open their matching Library tabs; invalid/bottom-tab entry opens Recent; manual switching remains stable.
+- [ ] Center Add/share, Library search, Home card detail routes, Premium sync, and small Android safe areas remain unchanged.
+
+## M22E.1R-DETAIL1 State-driven Recipe Detail redesign
+
+Status: implemented on `develop`; Android device QA pending.
+
+Automated validation passed: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, `node scripts/env/validate-env.mjs development`, and `node scripts/env/validate-env.mjs production`.
+
+Architecture and state resolution:
+
+- Added `getRecipeDetailViewState()` under `src/features/recipe-detail/recipe-detail-view-state.ts`. Its typed states are `metadata_loading`, `metadata_ready`, `ai_processing`, `ai_ready`, and `failed`.
+- Resolution priority is: real card/result ID → AI ready; active media job → AI processing; failed/cancelled/needs-caption media job → failed; saving/pending/refreshing metadata → metadata loading; failed metadata → failed; otherwise metadata ready.
+- `/recipe/[id]` remains the saved-source controller. It retains the existing saved-item/access/media-job/card queries, two-second bounded metadata polling, 2.5-second active-job polling, focus/foreground refetch, create-job/access/RevenueCat checks, retry behavior, and completed-result replacement navigation.
+- `/recipe-card/[id]` remains the direct AI-ready route. It retains localization, source opening, tag search, Favorite/Delete, grocery/copy, substitutions, storage/safety, missing-info, and development-only diagnostics. It now also refetches its card/source media state on focus and app foreground.
+
+Native presentation:
+
+- Added shared presentation primitives in `src/features/recipe-detail/detail-presentation.tsx`: safe-area scaffold/header, usage pill, analyzing state, metadata hero/state, AI hero, stat grid, failed state, editorial sections/buttons/chips, and stable image placeholders.
+- The Stitch analyzing `screen.png`/`code.html`, metadata `screen.png`/`code.html`, and AI recipe `screen.png`/`code.html` were read as visual references only. Metadata HTML supplied the fetched 9:16 hero/action layout missing from its blank screenshot. No Stitch HTML, Tailwind, fonts, sample recipes, remote image URLs, or bottom navigation were copied into the app.
+- Metadata/AI processing use an Obsidian focal canvas, lightweight native activity/orbit treatment, serif italic headline, uppercase intelligence label, honest status label, indeterminate bar when backend progress is absent, and Go to Library/Wait here actions. Metadata preparation also keeps Open Original.
+- Metadata ready uses the real thumbnail in a responsive vertical hero, Recipe Overview overlay, normalized HOME2 title, separate creator/platform/duration chips, existing Favorite mutation, Generate CTA, real availability copy, and existing Open Original behavior.
+- AI ready uses the real worker/uploaded thumbnail, AI Recipe hero, real tag chips, only-present prep/cook/servings/difficulty stats, summary, existing bilingual language control, glass ingredients, numbered method, grocery actions, substitutions, storage/safety, missing details, source action, Favorite, and soft Delete.
+- Failed metadata and AI states use safe product copy and only existing retry/open-source/Library actions. Provider payloads, raw errors, source/CDN URLs, secrets, and models remain hidden outside existing development-only diagnostics.
+
+Data and deferred scope:
+
+- Nutrition is omitted because the real `RecipeCard` contract has no nutrition/macros fields. No Stitch nutrition values or health claims are used.
+- Tags, thumbnail, duration, creator, servings, difficulty, Urdu fields, substitutions, storage, safety, and missing information are individually hidden or safely fall back when absent. No JSON is reparsed in presentation code.
+- Favorite/Delete are not deferred: M22E.1R-D already supplies schema-backed ownership-safe mutations. Recipe scaling, AI edit, PDF/export, meal planner, nutrition generation, social login/scraping, and video download/storage remain deferred.
+- The detail routes are outside tab navigation and do not render a duplicate Stitch bottom bar. A shipped production runtime update requires Android `versionCode` 2 when promoted from `develop` to `main`; this patch does not bump it.
+
+M22E.1R-DETAIL1 manual QA checklist:
+
+- [ ] Save Instagram/TikTok/YouTube links and verify metadata loading transitions to the real source hero without duplicate jobs.
+- [ ] Verify normalized title, separate creator/platform/duration, real thumbnail/fallback, Generate, Favorite, and Open Original.
+- [ ] Verify Free/Premium/blocked Generate behavior still follows existing access, sync, Paywall, and RevenueCat paths.
+- [ ] Verify every active media-job stage uses AI analyzing presentation, honest progress, Wait here, Library exit, and completed auto-navigation.
+- [ ] Verify failed metadata and AI states show safe retry/source/Library actions without provider/raw error text.
+- [ ] Verify old/new AI cards with missing tags/thumbnails/stats and English/Urdu/Both ingredients/steps.
+- [ ] Verify Grocery, tag search, Favorite/Delete, original source, back/returnTo, Home/Library entry, and Add/share regressions.
+- [ ] Verify small Android status/gesture safe areas, vertical source hero, long titles, and long bilingual steps.
+
 ## M22E.1R-LIBRARY1B Library card icon and action-menu polish
 
 Status: implemented on `develop`; Android device QA pending.

@@ -1,5 +1,22 @@
 # Recipe Dost Milestones
 
+## M22E.1R-DETAIL2 - Recipe Detail Visual QA and Header/Menu Cleanup
+- Replaced the AI-ready header open arrow with an accessible ellipsis and moved conditional Open Original into a Library-matched dark action Modal alongside View Saved Source, schema-backed Favorite, and confirmed soft Delete.
+- Removed the redundant bottom Open Original CTA and all rendered Development details diagnostics. Added real platform, safe creator, duration, and source-availability chips below the hero with no raw URL text.
+- Hidden empty/unknown/not-specified/n-a Difficulty and Servings values and renamed Culinary Method to Recipe Steps while preserving bilingual content.
+- Added Home View Favorite Recipes, renamed the Recent button, and deep-linked Recent/Favorites/AI Generated buttons to validated tabs on the existing Library route. Bottom Library tab entry explicitly defaults to Recent.
+- No icon dependency was available or added; code-native non-directional editorial marks remain consistent with Library. No backend, schema, worker, access/quota, RevenueCat, env, package, or data-shape change was made.
+- Automated static and environment validation passed; Android device and navigation regression QA remains pending.
+
+## M22E.1R-DETAIL1 - State-driven Recipe Detail Redesign
+- Added a typed five-state resolver for metadata loading, metadata ready, AI processing, AI ready, and failed detail presentation.
+- Kept `/recipe/[id]` as the saved-source/generation controller and `/recipe-card/[id]` as the direct generated-card route; existing polling, access/Paywall/RevenueCat checks, job creation, auto-navigation, returnTo, Grocery, Favorite/Delete, and source actions remain intact.
+- Added shared native editorial scaffold/header, analyzing, metadata hero, AI hero, stat grid, failed state, section, button, chip, and placeholder components using the existing theme and safe serif slot.
+- Translated all analyzing/metadata/AI Stitch screenshots and HTML references into responsive Expo React Native UI without importing sample data/images, HTML/Tailwind, fonts, or duplicate tabs.
+- AI ready renders only real tags, time, servings, difficulty, localized summary/ingredients/steps, grocery, substitutions, storage/safety, and missing details. Nutrition is omitted because no real nutrition field exists.
+- Deferred recipe scaling, AI edit, PDF/export, meal planner, generated nutrition, scraping/social login, and video download/storage. Existing schema-backed Favorite/Delete is supported rather than deferred.
+- Automated static and environment validation passed; Android device/regression QA remains pending. VersionCode 2 is required when this runtime update is promoted for release.
+
 ## M22E.1R-LIBRARY1B - Library Card Icons, Badges, and Action Menu Polish
 - Replaced the weak directional source mark with typed code-native editorial symbols and explicit IG/TT/YT/FB platform marks; no icon package or dependency was added because no usable icon library is installed.
 - Standardized every Library card with a 44px Favorite control, semantic icon + state badge, top-right menu, and platform/creator/duration metadata chips using only real loaded fields.

@@ -1,6 +1,21 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-12
+- M22E.1R-DETAIL2 cleaned the AI-ready header/menu, source metadata, unknown stats, and Home-to-Library section navigation on `develop`; Android QA is pending.
+- Decision: replace the AI-ready external-arrow header action with one ellipsis and move Open Original into a themed detail Modal. Include only existing safe Open Original, View Saved Source, Favorite, and soft Delete actions; hide Share and Generate because no ready-detail share flow exists and generation is already complete.
+- Decision: no icon dependency is installed or added. Use non-directional code-native chain/source, creator, duration, ellipsis, heart, and delete treatments consistent with Library.
+- Decision: move user-useful platform, safe creator, source duration, and source-available metadata directly below the hero. Remove development/model/provider diagnostics from rendered UI and never expose raw URLs.
+- Decision: hide difficulty/servings for empty, unknown, not specified, or n/a values, and rename Culinary Method to Recipe Steps without changing localized data.
+- Decision: Home section buttons deep-link to the existing Library with `tab=recent|favorites|ai_recipes`; Library validates the param, while the bottom tab always sends Recent and manual selection remains local.
+- Validation: `npm run qa:static`, development env doctor, and both development/production env validators passed with masked output; Android menu, deep-link, and visual regression QA remains pending.
+- M22E.1R-DETAIL1 implemented the native state-driven saved-source and AI-ready detail redesign on `develop`; Android device QA is pending.
+- Decision: preserve `/recipe/[id]` as the generation/access/polling controller and `/recipe-card/[id]` as the direct ready-card route. Add shared presentation components and a typed five-state resolver rather than merging routes or duplicating job logic.
+- Decision: state priority is card/result, active job, terminal failed job, active metadata, failed metadata, then ready metadata. Keep bounded polling, focus/foreground refetch, completed-result replacement, returnTo handling, and existing query keys.
+- Decision: translate all three Stitch detail references into native Obsidian/coral surfaces only. The metadata HTML, not its blank screenshot, is the source for the fetched 9:16 hero/action composition. Do not ship Stitch sample images, recipes, nutrition, HTML/Tailwind, fonts, or duplicate bottom navigation.
+- Decision: use HOME2 title/creator normalization, existing thumbnails, real tags/stats/ingredients/steps, and existing bilingual controls. Hide absent fields and omit nutrition because no real nutrition contract exists.
+- Decision: preserve create-media-job access/Paywall/RevenueCat logic, original-source behavior, Favorite/Delete, Grocery, tag search, and safe analytics. Recipe scaling, AI edit, PDF/export, meal planner, generated nutrition, scraping, and video storage remain out of scope.
+- Release decision: Android `versionCode` 2 is required only when this runtime/UI update is shipped from `main`; do not bump it on `develop`.
+- Validation: `npm run qa:static`, development env doctor, and both development/production env validators passed with masked output; Android state-transition, visual, and regression QA remains pending.
 - M22E.1R-LIBRARY1B polished Library icons, card controls, and the action menu on `develop`; Android device QA is pending.
 - Decision: do not install an icon dependency. None of `@expo/vector-icons`, Lucide, `react-native-vector-icons`, or `react-native-svg` resolves as an installed app package. Use a typed local editorial-symbol helper and explicit boxed IG/TT/YT/FB marks; remove the directional arrow from source/creator metadata.
 - Decision: every card shows a real Favorite control, semantic state badge, and three-dot menu control. Platform, creator, and duration become consistent translucent metadata chips backed only by existing fields.

@@ -129,6 +129,24 @@
 - M22E.1R-LIBRARY1B Favorite/Unfavorite checked from card and menu across Recent/Favorites/Home/detail after cache invalidation
 - M22E.1R-LIBRARY1B Delete checked for themed confirmation, cancel, RLS-safe soft deletion, Library/Home/detail/grocery removal, and unchanged original video
 - M22E.1R-LIBRARY1B regression checked: search, tabs, card routing, bottom navigation, Add/share, Home, processing refresh, Paywall, purchases, restore, and Premium sync
+- M22E.1R-DETAIL1 new saved link checked through metadata loading → fetched source hero using real thumbnail/title/creator/platform/duration and no raw URL title
+- M22E.1R-DETAIL1 metadata preparing checked for honest indeterminate status, Library exit, Wait here, Open Original, bounded polling, focus/foreground resume, and ready/failed transition
+- M22E.1R-DETAIL1 Generate checked as Free, Premium, blocked, sync-required, and duplicate-active-job; existing Paywall/RevenueCat/access behavior unchanged
+- M22E.1R-DETAIL1 every active media-job status checked in AI analyzing UI with backend progress only, Library exit, Wait here, and completed auto-navigation
+- M22E.1R-DETAIL1 metadata and AI failures checked for safe copy, supported retry, Open Original, Library action, and no provider/raw error exposure
+- M22E.1R-DETAIL1 AI ready checked with real hero/tags/stats/summary/ingredients/method and old-card missing-field fallbacks; no fake nutrition renders
+- M22E.1R-DETAIL1 English, Urdu, and Both checked for title, summary, ingredients, steps/tips, grocery, storage/safety, and missing information
+- M22E.1R-DETAIL1 direct `/recipe-card/[id]`, saved `/recipe/[id]`, Home/Library entry, returnTo/back, tag search, Favorite/Delete, Grocery/copy, source, and Add/share regressions checked
+- M22E.1R-DETAIL1 small Android checked for status/gesture safe areas, 9:16 hero, long titles, long bilingual sections, 44px controls, and no duplicate/hidden tab bar
+- M22E.1R-DETAIL1 production release prepared with Android versionCode 2 only after develop QA and main promotion
+- M22E.1R-DETAIL2 AI-ready header checked for ellipsis only; no external arrow or redundant bottom Open Original CTA remains
+- M22E.1R-DETAIL2 themed menu checked for Open Original, View Saved Source, Favorite/Unfavorite, Delete confirmation, inline errors, backdrop/close/Android-back dismissal, and no raw URL text/logging
+- M22E.1R-DETAIL2 top hero metadata checked for real platform, safe creator/channel, source duration, and source availability chips with clean missing-field layout
+- M22E.1R-DETAIL2 empty/unknown/not-specified/n-a difficulty and servings checked as hidden; Recipe Steps checked with unchanged English/Urdu/Both content
+- M22E.1R-DETAIL2 AI-ready bottom checked for no Development details/provider/model diagnostics; Grocery, substitutions, storage/safety, missing info, Favorite/Delete, and source flows remain
+- M22E.1R-DETAIL2 Home View Recent Recipes opens Recent, View Favorite Recipes opens Favorites, and View All AI Recipes opens AI Recipes
+- M22E.1R-DETAIL2 Library invalid/missing tab param and bottom-tab entry default to Recent; manual tabs, search/filter mode, card routing, and center Add remain stable
+- M22E.1R-DETAIL2 metadata ready/loading, AI processing, failed, Paywall/RevenueCat, Premium sync, Home/Library, Add/share, and small Android regressions checked
 - Production AAB created only from `main` with `npm run build:prod`
 - Production env never manually sourced in a normal terminal
 - 50 recipe links tested

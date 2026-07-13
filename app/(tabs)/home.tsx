@@ -101,7 +101,7 @@ export default function HomeRoute() {
 
   const openLibrary = (source: 'recent' | 'favorites' | 'ai_recipes') => {
     track('home_section_opened', { section: source, destination: 'library' })
-    router.push('/library')
+    router.push(`/library?tab=${source}`)
   }
 
   const openPaywall = () => {
@@ -198,7 +198,7 @@ export default function HomeRoute() {
                   onPress={() => openRecipe(recentRecipe, 'recent')}
                 />
                 <OutlinePillButton
-                  label="View Library"
+                  label="View Recent Recipes"
                   onPress={() => openLibrary('recent')}
                 />
               </>
@@ -214,14 +214,20 @@ export default function HomeRoute() {
 
           {favoriteRecipe ? (
             <HomeSection title="Favorites">
-              <EditorialRecipeCard
-                title={getRecipeDisplayTitle(favoriteRecipe)}
-                thumbnailUrl={getRecipeCardThumbnail(favoriteRecipe)}
-                badge="♡ Favorite"
-                creatorLabel={getRecipeCreatorLabel(favoriteRecipe)}
-                metadata={getFavoriteMetadata(favoriteRecipe)}
-                onPress={() => openRecipe(favoriteRecipe, 'favorites')}
-              />
+              <>
+                <EditorialRecipeCard
+                  title={getRecipeDisplayTitle(favoriteRecipe)}
+                  thumbnailUrl={getRecipeCardThumbnail(favoriteRecipe)}
+                  badge="♡ Favorite"
+                  creatorLabel={getRecipeCreatorLabel(favoriteRecipe)}
+                  metadata={getFavoriteMetadata(favoriteRecipe)}
+                  onPress={() => openRecipe(favoriteRecipe, 'favorites')}
+                />
+                <OutlinePillButton
+                  label="View Favorite Recipes"
+                  onPress={() => openLibrary('favorites')}
+                />
+              </>
             </HomeSection>
           ) : null}
 

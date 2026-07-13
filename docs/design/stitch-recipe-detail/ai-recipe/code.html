@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Recipe Dost - Chicken Malai Boti</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400..900;1,400..900&amp;family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed": "#410006",
+                        "on-background": "#e5e2e1",
+                        "tertiary-fixed": "#baeaff",
+                        "secondary": "#c6c6c7",
+                        "on-secondary-fixed-variant": "#454747",
+                        "on-secondary": "#2f3131",
+                        "secondary-container": "#454747",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "surface-bright": "#3a3939",
+                        "primary-container": "#be1e2d",
+                        "tertiary-container": "#006a85",
+                        "tertiary": "#85d1ef",
+                        "error-container": "#93000a",
+                        "on-primary-fixed-variant": "#930019",
+                        "error": "#ffb4ab",
+                        "surface-tint": "#ffb3b0",
+                        "surface-container-low": "#1c1b1b",
+                        "surface": "#131313",
+                        "on-tertiary-fixed-variant": "#004d62",
+                        "on-surface-variant": "#e3bebb",
+                        "surface-container-high": "#2a2a2a",
+                        "outline-variant": "#5b403f",
+                        "on-tertiary": "#003544",
+                        "on-surface": "#e5e2e1",
+                        "primary-fixed": "#ffdad8",
+                        "primary": "#ffb3b0",
+                        "surface-variant": "#353534",
+                        "on-primary-container": "#ffd3d1",
+                        "on-error-container": "#ffdad6",
+                        "background": "#131313",
+                        "outline": "#aa8987",
+                        "on-tertiary-container": "#abe6ff",
+                        "inverse-surface": "#e5e2e1",
+                        "primary-fixed-dim": "#ffb3b0",
+                        "surface-container": "#201f1f",
+                        "on-tertiary-fixed": "#001f29",
+                        "tertiary-fixed-dim": "#85d1ef",
+                        "surface-container-highest": "#353534",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "inverse-primary": "#b91a2a",
+                        "on-error": "#690005",
+                        "inverse-on-surface": "#313030",
+                        "on-secondary-container": "#b4b5b5",
+                        "on-primary": "#68000f",
+                        "secondary-fixed": "#e2e2e2",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface-dim": "#131313"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "page-padding": "16pt",
+                        "element-gap": "12pt",
+                        "section-margin": "40pt",
+                        "structural-gap": "20pt"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Bodoni Moda"],
+                        "metadata": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "label-caps": ["Hanken Grotesk"],
+                        "display-lg-mobile": ["Bodoni Moda"],
+                        "body-md": ["Hanken Grotesk"],
+                        "display-lg": ["Bodoni Moda"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "metadata": ["14px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "600"}],
+                        "display-lg-mobile": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #131313; /* Obsidian */
+            color: #e5e2e1;
+            font-family: 'Hanken Grotesk', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-dark {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .text-gradient-red {
+            background: linear-gradient(to right, #be1e2d, #ffb3b0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .custom-checkbox:checked {
+            background-color: #be1e2d;
+            border-color: #be1e2d;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="selection:bg-primary-container selection:text-white">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/20">
+<div class="max-w-screen-xl mx-auto flex items-center justify-between px-page-padding py-4">
+<button class="material-symbols-outlined text-primary hover:opacity-80 transition-opacity active:scale-95 duration-150">arrow_back</button>
+<h1 class="text-headline-md font-headline-md font-bold text-primary">Recipe Dost</h1>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-primary hover:opacity-80 transition-opacity active:scale-95 duration-150">favorite</button>
+<button class="material-symbols-outlined text-primary hover:opacity-80 transition-opacity active:scale-95 duration-150">share</button>
+</div>
+</div>
+</header>
+<main class="max-w-4xl mx-auto pb-32">
+<!-- Hero Section -->
+<section class="relative w-full h-[530px] md:h-[618px] overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10"></div>
+<img class="w-full h-full object-cover transform hover:scale-105 transition-transform duration-[2s]" data-alt="A high-end, editorial food photograph of creamy Pakistani Chicken Malai Boti. The dish is presented in a shallow stone bowl, garnished with vibrant green coriander and a drizzle of fresh cream. The lighting is low-key and dramatic, casting soft shadows that emphasize the juicy texture of the chicken against a dark obsidian background. Red peppercorns and silver leaf accents add luxury to the composition." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6L0RRNP8Qwd6G_XbIajwwRzEtG6OnG6u22w7ikWO-LiPU3KiOGEFsxUQqajVj-aaFczYOaLwftF7GXtO1K926Co7W4xWkIuUUULBeV_Id3iaRr2Y2ugFd9q130h9EhqgZhB_Pv_XbpruuK9jnIbhP-X4wpGrN-EHcuo7j1t4nikMm8paOA4OvzN4fJ-ijMVM84zZK0OTQM1Q5nipFKLB24jybtEmFjNbG4yiXDdpKqw506pUxC0L2jfxbPjNJ9Fy1ymkqkv8dRZtZ"/>
+<div class="absolute bottom-0 left-0 w-full p-page-padding z-20 flex flex-col items-center text-center">
+<span class="font-label-caps text-label-caps text-primary tracking-[0.2em] mb-4 uppercase">Culinary Excellence</span>
+<h2 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg mb-4 text-white">Chicken Malai Boti</h2>
+<div class="flex flex-wrap justify-center gap-3">
+<span class="glass px-4 py-1.5 rounded-full font-metadata text-metadata text-white">Chicken</span>
+<span class="glass px-4 py-1.5 rounded-full font-metadata text-metadata text-white">Pakistani Food</span>
+<span class="glass px-4 py-1.5 rounded-full font-metadata text-metadata text-white">Creamy</span>
+</div>
+</div>
+</section>
+<!-- Quick Metadata -->
+<section class="grid grid-cols-2 md:grid-cols-4 gap-4 px-page-padding mt-structural-gap">
+<div class="glass-dark rounded-2xl p-4 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-primary mb-2">schedule</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Prep Time</span>
+<span class="font-headline-md text-body-lg text-on-surface mt-1">25 Mins</span>
+</div>
+<div class="glass-dark rounded-2xl p-4 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-primary mb-2">group</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Servings</span>
+<span class="font-headline-md text-body-lg text-on-surface mt-1">4 Persons</span>
+</div>
+<div class="glass-dark rounded-2xl p-4 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-primary mb-2">star</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Difficulty</span>
+<span class="font-headline-md text-body-lg text-on-surface mt-1">Easy</span>
+</div>
+<div class="glass-dark rounded-2xl p-4 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-primary mb-2">restaurant</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Style</span>
+<span class="font-headline-md text-body-lg text-on-surface mt-1">Restaurant</span>
+</div>
+</section>
+<!-- Description -->
+<section class="px-page-padding mt-section-margin max-w-2xl mx-auto text-center italic">
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+                "As the heat rises and no one has the courage to cook elaborate meals, I’m sharing a recipe with you that won’t require much cooking and will get you done quickly."
+            </p>
+</section>
+<!-- Ingredients Bento Grid -->
+<section class="px-page-padding mt-section-margin">
+<div class="flex items-end justify-between mb-element-gap">
+<div>
+<h3 class="font-headline-md text-headline-md text-white">The Ingredients</h3>
+<p class="font-metadata text-metadata text-on-surface-variant">Essential components for perfection</p>
+</div>
+<button class="glass px-4 py-2 rounded-full font-metadata text-metadata text-primary flex items-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[18px]">scale</span>
+                    Scale 1.0x
+                </button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="glass-dark rounded-3xl p-6 space-y-4">
+<h4 class="font-label-caps text-label-caps text-primary tracking-widest uppercase border-b border-outline-variant/20 pb-2">Primary Protein</h4>
+<label class="flex items-center gap-4 group cursor-pointer">
+<input class="w-6 h-6 rounded-full border-2 border-outline-variant bg-transparent custom-checkbox focus:ring-0" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface group-hover:text-white transition-colors">Boneless Chicken</span>
+<span class="font-metadata text-metadata text-on-surface-variant">1 kg, cut into cubes</span>
+</div>
+</label>
+</div>
+<div class="glass-dark rounded-3xl p-6 space-y-4">
+<h4 class="font-label-caps text-label-caps text-primary tracking-widest uppercase border-b border-outline-variant/20 pb-2">The Marinade</h4>
+<div class="space-y-4">
+<label class="flex items-center gap-4 group cursor-pointer">
+<input class="w-6 h-6 rounded-full border-2 border-outline-variant bg-transparent custom-checkbox focus:ring-0" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">Thick Yogurt</span>
+<span class="font-metadata text-metadata text-on-surface-variant">1 cup, whisked</span>
+</div>
+</label>
+<label class="flex items-center gap-4 group cursor-pointer">
+<input class="w-6 h-6 rounded-full border-2 border-outline-variant bg-transparent custom-checkbox focus:ring-0" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">Fresh Cream</span>
+<span class="font-metadata text-metadata text-on-surface-variant">1/2 packet (approx. 100ml)</span>
+</div>
+</label>
+</div>
+</div>
+<div class="glass-dark md:col-span-2 rounded-3xl p-6">
+<h4 class="font-label-caps text-label-caps text-primary tracking-widest uppercase border-b border-outline-variant/20 pb-2 mb-4">Aromatics &amp; Spices</h4>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">Ginger-Garlic Paste</span>
+<span class="font-metadata text-metadata text-on-surface-variant">1 tbsp</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">Coriander Powder</span>
+<span class="font-metadata text-metadata text-on-surface-variant">1 tbsp, roasted</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">Lemon Juice</span>
+<span class="font-metadata text-metadata text-on-surface-variant">2 tbsp</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">Green Chilli Paste</span>
+<span class="font-metadata text-metadata text-on-surface-variant">To taste</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Step-by-Step Instructions -->
+<section class="px-page-padding mt-section-margin">
+<h3 class="font-headline-md text-headline-md text-white mb-element-gap">Culinary Method</h3>
+<div class="space-y-structural-gap">
+<!-- Step 1 -->
+<div class="relative group">
+<div class="flex gap-6 items-start">
+<div class="flex-shrink-0 w-12 h-12 glass rounded-2xl flex items-center justify-center font-headline-md text-headline-md text-primary-container bg-[#be1e2d] text-white">1</div>
+<div class="pt-2">
+<h4 class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2 tracking-widest">Initial Marination</h4>
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed">
+                                For marination, combine 1 kg <span class="text-primary font-bold">chicken</span> with 1 cup yogurt, 1 tablespoon ginger-garlic paste, salt, black pepper, lemon juice, and a generous handful of fresh coriander; rest for <span class="text-primary font-bold">10 minutes</span>.
+                            </p>
+</div>
+</div>
+<div class="absolute left-6 top-12 bottom-[-20px] w-[1px] bg-outline-variant/30 hidden md:block"></div>
+</div>
+<!-- Step 2 -->
+<div class="relative group">
+<div class="flex gap-6 items-start">
+<div class="flex-shrink-0 w-12 h-12 glass rounded-2xl flex items-center justify-center font-headline-md text-headline-md text-white">2</div>
+<div class="pt-2">
+<h4 class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2 tracking-widest">Sauté &amp; Simmer</h4>
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed">
+                                Lightly sauté the <span class="text-primary font-bold">chicken</span> in a touch of oil, covered, until the oil begins to separate; stir in half a packet of <span class="text-primary font-bold">cream</span>.
+                            </p>
+</div>
+</div>
+<div class="absolute left-6 top-12 bottom-[-20px] w-[1px] bg-outline-variant/30 hidden md:block"></div>
+</div>
+<!-- Step 3 -->
+<div class="relative group">
+<div class="flex gap-6 items-start">
+<div class="flex-shrink-0 w-12 h-12 glass rounded-2xl flex items-center justify-center font-headline-md text-headline-md text-white">3</div>
+<div class="pt-2">
+<h4 class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2 tracking-widest">Aromatic Paste</h4>
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed">
+                                Grind the masala by blending chilli flakes, coriander powder, cumin powder, cashews, almonds, and whole black peppercorns into a fine paste. Add to the simmering pot.
+                            </p>
+</div>
+</div>
+<div class="absolute left-6 top-12 bottom-[-20px] w-[1px] bg-outline-variant/30 hidden md:block"></div>
+</div>
+<!-- Step 4 -->
+<div class="relative group">
+<div class="flex gap-6 items-start">
+<div class="flex-shrink-0 w-12 h-12 glass rounded-2xl flex items-center justify-center font-headline-md text-headline-md text-white">4</div>
+<div class="pt-2">
+<h4 class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2 tracking-widest">The Finish</h4>
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed">
+                                Garnish with fresh green chillies and coriander. Serve hot with fresh roti or naan. Enjoy the rich, creamy texture!
+                            </p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Nutritional Summary -->
+<section class="px-page-padding mt-section-margin">
+<div class="glass-dark rounded-3xl p-8">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary">analytics</span>
+<h3 class="font-label-caps text-label-caps text-white uppercase tracking-widest">Nutritional Info Per Serving</h3>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+<div class="text-center md:text-left">
+<p class="text-display-lg-mobile font-headline-md text-white">340</p>
+<p class="font-metadata text-metadata text-on-surface-variant uppercase tracking-tighter">Calories</p>
+</div>
+<div class="text-center md:text-left">
+<p class="text-display-lg-mobile font-headline-md text-white">28g</p>
+<p class="font-metadata text-metadata text-on-surface-variant uppercase tracking-tighter">Protein</p>
+</div>
+<div class="text-center md:text-left">
+<p class="text-display-lg-mobile font-headline-md text-white">12g</p>
+<p class="font-metadata text-metadata text-on-surface-variant uppercase tracking-tighter">Carbs</p>
+</div>
+<div class="text-center md:text-left">
+<p class="text-display-lg-mobile font-headline-md text-white">22g</p>
+<p class="font-metadata text-metadata text-on-surface-variant uppercase tracking-tighter">Healthy Fats</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Footer / Source -->
+<footer class="px-page-padding mt-section-margin pb-12 flex flex-col items-center gap-4">
+<div class="h-px w-24 bg-outline-variant/30"></div>
+<div class="flex items-center gap-4 text-on-surface-variant font-metadata">
+<span class="material-symbols-outlined text-[18px]">share_reviews</span>
+<span>Source: <a class="text-primary hover:underline transition-all" href="#">kw.sidra</a></span>
+</div>
+<p class="text-on-surface-variant/40 font-metadata text-[12px] uppercase tracking-[0.2em] mt-2">© 2024 Recipe Dost Culinary Studio</p>
+</footer>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-surface/80 backdrop-blur-xl border-t border-outline-variant/10">
+<button class="flex flex-col items-center justify-center text-primary dark:text-primary font-bold active:scale-90 duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="text-label-sm font-label-sm mt-1">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant opacity-70 hover:bg-surface-variant/10 rounded-full transition-all">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-label-sm font-label-sm mt-1">Library</span>
+</button>
+<button class="flex flex-col items-center justify-center -mt-8">
+<div class="w-14 h-14 bg-primary-container rounded-full flex items-center justify-center shadow-lg active:scale-90 duration-200">
+<span class="material-symbols-outlined text-white text-3xl">add</span>
+</div>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant opacity-70 hover:bg-surface-variant/10 rounded-full transition-all">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span class="text-label-sm font-label-sm mt-1">Grocery</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant opacity-70 hover:bg-surface-variant/10 rounded-full transition-all">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-label-sm font-label-sm mt-1">Settings</span>
+</button>
+</nav>
+<script>
+        // Micro-interaction for smooth scrolling & interactions
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const label = this.closest('label');
+                if(this.checked) {
+                    label.style.opacity = "0.5";
+                    label.querySelector('span').style.textDecoration = "line-through";
+                } else {
+                    label.style.opacity = "1";
+                    label.querySelector('span').style.textDecoration = "none";
+                }
+            });
+        });
+    </script>
+</body></html>

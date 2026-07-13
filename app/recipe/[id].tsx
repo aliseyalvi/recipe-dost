@@ -2,6 +2,22 @@ import { getPlatformLabel } from '@/features/recipe-draft/platform'
 import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { RecipePlatform } from '@/features/recipe-draft/types'
 import {
+  getRecipeCreatorLabel,
+  getRecipeDisplayTitle,
+} from '@/features/home/recipe-display-metadata'
+import {
+  AiRecipeHero,
+  DetailUsagePill,
+  EditorialButton,
+  HeaderIconButton,
+  RecipeAnalyzingState,
+  RecipeDetailScaffold,
+  RecipeFailedState,
+  RecipeMetadataState,
+  RecipeStatGrid,
+} from '@/features/recipe-detail/detail-presentation'
+import { getRecipeDetailViewState } from '@/features/recipe-detail/recipe-detail-view-state'
+import {
   getMediaJobProcessingStage,
   getMetadataProcessingStage,
 } from '@/features/media-jobs/processing-stage'
@@ -17,8 +33,10 @@ import {
 } from '@/features/settings/secondary-recipe-language'
 import { getAiAccessState } from '@/lib/api/ai-access'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
+import { useRefetchOnAppForeground } from '@/lib/query/use-refetch-on-app-foreground'
 import {
   type MediaJob,
+  type RecipeLibraryItem,
   RecipeApiError,
   createMediaJob,
   deleteRecipe,
@@ -210,6 +228,16 @@ export default function SavedRecipeRoute() {
       }
     }, [mediaJobQuery, recipeId, recipeQuery])
   )
+
+  const refetchDetailState = useCallback(
+    () => Promise.all([recipeQuery.refetch(), mediaJobQuery.refetch()]),
+    [mediaJobQuery.refetch, recipeQuery.refetch]
+  )
+
+  useRefetchOnAppForeground({
+    enabled: Boolean(recipeId),
+    refetch: refetchDetailState,
+  })
 
   useEffect(() => {
     if (!aiAccess || didTrackUsageSummary.current) {
@@ -438,6 +466,25 @@ export default function SavedRecipeRoute() {
   const backendPremiumActive =
     subscriptionStatus.sourceOfTruth === 'backend' &&
     subscriptionStatus.isPremium
+  const detailViewState = getRecipeDetailViewState({
+    metadataStatus: recipe.metadata_status,
+    mediaJob: displayMediaJob,
+    hasRecipeCard: Boolean(recipeCard || resultRecipeCardId),
+  })
+  const displayRecipeItem = {
+    ...recipe,
+    is_favorite: recipe.is_favorite === true,
+    latest_card: recipeCard,
+    latest_media_job: displayMediaJob,
+  } as RecipeLibraryItem
+  const normalizedDisplayTitle = getRecipeDisplayTitle(displayRecipeItem)
+  const creatorLabel = getRecipeCreatorLabel(displayRecipeItem)
+  const platformLabel = getPlatformLabel(platform)
+  const displayCreator =
+    creatorLabel.toLocaleLowerCase() === platformLabel.toLocaleLowerCase()
+      ? null
+      : creatorLabel
+  const detailUsageLabel = getDetailUsageLabel(aiAccess)
 
   const openOriginalVideo = async () => {
     const canOpenUrl = await Linking.canOpenURL(recipe.source_url)
@@ -793,6 +840,250 @@ export default function SavedRecipeRoute() {
         setIsRefreshingMetadata(false)
       }
     }
+  }
+
+  const managementHeaderActions = (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+      <HeaderIconButton
+        label={
+          recipe.is_favorite
+            ? 'Remove recipe from favorites'
+            : 'Add recipe to favorites'
+        }
+        icon={recipe.is_favorite ? '♥' : '♡'}
+        selected={recipe.is_favorite === true}
+        disabled={isUpdatingFavorite || isDeletingRecipe}
+        onPress={() => {
+          void handleToggleFavorite()
+        }}
+      />
+      <HeaderIconButton
+        label="Open original video"
+        icon="↗"
+        onPress={() => {
+          void openOriginalVideo()
+        }}
+      />
+    </View>
+  )
+  const usageHeaderAction = detailUsageLabel ? (
+    <DetailUsagePill
+      label={detailUsageLabel}
+      onPress={() => router.push('/paywall')}
+    />
+  ) : undefined
+
+  const redesignedDetail = (() => {
+  if (detailViewState === 'metadata_loading') {
+    const metadataStage = getMetadataProcessingStage(recipe.metadata_status)
+
+    return (
+      <RecipeDetailScaffold
+        title="Recipe Dost"
+        fallbackRoute={sourceReturnToRoute ?? '/library'}
+        rightActions={usageHeaderAction}
+      >
+        <RecipeAnalyzingState
+          kind="metadata"
+          statusLabel={metadataStage.label}
+          platformLabel={platformLabel}
+          isChecking={isCheckingProcessing}
+          onGoToLibrary={handleLeaveProcessing}
+          onWaitHere={() => {
+            void handleWaitHere()
+          }}
+          onOpenOriginal={() => {
+            void openOriginalVideo()
+          }}
+        />
+      </RecipeDetailScaffold>
+    )
+  }
+
+  if (detailViewState === 'ai_processing' && activeMediaJob) {
+    const aiStage = getMediaJobProcessingStage(activeMediaJob.status)
+
+    return (
+      <RecipeDetailScaffold
+        title="AI Recipe"
+        fallbackRoute={sourceReturnToRoute ?? '/library'}
+        rightActions={usageHeaderAction}
+      >
+        <RecipeAnalyzingState
+          kind="ai"
+          statusLabel={aiStage.label}
+          progress={activeMediaJob.progress}
+          platformLabel={platformLabel}
+          isChecking={isCheckingProcessing}
+          onGoToLibrary={handleLeaveProcessing}
+          onWaitHere={() => {
+            void handleWaitHere()
+          }}
+        />
+      </RecipeDetailScaffold>
+    )
+  }
+
+  if (detailViewState === 'failed') {
+    const isAiFailure = Boolean(
+      displayMediaJob &&
+        (displayMediaJob.status === 'failed' ||
+          displayMediaJob.status === 'cancelled' ||
+          displayMediaJob.status === 'needs_caption')
+    )
+    const failureMessage = isAiFailure
+      ? mediaJobFailureCopy?.body ??
+        'Recipe Dost could not create this AI recipe. Review the source and try again.'
+      : 'We could not prepare the preview for this link. You can retry or open the original source.'
+
+    return (
+      <RecipeDetailScaffold
+        title={isAiFailure ? 'AI Recipe' : 'Recipe Dost'}
+        fallbackRoute={sourceReturnToRoute ?? '/library'}
+        rightActions={managementHeaderActions}
+      >
+        <RecipeFailedState
+          kind={isAiFailure ? 'ai' : 'metadata'}
+          message={failureMessage}
+          canRetry={!durationBlockMessage}
+          onRetry={() => {
+            if (isAiFailure) {
+              void handleCreateMediaJob()
+            } else {
+              void handleRetryMetadata()
+            }
+          }}
+          onOpenOriginal={() => {
+            void openOriginalVideo()
+          }}
+          onGoToLibrary={() => router.replace('/library')}
+        />
+      </RecipeDetailScaffold>
+    )
+  }
+
+  if (detailViewState === 'ai_ready' && resultRecipeCardId) {
+    const readyStats = recipeCard
+      ? getReadyRecipeStats(recipeCard)
+      : []
+
+    return (
+      <RecipeDetailScaffold
+        title="Recipe Dost"
+        fallbackRoute={sourceReturnToRoute ?? '/library'}
+        rightActions={managementHeaderActions}
+      >
+        <AiRecipeHero
+          thumbnailUrl={liveThumbnailUrl}
+          title={recipeCard?.recipe_title?.trim() || normalizedDisplayTitle}
+          tags={recipeCard?.tags ?? []}
+        />
+        <RecipeStatGrid stats={readyStats} />
+        {recipeCard?.short_summary?.trim() ? (
+          <Text selectable style={[typography.body, { color: colors.onSurfaceVariant, textAlign: 'center' }]}>
+            {recipeCard.short_summary.trim()}
+          </Text>
+        ) : null}
+        <EditorialButton
+          label="Open AI Recipe"
+          icon="✦"
+          variant="primary"
+          onPress={() =>
+            router.replace(
+              `/recipe-card/${resultRecipeCardId}?returnTo=${encodeURIComponent(
+                sourceReturnToRoute ?? '/library'
+              )}`
+            )
+          }
+        />
+      </RecipeDetailScaffold>
+    )
+  }
+
+  const availabilityText = subscriptionStatus.isPremium
+    ? getRecipeSubscriptionAvailabilityText(subscriptionStatus)
+    : aiAccess
+      ? getAiAvailabilityText(aiAccess)
+      : null
+  const generateOpensPaywall = shouldShowUpgradeCard
+  const generateLabel = generateOpensPaywall
+    ? 'Upgrade to Premium'
+    : isSyncingPremiumAccess
+      ? 'Syncing Premium access…'
+      : isCreatingMediaJob
+        ? 'Starting AI Recipe…'
+        : 'Generate AI Recipe'
+
+  return (
+    <RecipeDetailScaffold
+      title="Recipe Dost"
+      fallbackRoute={sourceReturnToRoute ?? '/library'}
+      rightActions={managementHeaderActions}
+    >
+      <RecipeMetadataState
+        thumbnailUrl={liveThumbnailUrl}
+        title={normalizedDisplayTitle}
+        creator={displayCreator}
+        platformLabel={platformLabel}
+        durationLabel={
+          typeof liveDurationSeconds === 'number'
+            ? formatDuration(liveDurationSeconds)
+            : null
+        }
+        isFavorite={recipe.is_favorite === true}
+        isFavoriteUpdating={isUpdatingFavorite}
+        availabilityText={
+          durationBlockMessage ??
+          (aiAccessQuery.error
+            ? 'AI availability is temporarily unavailable.'
+            : availabilityText)
+        }
+        generateLabel={generateLabel}
+        generateDisabled={
+          generateOpensPaywall
+            ? false
+            : isGenerateDisabled || isSyncingPremiumAccess
+        }
+        onGenerate={() => {
+          if (generateOpensPaywall) {
+            router.push('/paywall')
+            return
+          }
+
+          void handleCreateMediaJob()
+        }}
+        onOpenOriginal={() => {
+          void openOriginalVideo()
+        }}
+        onToggleFavorite={() => {
+          void handleToggleFavorite()
+        }}
+      />
+      {mediaJobError || recipeManagementError ? (
+        <View
+          style={{
+            gap: spacing.sm,
+            borderRadius: radius.md,
+            borderWidth: 1,
+            borderColor: colors.error,
+            backgroundColor: colors.dangerSurface,
+            padding: spacing.lg,
+          }}
+        >
+          <Text selectable style={[typography.heading, { color: colors.error }]}>
+            Could not complete that action
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.onSurface }]}>
+            {(mediaJobError ?? recipeManagementError)?.message}
+          </Text>
+        </View>
+      ) : null}
+    </RecipeDetailScaffold>
+  )
+  })()
+
+  if (Boolean(recipe.id)) {
+    return redesignedDetail
   }
 
   return (
@@ -1418,6 +1709,56 @@ function getAiAvailabilityText(access: {
   }
 
   return `${remaining} free AI ${remaining === 1 ? 'recipe' : 'recipes'} left`
+}
+
+function getDetailUsageLabel(
+  access: Awaited<ReturnType<typeof getAiAccessState>> | undefined
+) {
+  if (!access) {
+    return null
+  }
+
+  if (access.plan === 'premium' || access.premiumActive) {
+    return `${Math.max(0, access.premiumMonthlyRemainingToStart)} left`
+  }
+
+  return `${Math.max(0, access.freeRemainingToStart)} left`
+}
+
+function getReadyRecipeStats(
+  recipeCard: Awaited<ReturnType<typeof getRecipeCard>>
+) {
+  const stats: { icon: string; label: string; value: string }[] = []
+
+  if (recipeCard.time.prep_time_minutes) {
+    stats.push({
+      icon: '◷',
+      label: 'Prep time',
+      value: `${recipeCard.time.prep_time_minutes} min`,
+    })
+  }
+
+  if (recipeCard.time.cook_time_minutes) {
+    stats.push({
+      icon: '♨',
+      label: 'Cook time',
+      value: `${recipeCard.time.cook_time_minutes} min`,
+    })
+  }
+
+  if (recipeCard.servings?.trim()) {
+    stats.push({ icon: '♟', label: 'Servings', value: recipeCard.servings.trim() })
+  }
+
+  if (recipeCard.difficulty?.trim()) {
+    stats.push({
+      icon: '✦',
+      label: 'Difficulty',
+      value: recipeCard.difficulty.trim(),
+    })
+  }
+
+  return stats
 }
 
 function formatDuration(totalSeconds: number) {

@@ -68,7 +68,10 @@ export default function LibraryRoute() {
   const { user } = useAuth()
   const { track } = usePostHog()
   const { openSaveRecipeModal } = useSaveRecipeModal()
-  const { query } = useLocalSearchParams<{ query?: string | string[] }>()
+  const { query, tab } = useLocalSearchParams<{
+    query?: string | string[]
+    tab?: string | string[]
+  }>()
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchActive, setIsSearchActive] = useState(false)
   const [selectedTab, setSelectedTab] = useState<LibraryTab>('recent')
@@ -129,6 +132,11 @@ export default function LibraryRoute() {
     setSearchQuery(nextValue)
     setIsSearchActive(true)
   }, [query])
+
+  useEffect(() => {
+    const requestedTab = Array.isArray(tab) ? tab[0] : tab
+    setSelectedTab(getLibraryTabParam(requestedTab))
+  }, [tab])
 
   useEffect(() => {
     if (didTrackView.current || !libraryQuery.data) {
@@ -2122,4 +2130,10 @@ function isRawUrl(value: string) {
 function getValidDateMs(value: string) {
   const timestamp = new Date(value).getTime()
   return Number.isFinite(timestamp) ? timestamp : 0
+}
+
+function getLibraryTabParam(value: string | undefined): LibraryTab {
+  return value === 'favorites' || value === 'ai_recipes' || value === 'recent'
+    ? value
+    : 'recent'
 }

@@ -44,7 +44,7 @@ function RecipeDostTabBar({
       target: string
       canPreventDefault: true
     }) => { defaultPrevented: boolean }
-    navigate: (name: string) => void
+    navigate: (name: string, params?: Record<string, string>) => void
   }
 }) {
   const insets = useSafeAreaInsets()
@@ -109,7 +109,7 @@ function TabButton({
       target: string
       canPreventDefault: true
     }) => { defaultPrevented: boolean }
-    navigate: (name: string) => void
+    navigate: (name: string, params?: Record<string, string>) => void
   }
 }) {
   const { track } = usePostHog()
@@ -133,7 +133,10 @@ function TabButton({
 
         if (!event.defaultPrevented) {
           track('tab_changed', { tab: route.name })
-          navigation.navigate(route.name)
+          navigation.navigate(
+            route.name,
+            route.name === 'library' ? { tab: 'recent' } : undefined
+          )
         }
       }}
       style={({ pressed }) => ({

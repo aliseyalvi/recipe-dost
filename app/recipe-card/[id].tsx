@@ -3,7 +3,6 @@ import {
   useRecipeContentLanguage,
 } from '@/features/language/content-language'
 import { ContentLanguageControl } from '@/features/language/content-language-control'
-import { shouldShowCustomDevTools } from '@/features/dev-tools/dev-tools-visibility'
 import {
   hasUrduScript,
   selectLocalizedText,
@@ -13,9 +12,18 @@ import {
   getPlatformLabel,
   isValidHttpUrl,
 } from '@/features/recipe-draft/platform'
+import {
+  AiRecipeHero,
+  DetailChip,
+  EditorialButton,
+  EditorialSection,
+  HeaderIconButton,
+  RecipeDetailScaffold,
+  RecipeStatGrid,
+} from '@/features/recipe-detail/detail-presentation'
+import { RecipeDetailActionMenu } from '@/features/recipe-detail/recipe-detail-action-menu'
 import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import {
-  AiSourceMode,
   RecipeCard,
   GroceryItem,
   RecipeCardIngredient,
@@ -27,9 +35,9 @@ import {
   toggleFavorite,
 } from '@/lib/api/recipes'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
-import { MediaJobSourceMetadataSummary } from '@/features/media-jobs/media-job-source-metadata'
+import { useRefetchOnAppForeground } from '@/lib/query/use-refetch-on-app-foreground'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
-import { colors, radius, spacing, typography } from '@/theme'
+import { borders, colors, radius, spacing, typography } from '@/theme'
 import { AppBadge } from '@/ui/app-badge'
 import { AppHeader } from '@/ui/app-header'
 import { Button } from '@/ui/button'
@@ -45,8 +53,8 @@ import {
 import { UrduText } from '@/ui/urdu-text'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import * as Clipboard from 'expo-clipboard'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Alert, Image, Linking, Pressable, Text, View } from 'react-native'
 
 export default function RecipeCardResultRoute() {
@@ -58,6 +66,7 @@ export default function RecipeCardResultRoute() {
     useState<RecipeContentLanguage | null>(null)
   const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false)
   const [isDeletingRecipe, setIsDeletingRecipe] = useState(false)
+  const [isOptionsOpen, setIsOptionsOpen] = useState(false)
   const [recipeManagementError, setRecipeManagementError] = useState<Error | null>(
     null
   )
@@ -73,6 +82,24 @@ export default function RecipeCardResultRoute() {
     enabled: Boolean(recipeCardQuery.data?.recipe_id),
     queryKey: ['media-job', 'recipe', recipeCardQuery.data?.recipe_id],
     queryFn: () => getLatestMediaJobForRecipe(recipeCardQuery.data?.recipe_id ?? ''),
+  })
+
+  const refetchRecipeCard = useCallback(
+    () => Promise.all([recipeCardQuery.refetch(), mediaJobQuery.refetch()]),
+    [mediaJobQuery.refetch, recipeCardQuery.refetch]
+  )
+
+  useFocusEffect(
+    useCallback(() => {
+      if (recipeCardId && !recipeCardQuery.isLoading) {
+        void refetchRecipeCard()
+      }
+    }, [recipeCardId, recipeCardQuery.isLoading, refetchRecipeCard])
+  )
+
+  useRefetchOnAppForeground({
+    enabled: Boolean(recipeCardId),
+    refetch: refetchRecipeCard,
   })
 
   useEffect(() => {
@@ -177,6 +204,16 @@ export default function RecipeCardResultRoute() {
   const thumbnailUrl =
     mediaJobQuery.data?.thumbnail_url ??
     mediaJobQuery.data?.source_metadata.uploaded_thumbnail_url
+  const sourceMetadata = mediaJobQuery.data?.source_metadata
+  const sourceCreator = getSafeSourceCreator(
+    sourceMetadata?.author_username
+  )
+  const sourceDuration = sourceMetadata?.duration_seconds
+  const sourcePlatformLabel = sourcePlatform
+    ? getPlatformLabel(sourcePlatform)
+    : sourceMetadata?.platform?.trim()
+      ? titleCase(sourceMetadata.platform)
+      : null
 
   const copyGroceryList = async () => {
     if (recipeCard.grocery_items.length === 0) {
@@ -302,6 +339,198 @@ export default function RecipeCardResultRoute() {
     )
   }
 
+  const redesignedResult = (
+    <>
+    <RecipeDetailScaffold
+      title="Recipe Dost"
+      fallbackRoute="/library"
+      rightActions={
+        <HeaderIconButton
+          label="Recipe options"
+          icon="⋮"
+          onPress={() => setIsOptionsOpen(true)}
+        />
+      }
+    >
+      <AiRecipeHero
+        thumbnailUrl={thumbnailUrl ?? null}
+        title={titleSelection.primary}
+        tags={recipeCard.tags}
+        onTagPress={openTagSearch}
+      />
+
+      {sourcePlatformLabel || sourceCreator || sourceDuration || canOpenSource ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            gap: spacing.sm,
+          }}
+        >
+          {sourcePlatformLabel ? (
+            <DetailChip icon="⌁" label={sourcePlatformLabel} accent />
+          ) : null}
+          {sourceCreator ? <DetailChip icon="@" label={sourceCreator} /> : null}
+          {typeof sourceDuration === 'number' && sourceDuration > 0 ? (
+            <DetailChip icon="◷" label={formatSourceDuration(sourceDuration)} />
+          ) : null}
+          {canOpenSource ? (
+            <DetailChip icon="⌁" label="Original source" />
+          ) : null}
+        </View>
+      ) : null}
+
+      {titleSelection.usedFallback && contentLanguage === 'urdu' ? (
+        <Text selectable style={[typography.caption, { color: colors.onSurfaceVariant, textAlign: 'center' }]}>
+          Urdu script is available for newly generated cards.
+        </Text>
+      ) : null}
+
+      <ContentLanguageControl
+        value={contentLanguage}
+        onChange={setScreenLanguage}
+      />
+
+      <RecipeStatGrid stats={getAiRecipeStats(recipeCard)} />
+
+      {shouldShowLowConfidenceWarning(recipeCard) ? (
+        <View
+          style={{
+            gap: spacing.sm,
+            borderRadius: radius.card,
+            borderWidth: 1,
+            borderColor: colors.warning,
+            backgroundColor: colors.warningSurface,
+            padding: spacing.cardPadding,
+          }}
+        >
+          <Text selectable style={[typography.heading, { color: colors.warning }]}>
+            Review recipe details
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.onSurface }]}>
+            This AI recipe may be missing details. Check the original video before cooking.
+          </Text>
+        </View>
+      ) : null}
+
+      <EditorialSection title="The Story">
+        <LanguageTextBlock
+          english={recipeCard.short_summary_en ?? recipeCard.short_summary}
+          urdu={recipeCard.short_summary_ur}
+          language={contentLanguage}
+          muted
+          fallback="No summary is available for this recipe card yet."
+        />
+      </EditorialSection>
+
+      <IngredientsSection
+        ingredients={recipeCard.ingredients}
+        language={contentLanguage}
+      />
+      <StepsSection steps={recipeCard.steps} language={contentLanguage} />
+      <GroceryListSection
+        groceryItems={recipeCard.grocery_items}
+        language={contentLanguage}
+        onCopy={copyGroceryList}
+      />
+      {canViewGroceryList ? (
+        <EditorialButton
+          label="Open Grocery List"
+          icon="⌑"
+          variant="primary"
+          onPress={() =>
+            router.push(
+              `/grocery?recipeCardId=${recipeCard.id}&returnTo=${encodeURIComponent(
+                `/recipe-card/${recipeCard.id}`
+              )}`
+            )
+          }
+        />
+      ) : null}
+      <SubstitutionsSection substitutions={recipeCard.substitutions} />
+      <StorageSafetySection recipeCard={recipeCard} language={contentLanguage} />
+      <MissingInfoSection recipeCard={recipeCard} language={contentLanguage} />
+
+      {recipeManagementError ? (
+        <View
+          style={{
+            gap: spacing.sm,
+            borderRadius: radius.md,
+            borderWidth: 1,
+            borderColor: colors.error,
+            backgroundColor: colors.dangerSurface,
+            padding: spacing.lg,
+          }}
+        >
+          <Text selectable style={[typography.heading, { color: colors.error }]}>
+            Could not update recipe
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.onSurface }]}>
+            {recipeManagementError.message}
+          </Text>
+        </View>
+      ) : null}
+
+      <View
+        style={{
+          gap: spacing.md,
+          borderRadius: radius.card,
+          ...borders.subtle,
+          backgroundColor: colors.surfaceContainerLow,
+          padding: spacing.cardPadding,
+        }}
+      >
+        <Text selectable style={[typography.heading, { color: colors.error }]}>
+          Remove from Library
+        </Text>
+        <Text selectable style={[typography.body, { color: colors.onSurfaceVariant }]}>
+          Remove this saved recipe and its AI card from your active library.
+        </Text>
+        <Button
+          label={isDeletingRecipe ? 'Deleting recipe…' : 'Delete recipe'}
+          fullWidth
+          variant="outline"
+          disabled={isDeletingRecipe}
+          onPress={confirmDeleteRecipe}
+        />
+      </View>
+    </RecipeDetailScaffold>
+    <RecipeDetailActionMenu
+      visible={isOptionsOpen}
+      title={titleSelection.primary}
+      subtitle={sourcePlatformLabel}
+      isFavorite={recipeCard.is_favorite}
+      isFavoriteUpdating={isUpdatingFavorite}
+      isDeleting={isDeletingRecipe}
+      canOpenOriginal={canOpenSource}
+      canViewSource={Boolean(recipeCard.recipe_id)}
+      errorMessage={recipeManagementError?.message}
+      onClose={() => setIsOptionsOpen(false)}
+      onOpenOriginal={() => {
+        void openOriginalSource()
+      }}
+      onViewSource={() =>
+        router.push(
+          `/recipe/${recipeCard.recipe_id}?returnTo=${encodeURIComponent(
+            `/recipe-card/${recipeCard.id}`
+          )}`
+        )
+      }
+      onToggleFavorite={() => {
+        void handleToggleFavorite()
+      }}
+      onDelete={() => {
+        void handleDeleteRecipe()
+      }}
+    />
+    </>
+  )
+
+  if (Boolean(recipeCard.id)) {
+    return redesignedResult
+  }
+
   return (
     <Screen compact>
       <NestedScreenHeader
@@ -323,7 +552,7 @@ export default function RecipeCardResultRoute() {
             {canOpenSource ? (
               <NestedHeaderIconButton
                 accessibilityLabel="Open original video"
-                icon="↗"
+                icon="⌁"
                 onPress={() => {
                   void openOriginalSource()
                 }}
@@ -420,17 +649,6 @@ export default function RecipeCardResultRoute() {
         </Card>
       ) : null}
 
-      {canOpenSource ? (
-        <Button
-          label="Open Original Video"
-          fullWidth
-          variant="accent"
-          onPress={() => {
-            void openOriginalSource()
-          }}
-        />
-      ) : null}
-
       <Card tone="warm">
         <Text selectable style={[typography.heading, { color: colors.text }]}>
           Summary
@@ -474,28 +692,6 @@ export default function RecipeCardResultRoute() {
       <StorageSafetySection recipeCard={recipeCard} language={contentLanguage} />
       <MissingInfoSection recipeCard={recipeCard} language={contentLanguage} />
 
-      {shouldShowCustomDevTools() ? (
-        <Card tone="muted">
-          <Text selectable style={[typography.heading, { color: colors.text }]}>
-            Development details
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            <AppBadge label={getConfidenceLabel(recipeCard.confidence)} />
-            {recipeCard.source_mode ? (
-              <AppBadge label={getSourceModeLabel(recipeCard.source_mode)} />
-            ) : null}
-            {recipeCard.model_used ? (
-              <AppBadge label={`Model: ${recipeCard.model_used}`} />
-            ) : null}
-          </View>
-          <MediaJobSourceMetadataSummary
-            metadata={mediaJobQuery.data?.source_metadata}
-            fallbackPlatform={sourcePlatform}
-            isMockResult={isMockRecipeResult(recipeCard, mediaJobQuery.data)}
-          />
-        </Card>
-      ) : null}
-
       {recipeManagementError ? (
         <Card tone="muted">
           <Text selectable style={[typography.heading, { color: colors.warning }]}>
@@ -534,20 +730,9 @@ export default function RecipeCardResultRoute() {
   )
 }
 
-function isMockRecipeResult(
-  recipeCard: RecipeCard,
-  mediaJob: { ai_provider: string | null } | null | undefined
-) {
-  return (
-    recipeCard.model_used?.toLowerCase() === 'mock' ||
-    recipeCard.prompt_version?.toLowerCase().startsWith('mock') === true ||
-    mediaJob?.ai_provider?.toLowerCase() === 'mock'
-  )
-}
-
 function InfoGrid({ recipeCard }: { recipeCard: RecipeCard }) {
-  const prepTime = formatMinutes(recipeCard.time.prep_time_minutes)
-  const cookTime = formatMinutes(recipeCard.time.cook_time_minutes)
+  const difficulty = recipeCard.difficulty?.trim()
+  const servings = recipeCard.servings?.trim()
 
   return (
     <Card>
@@ -555,10 +740,18 @@ function InfoGrid({ recipeCard }: { recipeCard: RecipeCard }) {
         Time and serving
       </Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-        <AppBadge label={`Prep: ${prepTime}`} />
-        <AppBadge label={`Cook: ${cookTime}`} />
-        <AppBadge label={`Servings: ${recipeCard.servings || 'Not specified'}`} />
-        <AppBadge label={`Difficulty: ${titleCase(recipeCard.difficulty)}`} />
+        {recipeCard.time.prep_time_minutes ? (
+          <AppBadge label={`Prep: ${formatMinutes(recipeCard.time.prep_time_minutes)}`} />
+        ) : null}
+        {recipeCard.time.cook_time_minutes ? (
+          <AppBadge label={`Cook: ${formatMinutes(recipeCard.time.cook_time_minutes)}`} />
+        ) : null}
+        {isKnownStatValue(servings) ? (
+          <AppBadge label={`Servings: ${servings}`} />
+        ) : null}
+        {isKnownStatValue(difficulty) ? (
+          <AppBadge label={`Difficulty: ${titleCase(difficulty ?? null)}`} />
+        ) : null}
       </View>
     </Card>
   )
@@ -606,10 +799,10 @@ function IngredientsSection({
   language: RecipeContentLanguage
 }) {
   return (
-    <Card>
-      <Text selectable style={[typography.heading, { color: colors.text }]}>
-        Ingredients
-      </Text>
+    <EditorialSection
+      title="The Ingredients"
+      subtitle="Essential components for this recipe"
+    >
       {ingredients.length > 0 ? (
         <View style={{ gap: spacing.md }}>
           {ingredients.map((ingredient, index) => (
@@ -617,9 +810,10 @@ function IngredientsSection({
               key={`${ingredient.name}-${index}`}
               style={{
                 gap: spacing.xs,
-                borderRadius: radius.md,
-                backgroundColor: colors.surfaceMuted,
-                padding: spacing.md,
+                borderRadius: radius.card,
+                ...borders.subtle,
+                backgroundColor: colors.surfaceContainerLow,
+                padding: spacing.cardPadding,
               }}
             >
               <LanguageTextBlock
@@ -641,11 +835,11 @@ function IngredientsSection({
           ))}
         </View>
       ) : (
-        <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+        <Text selectable style={[typography.body, { color: colors.onSurfaceVariant }]}>
           No ingredients are available yet.
         </Text>
       )}
-    </Card>
+    </EditorialSection>
   )
 }
 
@@ -657,10 +851,7 @@ function StepsSection({
   language: RecipeContentLanguage
 }) {
   return (
-    <Card>
-      <Text selectable style={[typography.heading, { color: colors.text }]}>
-        Steps
-      </Text>
+    <EditorialSection title="Recipe Steps">
       {steps.length > 0 ? (
         <View style={{ gap: spacing.lg }}>
           {steps.map((step, index) => (
@@ -668,25 +859,27 @@ function StepsSection({
               key={`${step.step_number}-${index}`}
               style={{
                 gap: spacing.sm,
-                borderRadius: radius.md,
-                backgroundColor: colors.surfaceMuted,
-                padding: spacing.md,
+                borderRadius: radius.card,
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.08)',
+                backgroundColor: colors.surfaceContainerLow,
+                padding: spacing.cardPadding,
               }}
             >
               <View style={{ flexDirection: 'row', gap: spacing.md }}>
                 <View
                   style={{
-                    width: 28,
-                    height: 28,
+                    width: 40,
+                    height: 40,
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderRadius: radius.pill,
-                    backgroundColor: colors.primary,
+                    backgroundColor: colors.primaryContainer,
                   }}
                 >
                   <Text
                     selectable={false}
-                    style={[typography.caption, { color: colors.primaryText }]}
+                    style={[typography.body, { color: colors.onPrimaryContainer, fontWeight: '800' }]}
                   >
                     {step.step_number}
                   </Text>
@@ -719,11 +912,11 @@ function StepsSection({
           ))}
         </View>
       ) : (
-        <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+        <Text selectable style={[typography.body, { color: colors.onSurfaceVariant }]}>
           No steps are available yet.
         </Text>
       )}
-    </Card>
+    </EditorialSection>
   )
 }
 
@@ -1015,31 +1208,68 @@ function shouldShowLowConfidenceWarning(recipeCard: RecipeCard) {
   )
 }
 
-function getSourceModeLabel(sourceMode: AiSourceMode) {
-  switch (sourceMode) {
-    case 'youtube_url':
-      return 'YouTube video source'
-    case 'uploaded_video':
-      return 'Uploaded video source'
-    case 'unsupported_video_link':
-      return 'Link-only source'
-    case 'text_only':
-      return 'Text source'
+function getAiRecipeStats(recipeCard: RecipeCard) {
+  const stats: { icon: string; label: string; value: string }[] = []
+
+  if (recipeCard.time.prep_time_minutes) {
+    stats.push({
+      icon: '◷',
+      label: 'Prep time',
+      value: `${recipeCard.time.prep_time_minutes} min`,
+    })
   }
+
+  if (recipeCard.time.cook_time_minutes) {
+    stats.push({
+      icon: '♨',
+      label: 'Cook time',
+      value: `${recipeCard.time.cook_time_minutes} min`,
+    })
+  }
+
+  if (isKnownStatValue(recipeCard.servings)) {
+    stats.push({ icon: '♟', label: 'Servings', value: recipeCard.servings!.trim() })
+  }
+
+  if (isKnownStatValue(recipeCard.difficulty)) {
+    stats.push({
+      icon: '✦',
+      label: 'Difficulty',
+      value: titleCase(recipeCard.difficulty!),
+    })
+  }
+
+  return stats
 }
 
-function getConfidenceLabel(confidence: string | null) {
-  const normalizedConfidence = confidence?.trim().toLowerCase()
+function isKnownStatValue(value: string | null | undefined) {
+  const normalized = value?.trim().toLocaleLowerCase()
+  return Boolean(
+    normalized &&
+      normalized !== 'unknown' &&
+      normalized !== 'not specified' &&
+      normalized !== 'n/a'
+  )
+}
 
-  if (
-    normalizedConfidence === 'low' ||
-    normalizedConfidence === 'medium' ||
-    normalizedConfidence === 'high'
-  ) {
-    return `Confidence: ${normalizedConfidence}`
+function getSafeSourceCreator(value: string | null | undefined) {
+  const candidate = value?.trim()
+
+  if (!candidate || /^(?:https?:\/\/|www\.)/i.test(candidate)) {
+    return null
   }
 
-  return 'Confidence: unknown'
+  return candidate
+}
+
+function formatSourceDuration(totalSeconds: number) {
+  const seconds = Math.max(0, Math.round(totalSeconds))
+  const minutes = Math.floor(seconds / 60)
+  const remainder = seconds % 60
+
+  return minutes > 0
+    ? `${minutes}m${remainder ? ` ${remainder}s` : ''}`
+    : `${remainder}s`
 }
 
 function formatMinutes(value: number | null) {
