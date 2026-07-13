@@ -8,6 +8,47 @@ Audit-only pass for onboarding launch routing and stale Home/Library metadata st
 
 Current branch workflow is correct for this milestone: M22E fixes are prepared on `develop`, then merged to `main` only after QA for a production AAB update.
 
+## M22E.1R-PAYWALL2 Final RevenueCat Paywall sheet redesign
+
+Status: implemented and automatically validated on `develop`; Android purchase QA pending.
+
+Automated validation passed: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, `node scripts/env/validate-env.mjs development`, and `node scripts/env/validate-env.mjs production`.
+
+Architecture and presentation:
+
+- Kept one reusable `/paywall` stack route and changed its presentation to a transparent modal containing a typed native bottom sheet. The underlying screen remains visible behind a non-interactive dim backdrop; the sheet uses the shared Obsidian/coral tokens, 24px rounded top corners, drag handle, accessible close control, tablet max width, scrollable content, and a safe-area-aware sticky purchase footer.
+- `src/features/paywall/paywall-presentation.tsx` contains presentation-only sheet, hero, comparison, usage, plan, loading, unavailable, feedback, Premium-active, and footer helpers. `paywall-model.ts` contains package, trigger, usage-clamping, intro-offer, and purchase-error normalization. `app/paywall.tsx` remains the only purchase/restore controller.
+- The supplied `stitch-paywall` `screen.png` and `code.html` depict the Settings composition rather than a Paywall. They were therefore used only for the established Obsidian/glass/coral visual language together with `DESIGN.md`; the explicit PAYWALL2 product brief defines the native sheet structure. No Stitch HTML, Tailwind, sample plan, image, font, or remote asset ships.
+
+Real plans, comparison, and usage:
+
+- The existing RevenueCat provider remains responsible for the configured `default` offering. The Paywall accepts only `recipe_dost_premium_monthly` and `recipe_dost_premium_yearly`, including RevenueCat's documented `product-id:base-plan-id` form; it never relies on array order or substitutes weekly/lifetime/unknown products.
+- Monthly and Yearly cards use the store's localized `priceString`. Yearly is selected by default when present and alone receives the non-numeric “Best value” badge. There are no hardcoded prices, calculated discounts, or trial claims. Introductory copy appears only when RevenueCat returns `product.introPrice`, using its real price, cycles, and period.
+- The comparison states the real contract only: free saved links and Library search, Free 3 total successful AI cards, Premium 100 successful AI cards/month, and generated-card-scoped bilingual help, ingredients/steps, and Grocery lists. No unlimited, nutrition, meal-planning, scaling, export, or video-storage claim is added.
+- Usage continues to query `get-ai-access`. Free uses authoritative free limit/used/remaining/reserved fields and Premium uses authoritative monthly fields. Used/remaining/progress are visually clamped, active reservations are disclosed, loading has a skeleton, and failure has an independent Retry without blocking package purchase.
+
+Purchase, restore, and terminal states:
+
+- One synchronous in-flight guard prevents overlapping select/purchase/restore/manage/retry actions. Purchase uses the existing provider call, then refreshes RevenueCat customer information, existing entitlement synchronization, all `ai-access-state` caches, and the Paywall access query. The route closes only after both local Premium and backend access are recognized; generation is never auto-resumed.
+- Cancellation, pending approval, product-unavailable, already-owned, and generic failure outcomes stay in the sheet as friendly themed feedback. Raw RevenueCat errors, `customerInfo`, receipts, tokens, store responses, prices, and user identity are never logged.
+- Restore remains visible beside the purchase CTA and in loading/unavailable/Premium layouts. It keeps the existing RevenueCat restore/customer refresh/backend sync path and reports Premium restored, no active Google Play purchase, or a friendly retryable failure.
+- Active Premium hides all purchase cards and purchase CTA, shows real monthly usage and a recognized current Monthly/Yearly label when available, and offers only Manage subscription, Restore purchases, and Close. Manage uses only RevenueCat's real management URL. Empty/mismatched offerings show Retry, Restore, and Maybe later with no fallback price.
+
+Entry points and analytics:
+
+- The same route now receives a typed analytics-only trigger from Home, Library, Grocery, Settings Upgrade, recipe usage, free-limit, and generation-access-blocked entry points. Dismissal uses `router.back()` and therefore preserves the exact underlying state; direct-route fallback alone uses Home. No existing post-result upgrade prompt was found, so none was fabricated.
+- Existing analytics abstraction records `paywall_viewed`, plan selection, purchase start/completion/cancellation/failure/pending, restore start/completion/failure, Premium active/unavailable views, and `paywall_closed`. Properties are limited to trigger, plan/package/product identifiers, intro-offer boolean, access plan, and non-sensitive state booleans.
+
+M22E.1R-PAYWALL2 manual QA checklist:
+
+- [ ] Open from Home, Library, Settings, Grocery, recipe usage, and exhausted Generate; dismiss with X, backdrop, Maybe later, and Android Back and verify exact return context.
+- [ ] On a small Android device, scroll comparison/plans while the real selected-plan price and CTA remain sticky and clear large text safely.
+- [ ] Verify real Monthly/Yearly localized prices, Yearly default, one-package fallback, no hardcoded price/discount, and no intro copy without a real store offer.
+- [ ] Verify Free 0/3, partial, exhausted/clamped, reserved-job, failed-usage-query/Retry, and Premium monthly usage states.
+- [ ] Test Monthly and Yearly sandbox purchases, cancellation, pending, offline/store failure, unavailable product, already-owned plan, and repeated-tap locking.
+- [ ] Test restore with and without an active Google Play purchase, active-Premium Manage/Restore/Close, and offering loading/unavailable Retry/Restore/Close.
+- [ ] Regression-check Add/share, Home, Library/search/tabs, both detail routes, Grocery, Settings subscription actions, Premium sync, and absence of sensitive logs.
+
 ## M22E.1R-SETTINGS1 Professional Settings screen redesign
 
 Status: implemented and automatically validated on `develop`; Android device QA pending.

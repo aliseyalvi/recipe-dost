@@ -1,5 +1,14 @@
 # Recipe Dost Milestones
 
+## M22E.1R-PAYWALL2 - Final RevenueCat Paywall Sheet Redesign
+- Rebuilt the single `/paywall` route as a transparent-modal native bottom sheet with dim backdrop, drag handle, accessible close, Obsidian/glass/coral surfaces, editorial heading, scrollable comparison/plans, and safe-area sticky purchase controls. No new dependency or duplicate Paywall was added.
+- Kept the existing `default` offering, `premium` entitlement, RevenueCat provider, purchase/restore/customer refresh/backend sync, and `get-ai-access`. Monthly/Yearly are mapped only from `recipe_dost_premium_monthly` / `recipe_dost_premium_yearly` (including base-plan suffixes), never array order.
+- Store-localized `priceString` drives all price display. Yearly defaults when present and gets “Best value”; one-package and no-package states are safe. No hardcoded price, discount, or trial exists, and introductory copy is emitted only from real RevenueCat intro data.
+- Added the exact Free 3-total versus Premium 100/month comparison, authoritative clamped usage/reservation progress, independent usage retry, plan/offering loading, themed feedback, active-Premium Manage/Restore/Close, and unavailable Retry/Restore/Close states.
+- Added synchronous duplicate-action protection and friendly normalization for cancellation, pending approval, unavailable/already-owned product, generic purchase failure, restore success/no-purchase/failure, and management-unavailable results. Successful purchase refreshes local CustomerInfo, existing entitlement sync, and backend access before returning; it never auto-starts AI.
+- Home, Library, Grocery, Settings, recipe usage, free-limit, and generation-blocked entry points share the route with safe trigger analytics and exact `router.back()` return context. No existing post-result prompt was found or fabricated.
+- Supplied Paywall screenshot/HTML actually depict Settings, so only their documented Obsidian design language was reused alongside the explicit PAYWALL2 brief. Automated static and development/production environment validation passed; Android sandbox/manual QA remains pending. `versionCode` 2 is required only when this runtime update ships.
+
 ## M22E.1R-SETTINGS1 - Professional Settings Screen Redesign
 - Rebuilt Settings with native editorial header, glass profile and grouped panels, uppercase labels, 20px surfaces, centralized code-native semantic icons, subscription glow, themed inline feedback, danger styling, and existing tab-bar safe-area clearance. Stitch HTML/Tailwind, inert gear, sample navigation, and new dependencies are excluded.
 - Preserved the real normalized `get-ai-access` + RevenueCat state: Free shows three included AI cards plus Upgrade/Restore/Refresh; Premium shows monthly remaining/usage, safe renewal/access metadata, Manage/Restore/Refresh, and no Upgrade. One in-flight guard prevents overlapping subscription actions.

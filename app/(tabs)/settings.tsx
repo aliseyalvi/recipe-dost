@@ -4,6 +4,7 @@ import {
 } from '@/features/dev-tools/dev-identity-panel'
 import { useUserProfileQuery } from '@/features/onboarding/use-user-profile-query'
 import { getSecondaryRecipeLanguage } from '@/features/settings/secondary-recipe-language'
+import { getPaywallHref } from '@/features/paywall/paywall-model'
 import {
   ProfileSettingsCard,
   SettingsDivider,
@@ -364,7 +365,7 @@ export default function SettingsRoute() {
                       row: 'upgrade_to_premium',
                       premium_active: subscriptionStatus.isPremium,
                     })
-                    router.push('/paywall')
+                    router.push(getPaywallHref('settings_upgrade'))
                   }}
                   accessibilityHint="Opens Premium plans"
                 />

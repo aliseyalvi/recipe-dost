@@ -17,6 +17,7 @@ import {
   RecipeStatGrid,
 } from '@/features/recipe-detail/detail-presentation'
 import { getRecipeDetailViewState } from '@/features/recipe-detail/recipe-detail-view-state'
+import { getPaywallHref } from '@/features/paywall/paywall-model'
 import {
   getMediaJobProcessingStage,
   getMetadataProcessingStage,
@@ -731,7 +732,7 @@ export default function SavedRecipeRoute() {
         })
         setShowCreditLimitState(true)
         setIsStartLocked(false)
-        router.push('/paywall')
+        router.push(getPaywallHref('generation_access_blocked'))
         return
       }
 
@@ -869,7 +870,7 @@ export default function SavedRecipeRoute() {
   const usageHeaderAction = detailUsageLabel ? (
     <DetailUsagePill
       label={detailUsageLabel}
-      onPress={() => router.push('/paywall')}
+      onPress={() => router.push(getPaywallHref('recipe_usage_pill'))}
     />
   ) : undefined
 
@@ -1046,7 +1047,7 @@ export default function SavedRecipeRoute() {
         }
         onGenerate={() => {
           if (generateOpensPaywall) {
-            router.push('/paywall')
+            router.push(getPaywallHref('free_limit_reached'))
             return
           }
 
@@ -1320,7 +1321,9 @@ export default function SavedRecipeRoute() {
                 label="Upgrade to Premium"
                 fullWidth
                 variant="accent"
-                onPress={() => router.push('/paywall')}
+                onPress={() =>
+                  router.push(getPaywallHref('free_limit_reached'))
+                }
               />
               <Button
                 label="Maybe later"

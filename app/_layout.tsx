@@ -34,7 +34,15 @@ export default function RootLayout() {
           options={{ headerShown: false, title: "AI Recipe" }}
         />
         <Stack.Screen name="recipe/ready" options={{ title: "Recipe Card" }} />
-        <Stack.Screen name="paywall" options={{ title: "Recipe Dost Premium" }} />
+        <Stack.Screen
+          name="paywall"
+          options={{
+            title: "Recipe Dost Premium",
+            presentation: "transparentModal",
+            animation: "fade",
+            contentStyle: { backgroundColor: "transparent" },
+          }}
+        />
       </Stack>
     </AppProviders>
   );

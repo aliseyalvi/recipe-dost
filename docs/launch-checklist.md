@@ -43,10 +43,18 @@
 - Production uses EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY with a real Google Play-backed RevenueCat Android public SDK key
 - Production env validation rejects RevenueCat Test Store keys
 - Development/Test Store keys are used only in development and only after Test Store products are registered manually in RevenueCat
-- Paywall shows "Plans unavailable right now" if offerings/packages are empty and keeps Restore purchases visible
+- Paywall shows "Premium plans are unavailable" if offerings/packages are empty and keeps Restore purchases visible
 - Paywall after first result
 - Purchase tested
 - Restore tested
+- M22E.1R-PAYWALL2 exact Monthly/Yearly product mapping checked against the `default` offering, including Google Play base-plan suffixes
+- M22E.1R-PAYWALL2 localized prices, Yearly default, one-package state, and no-package Retry/Restore/Close checked with no hardcoded fallback price
+- M22E.1R-PAYWALL2 confirmed no discount or intro/trial copy appears unless reported by the real RevenueCat product
+- M22E.1R-PAYWALL2 Free 0/3, partial, exhausted/clamped, active-reservation, Premium monthly, loading, failure, and usage Retry states checked
+- M22E.1R-PAYWALL2 Monthly/Yearly sandbox purchase, cancellation, pending, unavailable/already-owned product, offline failure, and duplicate-tap locking checked
+- M22E.1R-PAYWALL2 restore active/no-purchase/failure plus active-Premium Manage/Restore/Close behavior checked
+- M22E.1R-PAYWALL2 Home/Library/Grocery/Settings/recipe-limit triggers and X/backdrop/Maybe-later/Android-back exact return context checked
+- M22E.1R-PAYWALL2 small Android scrolling, sticky CTA, large text, Add/share, detail, Grocery, Settings, and sensitive-log regressions checked
 
 ## Analytics
 - PostHog key added

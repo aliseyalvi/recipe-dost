@@ -9,6 +9,7 @@ import {
 } from '@/features/recipe-draft/platform'
 import type { RecipePlatform } from '@/features/recipe-draft/types'
 import { UsagePill } from '@/features/home/editorial-layout'
+import { getPaywallHref } from '@/features/paywall/paywall-model'
 import { getAiAccessState } from '@/lib/api/ai-access'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import {
@@ -232,7 +233,7 @@ function GroceryOverview() {
                       ? 'free'
                       : 'unknown',
               })
-              router.push('/paywall')
+              router.push(getPaywallHref('grocery_usage_pill'))
             }}
           />
         }

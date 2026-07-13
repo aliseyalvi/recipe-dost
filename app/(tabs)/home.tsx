@@ -14,6 +14,7 @@ import {
   getMediaJobProcessingStage,
   getMetadataProcessingStage,
 } from '@/features/media-jobs/processing-stage'
+import { getPaywallHref } from '@/features/paywall/paywall-model'
 import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
 import { getAiAccessState } from '@/lib/api/ai-access'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
@@ -113,7 +114,7 @@ export default function HomeRoute() {
             ? 'free'
             : 'unknown',
     })
-    router.push('/paywall')
+    router.push(getPaywallHref('home_usage_pill'))
   }
 
   const openSaveRecipe = (source: 'recent_empty' | 'ai_generated_empty') => {

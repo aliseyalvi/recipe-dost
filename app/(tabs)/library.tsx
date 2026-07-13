@@ -4,6 +4,7 @@ import {
 } from '@/features/home/recipe-display-metadata'
 import { UsagePill } from '@/features/home/editorial-layout'
 import { getMediaJobProcessingStage } from '@/features/media-jobs/processing-stage'
+import { getPaywallHref } from '@/features/paywall/paywall-model'
 import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
 import { getAiAccessState } from '@/lib/api/ai-access'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
@@ -241,7 +242,7 @@ export default function LibraryRoute() {
             ? 'free'
             : 'unknown',
     })
-    router.push('/paywall')
+    router.push(getPaywallHref('library_usage_pill'))
   }
 
   const invalidateRecipeManagement = useCallback(
