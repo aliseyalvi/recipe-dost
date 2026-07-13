@@ -8,6 +8,39 @@ Audit-only pass for onboarding launch routing and stale Home/Library metadata st
 
 Current branch workflow is correct for this milestone: M22E fixes are prepared on `develop`, then merged to `main` only after QA for a production AAB update.
 
+## M22E.1R-SETTINGS1 Professional Settings screen redesign
+
+Status: implemented and automatically validated on `develop`; Android device QA pending.
+
+Automated validation passed: `npm run qa:static`, `node scripts/env/env-doctor.mjs development`, `node scripts/env/validate-env.mjs development`, and `node scripts/env/validate-env.mjs production`.
+
+Presentation and state:
+
+- Translated `docs/design/stitch-settings/screen.png`, `code.html`, and `DESIGN.md` into native Expo React Native presentation only. Settings now uses the shared Obsidian/coral theme, editorial serif slot, safe-area scrolling, uppercase section labels, 20px glass panels, circular semantic marks, subtle subscription glow, dividers, muted metadata, and tab-bar clearance. Stitch HTML/Tailwind, its gear action, and its Explore/Saved/Create/Cook/Profile navigation do not ship.
+- Added focused Settings presentation helpers for the header, sections, panels, rows, icons, profile card, subscription status, dividers, and inline feedback. No icon dependency is declared in this app, so the redesign centralizes the existing typed code-native glyph treatment instead of adding a stabilization dependency.
+- Profile presentation omits email/debug identity and shows only the existing safe profile relationship copy plus the first six characters of the anonymous app-profile identifier followed by an ellipsis.
+
+Subscription and preferences:
+
+- Subscription remains derived from the existing `get-ai-access` query and RevenueCat provider. Free shows Free plan, three included AI cards, free saved-link/metadata/Library/Grocery behavior, Upgrade, Restore, and Refresh. Premium shows Premium active, real monthly remaining/usage copy, a valid entitlement renewal/access date when available, Manage, Restore, and Refresh; it never shows Upgrade.
+- Upgrade retains `/paywall`; Manage retains the RevenueCat-provided store management URL; Restore retains RevenueCat restore plus entitlement/access synchronization; Refresh retains store refresh plus backend access synchronization. A shared in-flight lock prevents overlapping action taps, and results/errors render as themed inline feedback rather than native white alerts.
+- Existing query keys remain `['ai-access-state', user.id, 'settings']` and `['user-profile', user.id]`. Secondary language still opens `/settings/secondary-language` and displays the persisted supported language only. Quota/access rules, entitlement/product IDs, RevenueCat configuration, backend, worker, Supabase schema, package IDs, and env files are unchanged.
+- Appearance honestly shows the app's current Dark theme without an inert theme chooser. Contact support is a non-interactive unavailable state because no support address/action is configured. App version/build comes from Expo config/native application metadata rather than a hardcoded display value.
+
+Privacy, deletion, and development safety:
+
+- Privacy retains `/settings/privacy-data`. Delete retains `/settings/delete-account-data` but replaces its native placeholder alert with a themed two-stage confirmation sheet. Because automation is absent, the final state explicitly says no request was submitted and no data was deleted.
+- Developer diagnostics remain at the bottom only when `shouldShowCustomDevTools()` returns true. That guard requires both `__DEV__` and `APP_ENV=development`; `APP_ENV=production` completely hides the section and its identity controls.
+
+M22E.1R-SETTINGS1 manual QA checklist:
+
+- [ ] Verify Free shows the exact free state, Upgrade opens Paywall, Restore/Refresh remain usable, and repeated taps cannot overlap actions.
+- [ ] Verify Premium shows real monthly access, safe renewal/access date when present, Manage/Restore/Refresh, and no Upgrade CTA.
+- [ ] Verify secondary language route and persisted Urdu selection, Dark-only appearance, privacy route, and request-based deletion confirmation/unavailable result.
+- [ ] Verify support has no enabled fake action and app version/build matches the installed configuration.
+- [ ] Verify production hides all developer controls and development shows them only under the labeled bottom section.
+- [ ] Regression-check Home, Library, Add/share, Grocery, Paywall, purchase/restore, Premium sync, bottom navigation, safe areas, and small Android scrolling.
+
 ## M22E.1R-GROCERY1 Grocery overview and shopping-list detail redesign
 
 Status: implemented and automatically validated on `develop`; Android device QA pending.

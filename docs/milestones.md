@@ -1,5 +1,13 @@
 # Recipe Dost Milestones
 
+## M22E.1R-SETTINGS1 - Professional Settings Screen Redesign
+- Rebuilt Settings with native editorial header, glass profile and grouped panels, uppercase labels, 20px surfaces, centralized code-native semantic icons, subscription glow, themed inline feedback, danger styling, and existing tab-bar safe-area clearance. Stitch HTML/Tailwind, inert gear, sample navigation, and new dependencies are excluded.
+- Preserved the real normalized `get-ai-access` + RevenueCat state: Free shows three included AI cards plus Upgrade/Restore/Refresh; Premium shows monthly remaining/usage, safe renewal/access metadata, Manage/Restore/Refresh, and no Upgrade. One in-flight guard prevents overlapping subscription actions.
+- Preserved Paywall, Google Play management URL, RevenueCat restore/customer refresh, backend entitlement sync, secondary-language persistence, privacy route, deletion information route, and existing query keys without quota/access, entitlement/product, backend/worker, Supabase schema, package, or env changes.
+- Profile shows a six-character masked app-profile ID without email/debug data. Appearance truthfully shows Dark only; support is an honest non-action because no channel is configured; version/build comes from Expo/native metadata.
+- Replaced the deletion placeholder Alert with a themed confirmation sheet that explicitly reports no request was submitted and no data was deleted because backend automation is unavailable.
+- Developer tools remain at the bottom only behind `__DEV__ && APP_ENV=development` and are completely absent for APP_ENV production. Automated static and development/production environment validation passed; Android manual/regression QA remains pending.
+
 ## M22E.1R-GROCERY1 - Grocery Overview and Shopping List Detail Redesign
 - Rebuilt the existing Grocery tab as a native Obsidian/coral editorial `FlatList` with centered Grocery title, unchanged AI-access/Paywall pill, glass search, All/Active/Completed/Recent filters, explicit async/empty states, and full-width real shopping-list cards.
 - Adapted only the visual composition of the supplied AI Recipes overview reference. No Stitch title, HTML/Tailwind, sample recipe, remote image, meal filter, or fake list ships in the app.

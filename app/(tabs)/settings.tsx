@@ -2,52 +2,55 @@ import {
   DevIdentityPanel,
   shouldShowDevIdentityPanel,
 } from '@/features/dev-tools/dev-identity-panel'
+import { useUserProfileQuery } from '@/features/onboarding/use-user-profile-query'
+import { getSecondaryRecipeLanguage } from '@/features/settings/secondary-recipe-language'
+import {
+  ProfileSettingsCard,
+  SettingsDivider,
+  SettingsFeedback,
+  SettingsHeader,
+  SettingsPanel,
+  SettingsRow,
+  SettingsSection,
+  SubscriptionStatusCard,
+  type SettingsFeedbackTone,
+} from '@/features/settings/settings-presentation'
 import {
   type NormalizedSubscriptionStatus,
   getNormalizedSubscriptionStatus,
 } from '@/features/subscription/normalized-subscription-status'
 import { getAiAccessState } from '@/lib/api/ai-access'
-import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { useAuth } from '@/providers/auth-provider'
+import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import {
   getPremiumEntitlement,
   getSubscriptionManagementUrl,
   isCustomerPremium,
   useRevenueCat,
 } from '@/providers/revenuecat-provider'
-import { colors, radius, spacing, typography } from '@/theme'
-import { AppHeader } from '@/ui/app-header'
-import { AppBadge } from '@/ui/app-badge'
-import { Card } from '@/ui/card'
+import { spacing } from '@/theme'
 import { Screen } from '@/ui/screen'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { CustomerInfo } from '@revenuecat/purchases-typescript-internal'
-import Constants from 'expo-constants'
 import * as Application from 'expo-application'
+import Constants from 'expo-constants'
 import { useRouter } from 'expo-router'
-import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
-import { Alert, Linking, Pressable, Text, View } from 'react-native'
+import { Linking, View } from 'react-native'
 
-type SettingsRowProps = {
-  marker: string
-  title: string
-  subtitle: string
-  value?: string
-  danger?: boolean
-  onPress?: () => void
+type SubscriptionAction = 'manage' | 'refresh' | 'restore'
+
+type ActionFeedback = {
+  message: string
+  tone: SettingsFeedbackTone
 }
-
-const appVersion =
-  Application.nativeApplicationVersion ??
-  Constants.expoConfig?.version ??
-  '1.0.0'
 
 export default function SettingsRoute() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const { user } = useAuth()
   const { track } = usePostHog()
+  const profileQuery = useUserProfileQuery()
   const {
     isConfigured: isRevenueCatConfigured,
     isLoading: isRevenueCatLoading,
@@ -58,8 +61,12 @@ export default function SettingsRoute() {
     restorePurchases,
     syncPremiumEntitlement,
   } = useRevenueCat()
-  const [isRefreshingPremium, setIsRefreshingPremium] = useState(false)
+  const [pendingSubscriptionAction, setPendingSubscriptionAction] =
+    useState<SubscriptionAction | null>(null)
+  const [actionFeedback, setActionFeedback] =
+    useState<ActionFeedback | null>(null)
   const mountedRef = useRef(false)
+  const subscriptionActionRef = useRef<SubscriptionAction | null>(null)
   const didAttemptPremiumSyncRef = useRef(false)
   const lastBackendPremiumAccessRef =
     useRef<Awaited<ReturnType<typeof getAiAccessState>> | null>(null)
@@ -69,7 +76,10 @@ export default function SettingsRoute() {
     queryFn: getAiAccessState,
   })
   const showDeveloperSection = shouldShowDevIdentityPanel(aiAccessQuery.data)
-  const userIdentifier = user?.id ? shortId(user.id) : null
+  const userIdentifier = user?.id ? shortId(user.id) : 'Starting profile…'
+  const selectedLanguage = getSecondaryRecipeLanguage(
+    profileQuery.data?.secondary_recipe_language_code
+  )
   const managementUrl = getSubscriptionManagementUrl(customerInfo)
   const subscriptionDetailText = getSubscriptionDetailText(customerInfo)
   const subscriptionStatus = getNormalizedSubscriptionStatus({
@@ -81,11 +91,12 @@ export default function SettingsRoute() {
       isLoading: isRevenueCatLoading,
     },
   })
-  const shouldShowUpgrade = !subscriptionStatus.isPremium &&
+  const hasPendingSubscriptionAction = pendingSubscriptionAction !== null
+  const shouldShowUpgrade =
+    !subscriptionStatus.isPremium &&
     subscriptionStatus.sourceOfTruth !== 'loading'
   const shouldShowManage =
     subscriptionStatus.isPremium && !subscriptionStatus.needsSync
-  const shouldShowRefresh = true
 
   useEffect(() => {
     mountedRef.current = true
@@ -131,18 +142,44 @@ export default function SettingsRoute() {
     syncPremiumEntitlement,
   ])
 
-  const showPlaceholder = (row: string, message: string) => {
-    track('settings_placeholder_tapped', { row })
-    Alert.alert('Coming soon', message)
+  const beginSubscriptionAction = (action: SubscriptionAction) => {
+    if (subscriptionActionRef.current) {
+      return false
+    }
+
+    subscriptionActionRef.current = action
+    setPendingSubscriptionAction(action)
+    setActionFeedback(null)
+    return true
+  }
+
+  const finishSubscriptionAction = () => {
+    subscriptionActionRef.current = null
+    if (mountedRef.current) {
+      setPendingSubscriptionAction(null)
+    }
+  }
+
+  const showActionFeedback = (
+    message: string,
+    tone: SettingsFeedbackTone = 'info'
+  ) => {
+    if (mountedRef.current) {
+      setActionFeedback({ message, tone })
+    }
   }
 
   const handleRestorePurchases = async () => {
+    if (!beginSubscriptionAction('restore')) {
+      return
+    }
+
     if (!isRevenueCatReadyForCurrentUser) {
       track('restore_failed', { source: 'settings', reason: 'not_ready' })
-      Alert.alert(
-        'Checking your app profile',
-        'Checking your app profile. Please try again in a moment.'
+      showActionFeedback(
+        'Checking your app profile. Please try Restore again in a moment.'
       )
+      finishSubscriptionAction()
       return
     }
 
@@ -168,74 +205,87 @@ export default function SettingsRoute() {
         accessResult.data?.premiumActive === true
 
       if (premiumActive) {
-        Alert.alert('Premium active', 'Your subscription has been restored.')
-        return
-      }
-
-      if (subscriptionStatus.isPremium || backendPremiumActive) {
-        Alert.alert(
-          'Premium access active',
-          'Premium access is already active on this app profile.'
+        showActionFeedback(
+          'Your Premium subscription has been restored.',
+          'success'
         )
-        return
-      }
-
-      if (!synced) {
-        Alert.alert(
-          'Could not refresh subscription status',
-          'Could not refresh subscription status. Your current app access was not changed.'
+      } else if (subscriptionStatus.isPremium || backendPremiumActive) {
+        showActionFeedback(
+          'Premium access is already active on this app profile.',
+          'success'
         )
-        return
+      } else if (!synced) {
+        showActionFeedback(
+          'Could not refresh subscription status. Your current app access was not changed.',
+          'error'
+        )
+      } else {
+        showActionFeedback('No active subscription was found.')
       }
-
-      Alert.alert('No active subscription found.')
     } catch {
       track('restore_failed', { source: 'settings' })
-      Alert.alert('Could not restore purchases', 'Please try again.')
+      showActionFeedback(
+        'Could not restore purchases. Please try again.',
+        'error'
+      )
+    } finally {
+      finishSubscriptionAction()
     }
   }
 
   const handleManageSubscription = async () => {
+    if (!beginSubscriptionAction('manage')) {
+      return
+    }
+
     track('subscription_manage_tapped', {
       source: 'settings',
       has_management_url: Boolean(managementUrl),
     })
 
-    if (!managementUrl) {
-      Alert.alert(
-        'Manage / cancel subscription',
-        'Subscription management is available for real Google Play subscriptions after launch. For Test Store purchases, manage the test customer in RevenueCat.'
-      )
-      return
-    }
+    try {
+      if (!managementUrl) {
+        showActionFeedback(
+          'Store subscription management is not available for this test purchase. Real Google Play subscriptions provide a management link.'
+        )
+        return
+      }
 
-    const canOpenUrl = await Linking.canOpenURL(managementUrl)
+      const canOpenUrl = await Linking.canOpenURL(managementUrl)
 
-    if (canOpenUrl) {
+      if (!canOpenUrl) {
+        showActionFeedback(
+          'Could not open store subscription settings on this device.',
+          'error'
+        )
+        return
+      }
+
       await Linking.openURL(managementUrl)
-      return
+    } catch {
+      showActionFeedback(
+        'Could not open store subscription settings on this device.',
+        'error'
+      )
+    } finally {
+      finishSubscriptionAction()
     }
-
-    Alert.alert(
-      'Manage / cancel subscription',
-      'Subscription management is available for real Google Play subscriptions after launch. For Test Store purchases, manage the test customer in RevenueCat.'
-    )
   }
 
   const handleRefreshPremiumStatus = async () => {
-    if (isRefreshingPremium) {
+    if (!beginSubscriptionAction('refresh')) {
       return
     }
+
+    track('settings_subscription_refresh_started')
 
     if (!isRevenueCatReadyForCurrentUser) {
-      Alert.alert(
-        'Checking your app profile',
-        'Checking your app profile. Please try again in a moment.'
+      showActionFeedback(
+        'Checking your app profile. Please try Refresh status again in a moment.'
       )
+      finishSubscriptionAction()
       return
     }
-
-    setIsRefreshingPremium(true)
 
     try {
       const nextInfo = isRevenueCatConfigured
@@ -248,391 +298,270 @@ export default function SettingsRoute() {
         if (mountedRef.current) {
           await aiAccessQuery.refetch()
         }
+
         if (!synced) {
-          Alert.alert(
-            'Could not refresh subscription status',
-            'Could not refresh subscription status. Your current app access was not changed.'
+          showActionFeedback(
+            'Could not refresh subscription status. Your current app access was not changed.',
+            'error'
           )
           return
         }
 
-        Alert.alert('Premium status refreshed.')
+        track('settings_subscription_refresh_completed')
+        showActionFeedback('Premium and AI access status refreshed.', 'success')
         return
       }
 
-      Alert.alert(
-        'Could not refresh subscription status',
-        'Could not refresh subscription status. Your current app access was not changed.'
+      showActionFeedback(
+        'Could not refresh subscription status. Your current app access was not changed.',
+        'error'
+      )
+    } catch {
+      showActionFeedback(
+        'Could not refresh subscription status. Your current app access was not changed.',
+        'error'
       )
     } finally {
-      if (mountedRef.current) {
-        setIsRefreshingPremium(false)
-      }
+      finishSubscriptionAction()
     }
   }
 
   return (
-    <Screen compact tabBarPadding>
-      <AppHeader
-        eyebrow="Settings"
-        title="Settings"
-        subtitle="Manage your app profile, preferences, privacy, and support."
-      />
+    <Screen tabBarPadding>
+      <SettingsHeader />
 
-      <SettingsSection title="Profile">
-        <SettingsRow
-          marker="P"
-          title={user?.email ?? 'Guest profile'}
-          subtitle="Your saved recipes are linked to this app profile."
-          value={userIdentifier ?? 'Starting'}
-        />
-      </SettingsSection>
+      <View style={{ gap: spacing.sectionGap }}>
+        <SettingsSection title="Profile">
+          <ProfileSettingsCard identifier={userIdentifier} />
+        </SettingsSection>
 
-      <SettingsSection title="Subscription" tone="warm">
-        <SubscriptionSummary
-          detailText={
-            shouldShowManage ? subscriptionDetailText : null
-          }
-          status={subscriptionStatus}
-        />
-        {shouldShowUpgrade ? (
-          <SettingsRow
-            marker="+"
-            title="Upgrade to Premium"
-            subtitle="100 AI recipe cards/month."
-            onPress={() => {
-              track('settings_row_tapped', {
-                row: 'upgrade_to_premium',
-                premium_active: subscriptionStatus.isPremium,
-              })
-              router.push('/paywall')
-            }}
-          />
+        <SettingsSection title="Subscription">
+          <SettingsPanel featured>
+            <SubscriptionStatusCard
+              detailText={shouldShowManage ? subscriptionDetailText : null}
+              errorMessage={
+                aiAccessQuery.error
+                  ? 'Could not load the latest AI access state. Use Refresh status to try again.'
+                  : null
+              }
+              status={subscriptionStatus}
+            />
+            {actionFeedback ? (
+              <View style={{ paddingBottom: spacing.lg }}>
+                <SettingsFeedback {...actionFeedback} />
+              </View>
+            ) : null}
+            {shouldShowUpgrade ? (
+              <>
+                <SettingsDivider />
+                <SettingsRow
+                  icon="upgrade"
+                  title="Upgrade to Premium"
+                  subtitle="100 AI recipe cards each month."
+                  disabled={hasPendingSubscriptionAction}
+                  onPress={() => {
+                    track('settings_row_tapped', {
+                      row: 'upgrade_to_premium',
+                      premium_active: subscriptionStatus.isPremium,
+                    })
+                    router.push('/paywall')
+                  }}
+                  accessibilityHint="Opens Premium plans"
+                />
+              </>
+            ) : null}
+            {shouldShowManage ? (
+              <>
+                <SettingsDivider />
+                <SettingsRow
+                  icon="manage"
+                  title="Manage subscription"
+                  subtitle={
+                    managementUrl
+                      ? 'Open Google Play subscription settings.'
+                      : 'Store management is unavailable for this test purchase.'
+                  }
+                  busy={pendingSubscriptionAction === 'manage'}
+                  disabled={
+                    hasPendingSubscriptionAction &&
+                    pendingSubscriptionAction !== 'manage'
+                  }
+                  onPress={() => {
+                    void handleManageSubscription()
+                  }}
+                  accessibilityHint="Opens store subscription settings when available"
+                />
+              </>
+            ) : null}
+            <SettingsDivider />
+            <SettingsRow
+              icon="restore"
+              title="Restore purchases"
+              subtitle={
+                isRevenueCatLoading
+                  ? 'Checking Premium status…'
+                  : 'Restore an active subscription for this app profile.'
+              }
+              busy={pendingSubscriptionAction === 'restore'}
+              disabled={
+                hasPendingSubscriptionAction &&
+                pendingSubscriptionAction !== 'restore'
+              }
+              onPress={() => {
+                void handleRestorePurchases()
+              }}
+            />
+            <SettingsDivider />
+            <SettingsRow
+              icon="refresh"
+              title="Refresh status"
+              subtitle="Check the latest store and AI access status."
+              busy={pendingSubscriptionAction === 'refresh'}
+              disabled={
+                hasPendingSubscriptionAction &&
+                pendingSubscriptionAction !== 'refresh'
+              }
+              onPress={() => {
+                void handleRefreshPremiumStatus()
+              }}
+            />
+          </SettingsPanel>
+        </SettingsSection>
+
+        <SettingsSection title="Recipe Preferences">
+          <SettingsPanel>
+            <SettingsRow
+              icon="language"
+              title="Secondary recipe language"
+              subtitle="Used for secondary AI recipe explanations."
+              value={`${selectedLanguage.label} / ${selectedLanguage.nativeLabel}`}
+              onPress={() => {
+                track('settings_row_tapped', {
+                  row: 'secondary_recipe_language',
+                })
+                router.push('/settings/secondary-language')
+              }}
+            />
+          </SettingsPanel>
+        </SettingsSection>
+
+        <SettingsSection title="Appearance">
+          <SettingsPanel>
+            <SettingsRow
+              icon="theme"
+              title="Theme"
+              subtitle="Recipe Dost currently uses its dark editorial theme."
+              value="Dark"
+            />
+          </SettingsPanel>
+        </SettingsSection>
+
+        <SettingsSection title="Privacy & Data">
+          <SettingsPanel>
+            <SettingsRow
+              icon="privacy"
+              title="Privacy & data usage"
+              subtitle="Review how Recipe Dost uses app and recipe data."
+              onPress={() => {
+                track('settings_row_tapped', {
+                  row: 'privacy_data_usage',
+                })
+                router.push('/settings/privacy-data')
+              }}
+            />
+            <SettingsDivider />
+            <SettingsRow
+              icon="delete"
+              title="Delete account & data"
+              subtitle="Request deletion of your Recipe Dost profile and saved data."
+              danger
+              onPress={() => {
+                track('settings_row_tapped', {
+                  row: 'delete_account_data',
+                })
+                router.push('/settings/delete-account-data')
+              }}
+              accessibilityHint="Opens deletion request information"
+            />
+          </SettingsPanel>
+        </SettingsSection>
+
+        <SettingsSection title="Support">
+          <SettingsPanel>
+            <SettingsRow
+              icon="support"
+              title="Contact support"
+              subtitle="Support contact is not available in this beta yet."
+            />
+            <SettingsDivider />
+            <SettingsRow
+              icon="version"
+              title="App version"
+              subtitle="Installed Recipe Dost version and Android build."
+              value={getAppVersionLabel()}
+            />
+          </SettingsPanel>
+        </SettingsSection>
+
+        {showDeveloperSection ? (
+          <SettingsSection title="Developer">
+            <View style={{ gap: spacing.md }}>
+              <SettingsPanel>
+                <SettingsRow
+                  icon="developer"
+                  title="Role"
+                  subtitle={
+                    aiAccessQuery.data?.role ??
+                    (__DEV__ ? 'Development' : 'Unknown')
+                  }
+                />
+                <SettingsDivider />
+                <SettingsRow
+                  icon="developer"
+                  title="AI access"
+                  subtitle={
+                    aiAccessQuery.data
+                      ? getDeveloperAccessLabel(aiAccessQuery.data)
+                      : aiAccessQuery.isLoading
+                        ? 'Loading access'
+                        : 'Access unavailable'
+                  }
+                />
+                <SettingsDivider />
+                <SettingsRow
+                  icon="developer"
+                  title="RevenueCat"
+                  subtitle={getDeveloperSubscriptionLabel(
+                    subscriptionStatus,
+                    isRevenueCatConfigured
+                  )}
+                />
+              </SettingsPanel>
+              <DevIdentityPanel />
+            </View>
+          </SettingsSection>
         ) : null}
-        {shouldShowManage ? (
-          <SettingsRow
-            marker="M"
-            title="Manage / cancel subscription"
-            subtitle={managementUrl ? 'Open store subscription settings.' : 'Managed by the store after launch.'}
-            onPress={() => {
-              void handleManageSubscription()
-            }}
-          />
-        ) : null}
-        <SettingsRow
-          marker="R"
-          title="Restore purchases"
-          subtitle={isRevenueCatLoading ? 'Checking Premium status...' : 'Restore an active subscription.'}
-          onPress={() => {
-            void handleRestorePurchases()
-          }}
-        />
-        {shouldShowRefresh ? (
-          <SettingsRow
-            marker="S"
-            title="Refresh status"
-            subtitle={
-              isRefreshingPremium
-                ? 'Refreshing Premium status...'
-                : 'Check the latest store and AI access status.'
-            }
-            onPress={() => {
-              void handleRefreshPremiumStatus()
-            }}
-          />
-        ) : null}
-      </SettingsSection>
-
-      <SettingsSection title="Recipe Preferences">
-        <SettingsRow
-          marker="L"
-          title="Secondary recipe language"
-          subtitle="Urdu / اردو"
-          onPress={() => {
-            track('settings_row_tapped', {
-              row: 'secondary_recipe_language',
-            })
-            router.push('/settings/secondary-language')
-          }}
-        />
-      </SettingsSection>
-
-      <SettingsSection title="Appearance">
-        <SettingsRow
-          marker="T"
-          title="Theme"
-          subtitle="System default"
-          onPress={() =>
-            showPlaceholder('theme', 'Theme options are coming later.')
-          }
-        />
-      </SettingsSection>
-
-      <SettingsSection title="Privacy & Data">
-        <SettingsRow
-          marker="i"
-          title="Privacy & data usage"
-          subtitle="Plain-language details before launch."
-          onPress={() => {
-            track('settings_row_tapped', {
-              row: 'privacy_data_usage',
-            })
-            router.push('/settings/privacy-data')
-          }}
-        />
-        <SettingsRow
-          marker="!"
-          title="Delete account & data"
-          subtitle="Request deletion before backend automation."
-          danger
-          onPress={() => {
-            track('settings_row_tapped', {
-              row: 'delete_account_data',
-            })
-            router.push('/settings/delete-account-data')
-          }}
-        />
-      </SettingsSection>
-
-      <SettingsSection title="Support">
-        <SettingsRow
-          marker="?"
-          title="Contact support"
-          subtitle="Support contact is coming soon."
-          onPress={() =>
-            showPlaceholder('contact_support', 'Contact support is coming soon.')
-          }
-        />
-        <SettingsRow
-          marker="V"
-          title="App version"
-          subtitle={appVersion}
-        />
-      </SettingsSection>
-
-      {showDeveloperSection ? (
-        <View style={{ gap: spacing.md }}>
-          <SectionTitle title="Developer" />
-          <DeveloperDiagnosticsCard
-            role={aiAccessQuery.data?.role ?? (__DEV__ ? 'Development' : 'Unknown')}
-            accessState={
-              aiAccessQuery.data
-                ? getDeveloperAccessLabel(aiAccessQuery.data)
-                : aiAccessQuery.isLoading
-                  ? 'Loading access'
-                  : 'Access unavailable'
-            }
-            revenueCatState={
-              getDeveloperSubscriptionLabel(subscriptionStatus, isRevenueCatConfigured)
-            }
-          />
-          <DevIdentityPanel />
-        </View>
-      ) : null}
+      </View>
     </Screen>
   )
 }
 
-function SubscriptionSummary({
-  detailText,
-  status,
-}: {
-  detailText: string | null
-  status: NormalizedSubscriptionStatus
-}) {
-  return (
-    <View style={{ gap: spacing.sm }}>
-      <AppBadge
-        label={status.statusTitle}
-        tone={status.isPremium ? 'accent' : 'default'}
-      />
-      <Text selectable style={[typography.heading, { color: colors.text }]}>
-        {status.statusTitle}
-      </Text>
-      <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-        {status.statusSubtitle}
-      </Text>
-      <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-        {status.isPremium
-          ? 'Videos up to 2 minutes in beta'
-          : 'Save recipe links, metadata preview, library search, and grocery viewing stay free.'}
-      </Text>
-      {detailText ? (
-        <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-          {detailText}
-        </Text>
-      ) : null}
-    </View>
-  )
+function shortId(value: string) {
+  return `${value.slice(0, 6)}…`
 }
 
-function SettingsSection({
-  children,
-  title,
-  tone = 'default',
-}: {
-  children: ReactNode
-  title: string
-  tone?: 'default' | 'warm' | 'muted'
-}) {
-  return (
-    <View style={{ gap: spacing.sm }}>
-      <SectionTitle title={title} />
-      <Card tone={tone}>{children}</Card>
-    </View>
-  )
-}
+function getAppVersionLabel() {
+  const version =
+    Constants.expoConfig?.version ?? Application.nativeApplicationVersion
+  const build =
+    Constants.expoConfig?.android?.versionCode?.toString() ??
+    Application.nativeBuildVersion
 
-function SectionTitle({ title }: { title: string }) {
-  return (
-    <Text
-      selectable
-      style={[
-        typography.caption,
-        {
-          color: colors.textMuted,
-          fontWeight: '800',
-          textTransform: 'uppercase',
-        },
-      ]}
-    >
-      {title}
-    </Text>
-  )
-}
-
-function SettingsRow({
-  marker,
-  title,
-  subtitle,
-  value,
-  danger = false,
-  onPress,
-}: SettingsRowProps) {
-  const content = (
-    <>
-      <View
-        style={{
-          width: 34,
-          height: 34,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: radius.sm,
-          backgroundColor: danger ? colors.dangerSurface : colors.surfaceMuted,
-        }}
-      >
-        <Text
-          selectable={false}
-          style={[
-            typography.caption,
-            {
-              color: danger ? colors.danger : colors.accent,
-              fontWeight: '900',
-            },
-          ]}
-        >
-          {marker}
-        </Text>
-      </View>
-      <View style={{ minWidth: 0, flex: 1, gap: 2 }}>
-        <Text
-          selectable
-          numberOfLines={1}
-          ellipsizeMode="tail"
-          style={[
-            typography.body,
-            { color: danger ? colors.danger : colors.text, fontWeight: '800' },
-          ]}
-        >
-          {title}
-        </Text>
-        <Text
-          selectable
-          numberOfLines={2}
-          ellipsizeMode="tail"
-          style={[typography.caption, { color: colors.textMuted }]}
-        >
-          {subtitle}
-        </Text>
-      </View>
-      {value ? (
-        <Text
-          selectable
-          numberOfLines={1}
-          ellipsizeMode="middle"
-          style={[typography.caption, { color: colors.textMuted }]}
-        >
-          {value}
-        </Text>
-      ) : null}
-      {onPress ? (
-        <Text
-          selectable={false}
-          style={[typography.body, { color: colors.textMuted, fontWeight: '900' }]}
-        >
-          {'>'}
-        </Text>
-      ) : null}
-    </>
-  )
-
-  if (!onPress) {
-    return (
-      <View
-        style={{
-          minHeight: 58,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.md,
-        }}
-      >
-        {content}
-      </View>
-    )
+  if (!version) {
+    return build ? `Build ${build}` : 'Unavailable'
   }
 
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => ({
-        minHeight: 58,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
-        borderRadius: radius.md,
-        opacity: pressed ? 0.78 : 1,
-      })}
-    >
-      {content}
-    </Pressable>
-  )
-}
-
-function DeveloperDiagnosticsCard({
-  role,
-  accessState,
-  revenueCatState,
-}: {
-  role: string
-  accessState: string
-  revenueCatState: string
-}) {
-  return (
-    <Card tone="muted">
-      <Text selectable style={[typography.heading, { color: colors.text }]}>
-        Access diagnostics
-      </Text>
-      <SettingsRow marker="D" title="Role" subtitle={role} />
-      <SettingsRow marker="A" title="AI access" subtitle={accessState} />
-      <SettingsRow marker="S" title="Supabase" subtitle="Anonymous auth enabled" />
-      <SettingsRow marker="R" title="RevenueCat" subtitle={revenueCatState} />
-    </Card>
-  )
-}
-
-function shortId(value: string) {
-  return `${value.slice(0, 8)}...`
+  return build ? `${version} (${build})` : version
 }
 
 function getSubscriptionDetailText(customerInfo: CustomerInfo | null) {
@@ -644,6 +573,10 @@ function getSubscriptionDetailText(customerInfo: CustomerInfo | null) {
   }
 
   const formattedDate = formatSubscriptionDate(entitlement.expirationDate)
+
+  if (!formattedDate) {
+    return `${planLabel} · Subscription is managed by the store.`
+  }
 
   return entitlement.willRenew
     ? `${planLabel} · Renews on ${formattedDate}`
@@ -671,7 +604,7 @@ function formatSubscriptionDate(value: string) {
   const date = new Date(value)
 
   if (Number.isNaN(date.getTime())) {
-    return value
+    return null
   }
 
   return date.toLocaleDateString(undefined, {
@@ -699,7 +632,9 @@ function getDeveloperAccessLabel(access: {
     return 'Limit reached'
   }
 
-  return access.remaining === null ? 'No limit set' : `${access.remaining} remaining`
+  return access.remaining === null
+    ? 'No limit set'
+    : `${access.remaining} remaining`
 }
 
 function getDeveloperSubscriptionLabel(

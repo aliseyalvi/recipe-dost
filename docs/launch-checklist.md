@@ -155,6 +155,12 @@
 - M22E.1R-GROCERY1 Copy/Share checked for selected-language categorized text with no internal IDs or URLs, plus friendly native failure handling
 - M22E.1R-GROCERY1 confirms checked state remains local/reset as before; persisted progress, generated categories, pantry, meal planning, nutrition, and custom units remain deferred
 - M22E.1R-GROCERY1 regression checked: recipe-card Grocery route, Home, Library/search/tabs, Add/share, recipe detail, Paywall/RevenueCat/Premium sync, bottom tabs, and no raw URL logs
+- M22E.1R-SETTINGS1 Free checked for Free plan, three included AI cards, free saved-link/metadata/Library/Grocery copy, Upgrade to Paywall, Restore, Refresh, inline failures, and overlapping-tap prevention
+- M22E.1R-SETTINGS1 Premium checked for real monthly access, valid renewal/access date when available, Manage/Restore/Refresh, and no Upgrade purchase CTA
+- M22E.1R-SETTINGS1 secondary language persistence, Dark-only appearance, privacy route, request-based deletion confirmation, honest unavailable support, and Expo/native version/build checked
+- M22E.1R-SETTINGS1 deletion confirmation checked for explicit no-request/no-deletion result while automation is unavailable; no fake support path or native white popup appears
+- M22E.1R-SETTINGS1 APP_ENV production checked for no Developer section/identity controls; development controls remain only in the labeled bottom section
+- M22E.1R-SETTINGS1 regression checked: Home, Library, Add/share, Grocery, bottom tabs, Paywall, purchase/restore, Premium sync, safe areas, and small Android scrolling
 - Production AAB created only from `main` with `npm run build:prod`
 - Production env never manually sourced in a normal terminal
 - 50 recipe links tested

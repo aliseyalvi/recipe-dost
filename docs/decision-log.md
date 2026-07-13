@@ -1,5 +1,16 @@
 # Recipe Dost Decision Log
 
+## 2026-07-14
+- M22E.1R-SETTINGS1 redesigned Settings as the native Obsidian editorial experience on `develop`; Android device QA is pending.
+- Decision: preserve the existing `get-ai-access`, RevenueCat provider, paywall route, restore, customer-info refresh, backend entitlement sync, profile query, language route, privacy route, deletion information route, query keys, and production development-tool guard. Do not change quota/access logic, entitlement/products, configuration, schema, backend/worker, package IDs, or env files.
+- Decision: render mutually exclusive Free and Premium subscription states from normalized real access. Free receives Upgrade/Restore/Refresh; active Premium receives Manage/Restore/Refresh and no purchase CTA. Use valid RevenueCat renewal/access metadata only when available and never expose product/internal payload details.
+- Decision: prevent overlapping subscription actions with one synchronous in-flight guard and replace native success/failure Alerts with themed inline feedback. Store management remains conditional on the real RevenueCat management URL and reports honest Test Store/unavailable behavior otherwise.
+- Decision: the app has no declared vector-icon dependency. Centralize the established typed code-native glyph treatment in `SettingsIcon` instead of adding a dependency during stabilization.
+- Decision: show only a six-character masked anonymous profile identifier, persisted supported secondary language, the real Dark-only appearance, and Expo/native version + Android build. With no configured support address, Contact support remains visible but non-interactive and honestly unavailable.
+- Decision: keep deletion request-based and unconnected. Use a themed confirmation sheet, then explicitly state that no request was submitted and no data was deleted; do not add schema/backend automation or a fake support path.
+- Production safety: developer diagnostics remain guarded by `__DEV__ && APP_ENV === 'development'`, so APP_ENV production hides the entire section and identity controls.
+- Validation: `npm run qa:static`, development env doctor, and both development/production env validators passed with masked output; Android visual and interaction regression QA remains pending because no emulator/ADB target is available in this workspace.
+
 ## 2026-07-13
 - M22E.1R-GROCERY1 redesigned the existing Grocery overview and selected-list state on `develop`; final automated validation and Android QA are pending.
 - Decision: preserve `/grocery` and `/grocery?recipeCardId=[recipe-card-id]`, `recipe_cards` as the list source, the existing Grocery query keys, and route-local non-persisted checked IDs. Do not write the unused `grocery_lists` table or imply cross-screen completion persistence.
