@@ -1,16 +1,20 @@
 import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
 import { borders, colors, radius, shadows, spacing, typography } from '@/theme'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
+import { AppIcon, type AppIconName } from '@/ui/app-icon'
 import { Tabs } from 'expo-router'
 import { Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const tabIcons = {
-  home: '⌂',
-  library: '▥',
-  grocery: '⌑',
-  settings: '⚙',
-} as const
+  home: { inactive: 'home-outline', active: 'home' },
+  library: { inactive: 'library-outline', active: 'library' },
+  grocery: { inactive: 'grocery-outline', active: 'grocery' },
+  settings: { inactive: 'settings-outline', active: 'settings' },
+} as const satisfies Record<
+  string,
+  { inactive: AppIconName; active: AppIconName }
+>
 
 export default function TabsLayout() {
   return (
@@ -123,6 +127,7 @@ function TabButton({
   return (
     <Pressable
       accessibilityRole="tab"
+      accessibilityLabel={`Open ${getTabLabel(route.name)} tab`}
       accessibilityState={{ selected: isActive }}
       onPress={() => {
         const event = navigation.emit({
@@ -148,18 +153,17 @@ function TabButton({
         opacity: pressed ? 0.78 : 1,
       })}
     >
-      <Text
-        selectable={false}
-        style={{
-          color: isActive ? colors.primary : colors.onSurfaceVariant,
-          fontSize: route.name === 'settings' ? 22 : 24,
-          lineHeight: 26,
-          fontWeight: '800',
-          opacity: isActive ? 1 : 0.62,
-        }}
-      >
-        {tabIcons[route.name]}
-      </Text>
+      <View style={{ opacity: isActive ? 1 : 0.62 }}>
+        <AppIcon
+          name={
+            isActive
+              ? tabIcons[route.name].active
+              : tabIcons[route.name].inactive
+          }
+          color={isActive ? colors.primary : colors.onSurfaceVariant}
+          size={24}
+        />
+      </View>
       <Text
         selectable={false}
         numberOfLines={1}
@@ -213,17 +217,7 @@ function CenterSaveButton() {
           ...shadows.fab,
         })}
       >
-        <Text
-          selectable={false}
-          style={{
-            color: colors.onPrimaryContainer,
-            fontSize: 36,
-            lineHeight: 40,
-            fontWeight: '400',
-          }}
-        >
-          +
-        </Text>
+        <AppIcon name="add" color={colors.onPrimaryContainer} size={32} />
       </Pressable>
       <Text
         selectable={false}

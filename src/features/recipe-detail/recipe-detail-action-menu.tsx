@@ -2,9 +2,10 @@ import { borders, colors, radius, spacing, typography } from '@/theme'
 import { useState } from 'react'
 import { Modal, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { AppIcon, type AppIconName } from '@/ui/app-icon'
 
 type MenuAction = {
-  icon: string
+  icon: AppIconName
   label: string
   destructive?: boolean
   disabled?: boolean
@@ -58,7 +59,7 @@ export function RecipeDetailActionMenu({
     ...(canOpenOriginal
       ? [
           {
-            icon: '⌁',
+            icon: 'external' as const,
             label: 'Open Original Video',
             onPress: () => {
               onClose()
@@ -70,7 +71,7 @@ export function RecipeDetailActionMenu({
     ...(canViewSource
       ? [
           {
-            icon: '▤',
+            icon: 'recipe' as const,
             label: 'View Saved Source',
             onPress: () => {
               onClose()
@@ -80,13 +81,13 @@ export function RecipeDetailActionMenu({
         ]
       : []),
     {
-      icon: isFavorite ? '♥' : '♡',
+      icon: (isFavorite ? 'heart' : 'heart-outline') as AppIconName,
       label: isFavorite ? 'Unfavorite' : 'Favorite',
       disabled: isFavoriteUpdating,
       onPress: onToggleFavorite,
     },
     {
-      icon: '⌫',
+      icon: 'trash' as const,
       label: 'Delete',
       destructive: true,
       onPress: () => setIsConfirmingDelete(true),
@@ -163,9 +164,7 @@ export function RecipeDetailActionMenu({
                 opacity: pressed ? 0.68 : 1,
               })}
             >
-              <Text selectable={false} style={{ color: colors.onSurface, fontSize: 26 }}>
-                ×
-              </Text>
+              <AppIcon name="close" color={colors.onSurface} size={24} />
             </Pressable>
           </View>
 
@@ -203,7 +202,7 @@ export function RecipeDetailActionMenu({
                 />
                 <MenuButton
                   destructive
-                  icon="⌫"
+                  icon="trash"
                   label={isDeleting ? 'Deleting…' : 'Delete'}
                   disabled={isDeleting}
                   onPress={onDelete}
@@ -265,12 +264,11 @@ function MenuRow({
           backgroundColor: destructive ? colors.errorContainer : colors.primaryWash,
         }}
       >
-        <Text
-          selectable={false}
-          style={{ color: destructive ? colors.error : colors.primary, fontSize: 19 }}
-        >
-          {icon}
-        </Text>
+        <AppIcon
+          name={icon}
+          color={destructive ? colors.error : colors.primary}
+          size={19}
+        />
       </View>
       <Text
         selectable={false}
@@ -293,7 +291,7 @@ function MenuButton({
   onPress,
 }: {
   label: string
-  icon?: string
+  icon?: AppIconName
   destructive?: boolean
   disabled?: boolean
   onPress: () => void
@@ -317,11 +315,7 @@ function MenuButton({
         opacity: pressed || disabled ? 0.62 : 1,
       })}
     >
-      {icon ? (
-        <Text selectable={false} style={{ color: colors.error, fontSize: 18 }}>
-          {icon}
-        </Text>
-      ) : null}
+      {icon ? <AppIcon name={icon} color={colors.error} size={18} /> : null}
       <Text
         selectable={false}
         style={[

@@ -63,6 +63,7 @@ import {
   NestedHeaderIconButton,
   NestedScreenHeader,
 } from '@/ui/screen-header'
+import type { AppIconName } from '@/ui/app-icon'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   useFocusEffect,
@@ -851,7 +852,7 @@ export default function SavedRecipeRoute() {
             ? 'Remove recipe from favorites'
             : 'Add recipe to favorites'
         }
-        icon={recipe.is_favorite ? '♥' : '♡'}
+        icon={recipe.is_favorite ? 'heart' : 'heart-outline'}
         selected={recipe.is_favorite === true}
         disabled={isUpdatingFavorite || isDeletingRecipe}
         onPress={() => {
@@ -860,7 +861,7 @@ export default function SavedRecipeRoute() {
       />
       <HeaderIconButton
         label="Open original video"
-        icon="↗"
+        icon="external"
         onPress={() => {
           void openOriginalVideo()
         }}
@@ -987,7 +988,7 @@ export default function SavedRecipeRoute() {
         ) : null}
         <EditorialButton
           label="Open AI Recipe"
-          icon="✦"
+          icon="ai-recipe"
           variant="primary"
           onPress={() =>
             router.replace(
@@ -1098,14 +1099,14 @@ export default function SavedRecipeRoute() {
               accessibilityLabel={
                 recipe.is_favorite ? 'Remove recipe from favorites' : 'Add recipe to favorites'
               }
-              icon={recipe.is_favorite ? '♥' : '♡'}
+              icon={recipe.is_favorite ? 'heart' : 'heart-outline'}
               onPress={() => {
                 void handleToggleFavorite()
               }}
             />
             <NestedHeaderIconButton
               accessibilityLabel="Open original video"
-              icon="↗"
+              icon="external"
               onPress={() => {
                 void openOriginalVideo()
               }}
@@ -1731,11 +1732,11 @@ function getDetailUsageLabel(
 function getReadyRecipeStats(
   recipeCard: Awaited<ReturnType<typeof getRecipeCard>>
 ) {
-  const stats: { icon: string; label: string; value: string }[] = []
+  const stats: { icon: AppIconName; label: string; value: string }[] = []
 
   if (recipeCard.time.prep_time_minutes) {
     stats.push({
-      icon: '◷',
+      icon: 'clock',
       label: 'Prep time',
       value: `${recipeCard.time.prep_time_minutes} min`,
     })
@@ -1743,19 +1744,19 @@ function getReadyRecipeStats(
 
   if (recipeCard.time.cook_time_minutes) {
     stats.push({
-      icon: '♨',
+      icon: 'flame',
       label: 'Cook time',
       value: `${recipeCard.time.cook_time_minutes} min`,
     })
   }
 
   if (recipeCard.servings?.trim()) {
-    stats.push({ icon: '♟', label: 'Servings', value: recipeCard.servings.trim() })
+    stats.push({ icon: 'servings', label: 'Servings', value: recipeCard.servings.trim() })
   }
 
   if (recipeCard.difficulty?.trim()) {
     stats.push({
-      icon: '✦',
+      icon: 'ai-recipe',
       label: 'Difficulty',
       value: recipeCard.difficulty.trim(),
     })

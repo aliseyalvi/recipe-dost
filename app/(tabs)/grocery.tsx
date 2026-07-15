@@ -10,6 +10,7 @@ import {
 import type { RecipePlatform } from '@/features/recipe-draft/types'
 import { UsagePill } from '@/features/home/editorial-layout'
 import { getPaywallHref } from '@/features/paywall/paywall-model'
+import { RecipeMetadataChip } from '@/features/recipe-card/recipe-card-chrome'
 import { getAiAccessState } from '@/lib/api/ai-access'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import {
@@ -31,6 +32,7 @@ import { EmptyState } from '@/ui/empty-state'
 import { ErrorState } from '@/ui/error-state'
 import { LoadingState } from '@/ui/loading-state'
 import { UrduText } from '@/ui/urdu-text'
+import { AppIcon, type AppIconName } from '@/ui/app-icon'
 import { useQuery } from '@tanstack/react-query'
 import Constants from 'expo-constants'
 import * as Clipboard from 'expo-clipboard'
@@ -353,7 +355,7 @@ function GroceryOverviewHeader({
           paddingHorizontal: spacing.lg,
         }}
       >
-        <GroceryIcon name="search" color={colors.onSurfaceVariant} size={21} />
+        <AppIcon name="search" color={colors.onSurfaceVariant} size={21} />
         <TextInput
           accessibilityLabel="Search grocery lists, recipes, and ingredients"
           value={query}
@@ -389,7 +391,7 @@ function GroceryOverviewHeader({
               opacity: pressed ? 0.62 : 1,
             })}
           >
-            <GroceryIcon name="close" color={colors.primary} size={23} />
+            <AppIcon name="close" color={colors.primary} size={23} />
           </Pressable>
         ) : null}
       </View>
@@ -540,7 +542,7 @@ function GroceryListCard({
           paddingHorizontal: spacing.md,
         }}
       >
-        <GroceryIcon name="list" color={colors.primary} size={17} />
+        <AppIcon name="grocery-list" color={colors.primary} size={17} />
         <Text selectable={false} style={[typography.caption, { color: colors.primary }]}>
           Shopping List
         </Text>
@@ -567,7 +569,7 @@ function GroceryListCard({
           opacity: pressed ? 0.64 : 1,
         })}
       >
-        <GroceryIcon name="more" color={colors.onSurface} size={27} />
+        <AppIcon name="more-vertical" color={colors.onSurface} size={25} />
       </Pressable>
 
       <View
@@ -611,14 +613,14 @@ function GroceryListCard({
           />
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-          <GroceryMetadataChip platform={platform} label={platformLabel} />
+          <RecipeMetadataChip platform={platform} label={platformLabel} />
           {creator ? (
-            <GroceryMetadataChip icon="user" label={creator} accent />
+            <RecipeMetadataChip icon="creator" label={creator} accent />
           ) : null}
           {duration ? (
-            <GroceryMetadataChip icon="clock" label={duration} />
+            <RecipeMetadataChip icon="clock" label={duration} />
           ) : null}
-          <GroceryMetadataChip
+          <RecipeMetadataChip
             icon="calendar"
             label={formatDate(item.created_at)}
           />
@@ -1095,17 +1097,7 @@ function GroceryDetailTopBar({ onBack }: { onBack: () => void }) {
           opacity: pressed ? 0.72 : 1,
         })}
       >
-        <Text
-          selectable={false}
-          style={{
-            color: colors.primary,
-            fontSize: 34,
-            lineHeight: 36,
-            fontWeight: '700',
-          }}
-        >
-          ‹
-        </Text>
+        <AppIcon name="back" color={colors.primary} size={22} />
       </Pressable>
       <Text
         selectable
@@ -1244,12 +1236,9 @@ function GroceryChecklistItem({
           backgroundColor: item.checked ? colors.primaryContainer : 'transparent',
         }}
       >
-        <Text
-          selectable={false}
-          style={{ color: '#FFFFFF', fontSize: 16, lineHeight: 18, fontWeight: '900' }}
-        >
-          {item.checked ? '✓' : ''}
-        </Text>
+        {item.checked ? (
+          <AppIcon name="check" color={colors.onPrimaryContainer} size={17} />
+        ) : null}
       </View>
 
       <View style={{ minWidth: 0, flex: 1, gap: spacing.xs }}>
@@ -1375,7 +1364,7 @@ function GroceryListActions({
           opacity: pressed ? 0.76 : 1,
         })}
       >
-        <GroceryIcon name="copy" color="#FFFFFF" size={19} />
+        <AppIcon name="copy" color={colors.onPrimaryContainer} size={19} />
         <Text selectable={false} style={[typography.label, { color: '#FFFFFF' }]}>
           Copy List
         </Text>
@@ -1396,7 +1385,7 @@ function GroceryListActions({
           opacity: pressed ? 0.72 : 1,
         })}
       >
-        <GroceryIcon name="share" color={colors.primary} size={22} />
+        <AppIcon name="share" color={colors.primary} size={22} />
       </Pressable>
     </View>
   )
@@ -1495,7 +1484,7 @@ function GroceryActionMenu({
                 opacity: pressed ? 0.68 : 1,
               })}
             >
-              <GroceryIcon name="close" color={colors.onSurface} size={25} />
+              <AppIcon name="close" color={colors.onSurface} size={25} />
             </Pressable>
           </View>
 
@@ -1517,7 +1506,7 @@ function GroceryActionMenu({
 
           <View style={{ gap: spacing.sm }}>
             <GroceryMenuRow
-              icon="list"
+              icon="grocery-list"
               label="Open shopping list"
               onPress={() => onOpenList(item, 'menu')}
             />
@@ -1548,7 +1537,7 @@ function GroceryMenuRow({
   label,
   onPress,
 }: {
-  icon: GroceryIconName
+  icon: AppIconName
   label: string
   onPress: () => void
 }) {
@@ -1582,7 +1571,7 @@ function GroceryMenuRow({
           backgroundColor: colors.primaryWash,
         }}
       >
-        <GroceryIcon name={icon} color={colors.primary} size={19} />
+        <AppIcon name={icon} color={colors.primary} size={19} />
       </View>
       <Text selectable={false} style={[typography.body, { color: colors.onSurface, fontWeight: '700' }]}>
         {label}
@@ -1614,104 +1603,10 @@ function GroceryImagePlaceholder() {
           backgroundColor: colors.primaryWash,
         }}
       >
-        <GroceryIcon name="list" color={colors.primary} size={34} />
+        <AppIcon name="grocery-list" color={colors.primary} size={34} />
       </View>
       <Text selectable={false} style={[typography.caption, { color: colors.onSurfaceVariant }]}>
         Recipe Dost Grocery
-      </Text>
-    </View>
-  )
-}
-
-function GroceryMetadataChip({
-  icon,
-  platform,
-  label,
-  accent = false,
-}: {
-  icon?: GroceryIconName
-  platform?: RecipePlatform
-  label: string
-  accent?: boolean
-}) {
-  return (
-    <View
-      style={{
-        minHeight: 28,
-        maxWidth: '58%',
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.xs,
-        borderRadius: radius.pill,
-        borderWidth: 1,
-        borderColor: accent
-          ? colors.primaryOutlineSoft
-          : 'rgba(255, 255, 255, 0.12)',
-        backgroundColor: 'rgba(0, 0, 0, 0.48)',
-        paddingHorizontal: spacing.sm,
-      }}
-    >
-      {platform ? (
-        <PlatformMark platform={platform} />
-      ) : icon ? (
-        <GroceryIcon
-          name={icon}
-          color={accent ? colors.primary : '#D3CED0'}
-          size={13}
-        />
-      ) : null}
-      <Text
-        selectable
-        numberOfLines={1}
-        style={[
-          typography.label,
-          {
-            minWidth: 0,
-            color: accent ? colors.primary : '#D3CED0',
-            fontSize: 9,
-          },
-        ]}
-      >
-        {label}
-      </Text>
-    </View>
-  )
-}
-
-function PlatformMark({ platform }: { platform: RecipePlatform }) {
-  const mark =
-    platform === 'instagram'
-      ? 'IG'
-      : platform === 'tiktok'
-        ? 'TT'
-        : platform === 'youtube'
-          ? '▶'
-          : platform === 'facebook'
-            ? 'f'
-            : '⌁'
-
-  return (
-    <View
-      style={{
-        minWidth: mark.length > 1 ? 20 : 14,
-        height: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 5,
-        borderWidth: mark.length > 1 ? 1 : 0,
-        borderColor: colors.primaryOutlineSoft,
-      }}
-    >
-      <Text
-        selectable={false}
-        style={{
-          color: colors.primary,
-          fontSize: mark.length > 1 ? 7 : 14,
-          lineHeight: mark.length > 1 ? 10 : 15,
-          fontWeight: '900',
-        }}
-      >
-        {mark}
       </Text>
     </View>
   )
@@ -1731,56 +1626,6 @@ function NonBlockingNetworkNotice({ message }: { message: string }) {
         {message}
       </Text>
     </View>
-  )
-}
-
-type GroceryIconName =
-  | 'search'
-  | 'close'
-  | 'more'
-  | 'list'
-  | 'recipe'
-  | 'copy'
-  | 'share'
-  | 'clock'
-  | 'calendar'
-  | 'user'
-
-const groceryIconGlyphs: Record<GroceryIconName, string> = {
-  search: '⌕',
-  close: '×',
-  more: '⋮',
-  list: '☷',
-  recipe: '▤',
-  copy: '⧉',
-  share: '↥',
-  clock: '◷',
-  calendar: '◫',
-  user: '@',
-}
-
-function GroceryIcon({
-  name,
-  color,
-  size = 18,
-}: {
-  name: GroceryIconName
-  color: string
-  size?: number
-}) {
-  return (
-    <Text
-      selectable={false}
-      style={{
-        color,
-        fontSize: size,
-        lineHeight: Math.ceil(size * 1.12),
-        fontWeight: '800',
-        textAlign: 'center',
-      }}
-    >
-      {groceryIconGlyphs[name]}
-    </Text>
   )
 }
 

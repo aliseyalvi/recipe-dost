@@ -1,6 +1,7 @@
 import { OutlinePillButton, SkeletonBar } from '@/features/home/editorial-layout'
 import { borders, colors, radius, spacing, typography } from '@/theme'
 import { Pressable, Text, View } from 'react-native'
+import { AppIcon } from '@/ui/app-icon'
 
 export function ProcessingCard({
   stageLabel,
@@ -41,9 +42,7 @@ export function ProcessingCard({
               backgroundColor: colors.surfaceContainerHighest,
             }}
           >
-            <Text selectable={false} style={{ color: colors.onSurfaceVariant, fontSize: 32 }}>
-              ⧖
-            </Text>
+            <AppIcon name="hourglass" color={colors.onSurfaceVariant} size={32} />
           </View>
         </View>
 
@@ -57,9 +56,12 @@ export function ProcessingCard({
               paddingVertical: spacing.xs,
             }}
           >
-            <Text selectable={false} style={[typography.caption, { color: colors.primary }]}>
-              ⚡ {stageLabel}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <AppIcon name="usage" color={colors.primary} size={14} />
+              <Text selectable={false} style={[typography.caption, { color: colors.primary }]}>
+                {stageLabel}
+              </Text>
+            </View>
           </View>
           <SkeletonBar width="92%" />
           <SkeletonBar width="66%" />

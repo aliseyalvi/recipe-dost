@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { AppIcon } from '@/ui/app-icon'
 
 export function EditorialScreen({ children }: { children: ReactNode }) {
   const insets = useSafeAreaInsets()
@@ -114,9 +115,7 @@ export function UsagePill({
         <ActivityIndicator size="small" color={colors.primary} />
       ) : (
         <>
-          <Text selectable={false} style={{ color: colors.primary, fontSize: 13 }}>
-            ⚡
-          </Text>
+          <AppIcon name="usage" color={colors.primary} size={14} />
           <Text
             selectable={false}
             numberOfLines={1}
@@ -129,7 +128,7 @@ export function UsagePill({
               },
             ]}
           >
-            {label ?? '—'}
+            {label ?? 'Unavailable'}
           </Text>
         </>
       )}

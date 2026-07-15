@@ -51,6 +51,7 @@ import {
   NestedScreenHeader,
 } from '@/ui/screen-header'
 import { UrduText } from '@/ui/urdu-text'
+import { getPlatformIconName, type AppIconName } from '@/ui/app-icon'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import * as Clipboard from 'expo-clipboard'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
@@ -347,7 +348,7 @@ export default function RecipeCardResultRoute() {
       rightActions={
         <HeaderIconButton
           label="Recipe options"
-          icon="⋮"
+          icon="more-vertical"
           onPress={() => setIsOptionsOpen(true)}
         />
       }
@@ -369,14 +370,14 @@ export default function RecipeCardResultRoute() {
           }}
         >
           {sourcePlatformLabel ? (
-            <DetailChip icon="⌁" label={sourcePlatformLabel} accent />
+            <DetailChip icon={getPlatformIconName(sourcePlatformLabel)} label={sourcePlatformLabel} accent />
           ) : null}
-          {sourceCreator ? <DetailChip icon="@" label={sourceCreator} /> : null}
+          {sourceCreator ? <DetailChip icon="creator" label={sourceCreator} /> : null}
           {typeof sourceDuration === 'number' && sourceDuration > 0 ? (
-            <DetailChip icon="◷" label={formatSourceDuration(sourceDuration)} />
+            <DetailChip icon="clock" label={formatSourceDuration(sourceDuration)} />
           ) : null}
           {canOpenSource ? (
-            <DetailChip icon="⌁" label="Original source" />
+            <DetailChip icon="link" label="Original source" />
           ) : null}
         </View>
       ) : null}
@@ -437,7 +438,7 @@ export default function RecipeCardResultRoute() {
       {canViewGroceryList ? (
         <EditorialButton
           label="Open Grocery List"
-          icon="⌑"
+          icon="grocery"
           variant="primary"
           onPress={() =>
             router.push(
@@ -544,7 +545,7 @@ export default function RecipeCardResultRoute() {
                   ? 'Remove recipe from favorites'
                   : 'Add recipe to favorites'
               }
-              icon={recipeCard.is_favorite ? '♥' : '♡'}
+              icon={recipeCard.is_favorite ? 'heart' : 'heart-outline'}
               onPress={() => {
                 void handleToggleFavorite()
               }}
@@ -552,7 +553,7 @@ export default function RecipeCardResultRoute() {
             {canOpenSource ? (
               <NestedHeaderIconButton
                 accessibilityLabel="Open original video"
-                icon="⌁"
+                icon="external"
                 onPress={() => {
                   void openOriginalSource()
                 }}
@@ -1209,11 +1210,11 @@ function shouldShowLowConfidenceWarning(recipeCard: RecipeCard) {
 }
 
 function getAiRecipeStats(recipeCard: RecipeCard) {
-  const stats: { icon: string; label: string; value: string }[] = []
+  const stats: { icon: AppIconName; label: string; value: string }[] = []
 
   if (recipeCard.time.prep_time_minutes) {
     stats.push({
-      icon: '◷',
+      icon: 'clock',
       label: 'Prep time',
       value: `${recipeCard.time.prep_time_minutes} min`,
     })
@@ -1221,19 +1222,19 @@ function getAiRecipeStats(recipeCard: RecipeCard) {
 
   if (recipeCard.time.cook_time_minutes) {
     stats.push({
-      icon: '♨',
+      icon: 'flame',
       label: 'Cook time',
       value: `${recipeCard.time.cook_time_minutes} min`,
     })
   }
 
   if (isKnownStatValue(recipeCard.servings)) {
-    stats.push({ icon: '♟', label: 'Servings', value: recipeCard.servings!.trim() })
+    stats.push({ icon: 'servings', label: 'Servings', value: recipeCard.servings!.trim() })
   }
 
   if (isKnownStatValue(recipeCard.difficulty)) {
     stats.push({
-      icon: '✦',
+      icon: 'ai-recipe',
       label: 'Difficulty',
       value: titleCase(recipeCard.difficulty!),
     })

@@ -1,22 +1,45 @@
+import {
+  AiRecipeBadge,
+  FavoriteIconButton,
+  RecipeMetadataChip,
+  RecipeStatusBadge,
+} from '@/features/recipe-card/recipe-card-chrome'
 import { borders, colors, radius, shadows, spacing, typography } from '@/theme'
+import { AppIcon, type AppIconName } from '@/ui/app-icon'
 import { useEffect, useState } from 'react'
 import { Image, Pressable, Text, View } from 'react-native'
 
 export function EditorialRecipeCard({
   title,
   thumbnailUrl,
-  badge,
+  platform,
+  platformLabel,
   creatorLabel,
-  metadata,
+  durationLabel,
+  dateLabel,
+  statusLabel,
+  statusIcon = 'link',
+  isAiRecipe,
+  isFavorite,
+  isFavoriteUpdating = false,
   isProcessing = false,
+  onFavoritePress,
   onPress,
 }: {
   title: string
   thumbnailUrl: string | null
-  badge: string
+  platform: string | null
+  platformLabel: string
   creatorLabel?: string | null
-  metadata: string[]
+  durationLabel?: string | null
+  dateLabel: string
+  statusLabel?: string | null
+  statusIcon?: AppIconName
+  isAiRecipe: boolean
+  isFavorite: boolean
+  isFavoriteUpdating?: boolean
   isProcessing?: boolean
+  onFavoritePress: () => void
   onPress: () => void
 }) {
   const [imageFailed, setImageFailed] = useState(false)
@@ -30,6 +53,7 @@ export function EditorialRecipeCard({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={`Open ${title}`}
       onPress={onPress}
       style={({ pressed }) => ({
         overflow: 'hidden',
@@ -41,7 +65,12 @@ export function EditorialRecipeCard({
         opacity: pressed ? 0.86 : 1,
       })}
     >
-      <View style={{ aspectRatio: 4 / 3, backgroundColor: colors.surfaceContainerHigh }}>
+      <View
+        style={{
+          aspectRatio: 4 / 3,
+          backgroundColor: colors.surfaceContainerHigh,
+        }}
+      >
         {showImage ? (
           <Image
             accessibilityIgnoresInvertColors
@@ -56,9 +85,13 @@ export function EditorialRecipeCard({
               flex: 1,
               alignItems: 'center',
               justifyContent: 'center',
+              gap: spacing.sm,
               backgroundColor: colors.surfaceContainerHigh,
             }}
           >
+            {isProcessing ? (
+              <AppIcon name="hourglass" color={colors.primary} size={28} />
+            ) : null}
             <Text
               selectable={false}
               style={[
@@ -66,7 +99,7 @@ export function EditorialRecipeCard({
                 { color: colors.onSurfaceVariant, opacity: 0.72 },
               ]}
             >
-              {isProcessing ? '⧖' : 'Recipe Dost'}
+              Recipe Dost
             </Text>
           </View>
         )}
@@ -83,16 +116,28 @@ export function EditorialRecipeCard({
           style={{
             position: 'absolute',
             top: spacing.lg,
+            right: spacing.lg,
             left: spacing.lg,
-            borderRadius: radius.pill,
-            backgroundColor: isProcessing ? colors.primaryWash : colors.glassBadge,
-            paddingHorizontal: spacing.md,
-            paddingVertical: spacing.xs,
+            flexDirection: 'row',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: spacing.sm,
           }}
         >
-          <Text selectable={false} style={[typography.caption, { color: colors.onSurface }]}>
-            {badge}
-          </Text>
+          <FavoriteIconButton
+            title={title}
+            isFavorite={isFavorite}
+            disabled={isFavoriteUpdating}
+            onPress={onFavoritePress}
+          />
+          {isAiRecipe ? <AiRecipeBadge /> : null}
+          {!isAiRecipe && statusLabel ? (
+            <RecipeStatusBadge
+              icon={statusIcon}
+              label={statusLabel}
+              color={isProcessing ? colors.primary : colors.onSurface}
+            />
+          ) : null}
         </View>
       </View>
 
@@ -100,41 +145,37 @@ export function EditorialRecipeCard({
         <Text
           selectable
           numberOfLines={2}
-          style={[typography.body, { color: colors.onSurface, fontWeight: '800' }]}
+          style={[
+            typography.body,
+            { color: colors.onSurface, fontWeight: '800' },
+          ]}
         >
           {title}
         </Text>
-        {creatorLabel ? (
-          <View
-            style={{
-              alignSelf: 'flex-start',
-              borderRadius: radius.pill,
-              borderWidth: 1,
-              borderColor: colors.outlineVariant,
-              backgroundColor: colors.surfaceContainerHigh,
-              paddingHorizontal: spacing.md,
-              paddingVertical: spacing.xs,
-            }}
-          >
-            <Text
-              selectable
-              numberOfLines={1}
-              style={[typography.caption, { color: colors.onSurfaceVariant }]}
-            >
-              {creatorLabel}
-            </Text>
-          </View>
-        ) : null}
-        <Text
-          selectable
-          numberOfLines={2}
-          style={[
-            typography.label,
-            { color: colors.onSurfaceVariant, textTransform: 'none', letterSpacing: 0.35 },
-          ]}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: spacing.xs,
+          }}
         >
-          {metadata.join('  ·  ')}
-        </Text>
+          <RecipeMetadataChip
+            platform={platform}
+            label={platformLabel}
+          />
+          {creatorLabel ? (
+            <RecipeMetadataChip
+              icon="creator"
+              label={creatorLabel}
+              accent
+            />
+          ) : null}
+          {durationLabel ? (
+            <RecipeMetadataChip icon="clock" label={durationLabel} />
+          ) : null}
+          <RecipeMetadataChip icon="calendar" label={dateLabel} />
+        </View>
         {isProcessing ? (
           <View
             accessibilityLabel="Recipe preview is processing"

@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
 import { ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
+import { AppIcon, type AppIconName } from '@/ui/app-icon'
 
 type Props = {
   title: string
@@ -79,7 +80,7 @@ export function NestedScreenHeader({
         {showBack ? (
           <NestedHeaderIconButton
             accessibilityLabel="Go back"
-            icon="‹"
+            icon="back"
             onPress={goBack}
           />
         ) : null}
@@ -135,7 +136,7 @@ export function NestedHeaderIconButton({
   onPress,
 }: {
   accessibilityLabel: string
-  icon: string
+  icon: AppIconName
   onPress: () => void
 }) {
   return (
@@ -154,17 +155,7 @@ export function NestedHeaderIconButton({
         opacity: pressed ? 0.82 : 1,
       })}
     >
-      <Text
-        selectable={false}
-        style={{
-          color: colors.text,
-          fontSize: icon === '‹' ? 34 : 22,
-          lineHeight: icon === '‹' ? 36 : 26,
-          fontWeight: '700',
-        }}
-      >
-        {icon}
-      </Text>
+      <AppIcon name={icon} color={colors.text} size={22} />
     </Pressable>
   )
 }

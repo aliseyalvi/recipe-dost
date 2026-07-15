@@ -23,6 +23,7 @@ import {
   getRecipeLibrary,
   isMediaJobActive,
   shouldRefreshRecipeLibraryItem,
+  toggleFavorite,
 } from '@/lib/api/recipes'
 import { useRefetchOnAppForeground } from '@/lib/query/use-refetch-on-app-foreground'
 import { getRecipeCardThumbnail } from '@/lib/recipe-thumbnails'
@@ -31,16 +32,23 @@ import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, radius, spacing, typography } from '@/theme'
 import { ErrorState } from '@/ui/error-state'
 import { LoadingState } from '@/ui/loading-state'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Text, View } from 'react-native'
 
 export default function HomeRoute() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { user } = useAuth()
   const { track } = usePostHog()
   const { openSaveRecipeModal } = useSaveRecipeModal()
+  const [favoriteMutationId, setFavoriteMutationId] = useState<string | null>(
+    null
+  )
+  const [favoriteActionError, setFavoriteActionError] = useState<string | null>(
+    null
+  )
   const libraryQuery = useQuery({
     enabled: Boolean(user?.id),
     queryKey: ['recipe-library', user?.id],
@@ -147,6 +155,53 @@ export default function HomeRoute() {
     router.push(`/recipe/${recipe.id}?returnTo=/home`)
   }
 
+  const handleToggleFavorite = useCallback(
+    async (recipe: RecipeLibraryItem) => {
+      if (favoriteMutationId) {
+        return
+      }
+
+      setFavoriteMutationId(recipe.id)
+      setFavoriteActionError(null)
+
+      try {
+        const isFavorite = await toggleFavorite(
+          recipe.id,
+          recipe.is_favorite === true
+        )
+
+        queryClient.setQueryData<RecipeLibraryItem[]>(
+          ['recipe-library', user?.id],
+          (items) =>
+            items?.map((item) =>
+              item.id === recipe.id
+                ? { ...item, is_favorite: isFavorite }
+                : item
+            )
+        )
+        void queryClient.invalidateQueries({ queryKey: ['recipe-library'] })
+        void queryClient.invalidateQueries({ queryKey: ['recipe-item', recipe.id] })
+        void queryClient.invalidateQueries({ queryKey: ['recipe-card'] })
+        track('recipe_favorite_toggled', {
+          platform: recipe.platform ?? 'other',
+          is_favorite: isFavorite,
+          source: 'home_card',
+        })
+      } catch {
+        setFavoriteActionError(
+          'Could not update this favorite. Please try again.'
+        )
+        track('recipe_favorite_toggle_failed', {
+          platform: recipe.platform ?? 'other',
+          source: 'home_card',
+        })
+      } finally {
+        setFavoriteMutationId(null)
+      }
+    },
+    [favoriteMutationId, queryClient, track, user?.id]
+  )
+
   const usageLabel = getUsageLabel(aiAccessQuery.data)
 
   return (
@@ -186,16 +241,28 @@ export default function HomeRoute() {
 
       {!libraryQuery.isLoading && (libraryQuery.data || libraryQuery.error) ? (
         <>
+          {favoriteActionError ? (
+            <BackgroundRefreshNotice message={favoriteActionError} />
+          ) : null}
           <HomeSection title="Recent">
             {recentRecipe ? (
               <>
                 <EditorialRecipeCard
                   title={getRecipeDisplayTitle(recentRecipe)}
                   thumbnailUrl={getRecipeCardThumbnail(recentRecipe)}
-                  badge={getRecentBadge(recentRecipe)}
+                  platform={recentRecipe.platform}
+                  platformLabel={getPlatformLabel(recentRecipe.platform)}
                   creatorLabel={getRecipeCreatorLabel(recentRecipe)}
-                  metadata={getRecentMetadata(recentRecipe)}
+                  durationLabel={getSourceDurationLabel(recentRecipe)}
+                  dateLabel={formatDate(getLatestActivityAt(recentRecipe))}
+                  {...getHomeStatusProps(recentRecipe)}
+                  isAiRecipe={hasAiRecipe(recentRecipe)}
+                  isFavorite={recentRecipe.is_favorite === true}
+                  isFavoriteUpdating={favoriteMutationId === recentRecipe.id}
                   isProcessing={isRecipeProcessing(recentRecipe)}
+                  onFavoritePress={() => {
+                    void handleToggleFavorite(recentRecipe)
+                  }}
                   onPress={() => openRecipe(recentRecipe, 'recent')}
                 />
                 <OutlinePillButton
@@ -219,9 +286,18 @@ export default function HomeRoute() {
                 <EditorialRecipeCard
                   title={getRecipeDisplayTitle(favoriteRecipe)}
                   thumbnailUrl={getRecipeCardThumbnail(favoriteRecipe)}
-                  badge="♡ Favorite"
+                  platform={favoriteRecipe.platform}
+                  platformLabel={getPlatformLabel(favoriteRecipe.platform)}
                   creatorLabel={getRecipeCreatorLabel(favoriteRecipe)}
-                  metadata={getFavoriteMetadata(favoriteRecipe)}
+                  durationLabel={getSourceDurationLabel(favoriteRecipe)}
+                  dateLabel={formatDate(getLatestActivityAt(favoriteRecipe))}
+                  {...getHomeStatusProps(favoriteRecipe)}
+                  isAiRecipe={hasAiRecipe(favoriteRecipe)}
+                  isFavorite={favoriteRecipe.is_favorite === true}
+                  isFavoriteUpdating={favoriteMutationId === favoriteRecipe.id}
+                  onFavoritePress={() => {
+                    void handleToggleFavorite(favoriteRecipe)
+                  }}
                   onPress={() => openRecipe(favoriteRecipe, 'favorites')}
                 />
                 <OutlinePillButton
@@ -239,9 +315,23 @@ export default function HomeRoute() {
                   <EditorialRecipeCard
                     title={getRecipeDisplayTitle(latestAiRecipe)}
                     thumbnailUrl={getRecipeCardThumbnail(latestAiRecipe)}
-                    badge="✦ AI Recipe"
+                    platform={latestAiRecipe.platform}
+                    platformLabel={getPlatformLabel(latestAiRecipe.platform)}
                     creatorLabel={getRecipeCreatorLabel(latestAiRecipe)}
-                    metadata={getAiMetadata(latestAiRecipe)}
+                    durationLabel={getSourceDurationLabel(latestAiRecipe)}
+                    dateLabel={formatDate(
+                      latestAiRecipe.latest_card?.created_at ??
+                        latestAiRecipe.created_at
+                    )}
+                    {...getHomeStatusProps(latestAiRecipe)}
+                    isAiRecipe
+                    isFavorite={latestAiRecipe.is_favorite === true}
+                    isFavoriteUpdating={
+                      favoriteMutationId === latestAiRecipe.id
+                    }
+                    onFavoritePress={() => {
+                      void handleToggleFavorite(latestAiRecipe)
+                    }}
                     onPress={() => openRecipe(latestAiRecipe, 'ai_generated')}
                   />
                   <OutlinePillButton
@@ -377,45 +467,43 @@ function getProcessingLabel(recipe: RecipeLibraryItem) {
   return getMetadataProcessingStage(recipe.metadata_status).label
 }
 
-function getFavoriteMetadata(recipe: RecipeLibraryItem) {
-  return [getPlatformLabel(recipe.platform), formatDate(getLatestActivityAt(recipe))]
-}
-
-function getAiMetadata(recipe: RecipeLibraryItem) {
-  const context = recipe.meal_type?.trim() || getPlatformLabel(recipe.platform)
-  const createdAt = recipe.latest_card?.created_at ?? recipe.created_at
-
-  return ['AI Generated', context, formatDate(createdAt)]
-}
-
-function getRecentBadge(recipe: RecipeLibraryItem) {
-  if (hasAiRecipe(recipe)) {
-    return '✦ AI Recipe'
-  }
-
+function getHomeStatusProps(recipe: RecipeLibraryItem) {
   if (isRecipeProcessing(recipe)) {
-    return `⧖ ${getProcessingLabel(recipe)}`
+    return {
+      statusLabel: getProcessingLabel(recipe),
+      statusIcon: 'hourglass' as const,
+    }
   }
 
-  return getPlatformLabel(recipe.platform)
+  if (recipe.metadata_status === 'failed') {
+    return {
+      statusLabel: 'Preview unavailable',
+      statusIcon: 'warning' as const,
+    }
+  }
+
+  return {
+    statusLabel: hasAiRecipe(recipe) ? null : 'Saved Link',
+    statusIcon: 'link' as const,
+  }
 }
 
-function getRecentMetadata(recipe: RecipeLibraryItem) {
-  let status = 'Saved Link'
-
-  if (hasAiRecipe(recipe)) {
-    status = 'AI Recipe'
-  } else if (isRecipeProcessing(recipe)) {
-    status = getProcessingLabel(recipe)
-  } else if (recipe.metadata_status === 'failed') {
-    status = 'Preview unavailable'
+function getSourceDurationLabel(recipe: RecipeLibraryItem) {
+  if (
+    typeof recipe.duration_seconds !== 'number' ||
+    !Number.isFinite(recipe.duration_seconds) ||
+    recipe.duration_seconds <= 0
+  ) {
+    return null
   }
 
-  return [
-    getPlatformLabel(recipe.platform),
-    status,
-    formatDate(getLatestActivityAt(recipe)),
-  ]
+  const totalSeconds = Math.round(recipe.duration_seconds)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+
+  return minutes > 0
+    ? `${minutes}m${seconds > 0 ? ` ${seconds}s` : ''}`
+    : `${seconds}s`
 }
 
 function getPlatformLabel(platform: string | null) {

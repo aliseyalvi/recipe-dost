@@ -12,6 +12,7 @@ import { useCallback, useState } from 'react'
 import type { RefObject } from 'react'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import type { TextInput as GestureTextInput } from 'react-native-gesture-handler'
+import { AppIcon } from '@/ui/app-icon'
 
 type ClipboardResult = 'pasted' | 'empty' | 'failed'
 
@@ -170,12 +171,7 @@ export function ImportRecipeSheet({
               opacity: isSaving ? 0.45 : pressed ? 0.72 : 1,
             })}
           >
-            <Text
-              selectable={false}
-              style={{ color: colors.onSurfaceVariant, fontSize: 26, lineHeight: 28 }}
-            >
-              ×
-            </Text>
+            <AppIcon name="close" color={colors.onSurfaceVariant} size={24} />
           </Pressable>
         </View>
 
@@ -273,12 +269,7 @@ export function ImportRecipeSheet({
                   opacity: isSaving ? 0.42 : pressed ? 0.7 : 1,
                 })}
               >
-                <Text
-                  selectable={false}
-                  style={{ color: colors.primary, fontSize: 28, lineHeight: 30 }}
-                >
-                  ×
-                </Text>
+                <AppIcon name="close" color={colors.primary} size={24} />
               </Pressable>
             ) : null}
           </View>
@@ -318,9 +309,7 @@ export function ImportRecipeSheet({
               opacity: isSaving ? 0.45 : pressed ? 0.72 : 1,
             })}
           >
-            <Text selectable={false} style={{ color: colors.primary, fontSize: 18 }}>
-              ▣
-            </Text>
+            <AppIcon name="copy" color={colors.primary} size={18} />
             <Text
               selectable={false}
               style={[typography.body, { color: colors.primary, fontWeight: '700' }]}
@@ -349,9 +338,7 @@ export function ImportRecipeSheet({
           {isSaving ? (
             <ActivityIndicator color={colors.onPrimaryContainer} />
           ) : (
-            <Text selectable={false} style={{ color: colors.onPrimaryContainer, fontSize: 20 }}>
-              ✦
-            </Text>
+            <AppIcon name="link" color={colors.onPrimaryContainer} size={20} />
           )}
           <Text
             selectable={false}

@@ -13,6 +13,7 @@ import {
   useWindowDimensions,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { AppIcon } from '@/ui/app-icon'
 
 export type PaywallFeedbackTone = 'error' | 'info' | 'success'
 
@@ -111,12 +112,7 @@ export function PaywallSheet({
               opacity: closeDisabled ? 0.45 : pressed ? 0.68 : 1,
             })}
           >
-            <Text
-              selectable={false}
-              style={{ color: colors.onSurface, fontSize: 26, lineHeight: 28 }}
-            >
-              ×
-            </Text>
+            <AppIcon name="close" color={colors.onSurface} size={24} />
           </Pressable>
         </View>
 
@@ -155,9 +151,7 @@ export function PaywallHero({ isPremiumActive }: { isPremiumActive: boolean }) {
           backgroundColor: colors.primaryWash,
         }}
       >
-        <Text selectable={false} style={{ color: colors.primary, fontSize: 24 }}>
-          ✦
-        </Text>
+        <AppIcon name="ai-recipe" color={colors.primary} size={24} />
       </View>
       <View style={{ gap: spacing.sm }}>
         <Text selectable style={[typography.label, { color: colors.primary }]}>
@@ -583,9 +577,7 @@ export function PremiumActivePanel({
             backgroundColor: colors.primaryWash,
           }}
         >
-          <Text selectable={false} style={{ color: colors.primary, fontSize: 22 }}>
-            ✦
-          </Text>
+          <AppIcon name="ai-recipe" color={colors.primary} size={22} />
         </View>
         <View style={{ minWidth: 0, flex: 1, gap: spacing.xs }}>
           <Text selectable style={[typography.heading, { color: colors.onSurface }]}>

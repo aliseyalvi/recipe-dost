@@ -8,6 +8,36 @@ Audit-only pass for onboarding launch routing and stale Home/Library metadata st
 
 Current branch workflow is correct for this milestone: M22E fixes are prepared on `develop`, then merged to `main` only after QA for a production AAB update.
 
+## M22E.1R-ICONPOLISH1 Cross-screen iconography and recipe metadata polish
+
+Status: implemented on `develop`; automated validation complete and Android visual QA pending.
+
+Icon system and shared presentation:
+
+- Added the Expo-compatible `@expo/vector-icons` dependency after the audit confirmed that the app had no declared vector-icon package and relied on separate Unicode/text glyph maps. Ionicons is now the canonical family because it provides matching outline/filled navigation and favorite states plus supported Instagram, YouTube, TikTok, and Facebook brand glyphs.
+- Added a typed semantic `AppIcon` map and typed platform resolver. Platform values are normalized case-insensitively, including YouTube variants; Instagram, YouTube, TikTok, and Facebook map to supported brand glyphs and any unknown provider maps to a generic link icon. Backend strings are never passed directly as icon names.
+- Added shared recipe chrome for one 44px favorite control, one coral glass AI Recipe badge, typed status badges, and reusable platform/creator/duration/date metadata chips. Selected and unselected favorites use Ionicons `heart` and `heart-outline` at the same size and footprint. AI-generated favorites display both the favorite control and AI badge.
+
+Screen corrections:
+
+- Home and Library cards now share the favorite, AI badge, platform, creator, duration, and metadata-chip treatment. Home favorite taps retain the existing ownership-scoped favorite mutation and refresh relevant cached recipe data. Missing creator/duration values are omitted rather than replaced with invented data.
+- The floating tab bar uses matching Ionicons outline/filled pairs for Home, Library, Grocery cart, and Settings, while the central Add action keeps the existing plus behavior. Routes, labels, tab handling, safe areas, and the Add/share sheet are unchanged.
+- Grocery now uses the standard `share-social-outline` glyph for its existing native Share handler, `copy-outline` for Copy, and cart/list glyphs for Grocery semantics. Shopping-list check state and native share/copy behavior are unchanged.
+- Detail, action-menu, Settings, Paywall, processing, and Add-sheet utility marks in scope were migrated from text glyphs to typed semantic Ionicons. External source uses `open-outline`, menus use `ellipsis-vertical`, restore uses `refresh-outline`, warnings use `warning-outline`, and decorative icons remain hidden from accessibility when their surrounding control already supplies the label.
+
+Audit result and constraints:
+
+- The missing/wrong icons were not unsupported vector names: the affected UI used local text glyphs, initials such as IG/TT/YT, or absent metadata icons. Home and Library also had separate card markup. Central typed resolution and shared recipe chrome remove those failure modes without remote assets or new requests.
+- No query, route, favorite API, Grocery persistence, Paywall/RevenueCat, quota/access, Supabase schema, Edge Function, worker, package ID, or environment behavior changed. M22E.1R-GROCERY1, M22E.1R-SETTINGS1, M22E.1R-PAYWALL2, and M22E.1R-ICONPOLISH1 are Done; M22E.2 is Next.
+
+M22E.1R-ICONPOLISH1 manual QA checklist:
+
+- [ ] Toggle favorite on Home and Library and verify the same heart changes outline/filled without resizing, survives reload, and remains a 44px target.
+- [ ] Verify favorite-only, AI-only, and favorite-plus-AI cards on a small Android screen without badge/menu overlap.
+- [ ] Verify real Instagram, YouTube, and TikTok cards show supported brand glyphs; unknown platforms use the link fallback; absent creator/duration fields render no empty chip.
+- [ ] Verify Grocery inactive/active cart tabs, native Share, Copy List, and existing checkbox persistence.
+- [ ] Verify all tab icons share size/baseline, Add still opens the sheet, Library search works, Settings/Paywall load, recipe source actions work, and development logs contain no unsupported-icon warning or sensitive value.
+
 ## M22E.1R-PAYWALL2 Final RevenueCat Paywall sheet redesign
 
 Status: implemented and automatically validated on `develop`; Android purchase QA pending.

@@ -14,6 +14,11 @@ import {
   useWindowDimensions,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import {
+  AppIcon,
+  getPlatformIconName,
+  type AppIconName,
+} from '@/ui/app-icon'
 
 export function RecipeDetailScaffold({
   title,
@@ -96,7 +101,7 @@ function RecipeDetailHeader({
         paddingBottom: spacing.sm,
       }}
     >
-      <HeaderIconButton label="Go back" icon="‹" onPress={goBack} />
+      <HeaderIconButton label="Go back" icon="back" onPress={goBack} />
       <Text
         selectable
         numberOfLines={1}
@@ -136,7 +141,7 @@ export function HeaderIconButton({
   onPress,
 }: {
   label: string
-  icon: string
+  icon: AppIconName
   selected?: boolean
   disabled?: boolean
   onPress: () => void
@@ -158,17 +163,11 @@ export function HeaderIconButton({
         opacity: pressed || disabled ? 0.62 : 1,
       })}
     >
-      <Text
-        selectable={false}
-        style={{
-          color: selected ? colors.primary : colors.onSurface,
-          fontSize: icon === '‹' ? 34 : 22,
-          lineHeight: icon === '‹' ? 36 : 25,
-          fontWeight: '800',
-        }}
-      >
-        {icon}
-      </Text>
+      <AppIcon
+        name={icon}
+        color={selected ? colors.primary : colors.onSurface}
+        size={22}
+      />
     </Pressable>
   )
 }
@@ -197,9 +196,12 @@ export function DetailUsagePill({
         opacity: pressed ? 0.68 : 1,
       })}
     >
-      <Text selectable={false} style={[typography.caption, { color: colors.primary, fontWeight: '800' }]}>
-        ⚡ {label}
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+        <AppIcon name="usage" color={colors.primary} size={15} />
+        <Text selectable={false} style={[typography.caption, { color: colors.primary, fontWeight: '800' }]}>
+          {label}
+        </Text>
+      </View>
     </Pressable>
   )
 }
@@ -248,18 +250,12 @@ export function RecipeAnalyzingState({
           borderColor: colors.primaryOutlineSoft,
         }}
       >
-        <Text
-          selectable={false}
-          style={{ position: 'absolute', top: 35, right: 52, color: colors.outline, fontSize: 25 }}
-        >
-          ◷
-        </Text>
-        <Text
-          selectable={false}
-          style={{ position: 'absolute', bottom: 45, left: 48, color: colors.outline, fontSize: 23 }}
-        >
-          ✦
-        </Text>
+        <View style={{ position: 'absolute', top: 35, right: 52 }}>
+          <AppIcon name="clock" color={colors.outline} size={25} />
+        </View>
+        <View style={{ position: 'absolute', bottom: 45, left: 48 }}>
+          <AppIcon name="ai-recipe" color={colors.outline} size={23} />
+        </View>
         <View
           style={{
             width: 104,
@@ -273,12 +269,13 @@ export function RecipeAnalyzingState({
           }}
         >
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text
-            selectable={false}
-            style={{ position: 'absolute', color: colors.primary, fontSize: 28, fontWeight: '900' }}
-          >
-            {isMetadata ? '⌁' : '✦'}
-          </Text>
+          <View style={{ position: 'absolute' }}>
+            <AppIcon
+              name={isMetadata ? 'link' : 'ai-recipe'}
+              color={colors.primary}
+              size={28}
+            />
+          </View>
         </View>
       </View>
 
@@ -419,15 +416,15 @@ export function RecipeMetadataState({
           {title}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.sm }}>
-          <DetailChip icon="⌁" label={platformLabel} accent />
-          {creator ? <DetailChip icon="@" label={creator} /> : null}
-          {durationLabel ? <DetailChip icon="◷" label={durationLabel} /> : null}
+          <DetailChip icon={getPlatformIconName(platformLabel)} label={platformLabel} accent />
+          {creator ? <DetailChip icon="creator" label={creator} /> : null}
+          {durationLabel ? <DetailChip icon="clock" label={durationLabel} /> : null}
         </View>
       </View>
       <View style={{ gap: spacing.md }}>
         <EditorialButton
           accessibilityLabel="Generate AI Recipe"
-          icon="✦"
+          icon="ai-recipe"
           label={generateLabel}
           variant="primary"
           disabled={generateDisabled}
@@ -435,7 +432,7 @@ export function RecipeMetadataState({
         />
         <View style={{ flexDirection: 'row', gap: spacing.md }}>
           <View style={{ flex: 1 }}>
-            <EditorialButton icon="⌁" label="Open Original" variant="secondary" onPress={onOpenOriginal} />
+            <EditorialButton icon="external" label="Open Original" variant="secondary" onPress={onOpenOriginal} />
           </View>
           <Pressable
             accessibilityRole="button"
@@ -453,9 +450,11 @@ export function RecipeMetadataState({
               opacity: pressed || isFavoriteUpdating ? 0.62 : 1,
             })}
           >
-            <Text selectable={false} style={{ color: colors.primary, fontSize: 24 }}>
-              {isFavorite ? '♥' : '♡'}
-            </Text>
+            <AppIcon
+              name={isFavorite ? 'heart' : 'heart-outline'}
+              color={colors.primary}
+              size={24}
+            />
           </Pressable>
         </View>
         {availabilityText ? (
@@ -531,9 +530,12 @@ function RecipeSourceHero({
             RECIPE OVERVIEW
           </Text>
           {durationLabel ? (
-            <Text selectable style={[typography.caption, { color: colors.onSurface }]}>
-              ◷ {durationLabel} duration
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <AppIcon name="clock" color={colors.onSurface} size={14} />
+              <Text selectable style={[typography.caption, { color: colors.onSurface }]}>
+                {durationLabel} duration
+              </Text>
+            </View>
           ) : null}
         </View>
         <View
@@ -546,9 +548,7 @@ function RecipeSourceHero({
             backgroundColor: 'rgba(255, 255, 255, 0.12)',
           }}
         >
-          <Text selectable={false} style={{ color: colors.onSurface, fontSize: 23 }}>
-            ▶
-          </Text>
+          <AppIcon name="play" color={colors.onSurface} size={23} />
         </View>
       </View>
     </Pressable>
@@ -633,7 +633,7 @@ export function AiRecipeHero({
 export function RecipeStatGrid({
   stats,
 }: {
-  stats: { icon: string; label: string; value: string }[]
+  stats: { icon: AppIconName; label: string; value: string }[]
 }) {
   if (stats.length === 0) {
     return null
@@ -657,9 +657,7 @@ export function RecipeStatGrid({
             padding: spacing.md,
           }}
         >
-          <Text selectable={false} style={{ color: colors.primary, fontSize: 19 }}>
-            {stat.icon}
-          </Text>
+          <AppIcon name={stat.icon} color={colors.primary} size={19} />
           <Text selectable style={[typography.label, { color: colors.onSurfaceVariant, textAlign: 'center' }]}>
             {stat.label}
           </Text>
@@ -708,9 +706,7 @@ export function RecipeFailedState({
           backgroundColor: colors.dangerSurface,
         }}
       >
-        <Text selectable={false} style={{ color: colors.error, fontSize: 42 }}>
-          !
-        </Text>
+        <AppIcon name="warning" color={colors.error} size={42} />
       </View>
       <View style={{ alignItems: 'center', gap: spacing.md }}>
         <Text selectable style={[typography.hero, { color: colors.onSurface, textAlign: 'center' }]}>
@@ -764,7 +760,7 @@ export function EditorialButton({
   onPress,
 }: {
   label: string
-  icon?: string
+  icon?: AppIconName
   accessibilityLabel?: string
   variant: 'primary' | 'secondary' | 'ghost'
   disabled?: boolean
@@ -797,9 +793,11 @@ export function EditorialButton({
       })}
     >
       {icon ? (
-        <Text selectable={false} style={{ color: isPrimary ? colors.onPrimaryContainer : colors.primary, fontSize: 19 }}>
-          {icon}
-        </Text>
+        <AppIcon
+          name={icon}
+          color={isPrimary ? colors.onPrimaryContainer : colors.primary}
+          size={19}
+        />
       ) : null}
       <Text
         selectable={false}
@@ -823,7 +821,7 @@ export function DetailChip({
   label,
   accent = false,
 }: {
-  icon?: string
+  icon?: AppIconName
   label: string
   accent?: boolean
 }) {
@@ -842,9 +840,11 @@ export function DetailChip({
       }}
     >
       {icon ? (
-        <Text selectable={false} style={{ color: accent ? colors.primary : colors.onSurfaceVariant, fontSize: 14 }}>
-          {icon}
-        </Text>
+        <AppIcon
+          name={icon}
+          color={accent ? colors.primary : colors.onSurfaceVariant}
+          size={14}
+        />
       ) : null}
       <Text selectable style={[typography.caption, { color: accent ? colors.primary : colors.onSurface }]}>
         {label}

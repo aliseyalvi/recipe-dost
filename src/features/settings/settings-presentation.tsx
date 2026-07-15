@@ -1,6 +1,7 @@
 import type { NormalizedSubscriptionStatus } from '@/features/subscription/normalized-subscription-status'
 import { borders, colors, radius, shadows, spacing, typography } from '@/theme'
 import { AppBadge } from '@/ui/app-badge'
+import { AppIcon, type AppIconName } from '@/ui/app-icon'
 import type { ReactNode } from 'react'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 
@@ -33,20 +34,20 @@ type SettingsRowProps = {
   accessibilityHint?: string
 }
 
-const iconGlyphs: Record<SettingsIconName, string> = {
-  profile: '',
-  premium: '✦',
-  upgrade: '✦',
-  manage: '↗',
-  restore: '↓',
-  refresh: '↻',
-  language: '文',
-  theme: '☾',
-  privacy: 'i',
-  delete: '!',
-  support: '?',
-  version: 'v',
-  developer: '⌘',
+const settingsIconMap: Record<SettingsIconName, AppIconName> = {
+  profile: 'profile',
+  premium: 'ai-recipe',
+  upgrade: 'ai-recipe',
+  manage: 'external',
+  restore: 'restore',
+  refresh: 'refresh',
+  language: 'language',
+  theme: 'theme',
+  privacy: 'privacy',
+  delete: 'trash',
+  support: 'support',
+  version: 'info',
+  developer: 'developer',
 }
 
 export function SettingsHeader() {
@@ -367,12 +368,7 @@ export function SettingsRow({
           size="small"
         />
       ) : onPress ? (
-        <Text
-          selectable={false}
-          style={{ color: colors.outline, fontSize: 24, lineHeight: 28, fontWeight: '500' }}
-        >
-          ›
-        </Text>
+        <AppIcon name="forward" color={colors.outline} size={20} />
       ) : null}
     </>
   )
@@ -449,48 +445,11 @@ export function SettingsIcon({
         backgroundColor: danger ? colors.dangerSurface : colors.primaryWash,
       }}
     >
-      {name === 'profile' ? (
-        <View
-          style={{
-            width: 20,
-            height: 22,
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-          }}
-        >
-          <View
-            style={{
-              position: 'absolute',
-              top: 1,
-              width: 8,
-              height: 8,
-              borderRadius: radius.pill,
-              backgroundColor: foreground,
-            }}
-          />
-          <View
-            style={{
-              width: 18,
-              height: 10,
-              borderTopLeftRadius: radius.pill,
-              borderTopRightRadius: radius.pill,
-              backgroundColor: foreground,
-            }}
-          />
-        </View>
-      ) : (
-        <Text
-          selectable={false}
-          style={{
-            color: foreground,
-            fontSize: name === 'language' ? 16 : featured ? 22 : 19,
-            lineHeight: featured ? 26 : 22,
-            fontWeight: '800',
-          }}
-        >
-          {iconGlyphs[name]}
-        </Text>
-      )}
+      <AppIcon
+        name={settingsIconMap[name]}
+        color={foreground}
+        size={featured ? 22 : 19}
+      />
     </View>
   )
 }

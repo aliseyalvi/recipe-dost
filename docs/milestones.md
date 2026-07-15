@@ -1,5 +1,13 @@
 # Recipe Dost Milestones
 
+## M22E.1R-ICONPOLISH1 - Cross-Screen Iconography, Recipe Badges and Metadata Polish
+- Status: Done on `develop`; Android visual/regression QA pending. M22E.1R-GROCERY1, M22E.1R-SETTINGS1, and M22E.1R-PAYWALL2 remain Done; M22E.2 is Next.
+- Added Expo-compatible `@expo/vector-icons` and selected Ionicons as the canonical typed family after the audit found no declared vector-icon dependency. Replaced text glyphs and platform initials with supported local vector icons; no remote assets or arbitrary backend icon names are used.
+- Added shared typed `AppIcon`/platform resolution plus recipe favorite, AI badge, status badge, and metadata-chip presentation. Favorites use matching `heart-outline`/`heart` states at one footprint; AI favorites render both controls; unknown platforms use a link icon.
+- Home and Library now share real platform, creator, duration, favorite, and AI visuals. Missing values are omitted. Existing favorite ownership/mutations, card routing, search, query sources, and PostHog abstraction remain intact.
+- Bottom tabs use matching outline/filled Home, Library, Grocery cart, and Settings pairs with the existing central Add plus. Grocery Share uses `share-social-outline`; its existing native Share, Copy, and checklist behavior are unchanged.
+- Detail, menus, Settings, Paywall, processing, and Add-sheet utility icons now use the same typed family. No backend, worker, schema, quota/access, RevenueCat, package ID, or env behavior changed. A Play shipment requires versionCode 2 after QA and promotion to `main`.
+
 ## M22E.1R-PAYWALL2 - Final RevenueCat Paywall Sheet Redesign
 - Rebuilt the single `/paywall` route as a transparent-modal native bottom sheet with dim backdrop, drag handle, accessible close, Obsidian/glass/coral surfaces, editorial heading, scrollable comparison/plans, and safe-area sticky purchase controls. No new dependency or duplicate Paywall was added.
 - Kept the existing `default` offering, `premium` entitlement, RevenueCat provider, purchase/restore/customer refresh/backend sync, and `get-ai-access`. Monthly/Yearly are mapped only from `recipe_dost_premium_monthly` / `recipe_dost_premium_yearly` (including base-plan suffixes), never array order.

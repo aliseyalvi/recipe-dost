@@ -5,6 +5,12 @@ import {
 import { UsagePill } from '@/features/home/editorial-layout'
 import { getMediaJobProcessingStage } from '@/features/media-jobs/processing-stage'
 import { getPaywallHref } from '@/features/paywall/paywall-model'
+import {
+  AiRecipeBadge,
+  FavoriteIconButton,
+  RecipeMetadataChip,
+  RecipeStatusBadge,
+} from '@/features/recipe-card/recipe-card-chrome'
 import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
 import { getAiAccessState } from '@/lib/api/ai-access'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
@@ -25,6 +31,7 @@ import { borders, colors, radius, spacing, typography } from '@/theme'
 import { Button } from '@/ui/button'
 import { ErrorState } from '@/ui/error-state'
 import { LoadingState } from '@/ui/loading-state'
+import { AppIcon, type AppIconName } from '@/ui/app-icon'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -533,93 +540,6 @@ export default function LibraryRoute() {
   )
 }
 
-type EditorialIconName =
-  | 'sparkles'
-  | 'link'
-  | 'clock'
-  | 'user'
-  | 'heart'
-  | 'heart-filled'
-  | 'hourglass'
-  | 'retry'
-  | 'more'
-  | 'external'
-  | 'book'
-  | 'trash'
-  | 'close'
-
-const editorialIconGlyphs: Record<EditorialIconName, string> = {
-  sparkles: '✦',
-  link: '⌁',
-  clock: '◷',
-  user: '@',
-  heart: '♡',
-  'heart-filled': '♥',
-  hourglass: '⧖',
-  retry: '↻',
-  more: '⋮',
-  external: '↗',
-  book: '▤',
-  trash: '⌫',
-  close: '×',
-}
-
-function EditorialIcon({
-  name,
-  color,
-  size = 18,
-}: {
-  name: EditorialIconName
-  color: string
-  size?: number
-}) {
-  return (
-    <Text
-      selectable={false}
-      style={{
-        color,
-        fontSize: size,
-        lineHeight: Math.ceil(size * 1.12),
-        fontWeight: '800',
-        textAlign: 'center',
-      }}
-    >
-      {editorialIconGlyphs[name]}
-    </Text>
-  )
-}
-
-function PlatformMark({ platform }: { platform: string | null }) {
-  const mark = getPlatformMark(platform)
-
-  return (
-    <View
-      style={{
-        minWidth: mark.length > 1 ? 20 : 14,
-        height: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 5,
-        borderWidth: mark.length > 1 ? 1 : 0,
-        borderColor: colors.primaryOutlineSoft,
-      }}
-    >
-      <Text
-        selectable={false}
-        style={{
-          color: colors.primary,
-          fontSize: mark.length > 1 ? 7 : 14,
-          lineHeight: mark.length > 1 ? 10 : 15,
-          fontWeight: '900',
-          letterSpacing: mark.length > 1 ? 0.2 : 0,
-        }}
-      >
-        {mark}
-      </Text>
-    </View>
-  )
-}
-
 function LibraryActionMenu({
   item,
   errorMessage,
@@ -659,10 +579,10 @@ function LibraryActionMenu({
     item.metadata_status === 'saving' ||
     item.metadata_status === 'pending'
   const recipeAction = hasAiCard
-    ? { label: 'View AI Recipe', icon: 'book' as const }
+    ? { label: 'View AI Recipe', icon: 'recipe' as const }
     : isPreparing
       ? { label: 'View progress', icon: 'hourglass' as const }
-      : { label: 'Generate AI Recipe', icon: 'sparkles' as const }
+      : { label: 'Generate AI Recipe', icon: 'ai-recipe' as const }
 
   return (
     <Modal
@@ -735,7 +655,7 @@ function LibraryActionMenu({
                 opacity: pressed ? 0.68 : 1,
               })}
             >
-              <EditorialIcon name="close" color={colors.onSurface} size={25} />
+              <AppIcon name="close" color={colors.onSurface} size={25} />
             </Pressable>
           </View>
 
@@ -802,7 +722,7 @@ function LibraryActionMenu({
                     opacity: pressed || isDeleting ? 0.64 : 1,
                   })}
                 >
-                  <EditorialIcon name="trash" color={colors.error} size={18} />
+                  <AppIcon name="trash" color={colors.error} size={18} />
                   <Text selectable={false} style={[typography.caption, { color: colors.error, fontWeight: '800' }]}>
                     {isDeleting ? 'Deleting…' : 'Delete'}
                   </Text>
@@ -824,7 +744,7 @@ function LibraryActionMenu({
                 onPress={() => onRecipeAction(item)}
               />
               <ActionMenuRow
-                icon={item.is_favorite ? 'heart-filled' : 'heart'}
+                icon={item.is_favorite ? 'heart' : 'heart-outline'}
                 label={item.is_favorite ? 'Unfavorite' : 'Favorite'}
                 disabled={isFavoriteUpdating}
                 onPress={() => onToggleFavorite(item)}
@@ -850,7 +770,7 @@ function ActionMenuRow({
   disabled = false,
   onPress,
 }: {
-  icon: EditorialIconName
+  icon: AppIconName
   label: string
   destructive?: boolean
   disabled?: boolean
@@ -895,7 +815,7 @@ function ActionMenuRow({
             : colors.primaryWash,
         }}
       >
-        <EditorialIcon
+        <AppIcon
           name={icon}
           color={destructive ? colors.error : colors.primary}
           size={19}
@@ -1000,9 +920,7 @@ function LibraryHeader({
             paddingHorizontal: spacing.lg,
           })}
         >
-          <Text selectable={false} style={{ color: colors.onSurfaceVariant, fontSize: 21 }}>
-            ⌕
-          </Text>
+          <AppIcon name="search" color={colors.onSurfaceVariant} size={21} />
           <Text
             selectable={false}
             style={[typography.body, { color: colors.onSurfaceVariant, opacity: 0.82 }]}
@@ -1062,9 +980,7 @@ function ActiveLibrarySearch({
           borderBottomColor: colors.primary,
         }}
       >
-        <Text selectable={false} style={{ color: colors.primary, fontSize: 22 }}>
-          ⌕
-        </Text>
+        <AppIcon name="search" color={colors.primary} size={22} />
         <TextInput
           accessibilityLabel="Search saved recipes"
           autoFocus
@@ -1162,16 +1078,15 @@ function SearchFilterChips({
           paddingHorizontal: spacing.lg,
         }}
       >
-        <Text selectable={false} style={{ color: colors.onSurfaceVariant, fontSize: 16 }}>
-          ≛
-        </Text>
+        <AppIcon name="list" color={colors.onSurfaceVariant} size={16} />
         <Text selectable={false} style={[typography.label, { color: colors.onSurface }]}>
           Filters
         </Text>
       </View>
       {trimmedQuery ? (
         <GlassChip
-          label={`${truncateText(trimmedQuery, 22)}  ×`}
+          label={truncateText(trimmedQuery, 22)}
+          icon="close"
           selected
           accessibilityLabel={`Clear ${trimmedQuery} search`}
           onPress={onClearQuery}
@@ -1190,11 +1105,13 @@ function SearchFilterChips({
 
 function GlassChip({
   label,
+  icon,
   selected = false,
   accessibilityLabel,
   onPress,
 }: {
   label: string
+  icon?: AppIconName
   selected?: boolean
   accessibilityLabel?: string
   onPress: () => void
@@ -1206,7 +1123,9 @@ function GlassChip({
       onPress={onPress}
       style={({ pressed }) => ({
         minHeight: 44,
+        flexDirection: 'row',
         alignItems: 'center',
+        gap: spacing.xs,
         justifyContent: 'center',
         borderRadius: radius.pill,
         borderWidth: 1,
@@ -1232,6 +1151,13 @@ function GlassChip({
       >
         {label}
       </Text>
+      {icon ? (
+        <AppIcon
+          name={icon}
+          color={selected ? colors.onPrimaryContainer : colors.onSurfaceVariant}
+          size={15}
+        />
+      ) : null}
     </Pressable>
   )
 }
@@ -1400,65 +1326,22 @@ function LibraryRecipeImageCard({
           gap: spacing.sm,
         }}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            item.is_favorite
-              ? `Remove ${title} from favorites`
-              : `Add ${title} to favorites`
-          }
+        <FavoriteIconButton
+          title={title}
+          isFavorite={item.is_favorite === true}
           disabled={isFavoriteUpdating}
-          onPress={(event) => {
-            event.stopPropagation()
-            onFavoritePress()
-          }}
-          style={({ pressed }) => ({
-            width: 44,
-            height: 44,
-            flexShrink: 0,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: radius.pill,
-            borderWidth: 1,
-            borderColor: item.is_favorite
-              ? colors.primaryOutlineSoft
-              : 'rgba(255, 255, 255, 0.16)',
-            backgroundColor: 'rgba(0, 0, 0, 0.54)',
-            opacity: pressed || isFavoriteUpdating ? 0.64 : 1,
-          })}
-        >
-          {isFavoriteUpdating ? (
-            <Text selectable={false} style={{ color: colors.primary, fontSize: 18 }}>
-              …
-            </Text>
-          ) : (
-            <EditorialIcon
-              name={item.is_favorite ? 'heart-filled' : 'heart'}
-              color={item.is_favorite ? colors.primary : colors.onSurface}
-              size={23}
-            />
-          )}
-        </Pressable>
-        <View
-          style={{
-            minWidth: 0,
-            minHeight: 36,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: spacing.xs,
-            borderRadius: radius.pill,
-            borderWidth: 1,
-            borderColor: state.borderColor,
-            backgroundColor: 'rgba(0, 0, 0, 0.54)',
-            paddingHorizontal: spacing.md,
-          }}
-        >
-          <EditorialIcon name={state.icon} color={state.color} size={15} />
-          <Text selectable={false} style={[typography.caption, { color: state.color }]}>
-            {state.label}
-          </Text>
-        </View>
+          onPress={onFavoritePress}
+        />
+        {hasAiRecipe(item) ? (
+          <AiRecipeBadge />
+        ) : (
+          <RecipeStatusBadge
+            icon={state.icon}
+            label={state.label}
+            color={state.color}
+            borderColor={state.borderColor}
+          />
+        )}
       </View>
 
       <Pressable
@@ -1482,7 +1365,7 @@ function LibraryRecipeImageCard({
           opacity: pressed ? 0.68 : 1,
         })}
       >
-        <EditorialIcon name="more" color={colors.onSurface} size={27} />
+        <AppIcon name="more-vertical" color={colors.onSurface} size={25} />
       </Pressable>
 
       <View
@@ -1520,74 +1403,23 @@ function LibraryRecipeImageCard({
             gap: spacing.xs,
           }}
         >
-          <MetadataChip
+          <RecipeMetadataChip
             platform={item.platform}
             label={metadata.platform}
           />
           {metadata.creator ? (
-            <MetadataChip icon="user" label={metadata.creator} accent />
+            <RecipeMetadataChip
+              icon="creator"
+              label={metadata.creator}
+              accent
+            />
           ) : null}
           {metadata.time ? (
-            <MetadataChip icon="clock" label={metadata.time} />
+            <RecipeMetadataChip icon="clock" label={metadata.time} />
           ) : null}
         </View>
       </View>
     </Pressable>
-  )
-}
-
-function MetadataChip({
-  icon,
-  platform,
-  label,
-  accent = false,
-}: {
-  icon?: EditorialIconName
-  platform?: string | null
-  label: string
-  accent?: boolean
-}) {
-  return (
-    <View
-      style={{
-        minHeight: 28,
-        maxWidth: '58%',
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.xs,
-        borderRadius: radius.pill,
-        borderWidth: 1,
-        borderColor: accent
-          ? colors.primaryOutlineSoft
-          : 'rgba(255, 255, 255, 0.12)',
-        backgroundColor: 'rgba(0, 0, 0, 0.46)',
-        paddingHorizontal: spacing.sm,
-      }}
-    >
-      {platform !== undefined ? (
-        <PlatformMark platform={platform} />
-      ) : icon ? (
-        <EditorialIcon
-          name={icon}
-          color={accent ? colors.primary : '#D3CED0'}
-          size={13}
-        />
-      ) : null}
-      <Text
-        selectable
-        numberOfLines={1}
-        style={[
-          typography.label,
-          {
-            minWidth: 0,
-            color: accent ? colors.primary : '#D3CED0',
-            fontSize: 9,
-          },
-        ]}
-      >
-        {label}
-      </Text>
-    </View>
   )
 }
 
@@ -1602,12 +1434,19 @@ function LibraryImagePlaceholder({ isPreparing }: { isPreparing: boolean }) {
         backgroundColor: colors.surfaceContainerHigh,
       }}
     >
-      <Text
-        selectable={false}
-        style={[typography.heading, { color: colors.onSurfaceVariant, opacity: 0.68 }]}
-      >
-        {isPreparing ? '⧖' : 'Recipe Dost'}
-      </Text>
+      {isPreparing ? (
+        <AppIcon name="hourglass" color={colors.primary} size={28} />
+      ) : (
+        <Text
+          selectable={false}
+          style={[
+            typography.heading,
+            { color: colors.onSurfaceVariant, opacity: 0.68 },
+          ]}
+        >
+          Recipe Dost
+        </Text>
+      )}
       {isPreparing ? (
         <View
           style={{
@@ -1855,7 +1694,7 @@ function getLibraryCardState(item: RecipeLibraryItem) {
   if (hasAiRecipe(item)) {
     return {
       label: 'AI Recipe',
-      icon: 'sparkles' as const,
+      icon: 'ai-recipe' as const,
       color: colors.primary,
       borderColor: colors.primaryOutlineSoft,
       isPreparing: false,
@@ -1875,7 +1714,7 @@ function getLibraryCardState(item: RecipeLibraryItem) {
   if (item.latest_media_job?.status === 'needs_caption') {
     return {
       label: 'Caption needed',
-      icon: 'retry' as const,
+      icon: 'refresh' as const,
       color: colors.warning,
       borderColor: colors.warning,
       isPreparing: false,
@@ -1888,7 +1727,7 @@ function getLibraryCardState(item: RecipeLibraryItem) {
   ) {
     return {
       label: 'Needs retry',
-      icon: 'retry' as const,
+      icon: 'warning' as const,
       color: colors.error,
       borderColor: colors.error,
       isPreparing: false,
@@ -2063,21 +1902,6 @@ function getPlatformLabel(platform: string | null) {
       return 'Facebook'
     default:
       return 'Saved Link'
-  }
-}
-
-function getPlatformMark(platform: string | null) {
-  switch (platform) {
-    case 'instagram':
-      return 'IG'
-    case 'tiktok':
-      return 'TT'
-    case 'youtube':
-      return 'YT'
-    case 'facebook':
-      return 'FB'
-    default:
-      return editorialIconGlyphs.link
   }
 }
 

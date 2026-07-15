@@ -66,6 +66,12 @@
 - purchase_completed tracked
 
 ## QA
+- [ ] M22E.1R-ICONPOLISH1 Home and Library favorite controls checked for matching Ionicons outline/filled hearts, unchanged 44px footprint, working mutation, persistence after reload, and identical visual treatment
+- [ ] M22E.1R-ICONPOLISH1 AI-only, favorite-only, and AI-plus-favorite cards checked on a small Android screen without overlap with the Library ellipsis menu
+- [ ] M22E.1R-ICONPOLISH1 Instagram, YouTube, TikTok, Facebook, and unknown-provider cards checked for supported brand/link fallback icons plus clean omission of missing creator/duration metadata
+- [ ] M22E.1R-ICONPOLISH1 bottom Home/Library/Grocery/Settings outline/filled pairs checked for size, baseline, active color, routes, safe area, unchanged labels, and central Add behavior
+- [ ] M22E.1R-ICONPOLISH1 Grocery cart tab, native Share icon/handler, Copy List, and checkbox persistence checked without upload/navigation-arrow substitutions
+- [ ] M22E.1R-ICONPOLISH1 detail/menu/Settings/Paywall/Add-sheet utility icons, Library search, favorite mutations, source actions, purchase/restore, and unsupported-icon/sensitive-log regressions checked
 - M22E bug fixes completed on `develop` first
 - M22E.1C competitor UX decisions documented before implementation
 - Competitor UX cherry-picks avoid nutrition, meal planner, scaling, PDF export, AI edit, photo import, folders/cookbooks, push notifications, and video downloading/storage
