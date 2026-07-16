@@ -8,6 +8,46 @@ Audit-only pass for onboarding launch routing and stale Home/Library metadata st
 
 Current branch workflow is correct for this milestone: M22E fixes are prepared on `develop`, then merged to `main` only after QA for a production AAB update.
 
+## M22E.2E Unified observability, privacy, and identity QA freeze
+
+Status: code audit and automated QA complete on `develop`; device/dashboard and
+release-only checks remain below.
+
+- App Sentry and PostHog remain fail-closed in ordinary development and preview;
+  every EAS profile now explicitly pins both controlled flags false. One Sentry
+  initializer/provider and one shared PostHog client/provider remain.
+- App Sentry now owns unexpected render, bootstrap, terminal technical metadata/AI,
+  Grocery query, RevenueCat offerings/purchase/restore, and Premium access-refresh
+  failures. UUID-only Sentry identity is set with the Supabase session and cleared
+  with PostHog reset on session loss/sign-out/user switch. Expected validation,
+  quota, paywall, cancellation, onboarding, empty, loading, and product retry
+  states remain excluded.
+- The app sanitizer reconstructs a narrow event and the PostHog sanitizer retains
+  its closed event/property taxonomy. Tests cover URLs, auth/tokens, Supabase,
+  RevenueCat, AI/recipe content, request/response bodies, Error/stack data,
+  purchase identifiers, and person fields.
+- Share-intent saving previously emitted both generic and shared legacy events,
+  which normalized to duplicate approved save funnel events. The redundant shared
+  emissions were removed; the generic start/success/failure transitions remain.
+- Welcome retains one guarded `onboarding_started` and one persisted
+  `onboarding_completed`; Skip uses the same approved completion transition. App
+  bootstrap/Home loading components contain no analytics or exception calls, and
+  normalized screen tracking suppresses same-screen rerenders.
+- Worker production reporting now additionally requires Render plus `main`;
+  controlled testing requires Render plus development + `develop` + the exact
+  flag. Active queue flow, expected-failure exclusions, retry semantics, job
+  state/backoff, and legacy modules were not changed.
+- EAS runtime/source-map variable names and the conditional production Sentry Expo
+  plugin are documented. `SENTRY_AUTH_TOKEN` remains build-only. No deployment,
+  controlled event, schema, Edge Function, quota, product, entitlement, app
+  version, or Android `versionCode` change was made.
+
+Manual evidence still required: run the documented local/device identity,
+onboarding, loading, funnel, cancellation/quota, and worker smoke checklist; inspect
+the previously generated dashboard events; then verify production source-map
+symbolication and real production PostHog delivery on the versionCode 2 release
+candidate.
+
 ## M22E.2D Welcome/onboarding and loading UX refresh
 
 Status: implemented on `develop`; automated validation and Android device QA status recorded at completion.

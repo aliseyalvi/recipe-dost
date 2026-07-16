@@ -18,9 +18,17 @@ const POSTHOG_PUBLIC_KEYS = [
   "EXPO_PUBLIC_POSTHOG_HOST",
 ];
 
-const EAS_OPTIONAL_PUBLIC_KEYS = [
-  ...POSTHOG_PUBLIC_KEYS,
+const SENTRY_PUBLIC_KEYS = ["EXPO_PUBLIC_SENTRY_DSN"];
+const CONTROLLED_TEST_KEYS = [
+  "EXPO_PUBLIC_SENTRY_DEV_TEST",
   "EXPO_PUBLIC_POSTHOG_DEV_TEST",
+];
+const SENTRY_BUILD_KEYS = ["SENTRY_ORG", "SENTRY_PROJECT", "SENTRY_AUTH_TOKEN"];
+
+const EAS_OPTIONAL_PUBLIC_KEYS = [
+  ...SENTRY_PUBLIC_KEYS,
+  ...POSTHOG_PUBLIC_KEYS,
+  ...CONTROLLED_TEST_KEYS,
 ];
 
 const SUPABASE_REQUIRED_KEYS = [
@@ -231,6 +239,34 @@ function validatePostHog(env, environment, useExample) {
   return findings;
 }
 
+function validateSentry(env, environment, useExample) {
+  if (useExample) return [];
+
+  const findings = [];
+  const dsn = String(env.get("EXPO_PUBLIC_SENTRY_DSN") ?? "").trim();
+  const devTest = String(env.get("EXPO_PUBLIC_SENTRY_DEV_TEST") ?? "").trim();
+
+  if (devTest && devTest !== "true" && devTest !== "false") {
+    findings.push("EXPO_PUBLIC_SENTRY_DEV_TEST must be exactly true or false.");
+  }
+  if (environment === "production" && devTest === "true") {
+    findings.push("Production must not enable EXPO_PUBLIC_SENTRY_DEV_TEST.");
+  }
+  if ((environment === "production" || devTest === "true") && !isValidSentryDsn(dsn)) {
+    findings.push("A valid HTTPS EXPO_PUBLIC_SENTRY_DSN is required.");
+  }
+  return findings;
+}
+
+function isValidSentryDsn(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && Boolean(url.hostname) && Boolean(url.username);
+  } catch {
+    return false;
+  }
+}
+
 function isValidPostHogKey(value) {
   return value.startsWith("phc_") && value.length >= 20 && !/^phc_YOUR/i.test(value);
 }
@@ -273,6 +309,7 @@ if (!existsSync(path)) {
 const { env, errors } = parseEnv(readFileSync(path, "utf8"));
 const requiredKeys = [
   ...EAS_PUBLIC_KEYS,
+  ...(environment === "production" ? SENTRY_PUBLIC_KEYS : []),
   ...(environment === "production" ? POSTHOG_PUBLIC_KEYS : []),
   ...SUPABASE_REQUIRED_KEYS,
   ...LOCAL_REQUIRED_KEYS,
@@ -289,12 +326,14 @@ const revenueCatFindings = validateRevenueCatStoreKeys(
   useExample,
 );
 const postHogFindings = validatePostHog(env, environment, useExample);
+const sentryFindings = validateSentry(env, environment, useExample);
 
 console.log(
   `Validating ${basename(path)} for ${environment}${useExample ? " template" : ""}`,
 );
 printGroup("EAS public/app vars", EAS_PUBLIC_KEYS, env);
-printGroup("PostHog public analytics vars", EAS_OPTIONAL_PUBLIC_KEYS, env);
+printGroup("Public observability runtime vars", EAS_OPTIONAL_PUBLIC_KEYS, env);
+printGroup("Sentry production build vars", SENTRY_BUILD_KEYS, env);
 printGroup("Required Supabase Edge Function secrets/config", SUPABASE_REQUIRED_KEYS, env);
 printGroup("Optional Supabase Edge Function secrets/config", SUPABASE_OPTIONAL_KEYS, env);
 printGroup("Local-only helper vars", LOCAL_REQUIRED_KEYS, env);
@@ -308,7 +347,8 @@ if (
   placeholderKeys.length ||
   productionFindings.length ||
   revenueCatFindings.length ||
-  postHogFindings.length
+  postHogFindings.length ||
+  sentryFindings.length
 ) {
   console.error("\nEnv validation failed.");
   for (const error of errors) {
@@ -333,6 +373,9 @@ if (
     console.error(`- ${finding}`);
   }
   for (const finding of postHogFindings) {
+    console.error(`- ${finding}`);
+  }
+  for (const finding of sentryFindings) {
     console.error(`- ${finding}`);
   }
   process.exit(1);

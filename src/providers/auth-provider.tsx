@@ -1,6 +1,7 @@
 import { getSession, signInAnonymously, signOut } from '@/lib/supabase/auth'
 import { supabase } from '@/lib/supabase/client'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
+import { reportError, setSentryUser } from '@/lib/observability/sentry'
 import { AppLoadingScreen } from '@/ui/app-loading-screen'
 import { ErrorState } from '@/ui/error-state'
 import { Session, User } from '@supabase/supabase-js'
@@ -48,6 +49,7 @@ export function AuthProvider({ children }: Props) {
           : new Error('Unable to start anonymous session.')
 
       setError(nextError)
+      reportError(caughtError)
       track('anonymous_auth_bootstrap_failed')
     } finally {
       setIsLoading(false)
@@ -72,11 +74,13 @@ export function AuthProvider({ children }: Props) {
     const userId = session?.user.id ?? null
     if (userId) {
       identifyUser(userId)
+      setSentryUser(userId)
       previousAnalyticsUserId.current = userId
       return
     }
     if (previousAnalyticsUserId.current) {
       resetAnalyticsUser()
+      setSentryUser(null)
       previousAnalyticsUserId.current = null
     }
   }, [identifyUser, resetAnalyticsUser, session?.user.id])
@@ -84,6 +88,7 @@ export function AuthProvider({ children }: Props) {
   const handleSignOut = useCallback(async () => {
     await signOut()
     resetAnalyticsUser()
+    setSentryUser(null)
     previousAnalyticsUserId.current = null
     setSession(null)
     track('anonymous_auth_signed_out')

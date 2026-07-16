@@ -23,6 +23,7 @@ import {
 import { getAiAccessState } from '@/lib/api/ai-access'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
+import { reportError } from '@/lib/observability/sentry'
 import {
   getPremiumEntitlement,
   getSubscriptionManagementUrl,
@@ -229,6 +230,9 @@ export default function SettingsRoute() {
       const synced = await syncPremiumEntitlement()
       await queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
       const accessResult = await aiAccessQuery.refetch()
+      if (accessResult.error) {
+        reportError(accessResult.error)
+      }
       const backendPremiumActive =
         accessResult.data?.plan === 'premium' ||
         accessResult.data?.premiumActive === true
@@ -251,7 +255,8 @@ export default function SettingsRoute() {
       } else {
         showActionFeedback('No active subscription was found.')
       }
-    } catch {
+    } catch (caughtError) {
+      reportError(caughtError)
       track('restore_failed', { source: 'settings' })
       showActionFeedback(
         'Could not restore purchases. Please try again.',

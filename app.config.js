@@ -12,6 +12,20 @@ module.exports = ({ config }) => {
     appEnv === "development" &&
     appVariant === "development" &&
     process.env.EXPO_PUBLIC_POSTHOG_DEV_TEST === "true";
+  const sentryOrganization = process.env.SENTRY_ORG?.trim();
+  const sentryProject = process.env.SENTRY_PROJECT?.trim();
+  const sentrySourceMapPlugin =
+    isProduction && sentryOrganization && sentryProject
+      ? [
+          [
+            "@sentry/react-native/expo",
+            {
+              organization: sentryOrganization,
+              project: sentryProject,
+            },
+          ],
+        ]
+      : [];
   const appName = isProduction
     ? "Recipe Dost"
     : isPreview
@@ -64,6 +78,7 @@ module.exports = ({ config }) => {
         "expo-localization",
         "expo-sharing",
         "expo-sqlite",
+        ...sentrySourceMapPlugin,
         [
           "expo-splash-screen",
           {

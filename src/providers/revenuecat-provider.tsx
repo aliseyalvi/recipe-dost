@@ -9,6 +9,7 @@ import {
 } from '@/lib/api/premium-entitlement'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
+import { reportError } from '@/lib/observability/sentry'
 import { useQueryClient } from '@tanstack/react-query'
 import type {
   CustomerInfo,
@@ -104,7 +105,8 @@ export function RevenueCatProvider({ children }: Props) {
       })
 
       return synced
-    } catch {
+    } catch (caughtError) {
+      reportError(caughtError)
       track('premium_entitlement_sync_failed')
       return null
     } finally {
@@ -133,7 +135,8 @@ export function RevenueCatProvider({ children }: Props) {
       }
 
       return nextInfo
-    } catch {
+    } catch (caughtError) {
+      reportError(caughtError)
       if (mountedRef.current) {
         setError('Could not refresh premium status. Please try again.')
       }
@@ -161,7 +164,8 @@ export function RevenueCatProvider({ children }: Props) {
       }
 
       return nextOffering
-    } catch {
+    } catch (caughtError) {
+      reportError(caughtError)
       if (mountedRef.current) {
         setError(PLANS_UNAVAILABLE_MESSAGE)
         setCurrentOffering(null)
@@ -293,7 +297,8 @@ export function RevenueCatProvider({ children }: Props) {
           setCurrentOffering(
             offerings.all[REVENUECAT_OFFERING_ID] ?? offerings.current
           )
-        } catch {
+        } catch (caughtError) {
+          reportError(caughtError)
           if (!isActive || !mountedRef.current) {
             return
           }
@@ -302,7 +307,8 @@ export function RevenueCatProvider({ children }: Props) {
           setError(PLANS_UNAVAILABLE_MESSAGE)
           track('premium_offerings_bootstrap_failed')
         }
-      } catch {
+      } catch (caughtError) {
+        reportError(caughtError)
         if (isActive && mountedRef.current) {
           setIsConfigured(didReachConfiguredSdk)
           if (!didReachConfiguredSdk) {

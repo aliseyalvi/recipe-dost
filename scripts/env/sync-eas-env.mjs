@@ -16,9 +16,12 @@ const ALLOWLISTED_EAS_KEYS = [
 ];
 
 const OPTIONAL_ALLOWLISTED_EAS_KEYS = [
+  "EXPO_PUBLIC_SENTRY_DSN",
   "EXPO_PUBLIC_POSTHOG_API_KEY",
   "EXPO_PUBLIC_POSTHOG_HOST",
 ];
+
+const OPTIONAL_PRODUCTION_BUILD_KEYS = ["SENTRY_ORG", "SENTRY_PROJECT"];
 
 function usage() {
   console.error(
@@ -113,6 +116,11 @@ const keysToSync = [
   ...OPTIONAL_ALLOWLISTED_EAS_KEYS.filter(
     (key) => env.has(key) && String(env.get(key)).trim(),
   ),
+  ...(environment === "production"
+    ? OPTIONAL_PRODUCTION_BUILD_KEYS.filter(
+        (key) => env.has(key) && String(env.get(key)).trim(),
+      )
+    : []),
 ];
 
 console.log(`EAS ${dryRun ? "dry-run" : "apply"} for ${environment}`);

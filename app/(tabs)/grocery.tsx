@@ -13,6 +13,7 @@ import { getPaywallHref } from '@/features/paywall/paywall-model'
 import { RecipeMetadataChip } from '@/features/recipe-card/recipe-card-chrome'
 import { getAiAccessState } from '@/lib/api/ai-access'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
+import { reportError } from '@/lib/observability/sentry'
 import {
   getRecipeGroceryList,
   getRecipeGroceryLists,
@@ -89,6 +90,7 @@ function GroceryOverview() {
   const [menuList, setMenuList] = useState<RecipeGroceryList | null>(null)
   const [menuError, setMenuError] = useState<string | null>(null)
   const didTrackOverview = useRef(false)
+  const reportedQueryError = useRef<unknown>(null)
   const groceryListsQuery = useQuery({
     queryKey: ['recipe-grocery-lists'],
     queryFn: getRecipeGroceryLists,
@@ -115,6 +117,16 @@ function GroceryOverview() {
     didTrackOverview.current = true
     track('grocery_overview_viewed', { layout: 'editorial' })
   }, [track])
+
+  useEffect(() => {
+    if (!groceryListsQuery.error) {
+      reportedQueryError.current = null
+      return
+    }
+    if (reportedQueryError.current === groceryListsQuery.error) return
+    reportedQueryError.current = groceryListsQuery.error
+    reportError(groceryListsQuery.error)
+  }, [groceryListsQuery.error])
 
   const openList = (item: RecipeGroceryList, source: 'card' | 'menu') => {
     setMenuList(null)
@@ -700,6 +712,7 @@ function GroceryListDetail({ recipeCardId }: { recipeCardId: string }) {
   )
   const [actionMessage, setActionMessage] = useState<string | null>(null)
   const viewedCardIdRef = useRef<string | null>(null)
+  const reportedQueryError = useRef<unknown>(null)
   const groceryListQuery = useQuery({
     queryKey: ['recipe-grocery-list', recipeCardId],
     queryFn: () => getRecipeGroceryList(recipeCardId),
@@ -725,6 +738,16 @@ function GroceryListDetail({ recipeCardId }: { recipeCardId: string }) {
     setCheckedItemIds(new Set())
     setActionMessage(null)
   }, [recipeGroceryList?.id])
+
+  useEffect(() => {
+    if (!groceryListQuery.error) {
+      reportedQueryError.current = null
+      return
+    }
+    if (reportedQueryError.current === groceryListQuery.error) return
+    reportedQueryError.current = groceryListQuery.error
+    reportError(groceryListQuery.error)
+  }, [groceryListQuery.error])
 
   useEffect(() => {
     if (

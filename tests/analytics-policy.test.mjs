@@ -137,6 +137,59 @@ test('sanitizer removes private content, URLs, tokens, raw errors, and long stri
   )
 })
 
+test('privacy sanitizer drops search, recipe content, Error objects, purchase IDs, and person data', () => {
+  const rawError = new Error('private provider detail')
+  assert.deepEqual(
+    sanitizeEventProperties('purchase_failed', {
+      entry_point: 'quota_gate',
+      plan_interval: 'yearly',
+      result: 'failure',
+      failure_code: 'network',
+      search_text: 'secret search',
+      recipe_title: 'secret recipe',
+      ingredients: ['secret ingredient'],
+      error: rawError,
+      stack: rawError.stack,
+      transaction_id: 'fake-transaction-id',
+      purchase_token: 'fake-purchase-token',
+      email: 'person@example.com',
+      name: 'Fake Person',
+    }),
+    {
+      entry_point: 'quota_gate',
+      plan_interval: 'yearly',
+      result: 'failure',
+      failure_code: 'network',
+    }
+  )
+})
+
+test('identify capture strips all person properties while preserving SDK identity fields', () => {
+  assert.deepEqual(
+    sanitizePostHogCapture({
+      event: '$identify',
+      properties: {
+        distinct_id: '123e4567-e89b-42d3-a456-426614174000',
+        $anon_distinct_id: 'anonymous-id',
+        email: 'person@example.com',
+        name: 'Fake Person',
+        recipe_title: 'secret recipe',
+      },
+      $set: { email: 'person@example.com' },
+      $set_once: { name: 'Fake Person' },
+    }),
+    {
+      event: '$identify',
+      properties: {
+        distinct_id: '123e4567-e89b-42d3-a456-426614174000',
+        $anon_distinct_id: 'anonymous-id',
+      },
+      $set: undefined,
+      $set_once: undefined,
+    }
+  )
+})
+
 test('screen tracking accepts normalized names without params or queries', () => {
   assert.equal(normalizeScreenPath('/(tabs)/home'), 'home')
   assert.equal(normalizeScreenPath('/recipe/08c3?returnTo=/library'), 'saved_link_detail')

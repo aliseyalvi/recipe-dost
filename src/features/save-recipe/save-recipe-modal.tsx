@@ -8,6 +8,8 @@ import {
   saveRecipeLink,
 } from "@/lib/api/recipes";
 import { normalizeRecipeSourceUrl } from "@/lib/recipe-source-url";
+import { reportError } from "@/lib/observability/sentry";
+import { isUnexpectedTechnicalFailureCode } from "@/lib/observability/sentry-policy";
 import { useAuth } from "@/providers/auth-provider";
 import { usePostHog } from "@/providers/posthog-placeholder-provider";
 import { colors, radius, spacing, typography } from "@/theme";
@@ -236,6 +238,14 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
 
       try {
         const result = await refreshRecipeMetadata(recipeItemId);
+        if (
+          result.metadata_status === "failed" &&
+          isUnexpectedTechnicalFailureCode(result.error_code)
+        ) {
+          const terminalError = new Error("Metadata terminal technical failure");
+          terminalError.name = "MetadataTerminalError";
+          reportError(terminalError);
+        }
         track("metadata_refresh_completed", {
           metadata_status: result.metadata_status,
           worker_status: result.worker_status,
@@ -244,6 +254,7 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
           thumbnail_present: result.thumbnail_present,
         });
       } catch (caughtError) {
+        reportError(caughtError);
         track("metadata_refresh_completed", {
           metadata_status: "failed",
           has_error: true,
@@ -314,12 +325,6 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
       platform: recipePlatform,
       source: modalSource ?? "manual",
     });
-    if (modalSource === "share_intent") {
-      track("shared_recipe_save_started", {
-        platform: recipePlatform,
-      });
-    }
-
     try {
       const saveResult = await saveRecipeLink(recipeUrl);
       const savedItem = saveResult.recipe_item;
@@ -341,14 +346,6 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
         metadata_status: savedItem.metadata_status ?? "pending",
         duplicate: false,
       });
-      if (modalSource === "share_intent") {
-        track("shared_recipe_save_completed", {
-          platform: savedItem.platform ?? recipePlatform,
-          metadata_status: savedItem.metadata_status ?? "pending",
-          duplicate: false,
-        });
-      }
-
       void refreshMetadataInBackground(savedItem.id);
       requestCloseSheet({ force: true });
       router.navigate(`/recipe/${savedItem.id}?returnTo=/home`);
@@ -360,12 +357,6 @@ export function SaveRecipeModalProvider({ children }: { children: ReactNode }) {
         source: modalSource ?? "manual",
         reason: errorCategory,
       });
-      if (modalSource === "share_intent") {
-        track("shared_recipe_save_failed", {
-          platform: recipePlatform,
-          reason: errorCategory,
-        });
-      }
       refetchRecipeLists();
     } finally {
       setIsSaving(false);

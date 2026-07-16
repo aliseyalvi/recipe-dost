@@ -10,7 +10,9 @@
       "environment": "development",
       "env": {
         "APP_ENV": "development",
-        "APP_VARIANT": "development"
+        "APP_VARIANT": "development",
+        "EXPO_PUBLIC_SENTRY_DEV_TEST": "false",
+        "EXPO_PUBLIC_POSTHOG_DEV_TEST": "false"
       },
       "android": {
         "buildType": "apk"
@@ -21,7 +23,9 @@
       "environment": "development",
       "env": {
         "APP_ENV": "development",
-        "APP_VARIANT": "preview"
+        "APP_VARIANT": "preview",
+        "EXPO_PUBLIC_SENTRY_DEV_TEST": "false",
+        "EXPO_PUBLIC_POSTHOG_DEV_TEST": "false"
       },
       "android": {
         "buildType": "apk"
@@ -31,7 +35,9 @@
       "environment": "production",
       "env": {
         "APP_ENV": "production",
-        "APP_VARIANT": "production"
+        "APP_VARIANT": "production",
+        "EXPO_PUBLIC_SENTRY_DEV_TEST": "false",
+        "EXPO_PUBLIC_POSTHOG_DEV_TEST": "false"
       },
       "android": {
         "buildType": "app-bundle"

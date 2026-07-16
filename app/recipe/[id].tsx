@@ -35,6 +35,8 @@ import {
 } from '@/features/settings/secondary-recipe-language'
 import { getAiAccessState } from '@/lib/api/ai-access'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
+import { reportError } from '@/lib/observability/sentry'
+import { isUnexpectedTechnicalFailureCode } from '@/lib/observability/sentry-policy'
 import { useRefetchOnAppForeground } from '@/lib/query/use-refetch-on-app-foreground'
 import {
   type MediaJob,
@@ -108,6 +110,7 @@ export default function SavedRecipeRoute() {
     useState<MediaJob | null>(null)
   const didTrackUsageSummary = useRef(false)
   const lastTrackedMediaJobStatus = useRef<string | null>(null)
+  const reportedTerminalMediaJobId = useRef<string | null>(null)
   const shouldAutoOpenResultRef = useRef(false)
   const hasAutoOpenedResultRef = useRef(false)
   const mountedRef = useRef(false)
@@ -293,6 +296,15 @@ export default function SavedRecipeRoute() {
           platform: getRecipePlatform(mediaJob.platform),
           error_code: mediaJob.error_code ?? 'unknown',
         })
+      }
+      if (
+        reportedTerminalMediaJobId.current !== mediaJob.id &&
+        isUnexpectedTechnicalFailureCode(mediaJob.error_code)
+      ) {
+        reportedTerminalMediaJobId.current = mediaJob.id
+        const terminalError = new Error('AI generation terminal technical failure')
+        terminalError.name = 'AiGenerationTerminalError'
+        reportError(terminalError)
       }
       void queryClient.invalidateQueries({
         queryKey: ['ai-access-state'],
@@ -796,6 +808,7 @@ export default function SavedRecipeRoute() {
           ? caughtError
           : new Error('Could not generate AI recipe. Please try again.')
 
+      reportError(caughtError)
       setMediaJobError(getFriendlyMediaJobError(caughtError, nextError))
       setIsStartLocked(false)
       track('media_job_create_failed', {
@@ -829,6 +842,15 @@ export default function SavedRecipeRoute() {
     try {
       const result = await refreshRecipeMetadata(recipe.id)
 
+      if (
+        result.metadata_status === 'failed' &&
+        isUnexpectedTechnicalFailureCode(result.error_code)
+      ) {
+        const terminalError = new Error('Metadata terminal technical failure')
+        terminalError.name = 'MetadataTerminalError'
+        reportError(terminalError)
+      }
+
       track('metadata_refresh_completed', {
         source: 'saved_recipe_detail',
         metadata_status: result.metadata_status,
@@ -838,7 +860,8 @@ export default function SavedRecipeRoute() {
         thumbnail_present: result.thumbnail_present,
       })
       await recipeQuery.refetch()
-    } catch {
+    } catch (caughtError) {
+      reportError(caughtError)
       track('metadata_refresh_completed', {
         source: 'saved_recipe_detail',
         metadata_status: 'failed',

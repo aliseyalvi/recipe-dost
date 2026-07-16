@@ -1,5 +1,21 @@
 # Recipe Dost Milestones
 
+## M22E.2E - Unified Observability, Privacy and Identity QA Freeze
+- Status: implemented and automatically validated on `develop`; manual
+  device/dashboard and release-only production delivery checks remain.
+- Added the responsibility/environment matrices, UUID-only Sentry lifecycle,
+  render boundary, focused unexpected failure coverage, privacy tests, and exact
+  Render/branch worker guard without adding an observability product or changing
+  active worker behavior.
+- Removed one confirmed duplicate share-intent funnel path. Onboarding/loading and
+  screen/app-open guards remain single-transition; expected product outcomes remain
+  excluded from crashes.
+- EAS profiles pin both controlled flags false and production source-map variable
+  names are ready. Production symbolication and real PostHog delivery are deferred
+  to the versionCode 2 release candidate. App version and versionCode remain
+  unchanged here. M22E.3 should be the guarded release-candidate QA/promotion step,
+  not a new instrumentation milestone.
+
 ## M22E.2D - Welcome / Onboarding Redesign and Loading UX Refresh
 - Status: implemented on `develop`; automated validation and Android device QA status documented below.
 - Replaced the one-page welcome with five consistent native screens: premium Recipe Dost introduction, save-from-anywhere, AI assistance, smart Grocery, and ready-to-cook. The reference images in `docs/design/stitch-welcome/` informed the Obsidian/coral hierarchy, spacing, indicators, visual rhythm, and CTA treatment without shipping screenshot-based UI.

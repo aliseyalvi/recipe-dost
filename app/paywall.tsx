@@ -32,6 +32,7 @@ import {
 import { getAiAccessState } from '@/lib/api/ai-access'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
+import { reportError } from '@/lib/observability/sentry'
 import {
   getPremiumEntitlement,
   getSubscriptionManagementUrl,
@@ -258,6 +259,9 @@ export default function PaywallRoute() {
 
     await queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
     const accessResult = await aiAccessQuery.refetch()
+    if (accessResult.error) {
+      reportError(accessResult.error)
+    }
     const backendPremiumActive =
       accessResult.data?.plan === 'premium' ||
       accessResult.data?.premiumActive === true
@@ -374,6 +378,7 @@ export default function PaywallRoute() {
         return
       }
 
+      reportError(caughtError)
       track('purchase_failed', {
         ...purchaseProperties,
         outcome: kind,
@@ -419,7 +424,8 @@ export default function PaywallRoute() {
               tone: 'info',
             }
       )
-    } catch {
+    } catch (caughtError) {
+      reportError(caughtError)
       track('restore_failed', { trigger })
       setFeedback({
         message: 'Could not restore purchases. Please try again.',

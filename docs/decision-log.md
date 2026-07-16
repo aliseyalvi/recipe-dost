@@ -1,6 +1,23 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-16
+- M22E.2E freezes observability ownership: app Sentry handles unexpected mobile
+  technical failures, PostHog handles only approved product transitions, and
+  worker Sentry handles unexpected current queue-flow failures. No tracing,
+  profiling, replay, logs, flags, experiments, or legacy worker instrumentation.
+- Privacy/identity decision: reconstruct app Sentry events from a safe allowlist,
+  retain only Supabase UUID `user.id`, and clear Sentry plus reset PostHog on
+  session loss/sign-out/user switch. Both sanitizers have focused sensitive-data
+  tests; expected validation/quota/cancellation/onboarding/loading outcomes stay out
+  of Sentry.
+- QA fix: add the missing React render boundary and named technical-failure report
+  sites; dedupe Grocery query error transitions and AI terminal jobs; remove the
+  duplicate shared save emissions that normalized beside the generic funnel.
+- Environment decision: EAS profiles pin controlled flags false; production
+  source-map metadata uses `SENTRY_ORG`/`SENTRY_PROJECT` and a build-only secret
+  `SENTRY_AUTH_TOKEN`. Worker reporting now requires Render and exact `main` or
+  controlled-test `develop` branch. No deploy, controlled event, app version, or
+  Android `versionCode` change occurred.
 - M22E.2D detail polish now rejects numeric-only creator IDs in presentation and prefers readable existing author/channel/handle metadata. Saved-source detail uses the same ellipsis options sheet as AI detail for Open Original, Favorite, and Delete; the duplicate bottom Delete section was removed from AI recipe detail. No metadata fetching, backend, schema, access, or analytics behavior changed.
 - M22E.2D empty-library polish: Home and Library now reuse one native welcome-aligned “Your recipe library is waiting” card with a culinary recipe/sparkle mark, Obsidian ambient surfaces, concise source-link copy, and a full-width blush Save Recipe CTA. Home shows this as the single no-recipes state instead of stacking separate Recent and AI-empty prompts; the existing save modal and analytics source remain unchanged.
 - M22E.2D fresh-data guard correction: app entry now waits for the SecureStore-backed onboarding store to hydrate and requires both local `onboardingCompleted` and remote `user_profiles.onboarding_completed` before bypassing Welcome. This fixes restored Supabase anonymous sessions skipping Welcome after local app data is cleared, while users with both persisted markers continue directly to Home.

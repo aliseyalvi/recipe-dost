@@ -57,6 +57,17 @@
 - M22E.1R-PAYWALL2 small Android scrolling, sticky CTA, large text, Add/share, detail, Grocery, Settings, and sensitive-log regressions checked
 
 ## Analytics
+- [x] M22E.2E automated app/worker environment-policy, sanitizer, identity,
+  active-flow, onboarding/loading, and duplicate-path tests pass on `develop`
+- [ ] EAS production contains `EXPO_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`,
+  `SENTRY_PROJECT`, build-secret `SENTRY_AUTH_TOKEN`, PostHog token/host, and both
+  controlled flags false; development/preview flags also remain false
+- [ ] Render production is production + `main` + DSN + test flag false; Render
+  development is development + `develop` + test flag false
+- [ ] App Sentry dashboard acceptance: correct env/release/build, UUID-only user,
+  no email/URL/token/content/body, readable symbolicated stack
+- [ ] Worker Sentry dashboard acceptance: service/branch/release/current-flow tags,
+  no request/user/locals/URL/job/AI/recipe content, one retry-exhaustion issue
 - [ ] Production EAS has valid `EXPO_PUBLIC_POSTHOG_API_KEY` and matching HTTPS `EXPO_PUBLIC_POSTHOG_HOST`
 - [ ] Production config enables PostHog; development default and every preview config remain disabled
 - [ ] Temporary `EXPO_PUBLIC_POSTHOG_DEV_TEST=true` removed/disabled after one controlled verification
@@ -69,6 +80,16 @@
 - [ ] Existing PostHog dashboard/Live Events verified; dashboards/experiments/worker analytics remain deferred
 
 ## QA
+- [ ] M22E.2E normal local development sends no Sentry/PostHog events; fresh
+  onboarding start and persisted completion/Skip each occur once; returning launch
+  and branded/Home loading create no duplicates
+- [ ] M22E.2E sign-in uses Supabase UUID only; sign-out/reset clears Sentry and
+  PostHog; next anonymous session does not inherit identity
+- [ ] M22E.2E controlled funnel order is correct without content; purchase cancel
+  and quota block create analytics but no Sentry issue; normal worker active flow
+  creates no issue; all test flags end false
+- [ ] M22E.2E release-only: production source-map symbolication and real production
+  PostHog delivery verified on the versionCode 2 release candidate
 - [ ] M22E.2D clean-install launch shows welcome page 1; all five pages keep consistent header/hero/copy/indicator/CTA structure with no clipping on a small Android device or large text.
 - [ ] M22E.2D Skip works from each welcome page and final Get Started persists completion then enters Home; Android Back steps through the tour safely without duplicate navigation.
 - [ ] M22E.2D the legacy `/onboarding` route redirects to the new welcome flow; cooking style, language, household size, cooking level, main use, and optional preference screens never display.
