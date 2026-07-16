@@ -1241,19 +1241,7 @@ function normalizeMediaJobSourceMetadata(
     description: getStringValue(value.description),
     platform: getStringValue(value.platform),
     resolver: getStringValue(value.resolver),
-    author_username: getStringValue(
-      value.author_username ??
-        value.authorUsername ??
-        value.author_name ??
-        value.author ??
-        value.creator ??
-        value.channel_name ??
-        value.channel ??
-        value.uploader ??
-        value.username ??
-        value.handle ??
-        value.ownerUsername
-    ),
+    author_username: getCreatorMetadataValue(value),
     duration_seconds: getNumberValue(value.duration_seconds),
     is_too_long: getBooleanValue(value.is_too_long ?? value.isTooLong),
     max_duration_seconds: getNumberValue(
@@ -1268,6 +1256,39 @@ function normalizeMediaJobSourceMetadata(
     uploaded_thumbnail_url: getStringValue(value.uploaded_thumbnail_url),
     media,
   }
+}
+
+function getCreatorMetadataValue(value: Record<string, unknown>) {
+  const candidates = [
+    value.author_name,
+    value.authorName,
+    value.display_name,
+    value.creator_name,
+    value.channel_name,
+    value.channelName,
+    value.channel_title,
+    value.channelTitle,
+    value.channel,
+    value.uploader,
+    value.author,
+    value.creator,
+    value.username,
+    value.handle,
+    value.ownerUsername,
+    value.owner_username,
+    value.author_username,
+    value.authorUsername,
+  ]
+
+  for (const valueCandidate of candidates) {
+    const candidate = getStringValue(valueCandidate)
+
+    if (candidate && !/^@?\d+$/.test(candidate)) {
+      return candidate
+    }
+  }
+
+  return undefined
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

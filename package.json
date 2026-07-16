@@ -59,6 +59,7 @@
     "qa:guards": "node scripts/qa-static-guards.mjs",
     "qa:static": "npm run typecheck && npm run expo:config && npm run qa:guards",
     "test:analytics": "node --experimental-strip-types --test tests/analytics-policy.test.mjs",
+    "test:onboarding": "node --experimental-strip-types --test tests/onboarding-flow.test.mjs",
     "env:validate:dev": "node scripts/env/validate-env.mjs development",
     "env:validate:prod": "node scripts/env/validate-env.mjs production",
     "env:doctor:dev": "node scripts/env/env-doctor.mjs development",

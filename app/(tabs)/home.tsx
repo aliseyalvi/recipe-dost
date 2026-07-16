@@ -5,6 +5,8 @@ import {
   OutlinePillButton,
   SectionHeading,
 } from '@/features/home/editorial-layout'
+import { HomeLoadingState } from '@/features/home/home-loading-state'
+import { EmptyRecipeLibraryCard } from '@/features/home/empty-recipe-library-card'
 import {
   getRecipeCreatorLabel,
   getRecipeDisplayTitle,
@@ -31,7 +33,6 @@ import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, radius, spacing, typography } from '@/theme'
 import { ErrorState } from '@/ui/error-state'
-import { LoadingState } from '@/ui/loading-state'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -213,7 +214,7 @@ export default function HomeRoute() {
       />
 
       {libraryQuery.isLoading && !libraryQuery.data ? (
-        <LoadingState message="Loading your recipes..." />
+        <HomeLoadingState />
       ) : null}
 
       {libraryQuery.error && !hasLibraryItems ? (
@@ -244,8 +245,8 @@ export default function HomeRoute() {
           {favoriteActionError ? (
             <BackgroundRefreshNotice message={favoriteActionError} />
           ) : null}
-          <HomeSection title="Recent">
-            {recentRecipe ? (
+          {recentRecipe ? (
+            <HomeSection title="Recent">
               <>
                 <EditorialRecipeCard
                   title={getRecipeDisplayTitle(recentRecipe)}
@@ -270,15 +271,12 @@ export default function HomeRoute() {
                   onPress={() => openLibrary('recent')}
                 />
               </>
-            ) : (
-              <EmptySectionCard
-                title="Save a recipe reel to see it here"
-                message="Your latest saved links and AI recipes will appear here."
-                actionLabel="Add Recipe"
-                onActionPress={() => openSaveRecipe('recent_empty')}
-              />
-            )}
-          </HomeSection>
+            </HomeSection>
+          ) : (
+            <EmptyRecipeLibraryCard
+              onSaveRecipe={() => openSaveRecipe('recent_empty')}
+            />
+          )}
 
           {favoriteRecipe ? (
             <HomeSection title="Favorites">
@@ -308,7 +306,7 @@ export default function HomeRoute() {
             </HomeSection>
           ) : null}
 
-          {latestAiRecipe || !hasAiRecipes ? (
+          {hasLibraryItems && (latestAiRecipe || !hasAiRecipes) ? (
             <HomeSection title="AI Generated">
               {latestAiRecipe ? (
                 <>

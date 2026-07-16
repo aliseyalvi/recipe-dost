@@ -17,6 +17,7 @@ import {
   RecipeStatGrid,
 } from '@/features/recipe-detail/detail-presentation'
 import { getRecipeDetailViewState } from '@/features/recipe-detail/recipe-detail-view-state'
+import { RecipeDetailActionMenu } from '@/features/recipe-detail/recipe-detail-action-menu'
 import { getPaywallHref } from '@/features/paywall/paywall-model'
 import {
   getMediaJobProcessingStage,
@@ -99,6 +100,7 @@ export default function SavedRecipeRoute() {
   const [isStartLocked, setIsStartLocked] = useState(false)
   const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false)
   const [isDeletingRecipe, setIsDeletingRecipe] = useState(false)
+  const [isOptionsOpen, setIsOptionsOpen] = useState(false)
   const [recipeManagementError, setRecipeManagementError] = useState<Error | null>(
     null
   )
@@ -853,28 +855,11 @@ export default function SavedRecipeRoute() {
   }
 
   const managementHeaderActions = (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-      <HeaderIconButton
-        label={
-          recipe.is_favorite
-            ? 'Remove recipe from favorites'
-            : 'Add recipe to favorites'
-        }
-        icon={recipe.is_favorite ? 'heart' : 'heart-outline'}
-        selected={recipe.is_favorite === true}
-        disabled={isUpdatingFavorite || isDeletingRecipe}
-        onPress={() => {
-          void handleToggleFavorite()
-        }}
-      />
-      <HeaderIconButton
-        label="Open original video"
-        icon="external"
-        onPress={() => {
-          void openOriginalVideo()
-        }}
-      />
-    </View>
+    <HeaderIconButton
+      label="Recipe options"
+      icon="more-vertical"
+      onPress={() => setIsOptionsOpen(true)}
+    />
   )
   const usageHeaderAction = detailUsageLabel ? (
     <DetailUsagePill
@@ -1093,7 +1078,33 @@ export default function SavedRecipeRoute() {
   })()
 
   if (Boolean(recipe.id)) {
-    return redesignedDetail
+    return (
+      <>
+        {redesignedDetail}
+        <RecipeDetailActionMenu
+          visible={isOptionsOpen}
+          title={normalizedDisplayTitle}
+          subtitle={platformLabel}
+          isFavorite={recipe.is_favorite === true}
+          isFavoriteUpdating={isUpdatingFavorite}
+          isDeleting={isDeletingRecipe}
+          canOpenOriginal={Boolean(recipe.source_url?.trim())}
+          canViewSource={false}
+          errorMessage={recipeManagementError?.message}
+          onClose={() => setIsOptionsOpen(false)}
+          onOpenOriginal={() => {
+            void openOriginalVideo()
+          }}
+          onViewSource={() => undefined}
+          onToggleFavorite={() => {
+            void handleToggleFavorite()
+          }}
+          onDelete={() => {
+            void handleDeleteRecipe()
+          }}
+        />
+      </>
+    )
   }
 
   return (

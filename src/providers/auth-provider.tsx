@@ -1,8 +1,8 @@
 import { getSession, signInAnonymously, signOut } from '@/lib/supabase/auth'
 import { supabase } from '@/lib/supabase/client'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
+import { AppLoadingScreen } from '@/ui/app-loading-screen'
 import { ErrorState } from '@/ui/error-state'
-import { LoadingState } from '@/ui/loading-state'
 import { Session, User } from '@supabase/supabase-js'
 import { ReactNode, createContext, use, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -102,7 +102,12 @@ export function AuthProvider({ children }: Props) {
   )
 
   if (isLoading) {
-    return <LoadingState message="Starting Recipe Dost..." />
+    return (
+      <AppLoadingScreen
+        message="Starting Recipe Dost..."
+        detail="Setting the table for your recipes"
+      />
+    )
   }
 
   if (error) {

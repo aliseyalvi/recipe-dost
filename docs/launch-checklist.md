@@ -69,6 +69,12 @@
 - [ ] Existing PostHog dashboard/Live Events verified; dashboards/experiments/worker analytics remain deferred
 
 ## QA
+- [ ] M22E.2D clean-install launch shows welcome page 1; all five pages keep consistent header/hero/copy/indicator/CTA structure with no clipping on a small Android device or large text.
+- [ ] M22E.2D Skip works from each welcome page and final Get Started persists completion then enters Home; Android Back steps through the tour safely without duplicate navigation.
+- [ ] M22E.2D the legacy `/onboarding` route redirects to the new welcome flow; cooking style, language, household size, cooking level, main use, and optional preference screens never display.
+- [ ] M22E.2D Skip/Get Started persists `onboarding_completed`, reopen bypasses welcome for returning users, signed-in/anonymous session bootstrap remains stable, and a failed completion save shows retry without entering Home.
+- [ ] M22E.2D app re-entry/profile resolution shows the centered branded loader; Home first load shows the editorial skeleton; retry/error/empty/background-refresh states and loading timing remain unchanged.
+- [ ] M22E.2D PostHog records one welcome start and one successful onboarding completion without content/URL/route payloads; Sentry behavior and the core save/share → metadata → AI → detail → Grocery → Paywall flow remain unchanged.
 - [ ] M22E.1R-ICONPOLISH1 Home and Library favorite controls checked for matching Ionicons outline/filled hearts, unchanged 44px footprint, working mutation, persistence after reload, and identical visual treatment
 - [ ] M22E.1R-ICONPOLISH1 AI-only, favorite-only, and AI-plus-favorite cards checked on a small Android screen without overlap with the Library ellipsis menu
 - [ ] M22E.1R-ICONPOLISH1 Instagram, YouTube, TikTok, Facebook, and unknown-provider cards checked for supported brand/link fallback icons plus clean omission of missing creator/duration metadata

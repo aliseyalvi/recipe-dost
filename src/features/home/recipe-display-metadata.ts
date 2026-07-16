@@ -68,29 +68,47 @@ export function getRecipeCreatorLabel(recipe: RecipeLibraryItem) {
 
 function getRecipeCreatorValue(recipe: RecipeLibraryItem) {
   const metadata = getMetadataRecord(recipe.source_metadata)
-  const candidate = cleanSingleLine(
-    recipe.latest_media_job?.source_metadata.author_username ??
-      getMetadataString(
-        metadata,
-        'author_name',
-        'author_username',
-        'authorUsername',
-        'author',
-        'creator',
-        'channel_name',
-        'channel',
-        'uploader',
-        'username',
-        'handle',
-        'ownerUsername'
-      )
-  )
+  const creatorKeys = [
+    'author_name',
+    'authorName',
+    'author_display_name',
+    'display_name',
+    'full_name',
+    'creator_name',
+    'channel_name',
+    'channelName',
+    'channel_title',
+    'channelTitle',
+    'channel',
+    'uploader',
+    'author',
+    'creator',
+    'owner',
+    'author_username',
+    'authorUsername',
+    'username',
+    'handle',
+    'ownerUsername',
+    'owner_username',
+  ]
+  const candidates = [
+    ...creatorKeys.map((key) => getMetadataString(metadata, key)),
+    recipe.latest_media_job?.source_metadata.author_username,
+  ]
 
-  if (!candidate || isRawUrl(candidate)) {
-    return null
+  for (const value of candidates) {
+    const candidate = cleanSingleLine(value)
+
+    if (candidate && !isRawUrl(candidate) && !isNumericCreatorId(candidate)) {
+      return truncateAtWord(candidate, CREATOR_MAX_LENGTH)
+    }
   }
 
-  return truncateAtWord(candidate, CREATOR_MAX_LENGTH)
+  return null
+}
+
+function isNumericCreatorId(value: string) {
+  return /^@?\d+$/.test(value.trim())
 }
 
 function getCaptionDisplayTitle(value: string | null | undefined) {

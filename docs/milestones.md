@@ -1,5 +1,12 @@
 # Recipe Dost Milestones
 
+## M22E.2D - Welcome / Onboarding Redesign and Loading UX Refresh
+- Status: implemented on `develop`; automated validation and Android device QA status documented below.
+- Replaced the one-page welcome with five consistent native screens: premium Recipe Dost introduction, save-from-anywhere, AI assistance, smart Grocery, and ready-to-cook. The reference images in `docs/design/stitch-welcome/` informed the Obsidian/coral hierarchy, spacing, indicators, visual rhythm, and CTA treatment without shipping screenshot-based UI.
+- Added responsive UI-built culinary/link/AI/checklist/recipe hero cards, an always-visible accessible Skip action, synchronized progress, a fixed rounded CTA area, brief existing-Reanimated fades, and Android Back step handling. No new dependency was added.
+- Removed the old cooking-style, language, household-size, cooking-level, main-use, and optional-preference screens from the active product flow. Skip and final Get Started both persist onboarding completion through the existing profile upsert and enter Home; the legacy `/onboarding` route redirects to the new welcome flow. Anonymous auth, the remote completion guard, and returning-user bypass remain intact.
+- Added a reusable full-screen Recipe Dost loader for auth/profile bootstrap, refreshed the shared in-screen loading state, and added an editorial Home initial skeleton. Loading/query timing, errors/retries, PostHog/Sentry, backend, schema, Edge Functions, worker, RevenueCat, quota/access, products, entitlement, version, and Android `versionCode` remain unchanged.
+
 ## M22E.2B - Privacy-Safe PostHog Product Analytics
 - Status: implemented on `develop`; static/type/test/template validation passed. Real env validation is blocked by the existing non-HTTPS PostHog host value; controlled device/PostHog Live Events verification is pending.
 - Replaced the PostHog no-op with one centralized SDK client gated to valid production configuration or one exact development test override. Preview and normal development are hard-disabled, missing configuration fails closed, and no real env, EAS project, PostHog org/project, version, backend, schema, quota, worker, or RevenueCat configuration was changed.

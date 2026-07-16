@@ -56,7 +56,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import * as Clipboard from 'expo-clipboard'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert, Image, Linking, Pressable, Text, View } from 'react-native'
+import { Image, Linking, Pressable, Text, View } from 'react-native'
 
 export default function RecipeCardResultRoute() {
   const router = useRouter()
@@ -323,23 +323,6 @@ export default function RecipeCardResultRoute() {
     }
   }
 
-  const confirmDeleteRecipe = () => {
-    Alert.alert(
-      'Delete this saved recipe?',
-      'This removes the saved link and recipe card from your library. It does not affect the original video.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete recipe',
-          style: 'destructive',
-          onPress: () => {
-            void handleDeleteRecipe()
-          },
-        },
-      ]
-    )
-  }
-
   const redesignedResult = (
     <>
     <RecipeDetailScaffold
@@ -473,29 +456,6 @@ export default function RecipeCardResultRoute() {
         </View>
       ) : null}
 
-      <View
-        style={{
-          gap: spacing.md,
-          borderRadius: radius.card,
-          ...borders.subtle,
-          backgroundColor: colors.surfaceContainerLow,
-          padding: spacing.cardPadding,
-        }}
-      >
-        <Text selectable style={[typography.heading, { color: colors.error }]}>
-          Remove from Library
-        </Text>
-        <Text selectable style={[typography.body, { color: colors.onSurfaceVariant }]}>
-          Remove this saved recipe and its AI card from your active library.
-        </Text>
-        <Button
-          label={isDeletingRecipe ? 'Deleting recipe…' : 'Delete recipe'}
-          fullWidth
-          variant="outline"
-          disabled={isDeletingRecipe}
-          onPress={confirmDeleteRecipe}
-        />
-      </View>
     </RecipeDetailScaffold>
     <RecipeDetailActionMenu
       visible={isOptionsOpen}
@@ -703,22 +663,6 @@ export default function RecipeCardResultRoute() {
           </Text>
         </Card>
       ) : null}
-
-      <Card tone="muted">
-        <Text selectable style={[typography.heading, { color: colors.danger }]}>
-          Remove from Library
-        </Text>
-        <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-          Remove this saved recipe and its AI card from your active library.
-        </Text>
-        <Button
-          label={isDeletingRecipe ? 'Deleting recipe...' : 'Delete recipe'}
-          fullWidth
-          variant="outline"
-          disabled={isDeletingRecipe}
-          onPress={confirmDeleteRecipe}
-        />
-      </Card>
 
       <View style={{ gap: spacing.md }}>
         <Button

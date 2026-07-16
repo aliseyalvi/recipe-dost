@@ -2,6 +2,7 @@ import {
   getRecipeCreatorLabel,
   getRecipeDisplayTitle,
 } from '@/features/home/recipe-display-metadata'
+import { EmptyRecipeLibraryCard } from '@/features/home/empty-recipe-library-card'
 import { UsagePill } from '@/features/home/editorial-layout'
 import { getMediaJobProcessingStage } from '@/features/media-jobs/processing-stage'
 import { getPaywallHref } from '@/features/paywall/paywall-model'
@@ -1497,8 +1498,12 @@ function LibraryEmptyState({
     )
   }
 
+  if (kind === 'library') {
+    return <EmptyRecipeLibraryCard onSaveRecipe={onSaveRecipe} />
+  }
+
   const content = getEmptyContent(kind)
-  const action = kind === 'library' ? onSaveRecipe : kind === 'search' ? onClearSearch : null
+  const action = kind === 'search' ? onClearSearch : null
 
   return (
     <View
@@ -1521,7 +1526,7 @@ function LibraryEmptyState({
       </Text>
       {action ? (
         <Button
-          label={kind === 'library' ? 'Save Recipe' : 'Clear search'}
+          label="Clear search"
           variant="accent"
           onPress={action}
         />

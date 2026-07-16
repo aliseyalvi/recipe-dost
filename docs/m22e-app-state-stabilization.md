@@ -8,6 +8,17 @@ Audit-only pass for onboarding launch routing and stale Home/Library metadata st
 
 Current branch workflow is correct for this milestone: M22E fixes are prepared on `develop`, then merged to `main` only after QA for a production AAB update.
 
+## M22E.2D Welcome/onboarding and loading UX refresh
+
+Status: implemented on `develop`; automated validation and Android device QA status recorded at completion.
+
+- The five design references are stored in `docs/design/stitch-welcome/` and were used only for dark culinary tone, blush/coral emphasis, hierarchy, spacing, page indicators, and CTA rhythm. The app renders responsive React Native cards and icons rather than reference screenshots or remote sample imagery.
+- `/welcome` now owns the five-screen value tour. Every page keeps the same safe-area header/body/footer composition, concise product-specific copy, an accessible top-right Skip action, synchronized indicators, a rounded CTA, and responsive scrollable content. Android Back moves to the prior tour page when one exists. Existing Reanimated supplies short page fades; no pager or animation package was added.
+- The previous cooking-style, language, household-size, cooking-level, main-use, and optional-preference questionnaire is no longer linked or rendered. Both Skip and final Get Started call the existing `saveOnboardingProfile()` path with `onboarding_completed = true`, invalidate the profile query, and replace into Home only after persistence succeeds. The legacy `/onboarding` route redirects to `/welcome`; completed returning anonymous users still bypass the tour through the same remote profile flag.
+- `AppLoadingScreen` is the shared full-screen branded auth/profile bootstrap state. `LoadingState` now uses the same recipe mark for compact in-flow waits, while Home uses `HomeLoadingState` editorial placeholders on its first recipe-library load. Existing loading duration, query, retry, error, background refresh, Sentry, and navigation semantics are unchanged.
+- Analytics stays behind the existing abstraction. `onboarding_started` fires once after the welcome guard resolves; `onboarding_completed` fires once only after Skip or Get Started successfully persists completion. No screen-content, raw route, user-entered, URL, or duplicate rerender event was added.
+- Deferred polish: final Android device screenshots, large-font/small-screen visual verification, and physical Back/gesture testing remain manual acceptance work. No backend, schema, Edge Function, worker, quota/access, RevenueCat, product, entitlement, app-version, or Android-versionCode change was made.
+
 ## M22E.2B Privacy-safe PostHog product analytics
 
 Status: implemented on `develop`; controlled device/PostHog verification pending.
