@@ -1,5 +1,28 @@
 # Recipe Dost Milestones
 
+## M22E.3A - Recipe Dost 1.0.1 Beta Release Preparation
+- Status: release configuration and runbook prepared on `develop`; production
+  migration, merge, AAB build, Play upload, and device/dashboard QA remain
+  human-gated.
+- Set the local Expo/Android release to `1.0.1` / versionCode `2`. Production
+  remains a production-environment AAB for `com.recipedost.app`, with no
+  auto-increment, EAS Update, package, project ID, signing, product, entitlement,
+  quota, Edge Function, or worker change.
+- Added Sentry Metro debug-ID instrumentation, an Internal Testing draft submit
+  profile, and focused release configuration tests. Runtime Sentry/PostHog gates
+  and privacy policy are unchanged.
+- Added the required `expo-font` peer/config plugin for the existing vector-icon
+  system and aligned only SDK 56 patch dependencies reported by Expo Doctor.
+- Production is missing the one M22E recipe-management migration introduced on
+  `develop`; deploy it after merge and before build 2. The branch diff contains
+  no Edge Function or worker change, so neither requires redeployment.
+- Production EAS is also missing the audited Sentry/PostHog runtime/build names.
+  Sync allowlisted values through the existing production env workflow and add
+  `SENTRY_AUTH_TOKEN` separately as an EAS secret before building.
+- Detailed merge, production deployment, build, Play upload, fresh-install,
+  build-1 upgrade, observability, billing, rollback, and release notes are in
+  `docs/m22e-1.0.1-beta-release.md`. M22E.4 remains broader beta QA.
+
 ## M22E.2E - Unified Observability, Privacy and Identity QA Freeze
 - Status: implemented and automatically validated on `develop`; manual
   device/dashboard and release-only production delivery checks remain.

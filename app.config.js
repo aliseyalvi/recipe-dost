@@ -38,7 +38,7 @@ module.exports = ({ config }) => {
       name: appName,
       slug: "recipe-dost",
       scheme: "recipe-dost",
-      version: "1.0.0",
+      version: "1.0.1",
       orientation: "portrait",
       icon: "./assets/images/icon.png",
       userInterfaceStyle: "dark",
@@ -52,7 +52,7 @@ module.exports = ({ config }) => {
       },
       android: {
         package: androidPackage,
-        versionCode: 1,
+        versionCode: 2,
         softwareKeyboardLayoutMode: "resize",
         adaptiveIcon: {
           foregroundImage: "./assets/images/adaptive-icon.png",
@@ -74,6 +74,7 @@ module.exports = ({ config }) => {
       },
       plugins: [
         "expo-router",
+        "expo-font",
         "expo-secure-store",
         "expo-localization",
         "expo-sharing",

@@ -1,5 +1,28 @@
 # Recipe Dost Launch Checklist
 
+## M22E.3A - 1.0.1 Beta release gate
+- [x] Release config prepared on `develop`: version `1.0.1`, versionCode `2`,
+  local version source, production AAB, production environment, fixed package ID
+- [x] Controlled Sentry/PostHog test flags false in every EAS profile
+- [x] Sentry Expo plugin and Metro debug-ID instrumentation configured
+- [x] EAS Submit production profile targets Internal Testing as a draft
+- [x] Production migration audit completed: M22E recipe-management migration is pending
+- [x] Branch diff confirms no Edge Function or Python worker redeploy is required
+- [ ] Automated gate and Android development-device matrix pass on `develop`
+- [ ] `develop` reviewed and merged to `main`; clean merged `main` checked out
+- [ ] Expected production database migration dry-run reviewed, applied, and verified
+- [ ] Missing production EAS Sentry/PostHog names synced; `SENTRY_AUTH_TOKEN` created as secret
+- [ ] Production env/EAS credential preflight passes with no secret printed
+- [ ] Production AAB build `1.0.1 (2)` succeeds from `main`
+- [ ] Sentry source-map upload succeeds in build logs and symbolication is verified
+- [ ] AAB uploaded to Internal Testing as `Recipe Dost 1.0.1 Beta (2)`
+- [ ] Fresh-install and upgrade-from-build-1 matrices pass
+- [ ] Production PostHog delivery and RevenueCat purchase/restore pass
+- [ ] No P0/P1 blocker; M22E.4 beta QA can begin
+
+Detailed commands, Play steps, release notes, rollback, and acceptance matrix:
+`docs/m22e-1.0.1-beta-release.md`.
+
 ## Store basics
 - Google Play developer identity/phone verification completed
 - Release branch is `main`

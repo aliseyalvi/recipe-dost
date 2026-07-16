@@ -223,7 +223,8 @@ Render production requires production + `main` + DSN + test flag false. Render
 development requires development + `develop` and the flag restored false after
 verification; a retained DSN is inert under the runtime guard.
 
-M22E.2E did not deploy or emit another controlled event. Remaining release-only
-checks are real production source-map symbolication and real production PostHog
-delivery for the versionCode 2 release candidate. App version `1.0.0` and Android
-`versionCode` 1 remain unchanged in this milestone.
+M22E.3A prepares app version `1.0.1` and Android versionCode `2`. Metro now adds
+Sentry debug IDs while the production-only Expo plugin, external build token,
+runtime privacy sanitizer, and fail-closed environment gate remain unchanged.
+No event was emitted and no production build was created. Real production
+source-map symbolication and PostHog delivery remain release acceptance checks.

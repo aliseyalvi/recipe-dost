@@ -8,6 +8,28 @@ Audit-only pass for onboarding launch routing and stale Home/Library metadata st
 
 Current branch workflow is correct for this milestone: M22E fixes are prepared on `develop`, then merged to `main` only after QA for a production AAB update.
 
+## M22E.3A Recipe Dost 1.0.1 beta release preparation
+
+Status: config and documentation prepared on `develop`; no merge, production
+deploy, build, submission, Play upload, or EAS Update was performed.
+
+- Local versioning is the established source. The release is `1.0.1` with
+  Android versionCode `2`; production auto-increment remains absent.
+- Production remains `com.recipedost.app`, EAS project/signing are unchanged,
+  the production profile creates an AAB, and the production submit profile
+  targets Internal Testing as a draft.
+- Sentry Metro debug-ID instrumentation closes the source-map readiness gap
+  without changing runtime transmission gates. Production still requires its
+  external org/project/auth-token configuration and a real symbolication check.
+- Production is missing the M22E favorite/soft-delete migration. Apply only that
+  migration after promotion to `main` and before build 2. No Edge Function or
+  worker redeploy is required by the branch diff.
+- Production EAS is missing the audited Sentry/PostHog runtime/build names. The
+  established production env sync supplies allowlisted values, while
+  `SENTRY_AUTH_TOKEN` must be created separately with secret visibility.
+- The complete human-gated release and QA sequence is documented in
+  `docs/m22e-1.0.1-beta-release.md`; broader beta QA remains M22E.4.
+
 ## M22E.2E Unified observability, privacy, and identity QA freeze
 
 Status: code audit and automated QA complete on `develop`; device/dashboard and

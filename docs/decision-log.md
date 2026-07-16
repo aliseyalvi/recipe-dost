@@ -1,6 +1,26 @@
 # Recipe Dost Decision Log
 
 ## 2026-07-16
+- M22E.3A prepares `1.0.1` / Android versionCode `2` on `develop` without
+  building, submitting, uploading, or merging. `cli.appVersionSource=local` is
+  retained and production auto-increment stays absent to prevent double bumps.
+- Release architecture decision: keep the production AAB/package/project/signing
+  path, add Sentry Metro debug IDs, and target EAS Submit at Internal Testing as
+  a draft for human Play review. Runtime observability behavior is unchanged.
+- Standalone-build compatibility decision: add the missing `expo-font` peer and
+  config plugin required by the existing vector-icon dependency, then align only
+  the Expo SDK 56 patch versions identified by Expo Doctor.
+- Production deployment decision: `20260711080652_m22e_recipe_management.sql`
+  is pending in production and must be applied after merge but before build 2.
+  No Edge Function or worker file changed between `main` and `develop`, so do not
+  redeploy either service for this release.
+- EAS audit decision: the production environment is missing the Sentry/PostHog
+  runtime/build variable names. Use the existing allowlisted production sync for
+  public values and create `SENTRY_AUTH_TOKEN` separately with secret visibility;
+  do not commit or print it.
+- Release execution and QA are documented in
+  `docs/m22e-1.0.1-beta-release.md`; production build, submission, Play rollout,
+  fresh-install/upgrade QA, and dashboard evidence remain external gates.
 - M22E.2E freezes observability ownership: app Sentry handles unexpected mobile
   technical failures, PostHog handles only approved product transitions, and
   worker Sentry handles unexpected current queue-flow failures. No tracing,
