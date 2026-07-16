@@ -8,6 +8,35 @@ Audit-only pass for onboarding launch routing and stale Home/Library metadata st
 
 Current branch workflow is correct for this milestone: M22E fixes are prepared on `develop`, then merged to `main` only after QA for a production AAB update.
 
+## M22E.2B Privacy-safe PostHog product analytics
+
+Status: implemented on `develop`; controlled device/PostHog verification pending.
+
+- Audit found `posthog-react-native@4.50.0`, placeholder provider/config files,
+  a stale wizard report, and no live SDK client/config plugin. Session Replay,
+  Error Tracking, feature flags, CLI upload configuration, and native PostHog
+  plugins were absent. Installed Expo peers satisfy product analytics; remaining
+  declared peers are optional and intentionally unnecessary for this scope.
+- One centralized client now initializes only for a valid project token/HTTPS
+  host in production, or the exact development/development controlled-test
+  combination. Preview is always disabled. No real env file was edited.
+- Manual safe screens, typed focused product events, runtime schema enforcement,
+  `before_send`, UUID-only identify, identity reset, and a one-shot Settings test
+  are implemented. Session Replay, all autocapture, error tracking, logs, flags,
+  surveys, remote config, GeoIP, and debug output remain explicitly disabled.
+- Production EAS still needs externally configured
+  `EXPO_PUBLIC_POSTHOG_API_KEY` and `EXPO_PUBLIC_POSTHOG_HOST`. The dev-test flag
+  is not synced. The old `EXPO_PUBLIC_POSTHOG_KEY` name is rejected and no
+  `POSTHOG_CLI_*` variable is needed. The stale wizard dashboard links are not
+  treated as proof that the current token/host is valid.
+- No backend, Supabase schema, Edge Function, worker, RevenueCat entitlement,
+  quota/access, package ID, app version, or `versionCode` changed.
+- `npm run qa:static`, final typecheck, nine analytics tests, Expo config,
+  static guards, and env template validation passed. The real development
+  doctor/validator and production validator fail closed until the current host
+  label is replaced externally with the matching HTTPS PostHog ingest origin.
+  No device/Live Events QA was possible in this workspace.
+
 ## M22E.1R-ICONPOLISH1 Cross-screen iconography and recipe metadata polish
 
 Status: implemented on `develop`; automated validation complete and Android visual QA pending.

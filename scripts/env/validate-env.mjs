@@ -13,6 +13,16 @@ const EAS_PUBLIC_KEYS = [
   "EXPO_PUBLIC_REVENUECAT_OFFERING_ID",
 ];
 
+const POSTHOG_PUBLIC_KEYS = [
+  "EXPO_PUBLIC_POSTHOG_API_KEY",
+  "EXPO_PUBLIC_POSTHOG_HOST",
+];
+
+const EAS_OPTIONAL_PUBLIC_KEYS = [
+  ...POSTHOG_PUBLIC_KEYS,
+  "EXPO_PUBLIC_POSTHOG_DEV_TEST",
+];
+
 const SUPABASE_REQUIRED_KEYS = [
   "REVENUECAT_API_KEY",
   "REVENUECAT_ENTITLEMENT_ID",
@@ -57,6 +67,7 @@ const DEPRECATED_PUBLIC_KEYS = [
   "EXPO_PUBLIC_FREE_RECIPE_CARD_LIMIT",
   "EXPO_PUBLIC_FREE_SAVED_LINK_LIMIT",
   "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY",
+  "EXPO_PUBLIC_POSTHOG_KEY",
   "EXPO_PUBLIC_SUPABASE_KEY",
 ];
 
@@ -196,6 +207,49 @@ function validateDeprecatedPublicKeys(env) {
   return DEPRECATED_PUBLIC_KEYS.filter((key) => env.has(key));
 }
 
+function validatePostHog(env, environment, useExample) {
+  if (useExample) return [];
+
+  const findings = [];
+  const key = String(env.get("EXPO_PUBLIC_POSTHOG_API_KEY") ?? "").trim();
+  const host = String(env.get("EXPO_PUBLIC_POSTHOG_HOST") ?? "").trim();
+  const devTest = String(env.get("EXPO_PUBLIC_POSTHOG_DEV_TEST") ?? "").trim();
+  const requiresProject = environment === "production" || devTest === "true";
+
+  if (devTest && devTest !== "true" && devTest !== "false") {
+    findings.push("EXPO_PUBLIC_POSTHOG_DEV_TEST must be exactly true or false.");
+  }
+  if (environment === "production" && devTest === "true") {
+    findings.push("Production must not enable EXPO_PUBLIC_POSTHOG_DEV_TEST.");
+  }
+  if (requiresProject && !isValidPostHogKey(key)) {
+    findings.push("A valid EXPO_PUBLIC_POSTHOG_API_KEY project token is required.");
+  }
+  if (requiresProject && !isValidPostHogHost(host)) {
+    findings.push("EXPO_PUBLIC_POSTHOG_HOST must be a valid HTTPS origin without a path.");
+  }
+  return findings;
+}
+
+function isValidPostHogKey(value) {
+  return value.startsWith("phc_") && value.length >= 20 && !/^phc_YOUR/i.test(value);
+}
+
+function isValidPostHogHost(value) {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      Boolean(url.hostname) &&
+      !url.username &&
+      !url.password &&
+      url.pathname.replace(/\/+$/, "") === ""
+    );
+  } catch {
+    return false;
+  }
+}
+
 function validatePlaceholderValues(env, keys, useExample) {
   if (useExample) {
     return [];
@@ -217,7 +271,12 @@ if (!existsSync(path)) {
 }
 
 const { env, errors } = parseEnv(readFileSync(path, "utf8"));
-const requiredKeys = [...EAS_PUBLIC_KEYS, ...SUPABASE_REQUIRED_KEYS, ...LOCAL_REQUIRED_KEYS];
+const requiredKeys = [
+  ...EAS_PUBLIC_KEYS,
+  ...(environment === "production" ? POSTHOG_PUBLIC_KEYS : []),
+  ...SUPABASE_REQUIRED_KEYS,
+  ...LOCAL_REQUIRED_KEYS,
+];
 const missing = validateRequired(env, requiredKeys);
 const forbiddenPublicSecrets = validateForbiddenPublicSecrets(env);
 const deprecatedPublicKeys = validateDeprecatedPublicKeys(env);
@@ -229,11 +288,13 @@ const revenueCatFindings = validateRevenueCatStoreKeys(
   environment,
   useExample,
 );
+const postHogFindings = validatePostHog(env, environment, useExample);
 
 console.log(
   `Validating ${basename(path)} for ${environment}${useExample ? " template" : ""}`,
 );
 printGroup("EAS public/app vars", EAS_PUBLIC_KEYS, env);
+printGroup("PostHog public analytics vars", EAS_OPTIONAL_PUBLIC_KEYS, env);
 printGroup("Required Supabase Edge Function secrets/config", SUPABASE_REQUIRED_KEYS, env);
 printGroup("Optional Supabase Edge Function secrets/config", SUPABASE_OPTIONAL_KEYS, env);
 printGroup("Local-only helper vars", LOCAL_REQUIRED_KEYS, env);
@@ -246,7 +307,8 @@ if (
   deprecatedPublicKeys.length ||
   placeholderKeys.length ||
   productionFindings.length ||
-  revenueCatFindings.length
+  revenueCatFindings.length ||
+  postHogFindings.length
 ) {
   console.error("\nEnv validation failed.");
   for (const error of errors) {
@@ -268,6 +330,9 @@ if (
     console.error(`- Production env contains obvious dev value: ${finding}`);
   }
   for (const finding of revenueCatFindings) {
+    console.error(`- ${finding}`);
+  }
+  for (const finding of postHogFindings) {
     console.error(`- ${finding}`);
   }
   process.exit(1);

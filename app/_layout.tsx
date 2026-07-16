@@ -2,10 +2,12 @@ import { AppProviders } from "@/providers/app-providers";
 import { StatusBar } from "expo-status-bar";
 import Stack from "expo-router/stack";
 import { colors } from "@/theme";
+import { AnalyticsScreenTracker } from "@/providers/posthog-placeholder-provider";
 
 export default function RootLayout() {
   return (
     <AppProviders>
+      <AnalyticsScreenTracker />
       <StatusBar style="light" />
       <Stack
         screenOptions={{

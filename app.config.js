@@ -8,6 +8,10 @@ module.exports = ({ config }) => {
     appEnv === "development" &&
     appVariant === "development" &&
     process.env.EXPO_PUBLIC_SENTRY_DEV_TEST === "true";
+  const isPostHogDevelopmentTest =
+    appEnv === "development" &&
+    appVariant === "development" &&
+    process.env.EXPO_PUBLIC_POSTHOG_DEV_TEST === "true";
   const appName = isProduction
     ? "Recipe Dost"
     : isPreview
@@ -84,6 +88,7 @@ module.exports = ({ config }) => {
         appVariant,
         telemetryEnabled: isProduction,
         sentryTransmissionEnabled: isProduction || isSentryDevelopmentTest,
+        posthogTransmissionEnabled: isProduction || isPostHogDevelopmentTest,
         eas: {
           ...(existingExtra.eas ?? {}),
           projectId: "bf6a2714-3cdd-4ecf-98c1-9f9b8c558bf0",

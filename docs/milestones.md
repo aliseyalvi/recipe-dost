@@ -1,5 +1,12 @@
 # Recipe Dost Milestones
 
+## M22E.2B - Privacy-Safe PostHog Product Analytics
+- Status: implemented on `develop`; static/type/test/template validation passed. Real env validation is blocked by the existing non-HTTPS PostHog host value; controlled device/PostHog Live Events verification is pending.
+- Replaced the PostHog no-op with one centralized SDK client gated to valid production configuration or one exact development test override. Preview and normal development are hard-disabled, missing configuration fails closed, and no real env, EAS project, PostHog org/project, version, backend, schema, quota, worker, or RevenueCat configuration was changed.
+- Added manual normalized screen tracking, UUID-only identify/reset, typed focused funnel events, property/event allowlists, and a defensive sanitizer with tests. Session Replay, touch/screen/lifecycle autocapture, exceptions, logs, feature flags, surveys, remote config, GeoIP, and debug output stay off.
+- Added a one-tap development-only Settings test that captures and flushes only `posthog_test_event`, then locks. It requires the exact temporary override and cannot render in production/preview.
+- Corrected purchase success to require refreshed local and backend Premium recognition and removed duplicate AI job-creation failure reporting. Sentry remains the sole exception monitor.
+
 ## M22E.1R-ICONPOLISH1 - Cross-Screen Iconography, Recipe Badges and Metadata Polish
 - Status: Done on `develop`; Android visual/regression QA pending. M22E.1R-GROCERY1, M22E.1R-SETTINGS1, and M22E.1R-PAYWALL2 remain Done; M22E.2 is Next.
 - Added Expo-compatible `@expo/vector-icons` and selected Ionicons as the canonical typed family after the audit found no declared vector-icon dependency. Replaced text glyphs and platform initials with supported local vector icons; no remote assets or arbitrary backend icon names are used.

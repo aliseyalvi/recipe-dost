@@ -135,6 +135,15 @@ function printSummary(environment, envPath, env) {
   console.log(`- Supabase: ${supabaseTarget(env)}`);
   console.log(`- RevenueCat Android key type: ${revenueCatKeyType(env)}`);
   console.log(
+    `- PostHog project token configured: ${Boolean(env.get("EXPO_PUBLIC_POSTHOG_API_KEY")?.trim())}`,
+  );
+  console.log(
+    `- PostHog host configured: ${Boolean(env.get("EXPO_PUBLIC_POSTHOG_HOST")?.trim())}`,
+  );
+  console.log(
+    `- PostHog controlled dev test: ${env.get("EXPO_PUBLIC_POSTHOG_DEV_TEST") === "true"}`,
+  );
+  console.log(
     `- EAS Android package: ${resolveExpoAndroidPackage(environment, env)}`,
   );
   console.log(`- Git branch: ${getCurrentGitBranch()}`);

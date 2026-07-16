@@ -1,4 +1,3 @@
-import { useTrackScreen } from '@/analytics/use-track-screen'
 import { colors, spacing, typography } from '@/theme'
 import { Button } from '@/ui/button'
 import { Card } from '@/ui/card'
@@ -32,7 +31,7 @@ export function PlaceholderScreen({
   children,
 }: Props) {
   const router = useRouter()
-  useTrackScreen(screenName)
+  void screenName
 
   return (
     <Screen>

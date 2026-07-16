@@ -57,13 +57,16 @@
 - M22E.1R-PAYWALL2 small Android scrolling, sticky CTA, large text, Add/share, detail, Grocery, Settings, and sensitive-log regressions checked
 
 ## Analytics
-- PostHog key added
-- app_opened tracked
-- onboarding_completed tracked
-- recipe_link_saved tracked
-- ai_recipe_completed tracked
-- paywall_viewed tracked
-- purchase_completed tracked
+- [ ] Production EAS has valid `EXPO_PUBLIC_POSTHOG_API_KEY` and matching HTTPS `EXPO_PUBLIC_POSTHOG_HOST`
+- [ ] Production config enables PostHog; development default and every preview config remain disabled
+- [ ] Temporary `EXPO_PUBLIC_POSTHOG_DEV_TEST=true` removed/disabled after one controlled verification
+- [ ] Settings test emits exactly one `posthog_test_event` with only the documented four safe properties
+- [ ] Live Events confirm normalized screen names and no IDs, paths, query/search text, URLs, content, person fields, raw errors/tokens, or purchase identifiers
+- [ ] UUID-only identify is visible during controlled testing and logout resets identity
+- [ ] `app_opened`, onboarding, Add/save/metadata, AI terminal outcomes, recipe detail, Library search, Grocery open, Paywall/purchase, and restore transitions verified
+- [ ] `purchase_completed` appears only after RevenueCat entitlement and backend Premium access are both refreshed
+- [ ] PostHog Session Replay, autocapture, Error Tracking, logs, flags, surveys, and GeoIP remain disabled; Sentry behavior is unchanged
+- [ ] Existing PostHog dashboard/Live Events verified; dashboards/experiments/worker analytics remain deferred
 
 ## QA
 - [ ] M22E.1R-ICONPOLISH1 Home and Library favorite controls checked for matching Ionicons outline/filled hearts, unchanged 44px footprint, working mutation, persistence after reload, and identical visual treatment

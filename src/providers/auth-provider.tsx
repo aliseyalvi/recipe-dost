@@ -4,7 +4,7 @@ import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { ErrorState } from '@/ui/error-state'
 import { LoadingState } from '@/ui/loading-state'
 import { Session, User } from '@supabase/supabase-js'
-import { ReactNode, createContext, use, useCallback, useEffect, useMemo, useState } from 'react'
+import { ReactNode, createContext, use, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 type AuthContextValue = {
   session: Session | null
@@ -22,7 +22,8 @@ type Props = {
 }
 
 export function AuthProvider({ children }: Props) {
-  const { track } = usePostHog()
+  const { identifyUser, resetAnalyticsUser, track } = usePostHog()
+  const previousAnalyticsUserId = useRef<string | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -47,9 +48,7 @@ export function AuthProvider({ children }: Props) {
           : new Error('Unable to start anonymous session.')
 
       setError(nextError)
-      track('anonymous_auth_bootstrap_failed', {
-        message: nextError.message,
-      })
+      track('anonymous_auth_bootstrap_failed')
     } finally {
       setIsLoading(false)
     }
@@ -69,11 +68,26 @@ export function AuthProvider({ children }: Props) {
     }
   }, [bootstrapSession])
 
+  useEffect(() => {
+    const userId = session?.user.id ?? null
+    if (userId) {
+      identifyUser(userId)
+      previousAnalyticsUserId.current = userId
+      return
+    }
+    if (previousAnalyticsUserId.current) {
+      resetAnalyticsUser()
+      previousAnalyticsUserId.current = null
+    }
+  }, [identifyUser, resetAnalyticsUser, session?.user.id])
+
   const handleSignOut = useCallback(async () => {
     await signOut()
+    resetAnalyticsUser()
+    previousAnalyticsUserId.current = null
     setSession(null)
     track('anonymous_auth_signed_out')
-  }, [track])
+  }, [resetAnalyticsUser, track])
 
   const value = useMemo<AuthContextValue>(
     () => ({

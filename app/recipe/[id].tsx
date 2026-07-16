@@ -266,17 +266,32 @@ export default function SavedRecipeRoute() {
       return
     }
 
+    const previousStatus = lastTrackedMediaJobStatus.current
+    const didTransitionFromActive =
+      previousStatus !== null &&
+      !['completed', 'failed', 'cancelled', 'needs_caption'].includes(
+        previousStatus
+      )
+
     lastTrackedMediaJobStatus.current = mediaJob.status
     track('media_job_status_viewed', {
       platform: getRecipePlatform(mediaJob.platform),
       status: mediaJob.status,
       progress: mediaJob.progress,
     })
-    if (mediaJob.status === 'failed') {
-      track('media_job_failed', {
+    if (mediaJob.status === 'completed' && didTransitionFromActive) {
+      track('media_job_completed', {
         platform: getRecipePlatform(mediaJob.platform),
-        error_code: mediaJob.error_code ?? 'unknown',
+        status: mediaJob.status,
       })
+    }
+    if (mediaJob.status === 'failed') {
+      if (didTransitionFromActive) {
+        track('media_job_failed', {
+          platform: getRecipePlatform(mediaJob.platform),
+          error_code: mediaJob.error_code ?? 'unknown',
+        })
+      }
       void queryClient.invalidateQueries({
         queryKey: ['ai-access-state'],
       })
@@ -781,13 +796,6 @@ export default function SavedRecipeRoute() {
 
       setMediaJobError(getFriendlyMediaJobError(caughtError, nextError))
       setIsStartLocked(false)
-      track('media_job_failed', {
-        platform,
-        error_code:
-          caughtError instanceof RecipeApiError
-            ? caughtError.code
-            : 'media_job_failed',
-      })
       track('media_job_create_failed', {
         platform,
         error_code:

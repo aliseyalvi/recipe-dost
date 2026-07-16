@@ -72,7 +72,7 @@ Local-only helper variables:
 
 The RevenueCat entitlement remains `premium`, the offering remains `default`, and the planned Google Play products remain `recipe_dost_premium_monthly` and `recipe_dost_premium_yearly` with base plans `monthly-autorenewing` and `yearly-autorenewing`.
 
-PostHog and Sentry env values found in old local env candidates are not canonical yet because the current app providers are placeholders and do not read those env variables. Add them back only when runtime code reads them.
+M22E.2A/M22E.2B superseded the original placeholder audit: Sentry and PostHog now use canonical public production variables behind fail-closed runtime gates. Development test overrides are temporary and preview remains disabled.
 
 ## Public Vs Secret Values
 

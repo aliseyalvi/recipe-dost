@@ -38,11 +38,7 @@ export function NestedScreenHeader({
 
     const fallback = returnToRoute ?? fallbackRoute
 
-    track('navigation_back_tapped', {
-      title,
-      fallback_route:
-        typeof fallback === 'string' ? fallback : 'object_route',
-    })
+    track('navigation_back_tapped')
 
     if (router.canGoBack()) {
       router.back()

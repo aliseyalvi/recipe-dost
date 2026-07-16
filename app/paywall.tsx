@@ -277,8 +277,6 @@ export default function PaywallRoute() {
     const properties = {
       trigger,
       selected_plan: plan,
-      package_identifier: nextPackage.identifier,
-      product_identifier: nextPackage.product.identifier,
       has_intro_offer: hasIntroOffer(nextPackage),
       access_plan: subscriptionStatus.plan,
     }
@@ -294,8 +292,6 @@ export default function PaywallRoute() {
     const purchaseProperties = {
       trigger,
       selected_plan: selectedPlan,
-      package_identifier: selectedPackage.identifier,
-      product_identifier: selectedPackage.product.identifier,
       has_intro_offer: hasIntroOffer(selectedPackage),
     }
     track('purchase_started', purchaseProperties)
@@ -318,10 +314,9 @@ export default function PaywallRoute() {
       }
 
       if (recognition.localPremiumActive) {
-        track('purchase_completed', {
+        track('purchase_failed', {
           ...purchaseProperties,
-          premium_active: true,
-          backend_access_ready: false,
+          outcome: 'backend_access_pending',
         })
         setFeedback({
           message:

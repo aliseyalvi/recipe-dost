@@ -15,6 +15,11 @@ const ALLOWLISTED_EAS_KEYS = [
   "EXPO_PUBLIC_REVENUECAT_OFFERING_ID",
 ];
 
+const OPTIONAL_ALLOWLISTED_EAS_KEYS = [
+  "EXPO_PUBLIC_POSTHOG_API_KEY",
+  "EXPO_PUBLIC_POSTHOG_HOST",
+];
+
 function usage() {
   console.error(
     "Usage: node scripts/env/sync-eas-env.mjs <development|production> <--dry-run|--apply>",
@@ -80,10 +85,10 @@ function requireAllowlistedValues(env) {
   }
 }
 
-function writeTempEnv(env) {
+function writeTempEnv(env, keysToSync) {
   const dir = mkdtempSync(join(tmpdir(), "recipe-dost-eas-env-"));
   const path = join(dir, "eas.env");
-  const contents = ALLOWLISTED_EAS_KEYS.map((key) =>
+  const contents = keysToSync.map((key) =>
     formatEnvLine(key, env.get(key)),
   ).join("\n");
   writeFileSync(path, `${contents}\n`, { encoding: "utf8", mode: 0o600 });
@@ -103,9 +108,15 @@ if (!existsSync(sourcePath)) {
 
 const env = parseEnv(readFileSync(sourcePath, "utf8"));
 requireAllowlistedValues(env);
+const keysToSync = [
+  ...ALLOWLISTED_EAS_KEYS,
+  ...OPTIONAL_ALLOWLISTED_EAS_KEYS.filter(
+    (key) => env.has(key) && String(env.get(key)).trim(),
+  ),
+];
 
 console.log(`EAS ${dryRun ? "dry-run" : "apply"} for ${environment}`);
-for (const key of ALLOWLISTED_EAS_KEYS) {
+for (const key of keysToSync) {
   console.log(`- ${key}`);
 }
 
@@ -114,7 +125,7 @@ if (dryRun) {
   process.exit(0);
 }
 
-const temp = writeTempEnv(env);
+const temp = writeTempEnv(env, keysToSync);
 try {
   console.log(
     `\nRunning: eas env:push ${environment} --path <temp allowlisted env file> --force`,

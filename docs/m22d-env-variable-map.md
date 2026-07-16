@@ -12,9 +12,11 @@ This audit maps env names referenced by app code, Supabase Edge Functions, confi
 | `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` | `src/config/revenuecat.ts` fallback, old root `.env` | root `.env` | deprecated | no | no | Temporary fallback only. Migrate value to `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY`. |
 | `EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID` | `src/config/revenuecat.ts`, `src/providers/revenuecat-provider.tsx`, `scripts/env/*` | root `.env`, M22D examples | mobile env / EAS | no | yes | Canonical value remains `premium`; app has `premium` fallback. |
 | `EXPO_PUBLIC_REVENUECAT_OFFERING_ID` | `src/config/revenuecat.ts`, `src/providers/revenuecat-provider.tsx`, `scripts/env/*` | root `.env`, M22D examples | mobile env / EAS | no | yes | Canonical value remains `default`; app has `default` fallback. |
-| `EXPO_PUBLIC_POSTHOG_KEY` | no current runtime read | old root `.env` | deprecated | no | no | PostHog provider is currently a placeholder; do not sync until code reads it. |
-| `EXPO_PUBLIC_POSTHOG_HOST` | no current runtime read | old root `.env` | deprecated | no | no | PostHog provider is currently a placeholder; do not sync until code reads it. |
-| `EXPO_PUBLIC_SENTRY_DSN` | no current runtime read | old root `.env` | deprecated | no | no | Sentry provider is currently a placeholder; do not sync until code reads it. |
+| `EXPO_PUBLIC_POSTHOG_API_KEY` | PostHog analytics provider and env scripts | canonical env / EAS | mobile env / EAS | no | production only | Public project token. Runtime also requires a valid HTTPS host and production gate. |
+| `EXPO_PUBLIC_POSTHOG_HOST` | PostHog analytics provider and env scripts | canonical env / EAS | mobile env / EAS | no | production only | Matching HTTPS ingest origin. Preview stays disabled. |
+| `EXPO_PUBLIC_POSTHOG_DEV_TEST` | PostHog analytics provider and Expo config | temporary shell only | temporary local override | no | no | Exact `true` enables one development/development controlled test. Never persist or EAS-sync. |
+| `EXPO_PUBLIC_POSTHOG_KEY` | no current runtime read | old root `.env` | deprecated | no | no | Replaced by `EXPO_PUBLIC_POSTHOG_API_KEY`; validator rejects it. |
+| `EXPO_PUBLIC_SENTRY_DSN` | Sentry monitoring provider and env scripts | canonical env / EAS | mobile env / EAS | no | production only | Public DSN; runtime remains fail-closed outside production or its controlled dev test. |
 | `EXPO_PUBLIC_APP_ENV` | no current runtime read | old root `.env` | deprecated | no | no | Replaced by non-public `APP_ENV`. Validator rejects it. |
 | `EXPO_PUBLIC_SUPABASE_KEY` | no current runtime read | `supabase/.env.local` | deprecated | no | no | Old alias. Migrate to `EXPO_PUBLIC_SUPABASE_ANON_KEY`. |
 | `EXPO_PUBLIC_FREE_SAVED_LINK_LIMIT` | docs only | old root `.env` | deprecated | no | no | Stale public limit. Backend access/quota is source of truth. |
@@ -71,7 +73,7 @@ This audit maps env names referenced by app code, Supabase Edge Functions, confi
 - `EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID`
 - `EXPO_PUBLIC_REVENUECAT_OFFERING_ID`
 
-`EXPO_PUBLIC_POSTHOG_KEY`, `EXPO_PUBLIC_POSTHOG_HOST`, and `EXPO_PUBLIC_SENTRY_DSN` exist in old local env candidates but are not currently read by runtime code. Keep them out of canonical env files until real integrations read them.
+`EXPO_PUBLIC_POSTHOG_KEY` remains an obsolete wizard-era name. M22E.2A/M22E.2B now use canonical fail-closed Sentry and PostHog public variables; production values belong in the matching EAS environment, while development test overrides stay temporary.
 
 ## Final Supabase Sync List
 
@@ -102,4 +104,4 @@ Optional when present:
 - Removed stale public product limits from canonical examples and validator.
 - Kept `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY` canonical and added temporary fallback support for old `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY`.
 - Kept `MEDIA_WORKER_SHARED_SECRET` canonical and retained `WORKER_API_SECRET` / `MEDIA_WORKER_SECRET` only as runtime fallback aliases.
-- Left PostHog and Sentry env values deprecated because current providers are placeholders and do not read env.
+- M22E.2A/M22E.2B superseded the placeholder-era decision: Sentry and PostHog now read canonical public values through fail-closed production gates.

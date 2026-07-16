@@ -76,10 +76,7 @@ function RecipeDetailHeader({
   const returnToRoute = getSafeRoute(returnTo)
 
   const goBack = () => {
-    track('navigation_back_tapped', {
-      title,
-      fallback_route: returnToRoute ? String(returnToRoute) : String(fallbackRoute),
-    })
+    track('navigation_back_tapped')
 
     if (router.canGoBack()) {
       router.back()

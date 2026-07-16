@@ -50,7 +50,11 @@ export default function SettingsRoute() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const { user } = useAuth()
-  const { track } = usePostHog()
+  const {
+    isControlledDevTest,
+    sendControlledTestEvent,
+    track,
+  } = usePostHog()
   const profileQuery = useUserProfileQuery()
   const {
     isConfigured: isRevenueCatConfigured,
@@ -66,6 +70,8 @@ export default function SettingsRoute() {
     useState<SubscriptionAction | null>(null)
   const [actionFeedback, setActionFeedback] =
     useState<ActionFeedback | null>(null)
+  const [isSendingPostHogTest, setIsSendingPostHogTest] = useState(false)
+  const [postHogTestSent, setPostHogTestSent] = useState(false)
   const mountedRef = useRef(false)
   const subscriptionActionRef = useRef<SubscriptionAction | null>(null)
   const didAttemptPremiumSyncRef = useRef(false)
@@ -98,6 +104,28 @@ export default function SettingsRoute() {
     subscriptionStatus.sourceOfTruth !== 'loading'
   const shouldShowManage =
     subscriptionStatus.isPremium && !subscriptionStatus.needsSync
+
+  const handlePostHogTest = async () => {
+    if (!isControlledDevTest || isSendingPostHogTest || postHogTestSent) return
+    setIsSendingPostHogTest(true)
+    setPostHogTestSent(true)
+    try {
+      const sent = await sendControlledTestEvent()
+      setActionFeedback({
+        message: sent
+          ? 'One privacy-safe PostHog test event was flushed.'
+          : 'PostHog test sending is disabled.',
+        tone: sent ? 'success' : 'info',
+      })
+    } catch {
+      setActionFeedback({
+        message: 'The one-time PostHog test event could not be flushed.',
+        tone: 'error',
+      })
+    } finally {
+      setIsSendingPostHogTest(false)
+    }
+  }
 
   useEffect(() => {
     mountedRef.current = true
@@ -537,6 +565,23 @@ export default function SettingsRoute() {
                     isRevenueCatConfigured
                   )}
                 />
+                {isControlledDevTest ? (
+                  <>
+                    <SettingsDivider />
+                    <SettingsRow
+                      icon="developer"
+                      title="Send PostHog test event"
+                      subtitle="Sends and flushes one safe diagnostics event for this screen visit."
+                      disabled={isSendingPostHogTest || postHogTestSent}
+                      busy={isSendingPostHogTest}
+                      value={postHogTestSent ? 'Sent once' : undefined}
+                      onPress={() => {
+                        void handlePostHogTest()
+                      }}
+                      accessibilityHint="Sends one controlled development analytics event"
+                    />
+                  </>
+                ) : null}
               </SettingsPanel>
               <DevIdentityPanel />
             </View>

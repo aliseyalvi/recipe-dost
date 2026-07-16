@@ -1,44 +1,53 @@
-<wizard-report>
-# PostHog post-wizard report
+# PostHog integration report
 
-The wizard has completed a deep integration of PostHog into the Recipe Dost Expo app. A shared PostHog client was configured in `src/config/posthog.ts` using `expo-constants` to read credentials from `app.config.js` extras (sourced from `.env` at build time). The root layout `app/_layout.tsx` wraps the entire app in `PostHogProvider` with autocapture for touch events and manual screen tracking via `posthog.screen()` on each route change. `App.tsx` was also wrapped as a fallback for the current entry. Twelve analytics events mapped to the PRD's event taxonomy have been planned and will be instrumented in their respective screens as they are built.
+## Current architecture
 
-| Event Name | Description | File |
-|---|---|---|
-| `onboarding_started` | User begins the onboarding flow for the first time | `app/onboarding/index.tsx` |
-| `onboarding_completed` | User finishes all onboarding steps and enters the app | `app/onboarding/index.tsx` |
-| `link_pasted` | User pastes or shares a recipe video URL manually | `app/(tabs)/save.tsx` |
-| `recipe_link_saved` | User successfully saves a recipe video link to their library | `app/(tabs)/save.tsx` |
-| `ai_recipe_started` | AI recipe card generation is triggered for a saved link | `app/recipe/[id]/generate.tsx` |
-| `ai_recipe_completed` | AI recipe card was generated successfully (first value moment) | `app/recipe/[id]/generate.tsx` |
-| `ai_recipe_failed` | AI recipe card generation failed due to an error | `app/recipe/[id]/generate.tsx` |
-| `grocery_list_created` | User generates a grocery list from selected recipes | `app/(tabs)/grocery.tsx` |
-| `paywall_viewed` | User sees the paywall screen after hitting free usage limits | `app/paywall.tsx` |
-| `purchase_completed` | User successfully completes a subscription purchase | `app/paywall.tsx` |
-| `recipe_shared` | User shares a recipe card externally via the share sheet | `app/recipe/[id]/index.tsx` |
-| `recipe_searched` | User performs a search query in the recipe library | `app/(tabs)/library.tsx` |
+- SDK: `posthog-react-native@4.50.0`.
+- Provider: one client owned by `src/providers/posthog-placeholder-provider.tsx`;
+  the filename is retained for stable imports, but it is no longer a no-op.
+- Expo plugin: not installed or configured. The plugin/native symbols path is
+  unnecessary because Sentry owns error monitoring and PostHog native errors
+  are prohibited.
+- Optional peers: the Expo app/device/file/localization/safe-area peers used by
+  the SDK are installed. Replay and native-error plugin peers are intentionally
+  absent; other declared peers are optional and not required by this setup.
+- Disabled: Session Replay, touch/screen/lifecycle autocapture, exception/error
+  capture, exception steps, logs, flags, surveys, remote config, GeoIP, and
+  verbose debug output.
 
-## Next steps
+## Transmission gate
 
-We've built some insights and a dashboard for you to keep an eye on user behavior, based on the events we just instrumented:
+Production transmits only with production env + production variant and valid
+`EXPO_PUBLIC_POSTHOG_API_KEY` / `EXPO_PUBLIC_POSTHOG_HOST`. Development and
+preview fail closed. A development/development build may temporarily transmit
+only with exact `EXPO_PUBLIC_POSTHOG_DEV_TEST=true`; preview remains blocked.
+The override is not included in EAS sync and must be removed after one test.
 
-- [Analytics basics (wizard) Dashboard](https://us.posthog.com/project/478864/dashboard/1739079)
-- [Recipe Saves Over Time](https://us.posthog.com/project/478864/insights/WDg34Amf)
-- [AI Recipe Generation Success vs Failure](https://us.posthog.com/project/478864/insights/sy0bjIwD)
-- [Core Activation Funnel](https://us.posthog.com/project/478864/insights/YtncHolT) — link_pasted → recipe_link_saved → ai_recipe_completed
-- [Paywall Views & Purchases](https://us.posthog.com/project/478864/insights/dA7iA44X)
-- [Onboarding Completion Funnel](https://us.posthog.com/project/478864/insights/ieTViliz)
+## Privacy and identity
 
-## Verify before merging
+Typed helpers and a runtime event/property allowlist feed a `before_send`
+sanitizer. Unknown names/properties, URLs, route/search/content values, person
+fields, raw errors, auth/token material, and purchase/package/customer payloads
+are removed. Strings are capped at 80 characters. Screens are normalized and
+contain no route params. Identify accepts only a Supabase UUID and sets no
+person properties; logout/session loss/user switching resets the client.
 
-- [ ] Run a full production build (the wizard only verified the files it touched) and fix any lint or type errors introduced by the generated code.
-- [ ] Run the test suite — call sites that were rewritten or instrumented may need updated mocks or fixtures.
-- [ ] Add `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` to `.env.example` and any CI/bootstrap scripts so collaborators know what to set.
-- [ ] As each screen is built (`app/onboarding/index.tsx`, `app/(tabs)/save.tsx`, `app/recipe/[id]/generate.tsx`, etc.), add the `posthog.capture(...)` calls listed in the table above.
-- [ ] Confirm the returning-visitor path also calls `identify` — a handler that only identifies on fresh login can leave returning sessions on anonymous distinct IDs.
+## Wizard artifacts superseded
 
-### Agent skill
+The former report claimed a config file/client, touch capture, fallback `App.tsx`
+wrapper, planned routes that do not match this repository, and completed
+dashboards. Those claims did not match the audited runtime. The unused no-op
+`src/config/posthog.ts` was removed. Old dashboard links may point to an existing
+project but are not treated as current-project verification. No new PostHog
+organization, project, insight, or dashboard was created.
 
-We've left an agent skill folder in your project at `.claude/skills/integration-expo/`. You can use this context for further agent development when using Claude Code. This will help ensure the model provides the most up-to-date approaches for integrating PostHog.
+## External completion
 
-</wizard-report>
+Configure the public project token and matching HTTPS ingest host in the
+production EAS environment. Run the one-shot Settings verification described in
+`docs/observability.md`, inspect Live Events for the safe schema, and remove the
+override. Dashboards, flags, experiments, and worker analytics are deferred.
+Static QA and nine analytics tests pass. Real development and production env
+validation currently stops because the configured host is a label rather than
+an HTTPS origin. No PostHog connector was available, so dashboard verification
+and controlled device delivery remain external steps.
