@@ -39,3 +39,13 @@ export async function signOut() {
     throw error
   }
 }
+
+export async function clearSessionLocally() {
+  assertSupabaseConfigured()
+
+  const { error } = await supabase.auth.signOut({ scope: 'local' })
+
+  if (error) {
+    throw error
+  }
+}

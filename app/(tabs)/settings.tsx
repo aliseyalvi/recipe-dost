@@ -39,6 +39,8 @@ import Constants from 'expo-constants'
 import { useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { Linking, View } from 'react-native'
+import { getLegalUrl } from '@/config/legal'
+import { openLegalUrl } from '@/features/legal/legal-links'
 
 type SubscriptionAction = 'manage' | 'refresh' | 'restore'
 
@@ -84,7 +86,7 @@ export default function SettingsRoute() {
     queryFn: getAiAccessState,
   })
   const showDeveloperSection = shouldShowDevIdentityPanel(aiAccessQuery.data)
-  const userIdentifier = user?.id ? shortId(user.id) : 'Starting profile…'
+  const userIdentifier = user?.id ?? 'Starting profile…'
   const selectedLanguage = getSecondaryRecipeLanguage(
     profileQuery.data?.secondary_recipe_language_code
   )
@@ -360,6 +362,13 @@ export default function SettingsRoute() {
     }
   }
 
+  const handleOpenSupport = async () => {
+    const opened = await openLegalUrl('support')
+    if (!opened) {
+      showActionFeedback('Could not open Recipe Dost support. Please try again.', 'error')
+    }
+  }
+
   return (
     <Screen tabBarPadding>
       <SettingsHeader />
@@ -525,7 +534,9 @@ export default function SettingsRoute() {
             <SettingsRow
               icon="support"
               title="Contact support"
-              subtitle="Support contact is not available in this beta yet."
+              subtitle={getLegalUrl('support') ? 'Open Recipe Dost support in your browser.' : 'Support URL is not configured for this build.'}
+              disabled={!getLegalUrl('support')}
+              onPress={() => { void handleOpenSupport() }}
             />
             <SettingsDivider />
             <SettingsRow
@@ -595,10 +606,6 @@ export default function SettingsRoute() {
       </View>
     </Screen>
   )
-}
-
-function shortId(value: string) {
-  return `${value.slice(0, 6)}…`
 }
 
 function getAppVersionLabel() {

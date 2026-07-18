@@ -1,5 +1,13 @@
 # Recipe Dost Milestones
 
+## M23.0A - Public-release compliance and final-candidate patch
+
+- Explicit fresh-install onboarding hydration states, safe storage error/retry, single completion/Skip persistence and analytics, and versionCode 3 candidate.
+- Authenticated server-side account deletion with cascade coverage and full client identity/cache cleanup.
+- Authenticated privacy-minimized AI recipe reporting with strict categories, optional 500-character note, ownership validation, and duplicate protection.
+- Production-required public HTTPS Privacy/Terms/deletion/support configuration, in-app legal surfaces, storage-permission blocking, Play/Data safety/reviewer documentation.
+- No build, deployment, Play submission, quota, worker, entitlement, or product-ID change is part of this source milestone.
+
 ## M22E.3A - Recipe Dost 1.0.1 Beta Release Preparation
 - Status: release configuration and runbook prepared on `develop`; production
   migration, merge, AAB build, Play upload, and device/dashboard QA remain

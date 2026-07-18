@@ -11,17 +11,30 @@ export default function IndexRoute() {
   const localOnboardingCompleted = useOnboardingStore(
     (state) => state.profile.onboardingCompleted
   )
-  const hasHydratedOnboarding = useOnboardingHydration()
+  const onboardingHydration = useOnboardingHydration()
 
   if (
     profileQuery.isLoading ||
     profileQuery.isFetching ||
-    !hasHydratedOnboarding
+    onboardingHydration.hydrationStatus === 'pending'
   ) {
     return (
       <AppLoadingScreen
         message="Preparing your kitchen..."
         detail="Gathering your Recipe Dost setup"
+      />
+    )
+  }
+
+  if (onboardingHydration.hydrationStatus === 'error') {
+    return (
+      <ErrorState
+        title="Could not read setup"
+        message="Recipe Dost could not safely read onboarding settings. Nothing was marked complete."
+        retryLabel="Retry"
+        onRetry={() => {
+          void onboardingHydration.retry()
+        }}
       />
     )
   }

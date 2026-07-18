@@ -1,5 +1,12 @@
 # App observability
 
+## M23.0A compliance events
+
+- `onboarding_skipped` and `account_deletion_completed` carry no properties.
+- `ai_recipe_report_submitted` permits only the normalized `category`.
+- Legal-link opens carry no URL or link identifier.
+- Recipe/report text, recipe IDs, source URLs, ingredients, instructions, AI output, backend payloads, and deletion payloads are not permitted in PostHog or Sentry. Successful deletion resets PostHog and clears the Sentry user.
+
 ## Sentry transmission environments
 
 Sentry fails closed. The app initializes the SDK only when a valid

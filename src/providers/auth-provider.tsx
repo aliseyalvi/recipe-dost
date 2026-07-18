@@ -1,4 +1,9 @@
-import { getSession, signInAnonymously, signOut } from '@/lib/supabase/auth'
+import {
+  clearSessionLocally,
+  getSession,
+  signInAnonymously,
+  signOut,
+} from '@/lib/supabase/auth'
 import { supabase } from '@/lib/supabase/client'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { reportError, setSentryUser } from '@/lib/observability/sentry'
@@ -14,6 +19,7 @@ type AuthContextValue = {
   error: Error | null
   retry: () => Promise<void>
   signOut: () => Promise<void>
+  clearDeletedSession: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -94,6 +100,17 @@ export function AuthProvider({ children }: Props) {
     track('anonymous_auth_signed_out')
   }, [resetAnalyticsUser, track])
 
+  const clearDeletedSession = useCallback(async () => {
+    try {
+      await clearSessionLocally()
+    } finally {
+      resetAnalyticsUser()
+      setSentryUser(null)
+      previousAnalyticsUserId.current = null
+      setSession(null)
+    }
+  }, [resetAnalyticsUser])
+
   const value = useMemo<AuthContextValue>(
     () => ({
       session,
@@ -102,8 +119,9 @@ export function AuthProvider({ children }: Props) {
       error,
       retry: bootstrapSession,
       signOut: handleSignOut,
+      clearDeletedSession,
     }),
-    [bootstrapSession, error, handleSignOut, isLoading, session]
+    [bootstrapSession, clearDeletedSession, error, handleSignOut, isLoading, session]
   )
 
   if (isLoading) {

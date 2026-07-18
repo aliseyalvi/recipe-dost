@@ -1,5 +1,14 @@
 # Recipe Dost Decision Log
 
+## 2026-07-18
+
+- M23.0A: replace boolean-only onboarding hydration with explicit pending/ready/error and absent/present state. Storage errors fail visibly and never mark onboarding complete; completion and Skip persist locally/remotely once before Home.
+- M23.0A: the versionCode 2 onboarding complaint is not reproducible from the audited commit, which already required both local and remote completion for Home. Treat installed-binary provenance/restored state as an outstanding evidence check; versionCode 3 provides an unambiguous candidate.
+- M23.0A: account deletion moves from an honest placeholder to an authenticated Edge Function. The server derives `user.id` from `auth.getUser()`, uses server-only admin deletion, and relies on verified cascade relationships. The client clears RevenueCat, query, onboarding, Supabase, PostHog, and Sentry state only after server success.
+- M23.0A: add a narrow `ai_content_reports` table and authenticated report function. Store only safe IDs, normalized category, optional limited note, app/build, and timestamp; do not store source URLs or recipe/AI bodies and do not transmit private report fields to observability.
+- M23.0A: do not invent public legal URLs. Require four verified production HTTPS values, surface them in-app, and keep hosting/provider-retention/legal review as external release blockers.
+- M23.0A: block transitively declared legacy external-storage permissions because no client code uses shared storage. Keep versionName 1.0.1 and set the next local Android versionCode to 3 without building or submitting.
+
 ## 2026-07-16
 - M22E.3A prepares `1.0.1` / Android versionCode `2` on `develop` without
   building, submitting, uploading, or merging. `cli.appVersionSource=local` is

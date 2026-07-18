@@ -5,6 +5,7 @@ import { Screen } from '@/ui/screen'
 import { NestedScreenHeader } from '@/ui/screen-header'
 import { useEffect } from 'react'
 import { Text, View } from 'react-native'
+import { LegalLinks } from '@/features/legal/legal-links'
 
 const privacyPoints = [
   'We save recipe links and AI recipe cards so your library works across app sessions.',
@@ -13,6 +14,9 @@ const privacyPoints = [
   'AI processing may send video or text content to AI providers for recipe generation.',
   'We use Supabase for account, app, recipe, and preference data.',
   'We use RevenueCat for subscription purchase status and subscription management metadata.',
+  'We use PostHog for privacy-filtered app interactions and Sentry for sanitized technical crash diagnostics.',
+  'AI-content reports store a category, an optional short note, app/build metadata, and the related recipe-card identifier.',
+  'Recipe text, source links, report notes, and AI output are not sent to PostHog or Sentry.',
   'You can request deletion of your account and app data.',
 ] as const
 
@@ -56,6 +60,10 @@ export default function PrivacyDataSettingsRoute() {
             </View>
           ))}
         </View>
+      </Card>
+      <Card tone="muted">
+        <Text selectable style={[typography.body, { color: colors.textMuted }]}>Open the verified public legal and support resources:</Text>
+        <LegalLinks types={['privacy_policy', 'terms', 'account_deletion', 'support']} />
       </Card>
     </Screen>
   )

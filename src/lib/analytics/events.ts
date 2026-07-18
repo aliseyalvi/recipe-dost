@@ -20,6 +20,17 @@ export type ProductEventProperties = {
   app_opened: undefined
   onboarding_started: undefined
   onboarding_completed: undefined
+  onboarding_skipped: undefined
+  account_deletion_completed: undefined
+  ai_recipe_report_submitted: {
+    category:
+      | 'incorrect_or_misleading'
+      | 'unsafe_cooking_instructions'
+      | 'allergy_or_food_safety'
+      | 'offensive_content'
+      | 'other'
+  }
+  legal_link_opened: undefined
   add_recipe_opened: { entry_point?: EntryPoint }
   recipe_link_save_started: { source_platform: SourcePlatform; entry_point?: EntryPoint }
   recipe_link_saved: { source_platform: SourcePlatform; entry_point?: EntryPoint }
@@ -146,6 +157,7 @@ export type LegacyEventName =
   | 'metadata_refresh_started'
   | 'navigation_back_tapped'
   | 'onboarding_option_selected'
+  | 'onboarding_skipped'
   | 'onboarding_step_viewed'
   | 'original_source_opened'
   | 'paywall_closed'
@@ -205,6 +217,7 @@ export type LegacyAnalyticsProperties = Partial<
     | 'action'
     | 'backend_access_ready'
     | 'checked_count'
+    | 'category'
     | 'code'
     | 'completed'
     | 'confidence'

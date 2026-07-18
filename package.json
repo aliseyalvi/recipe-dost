@@ -64,6 +64,7 @@
     "test:observability": "node --experimental-strip-types --test tests/sentry-policy.test.mjs tests/analytics-policy.test.mjs tests/observability-architecture.test.mjs",
     "test:onboarding": "node --experimental-strip-types --test tests/onboarding-flow.test.mjs",
     "test:release": "node --test tests/release-config.test.mjs",
+    "test:compliance": "node --experimental-strip-types --test tests/onboarding-flow.test.mjs tests/compliance-flows.test.mjs tests/analytics-policy.test.mjs tests/sentry-policy.test.mjs tests/observability-architecture.test.mjs tests/release-config.test.mjs",
     "env:validate:dev": "node scripts/env/validate-env.mjs development",
     "env:validate:prod": "node scripts/env/validate-env.mjs production",
     "env:doctor:dev": "node scripts/env/env-doctor.mjs development",
@@ -82,7 +83,7 @@
     "dev:android:prod-smoke": "node scripts/env/env-doctor.mjs production && node scripts/env/run-with-env.mjs production -- npx expo start --dev-client --clear",
     "doctor": "expo-doctor",
     "doctor:verbose": "expo-doctor --verbose",
-    "functions:check": "deno check --config supabase/functions/generate-card/deno.json supabase/functions/generate-card/index.ts && deno check --config supabase/functions/parse-url/deno.json supabase/functions/parse-url/index.ts && deno check --config supabase/functions/save-recipe-link/deno.json supabase/functions/save-recipe-link/index.ts && deno check --config supabase/functions/refresh-recipe-metadata/deno.json supabase/functions/refresh-recipe-metadata/index.ts && deno check --config supabase/functions/create-media-job/deno.json supabase/functions/create-media-job/index.ts && deno check --config supabase/functions/get-ai-access/deno.json supabase/functions/get-ai-access/index.ts && deno check --config supabase/functions/sync-revenuecat-entitlement/deno.json supabase/functions/sync-revenuecat-entitlement/index.ts",
+    "functions:check": "deno check --config supabase/functions/generate-card/deno.json supabase/functions/generate-card/index.ts && deno check --config supabase/functions/parse-url/deno.json supabase/functions/parse-url/index.ts && deno check --config supabase/functions/save-recipe-link/deno.json supabase/functions/save-recipe-link/index.ts && deno check --config supabase/functions/refresh-recipe-metadata/deno.json supabase/functions/refresh-recipe-metadata/index.ts && deno check --config supabase/functions/create-media-job/deno.json supabase/functions/create-media-job/index.ts && deno check --config supabase/functions/get-ai-access/deno.json supabase/functions/get-ai-access/index.ts && deno check --config supabase/functions/sync-revenuecat-entitlement/deno.json supabase/functions/sync-revenuecat-entitlement/index.ts && deno check --config supabase/functions/delete-account/deno.json supabase/functions/delete-account/index.ts && deno check --config supabase/functions/submit-ai-report/deno.json supabase/functions/submit-ai-report/index.ts",
     "functions:fmt": "deno fmt supabase/functions"
   },
   "private": true

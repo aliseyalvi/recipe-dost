@@ -52,7 +52,11 @@ module.exports = ({ config }) => {
       },
       android: {
         package: androidPackage,
-        versionCode: 2,
+        versionCode: 3,
+        blockedPermissions: [
+          "android.permission.READ_EXTERNAL_STORAGE",
+          "android.permission.WRITE_EXTERNAL_STORAGE",
+        ],
         softwareKeyboardLayoutMode: "resize",
         adaptiveIcon: {
           foregroundImage: "./assets/images/adaptive-icon.png",

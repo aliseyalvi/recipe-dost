@@ -36,7 +36,7 @@ test('welcome and loading keep analytics guarded and loading components do not r
   assert.match(welcome, /didTrackStart\.current/)
   assert.match(welcome, /completionInFlight\.current/)
   assert.equal((welcome.match(/track\('onboarding_started'\)/g) ?? []).length, 1)
-  assert.equal((welcome.match(/track\('onboarding_completed'\)/g) ?? []).length, 1)
+  assert.equal((welcome.match(/track\(getOnboardingCompletionEvent\(outcome\)\)/g) ?? []).length, 1)
   for (const path of [
     'src/ui/app-loading-screen.tsx',
     'src/ui/loading-state.tsx',

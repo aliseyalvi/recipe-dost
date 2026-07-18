@@ -46,6 +46,44 @@ export const welcomeSlides = [
 export type WelcomeSlide = (typeof welcomeSlides)[number]
 export type WelcomeHero = WelcomeSlide['hero']
 
+export type AppEntryDecision =
+  | { status: 'loading' }
+  | { status: 'error'; source: 'auth' | 'storage' | 'profile' }
+  | { status: 'route'; href: '/home' | '/welcome' }
+
+export function getAppEntryDecision(input: {
+  authStatus: 'pending' | 'signed_in' | 'signed_out' | 'error'
+  storageStatus: 'pending' | 'ready' | 'error'
+  profileStatus: 'pending' | 'ready' | 'error'
+  remoteOnboardingCompleted?: boolean | null
+  localOnboardingCompleted: boolean
+}) : AppEntryDecision {
+  if (input.authStatus === 'error') return { status: 'error', source: 'auth' }
+  if (input.storageStatus === 'error') return { status: 'error', source: 'storage' }
+  if (input.profileStatus === 'error') return { status: 'error', source: 'profile' }
+  if (
+    input.authStatus === 'pending' ||
+    input.storageStatus === 'pending' ||
+    input.profileStatus === 'pending'
+  ) {
+    return { status: 'loading' }
+  }
+  if (input.authStatus === 'signed_out') {
+    return { status: 'route', href: '/welcome' }
+  }
+  return {
+    status: 'route',
+    href: getAppEntryHref(
+      input.remoteOnboardingCompleted,
+      input.localOnboardingCompleted
+    ),
+  }
+}
+
+export function getOnboardingCompletionEvent(outcome: 'completed' | 'skipped') {
+  return outcome === 'skipped' ? 'onboarding_skipped' : 'onboarding_completed'
+}
+
 export function getAppEntryHref(
   remoteOnboardingCompleted: boolean | null | undefined,
   localOnboardingCompleted: boolean

@@ -1,9 +1,11 @@
 import { WelcomeExperience } from '@/features/onboarding/welcome-experience'
 import {
+  getOnboardingCompletionEvent,
   WELCOME_COMPLETION_HREF,
 } from '@/features/onboarding/welcome-flow-model'
 import { saveOnboardingProfile } from '@/features/onboarding/profile-api'
 import { useOnboardingStore } from '@/features/onboarding/onboarding-store'
+import { persistOnboardingProfile } from '@/features/onboarding/onboarding-store'
 import { useOnboardingHydration } from '@/features/onboarding/use-onboarding-hydration'
 import { useUserProfileQuery } from '@/features/onboarding/use-user-profile-query'
 import { useAuth } from '@/providers/auth-provider'
@@ -21,14 +23,14 @@ export default function WelcomeRoute() {
   const { user } = useAuth()
   const { track } = usePostHog()
   const { profile, setProfile } = useOnboardingStore()
-  const hasHydratedOnboarding = useOnboardingHydration()
+  const onboardingHydration = useOnboardingHydration()
   const profileQuery = useUserProfileQuery()
   const didTrackStart = useRef(false)
   const completionInFlight = useRef(false)
   const [isCompleting, setIsCompleting] = useState(false)
   const [completionError, setCompletionError] = useState<Error | null>(null)
 
-  const completeOnboarding = useCallback(async () => {
+  const completeOnboarding = useCallback(async (outcome: 'completed' | 'skipped') => {
     if (completionInFlight.current) {
       return
     }
@@ -43,16 +45,18 @@ export default function WelcomeRoute() {
     setCompletionError(null)
 
     try {
+      const completedProfile = {
+        ...profile,
+        onboardingCompleted: true,
+      }
+      await persistOnboardingProfile(completedProfile)
       await saveOnboardingProfile({
         userId: user.id,
-        profile: {
-          ...profile,
-          onboardingCompleted: true,
-        },
+        profile: completedProfile,
         onboardingCompleted: true,
       })
-      setProfile({ onboardingCompleted: true })
-      track('onboarding_completed')
+      setProfile(completedProfile)
+      track(getOnboardingCompletionEvent(outcome))
       await queryClient.invalidateQueries({
         queryKey: ['user-profile', user.id],
       })
@@ -72,7 +76,7 @@ export default function WelcomeRoute() {
   useEffect(() => {
     if (
       didTrackStart.current ||
-      !hasHydratedOnboarding ||
+      onboardingHydration.hydrationStatus !== 'ready' ||
       profileQuery.isLoading ||
       profileQuery.error ||
       (profileQuery.data?.onboarding_completed &&
@@ -87,16 +91,32 @@ export default function WelcomeRoute() {
     profileQuery.data?.onboarding_completed,
     profileQuery.error,
     profileQuery.isLoading,
-    hasHydratedOnboarding,
+    onboardingHydration.hydrationStatus,
     profile.onboardingCompleted,
     track,
   ])
 
-  if (profileQuery.isLoading || !hasHydratedOnboarding) {
+  if (
+    profileQuery.isLoading ||
+    onboardingHydration.hydrationStatus === 'pending'
+  ) {
     return (
       <AppLoadingScreen
         message="Preparing your welcome..."
         detail="A calmer kitchen starts here"
+      />
+    )
+  }
+
+  if (onboardingHydration.hydrationStatus === 'error') {
+    return (
+      <ErrorState
+        title="Could not read setup"
+        message="Recipe Dost could not safely read onboarding settings. Nothing was marked complete."
+        retryLabel="Retry"
+        onRetry={() => {
+          void onboardingHydration.retry()
+        }}
       />
     )
   }
@@ -138,7 +158,7 @@ export default function WelcomeRoute() {
           message={completionError.message}
           retryLabel="Try Again"
           onRetry={() => {
-            void completeOnboarding()
+            void completeOnboarding('completed')
           }}
         />
       </Screen>
@@ -148,10 +168,10 @@ export default function WelcomeRoute() {
   return (
     <WelcomeExperience
       onFinish={() => {
-        void completeOnboarding()
+        void completeOnboarding('completed')
       }}
       onSkip={() => {
-        void completeOnboarding()
+        void completeOnboarding('skipped')
       }}
     />
   )

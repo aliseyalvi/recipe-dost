@@ -154,7 +154,7 @@ export function ProfileSettingsCard({ identifier }: { identifier: string }) {
     <SettingsPanel>
       <View
         accessible
-        accessibilityLabel={`Recipe Dost app profile ${identifier}`}
+        accessibilityLabel={`Anonymous Account ID ${identifier}`}
         style={{
           minHeight: 92,
           flexDirection: 'row',
@@ -190,10 +190,10 @@ export function ProfileSettingsCard({ identifier }: { identifier: string }) {
             selectable
             style={[typography.body, { color: colors.onSurface, fontWeight: '800' }]}
           >
-            Recipe Dost profile
+            Anonymous Account ID
           </Text>
           <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-            Your saved recipes are linked to this app profile.
+            Support may request this non-secret ID to locate your anonymous account. Press and hold the ID to copy it.
           </Text>
           <Text
             selectable

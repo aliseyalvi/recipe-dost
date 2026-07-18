@@ -27,6 +27,7 @@ export function RecipeDetailActionMenu({
   onViewSource,
   onToggleFavorite,
   onDelete,
+  onReport,
 }: {
   visible: boolean
   title: string
@@ -42,6 +43,7 @@ export function RecipeDetailActionMenu({
   onViewSource: () => void
   onToggleFavorite: () => void
   onDelete: () => void
+  onReport?: () => void
 }) {
   const insets = useSafeAreaInsets()
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
@@ -86,6 +88,18 @@ export function RecipeDetailActionMenu({
       disabled: isFavoriteUpdating,
       onPress: onToggleFavorite,
     },
+    ...(onReport
+      ? [
+          {
+            icon: 'warning' as const,
+            label: 'Report AI Recipe',
+            onPress: () => {
+              onClose()
+              onReport()
+            },
+          },
+        ]
+      : []),
     {
       icon: 'trash' as const,
       label: 'Delete',

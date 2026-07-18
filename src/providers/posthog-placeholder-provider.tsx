@@ -280,6 +280,7 @@ function normalizeLegacyEvent(
   switch (event) {
     case 'onboarding_started':
     case 'onboarding_completed':
+    case 'onboarding_skipped':
       return { event }
     case 'save_recipe_modal_opened':
       return { event: 'add_recipe_opened', properties: { entry_point: entryPoint } }

@@ -17,6 +17,7 @@ import {
 } from 'react-native'
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { LegalLinks } from '@/features/legal/legal-links'
 
 type Props = {
   onFinish: () => void
@@ -186,6 +187,7 @@ export function WelcomeExperience({ onFinish, onSkip }: Props) {
           }
           onPress={advance}
         />
+        <LegalLinks types={['privacy_policy', 'terms']} />
       </View>
     </View>
   )

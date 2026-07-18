@@ -19,6 +19,12 @@ const POSTHOG_PUBLIC_KEYS = [
 ];
 
 const SENTRY_PUBLIC_KEYS = ["EXPO_PUBLIC_SENTRY_DSN"];
+const LEGAL_PUBLIC_KEYS = [
+  "EXPO_PUBLIC_PRIVACY_POLICY_URL",
+  "EXPO_PUBLIC_TERMS_URL",
+  "EXPO_PUBLIC_ACCOUNT_DELETION_URL",
+  "EXPO_PUBLIC_SUPPORT_URL",
+];
 const CONTROLLED_TEST_KEYS = [
   "EXPO_PUBLIC_SENTRY_DEV_TEST",
   "EXPO_PUBLIC_POSTHOG_DEV_TEST",
@@ -258,6 +264,31 @@ function validateSentry(env, environment, useExample) {
   return findings;
 }
 
+function validateLegalUrls(env, environment, useExample) {
+  if (useExample || environment !== "production") return [];
+  return LEGAL_PUBLIC_KEYS.flatMap((key) =>
+    isValidPublicHttpsUrl(String(env.get(key) ?? ""))
+      ? []
+      : [`${key} must be a valid public HTTPS URL without credentials or localhost.`],
+  );
+}
+
+function isValidPublicHttpsUrl(value) {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      Boolean(url.hostname) &&
+      !url.username &&
+      !url.password &&
+      !["localhost", "127.0.0.1", "0.0.0.0"].includes(url.hostname.toLowerCase()) &&
+      !/^example\.(com|org|net)$/i.test(url.hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
 function isValidSentryDsn(value) {
   try {
     const url = new URL(value);
@@ -311,6 +342,7 @@ const requiredKeys = [
   ...EAS_PUBLIC_KEYS,
   ...(environment === "production" ? SENTRY_PUBLIC_KEYS : []),
   ...(environment === "production" ? POSTHOG_PUBLIC_KEYS : []),
+  ...(environment === "production" ? LEGAL_PUBLIC_KEYS : []),
   ...SUPABASE_REQUIRED_KEYS,
   ...LOCAL_REQUIRED_KEYS,
 ];
@@ -327,12 +359,14 @@ const revenueCatFindings = validateRevenueCatStoreKeys(
 );
 const postHogFindings = validatePostHog(env, environment, useExample);
 const sentryFindings = validateSentry(env, environment, useExample);
+const legalFindings = validateLegalUrls(env, environment, useExample);
 
 console.log(
   `Validating ${basename(path)} for ${environment}${useExample ? " template" : ""}`,
 );
 printGroup("EAS public/app vars", EAS_PUBLIC_KEYS, env);
 printGroup("Public observability runtime vars", EAS_OPTIONAL_PUBLIC_KEYS, env);
+printGroup("Public legal/support URLs", LEGAL_PUBLIC_KEYS, env);
 printGroup("Sentry production build vars", SENTRY_BUILD_KEYS, env);
 printGroup("Required Supabase Edge Function secrets/config", SUPABASE_REQUIRED_KEYS, env);
 printGroup("Optional Supabase Edge Function secrets/config", SUPABASE_OPTIONAL_KEYS, env);
@@ -348,7 +382,8 @@ if (
   productionFindings.length ||
   revenueCatFindings.length ||
   postHogFindings.length ||
-  sentryFindings.length
+  sentryFindings.length ||
+  legalFindings.length
 ) {
   console.error("\nEnv validation failed.");
   for (const error of errors) {
@@ -376,6 +411,9 @@ if (
     console.error(`- ${finding}`);
   }
   for (const finding of sentryFindings) {
+    console.error(`- ${finding}`);
+  }
+  for (const finding of legalFindings) {
     console.error(`- ${finding}`);
   }
   process.exit(1);

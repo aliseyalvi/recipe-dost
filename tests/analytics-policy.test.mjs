@@ -231,3 +231,17 @@ test('controlled test schema permits only the documented safe properties', () =>
     }
   )
 })
+
+test('AI report analytics keeps only the normalized category', () => {
+  assert.deepEqual(
+    sanitizeEventProperties('ai_recipe_report_submitted', {
+      category: 'allergy_or_food_safety',
+      note: 'private report note',
+      recipe_title: 'private recipe title',
+      recipe_card_id: '123e4567-e89b-42d3-a456-426614174000',
+      source_url: 'https://example.com/private',
+      ingredients: ['private ingredient'],
+    }),
+    { category: 'allergy_or_food_safety' }
+  )
+})

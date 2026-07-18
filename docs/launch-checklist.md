@@ -1,5 +1,18 @@
 # Recipe Dost Launch Checklist
 
+## M23.0A - Compliance candidate gate
+
+- [x] Fresh-install onboarding state and route regression coverage added.
+- [x] Secure account deletion and AI report source/function/migration prepared.
+- [x] Privacy-safe analytics boundaries and client cleanup covered by tests.
+- [x] Production legal URL validation and in-app link locations prepared.
+- [x] Legacy shared-storage permissions blocked; generated release permissions require AAB confirmation.
+- [ ] Push migration and deploy `delete-account` and `submit-ai-report` to the correct Supabase project.
+- [ ] Host/verify Privacy, Terms, account-deletion, and Support pages; populate production/EAS URL vars.
+- [ ] Run production smoke tests without deleting a real account or submitting private report content.
+- [ ] Build versionCode 3 AAB, inspect manifest, and upload to Internal testing only after gates pass.
+- [ ] Complete Play declarations and Closed test with 12+ testers continuously for 14 days.
+
 ## M22E.3A - 1.0.1 Beta release gate
 - [x] Release config prepared on `develop`: version `1.0.1`, versionCode `2`,
   local version source, production AAB, production environment, fixed package ID

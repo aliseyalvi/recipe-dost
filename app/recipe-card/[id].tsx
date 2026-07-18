@@ -22,6 +22,7 @@ import {
   RecipeStatGrid,
 } from '@/features/recipe-detail/detail-presentation'
 import { RecipeDetailActionMenu } from '@/features/recipe-detail/recipe-detail-action-menu'
+import { AiReportSheet } from '@/features/ai-report/ai-report-sheet'
 import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import {
   RecipeCard,
@@ -68,6 +69,7 @@ export default function RecipeCardResultRoute() {
   const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false)
   const [isDeletingRecipe, setIsDeletingRecipe] = useState(false)
   const [isOptionsOpen, setIsOptionsOpen] = useState(false)
+  const [isReportOpen, setIsReportOpen] = useState(false)
   const [recipeManagementError, setRecipeManagementError] = useState<Error | null>(
     null
   )
@@ -484,6 +486,12 @@ export default function RecipeCardResultRoute() {
       onDelete={() => {
         void handleDeleteRecipe()
       }}
+      onReport={() => setIsReportOpen(true)}
+    />
+    <AiReportSheet
+      recipeCardId={recipeCard.id}
+      visible={isReportOpen}
+      onClose={() => setIsReportOpen(false)}
     />
     </>
   )

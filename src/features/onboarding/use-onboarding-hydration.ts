@@ -1,28 +1,19 @@
-import { useOnboardingStore } from '@/features/onboarding/onboarding-store'
-import { useEffect, useState } from 'react'
+import {
+  hydrateOnboardingStore,
+  useOnboardingStore,
+} from '@/features/onboarding/onboarding-store'
+import { useCallback, useEffect } from 'react'
 
 export function useOnboardingHydration() {
-  const [hasHydrated, setHasHydrated] = useState(
-    useOnboardingStore.persist.hasHydrated()
-  )
+  const hydrationStatus = useOnboardingStore((state) => state.hydrationStatus)
+  const storageKeyStatus = useOnboardingStore((state) => state.storageKeyStatus)
+  const error = useOnboardingStore((state) => state.hydrationError)
 
   useEffect(() => {
-    const unsubscribeHydrate = useOnboardingStore.persist.onHydrate(() => {
-      setHasHydrated(false)
-    })
-    const unsubscribeFinish = useOnboardingStore.persist.onFinishHydration(
-      () => {
-        setHasHydrated(true)
-      }
-    )
-
-    setHasHydrated(useOnboardingStore.persist.hasHydrated())
-
-    return () => {
-      unsubscribeHydrate()
-      unsubscribeFinish()
-    }
+    void hydrateOnboardingStore()
   }, [])
 
-  return hasHydrated
+  const retry = useCallback(() => hydrateOnboardingStore(true), [])
+
+  return { error, hydrationStatus, retry, storageKeyStatus }
 }

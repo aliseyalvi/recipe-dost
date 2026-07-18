@@ -48,6 +48,7 @@ import type {
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BackHandler, Linking, Text, View } from 'react-native'
+import { LegalLinks } from '@/features/legal/legal-links'
 
 type PendingAction =
   | 'manage'
@@ -529,6 +530,7 @@ export default function PaywallRoute() {
     >
       <PaywallHero isPremiumActive={isPremiumActive} />
       <PlanComparisonTable />
+      <LegalLinks types={['privacy_policy', 'terms']} />
       <UsageProgress
         usage={usage}
         isLoading={aiAccessQuery.isLoading}

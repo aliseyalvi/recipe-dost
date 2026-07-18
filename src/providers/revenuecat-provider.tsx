@@ -43,6 +43,7 @@ type RevenueCatContextValue = {
   syncPremiumEntitlement: () => Promise<SyncedPremiumEntitlement | null>
   purchasePackage: (selectedPackage: PurchasesPackage) => Promise<CustomerInfo>
   restorePurchases: () => Promise<CustomerInfo>
+  resetForAccountDeletion: () => Promise<void>
 }
 
 type Props = {
@@ -333,6 +334,21 @@ export function RevenueCatProvider({ children }: Props) {
     }
   }, [setCustomerInfoSafely, syncPremiumEntitlement, track, user?.id])
 
+  const resetForAccountDeletion = useCallback(async () => {
+    try {
+      if (Platform.OS === 'android' && didConfigurePurchases) {
+        await Purchases.logOut()
+      }
+    } finally {
+      configuredAppUserId = null
+      setConfiguredUserId(null)
+      setCustomerInfo(null)
+      setCurrentOffering(null)
+      setIsConfigured(false)
+      setIsLoading(false)
+    }
+  }, [])
+
   const value = useMemo<RevenueCatContextValue>(
     () => ({
       isConfigured,
@@ -348,6 +364,7 @@ export function RevenueCatProvider({ children }: Props) {
       syncPremiumEntitlement,
       purchasePackage,
       restorePurchases,
+      resetForAccountDeletion,
     }),
     [
       customerInfo,
@@ -362,6 +379,7 @@ export function RevenueCatProvider({ children }: Props) {
       refreshCustomerInfo,
       refreshOfferings,
       restorePurchases,
+      resetForAccountDeletion,
       syncPremiumEntitlement,
     ]
   )

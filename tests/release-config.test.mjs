@@ -26,7 +26,7 @@ function withEnvironment(values, callback) {
   }
 }
 
-test('production config is the 1.0.1 code 2 Play app', () => {
+test('production config is the 1.0.1 code 3 Play candidate', () => {
   const result = withEnvironment(
     {
       APP_ENV: 'production',
@@ -42,7 +42,7 @@ test('production config is the 1.0.1 code 2 Play app', () => {
   assert.equal(result.name, 'Recipe Dost')
   assert.equal(result.version, '1.0.1')
   assert.equal(result.android.package, 'com.recipedost.app')
-  assert.equal(result.android.versionCode, 2)
+  assert.equal(result.android.versionCode, 3)
   assert.equal(result.runtimeVersion, undefined)
   assert.equal(result.updates, undefined)
   assert.equal(result.extra.eas.projectId, 'bf6a2714-3cdd-4ecf-98c1-9f9b8c558bf0')

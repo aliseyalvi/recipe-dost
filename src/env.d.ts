@@ -10,6 +10,10 @@ declare namespace NodeJS {
     EXPO_PUBLIC_POSTHOG_API_KEY?: string
     EXPO_PUBLIC_POSTHOG_HOST?: string
     EXPO_PUBLIC_POSTHOG_DEV_TEST?: string
+    EXPO_PUBLIC_PRIVACY_POLICY_URL?: string
+    EXPO_PUBLIC_TERMS_URL?: string
+    EXPO_PUBLIC_ACCOUNT_DELETION_URL?: string
+    EXPO_PUBLIC_SUPPORT_URL?: string
   }
 }
 
