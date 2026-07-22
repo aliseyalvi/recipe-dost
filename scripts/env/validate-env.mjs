@@ -40,6 +40,8 @@ const EAS_OPTIONAL_PUBLIC_KEYS = [
 const SUPABASE_REQUIRED_KEYS = [
   "REVENUECAT_API_KEY",
   "REVENUECAT_ENTITLEMENT_ID",
+  "REVENUECAT_BINDING_HMAC_SECRET",
+  "SUPABASE_ENV_NAME",
   "MEDIA_WORKER_URL",
   "MEDIA_WORKER_SHARED_SECRET",
 ];
@@ -59,7 +61,7 @@ const SUPABASE_OPTIONAL_KEYS = [
 ];
 
 const LOCAL_REQUIRED_KEYS = ["SUPABASE_PROJECT_REF"];
-const LOCAL_OPTIONAL_KEYS = ["SUPABASE_ENV_NAME"];
+const LOCAL_OPTIONAL_KEYS = [];
 
 const FORBIDDEN_PUBLIC_SECRET_PATTERNS = [
   /^EXPO_PUBLIC_.*ANTHROPIC_API_KEY$/,
@@ -70,6 +72,7 @@ const FORBIDDEN_PUBLIC_SECRET_PATTERNS = [
   /^EXPO_PUBLIC_.*OPENAI_API_KEY$/,
   /^EXPO_PUBLIC_.*OPENROUTER_API_KEY$/,
   /^EXPO_PUBLIC_.*REVENUECAT_API_KEY$/,
+  /^EXPO_PUBLIC_.*REVENUECAT_BINDING_HMAC_SECRET$/,
   /^EXPO_PUBLIC_.*SUPABASE_SECRET_KEY$/,
   /^EXPO_PUBLIC_.*SUPABASE_SERVICE_ROLE_KEY$/,
   /^EXPO_PUBLIC_.*WORKER_API_SECRET$/,
@@ -211,6 +214,14 @@ function validateRevenueCatStoreKeys(env, environment, useExample) {
   return isRevenueCatTestStoreKey(androidApiKey)
     ? ["Production env must not use a RevenueCat Test Store Android API key."]
     : [];
+}
+
+function validateRevenueCatBindingSecret(env, useExample) {
+  if (useExample) return [];
+  const secret = String(env.get("REVENUECAT_BINDING_HMAC_SECRET") ?? "").trim();
+  return secret.length >= 32
+    ? []
+    : ["REVENUECAT_BINDING_HMAC_SECRET must contain at least 32 characters."];
 }
 
 function isRevenueCatTestStoreKey(value) {
@@ -357,6 +368,7 @@ const revenueCatFindings = validateRevenueCatStoreKeys(
   environment,
   useExample,
 );
+const revenueCatBindingFindings = validateRevenueCatBindingSecret(env, useExample);
 const postHogFindings = validatePostHog(env, environment, useExample);
 const sentryFindings = validateSentry(env, environment, useExample);
 const legalFindings = validateLegalUrls(env, environment, useExample);
@@ -381,6 +393,7 @@ if (
   placeholderKeys.length ||
   productionFindings.length ||
   revenueCatFindings.length ||
+  revenueCatBindingFindings.length ||
   postHogFindings.length ||
   sentryFindings.length ||
   legalFindings.length
@@ -405,6 +418,9 @@ if (
     console.error(`- Production env contains obvious dev value: ${finding}`);
   }
   for (const finding of revenueCatFindings) {
+    console.error(`- ${finding}`);
+  }
+  for (const finding of revenueCatBindingFindings) {
     console.error(`- ${finding}`);
   }
   for (const finding of postHogFindings) {

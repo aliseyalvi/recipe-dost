@@ -65,6 +65,8 @@
     "test:onboarding": "node --experimental-strip-types --test tests/onboarding-flow.test.mjs",
     "test:release": "node --test tests/release-config.test.mjs",
     "test:compliance": "node --experimental-strip-types --test tests/onboarding-flow.test.mjs tests/compliance-flows.test.mjs tests/analytics-policy.test.mjs tests/sentry-policy.test.mjs tests/observability-architecture.test.mjs tests/release-config.test.mjs",
+    "test:m24": "deno test --config supabase/functions/sync-revenuecat-entitlement/deno.json supabase/functions/sync-revenuecat-entitlement/service.test.ts supabase/functions/_shared/ai-access.test.ts && node --test tests/m24-revenuecat-repair.test.mjs",
+    "lint:m24": "deno lint supabase/functions/sync-revenuecat-entitlement/index.ts supabase/functions/sync-revenuecat-entitlement/service.ts supabase/functions/sync-revenuecat-entitlement/service.test.ts supabase/functions/_shared/ai-access.ts supabase/functions/_shared/ai-access.test.ts supabase/functions/_shared/keyed-hash.ts tests/m24-revenuecat-repair.test.mjs",
     "env:validate:dev": "node scripts/env/validate-env.mjs development",
     "env:validate:prod": "node scripts/env/validate-env.mjs production",
     "env:doctor:dev": "node scripts/env/env-doctor.mjs development",

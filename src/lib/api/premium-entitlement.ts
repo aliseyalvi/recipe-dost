@@ -5,7 +5,11 @@ export type SyncedPremiumEntitlement = {
   revenuecat_entitlement: string | null
   revenuecat_product_id: string | null
   revenuecat_expires_at: string | null
-  revenuecat_updated_at: string
+  revenuecat_updated_at: string | null
+  sync_status?: 'synchronized' | 'in_progress'
+  entitlement_source?: 'revenuecat_api' | 'cached_projection'
+  freshness?: 'fresh' | 'cached'
+  sync_result_code?: string
 }
 
 type SyncPremiumEntitlementResponse =

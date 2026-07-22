@@ -1,5 +1,37 @@
 # Recipe Dost Milestones
 
+## M24.1 - Backward-Compatible RevenueCat Alias, Binding, Sync, Expiry and Observability Repair
+
+- Status: implemented locally on `develop`; development migration, secret sync,
+  Edge Function deployment, and closed-build manual QA remain human-gated.
+- Added service-only RevenueCat customer bindings keyed by an environment-scoped
+  server HMAC of RevenueCat `original_app_user_id`. A resolved current Supabase
+  UUID may be a RevenueCat alias; an existing binding to another Supabase user
+  returns a conflict and never moves data or entitlement.
+- Added an atomic 20-second database sync lease. Concurrent callers receive the
+  current compatible `user_profiles` projection with `sync_status=in_progress`
+  and do not make another RevenueCat request.
+- RevenueCat transport now has an eight-second per-attempt timeout, at most two
+  attempts, and retries only transient network/5xx failures. Active and inactive
+  authoritative responses update the existing profile projection; transient
+  failures preserve it.
+- AI access now requires a future or legitimate null RevenueCat expiry while
+  preserving Free 3-total, Premium 100-monthly, tester, admin, and media-job
+  reservation rules. `create-media-job` remains authoritative.
+- Added keyed structured synchronization/expiry logs, focused Deno and static
+  contract tests, secret allowlisting, architecture documentation, and the
+  development deployment runbook. No worker or media processing changed.
+
+## M24.0 - RevenueCat, Supabase Identity and Reinstall-Recovery Audit
+
+- Status: done. The evidence-based audit confirmed correct SDK configuration
+  with Supabase UUID, local/backend Premium split-brain, alias rejection in the
+  backend synchronizer, non-coalesced mobile refresh calls, missing expiry
+  enforcement, and unrecoverable anonymous data after local session loss.
+- M24.0 made no code, schema, deployment, provider, worker, or secret changes.
+- M24.1 is the backward-compatible backend repair; recoverable account linking
+  remains a future mobile milestone.
+
 ## M23.0A - Public-release compliance and final-candidate patch
 
 - Explicit fresh-install onboarding hydration states, safe storage error/retry, single completion/Skip persistence and analytics, and versionCode 3 candidate.

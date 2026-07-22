@@ -1,5 +1,38 @@
 # Recipe Dost Decision Log
 
+## 2026-07-22
+
+- M24.0 audit is complete. RevenueCat SDK identity already uses the authenticated
+  Supabase UUID; the proven failure was the backend's strict equality check
+  against RevenueCat `original_app_user_id`, combined with local/backend state
+  presentation and non-coalesced client refresh calls.
+- M24.1 accepts an authenticated Supabase UUID that RevenueCat successfully
+  resolves as an alias. Ownership is enforced by a unique environment-scoped
+  customer binding keyed with `HMAC-SHA-256(environment + ":" + original ID)`;
+  conflicting bindings fail closed and never transfer recipes or grocery data.
+- Use service-only RLS tables and service-role-only invoker RPCs for binding,
+  atomic lease acquisition, projection persistence, and lease completion. The
+  mobile request cannot select a target user; `auth.getUser()` remains the only
+  source of the Supabase UUID.
+- Coalesce server calls with a 20-second lease. Return the existing cached
+  projection plus additive in-progress metadata to concurrent callers instead
+  of issuing another RevenueCat request or returning null.
+- Bound RevenueCat transport to two attempts, eight seconds each, and a short
+  backoff. Retry only transient network/5xx failures. Definitive inactive or
+  missing Premium clears stale active state; transient failure preserves it.
+- Enforce `revenuecat_expires_at` in shared AI authorization. Null remains valid
+  for legitimately non-expiring products; exact/past/invalid timestamps are not
+  Premium. Quota values and `create-media-job` authority are unchanged.
+- Required new server secret: `REVENUECAT_BINDING_HMAC_SECRET`. It is distinct
+  per environment, at least 32 characters, server-only, and never printed.
+- M24.1 is local/pending development deployment. No worker/media change, live
+  RevenueCat call, deployment, main merge, or mobile release is part of this
+  implementation.
+- Validation passed on the first consolidated attempt: TypeScript, focused Deno
+  lint, all configured Edge checks, 25 Deno tests, 7 Node contract/migration
+  tests, static guards, both masked env templates, linked development migration
+  dry-run, redacted changed-file secret scan, and `git diff --check`.
+
 ## 2026-07-18
 
 - M23.0A: replace boolean-only onboarding hydration with explicit pending/ready/error and absent/present state. Storage errors fail visibly and never mark onboarding complete; completion and Skip persist locally/remotely once before Home.

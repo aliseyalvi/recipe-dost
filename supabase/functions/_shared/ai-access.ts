@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { hmacSha256Hex } from "./keyed-hash.ts";
 
 export const REVENUECAT_ENTITLEMENT_PREMIUM = "premium";
 export const PREMIUM_MONTHLY_AI_LIMIT = 100;
@@ -13,13 +14,14 @@ type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-type UserProfile = {
+export type UserProfile = {
   user_id: string;
   role: string | null;
   is_test_user: boolean | null;
   ai_monthly_limit_override: number | null;
   revenuecat_entitlement: string | null;
   revenuecat_entitlement_active: boolean | null;
+  revenuecat_expires_at: string | null;
 };
 
 declare const Deno: {
@@ -87,24 +89,23 @@ export async function getAiGenerationAccess(
     monthlyCountResult,
     activeCountResult,
     monthlyActiveCountResult,
-  ] =
-    await Promise.all([
-      adminClient
-        .from("user_profiles")
-        .select(
-          "role, is_test_user, ai_monthly_limit_override, revenuecat_entitlement, revenuecat_entitlement_active",
-        )
-        .eq("user_id", userId)
-        .maybeSingle<UserProfile>(),
-      buildSuccessfulAiJobsCountQuery(adminClient, userId),
-      buildSuccessfulAiJobsCountQuery(adminClient, userId)
-        .gte("completed_at", monthStartIso)
-        .lt("completed_at", nextMonthStartIso),
-      buildActiveAiJobsCountQuery(adminClient, userId),
-      buildActiveAiJobsCountQuery(adminClient, userId)
-        .gte("created_at", monthStartIso)
-        .lt("created_at", nextMonthStartIso),
-    ]);
+  ] = await Promise.all([
+    adminClient
+      .from("user_profiles")
+      .select(
+        "role, is_test_user, ai_monthly_limit_override, revenuecat_entitlement, revenuecat_entitlement_active, revenuecat_expires_at",
+      )
+      .eq("user_id", userId)
+      .maybeSingle<UserProfile>(),
+    buildSuccessfulAiJobsCountQuery(adminClient, userId),
+    buildSuccessfulAiJobsCountQuery(adminClient, userId)
+      .gte("completed_at", monthStartIso)
+      .lt("completed_at", nextMonthStartIso),
+    buildActiveAiJobsCountQuery(adminClient, userId),
+    buildActiveAiJobsCountQuery(adminClient, userId)
+      .gte("created_at", monthStartIso)
+      .lt("created_at", nextMonthStartIso),
+  ]);
 
   if (profileResult.error) {
     throw profileResult.error;
@@ -127,16 +128,43 @@ export async function getAiGenerationAccess(
   }
 
   const profile = profileResult.data;
+  const access = calculateAiGenerationAccess({
+    profile,
+    usedSuccessfulGenerations: lifetimeCountResult.count ?? 0,
+    usedThisMonth: monthlyCountResult.count ?? 0,
+    activeReserved: activeCountResult.count ?? 0,
+    monthlyActiveReserved: monthlyActiveCountResult.count ?? 0,
+    freeLimit: getFreeAiGenerationLimit(),
+  });
+  const revenueCatPremium = evaluateRevenueCatPremium(profile);
+
+  if (revenueCatPremium.expiryApplied) {
+    await logAiAccessExpiryApplied(userId);
+  }
+
+  return access;
+}
+
+export function calculateAiGenerationAccess({
+  profile,
+  usedSuccessfulGenerations,
+  usedThisMonth,
+  activeReserved,
+  monthlyActiveReserved,
+  freeLimit = 3,
+}: {
+  profile: UserProfile | null | undefined;
+  usedSuccessfulGenerations: number;
+  usedThisMonth: number;
+  activeReserved: number;
+  monthlyActiveReserved: number;
+  freeLimit?: number;
+}): AiGenerationAccess {
   const role = normalizeRole(profile?.role);
-  const usedSuccessfulGenerations = lifetimeCountResult.count ?? 0;
-  const usedThisMonth = monthlyCountResult.count ?? 0;
-  const activeReserved = activeCountResult.count ?? 0;
-  const monthlyActiveReserved = monthlyActiveCountResult.count ?? 0;
   const override = getMonthlyLimitOverride(profile);
-  const premiumActive = isPremiumActive(profile, role);
+  const premiumActive = isPremiumActive(profile);
   const isTestUser = role === "tester" || profile?.is_test_user === true;
   const isPremiumOrTester = role === "admin" || isTestUser || premiumActive;
-  const freeLimit = getFreeAiGenerationLimit();
   const freeRemaining = Math.max(
     0,
     freeLimit - usedSuccessfulGenerations - activeReserved,
@@ -252,8 +280,7 @@ export function toSafeAiGenerationAccessMetadata(access: AiGenerationAccess) {
     premiumMonthlySuccessfulUsed: access.premiumMonthlySuccessfulUsed,
     premium_monthly_active_reserved: access.premiumMonthlyActiveReserved,
     premiumMonthlyActiveReserved: access.premiumMonthlyActiveReserved,
-    premium_monthly_remaining_to_start:
-      access.premiumMonthlyRemainingToStart,
+    premium_monthly_remaining_to_start: access.premiumMonthlyRemainingToStart,
     premiumMonthlyRemainingToStart: access.premiumMonthlyRemainingToStart,
     can_start_ai_job: access.allowed,
     canStartAiJob: access.allowed,
@@ -368,15 +395,60 @@ function getMonthlyLimitOverride(profile: UserProfile | null | undefined) {
     : null;
 }
 
-function isPremiumActive(
+function isPremiumActive(profile: UserProfile | null | undefined) {
+  return evaluateRevenueCatPremium(profile).active;
+}
+
+export function evaluateRevenueCatPremium(
   profile: UserProfile | null | undefined,
-  role: string,
+  nowMs = Date.now(),
 ) {
-  return role === "premium" ||
-    (
-      profile?.revenuecat_entitlement === REVENUECAT_ENTITLEMENT_PREMIUM &&
-      profile.revenuecat_entitlement_active === true
-    );
+  if (
+    profile?.revenuecat_entitlement !== REVENUECAT_ENTITLEMENT_PREMIUM ||
+    profile.revenuecat_entitlement_active !== true
+  ) {
+    return { active: false, expiryApplied: false };
+  }
+
+  if (profile.revenuecat_expires_at === null) {
+    return { active: true, expiryApplied: false };
+  }
+
+  const expiresAtMs = Date.parse(profile.revenuecat_expires_at);
+  if (!Number.isFinite(expiresAtMs) || expiresAtMs <= nowMs) {
+    return { active: false, expiryApplied: true };
+  }
+
+  return { active: true, expiryApplied: false };
+}
+
+async function logAiAccessExpiryApplied(userId: string) {
+  const hmacSecret = Deno.env.get("REVENUECAT_BINDING_HMAC_SECRET")?.trim();
+  const environment = Deno.env.get("SUPABASE_ENV_NAME")?.trim().toLowerCase();
+
+  if (
+    !hmacSecret || hmacSecret.length < 32 || !environment ||
+    !/^[a-z0-9_-]{1,40}$/.test(environment)
+  ) {
+    return;
+  }
+
+  const userHash = await hmacSha256Hex(
+    hmacSecret,
+    `user:${environment}:${userId}`,
+  );
+  console.log(JSON.stringify({
+    event: "ai_access_expiry_applied",
+    supabase_user_hash: userHash,
+    environment,
+    trigger: "ai_access_check",
+    status_class: "2xx",
+    sync_result: "cached_premium_expired",
+    entitlement_active: false,
+    freshness: "cached",
+    latency_bucket: "not_measured",
+    attempt_count: 0,
+  }));
 }
 
 function getCurrentMonthStartIso() {

@@ -48,6 +48,8 @@ Supabase Edge Function secrets:
 
 - `REVENUECAT_API_KEY`
 - `REVENUECAT_ENTITLEMENT_ID`
+- `REVENUECAT_BINDING_HMAC_SECRET`
+- `SUPABASE_ENV_NAME`
 - `MEDIA_WORKER_URL`
 - `MEDIA_WORKER_SHARED_SECRET`
 
@@ -65,10 +67,13 @@ Optional Supabase Edge Function secrets/config, synced only when present:
 - `WORKER_WAKE_TIMEOUT_MS`
 - `METADATA_PREVIEW_TIMEOUT_MS`
 
-Local-only helper variables:
+Local helper variables:
 
 - `SUPABASE_PROJECT_REF`
-- `SUPABASE_ENV_NAME` optional label for human/operator clarity
+
+`SUPABASE_ENV_NAME` is now required Edge Function configuration as well as a
+local deployment label. M24.1 uses it to separate RevenueCat bindings and safe
+correlation hashes across development and production.
 
 The RevenueCat entitlement remains `premium`, the offering remains `default`, and the planned Google Play products remain `recipe_dost_premium_monthly` and `recipe_dost_premium_yearly` with base plans `monthly-autorenewing` and `yearly-autorenewing`.
 
@@ -175,6 +180,11 @@ node scripts/env/sync-supabase-secrets.mjs production --apply
 ```
 
 The script requires `SUPABASE_PROJECT_REF`, writes required Edge Function secrets/config plus optional present allowlisted values to a temporary env file, runs `supabase secrets set --env-file <temp-file> --project-ref <SUPABASE_PROJECT_REF>`, then deletes the temporary file.
+
+M24.1 additionally requires a distinct, random
+`REVENUECAT_BINDING_HMAC_SECRET` of at least 32 characters in every environment.
+Generate and store it outside source control; dry-run output prints only its
+name.
 
 `MEDIA_WORKER_SHARED_SECRET` is the canonical worker secret name for this source-of-truth flow. Current Edge Functions prefer it while retaining the older worker secret names as temporary fallback during migration.
 
