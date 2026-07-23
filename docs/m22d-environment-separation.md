@@ -49,7 +49,7 @@ Supabase Edge Function secrets:
 - `REVENUECAT_API_KEY`
 - `REVENUECAT_ENTITLEMENT_ID`
 - `REVENUECAT_BINDING_HMAC_SECRET`
-- `SUPABASE_ENV_NAME`
+- `RECIPE_DOST_ENV`
 - `MEDIA_WORKER_URL`
 - `MEDIA_WORKER_SHARED_SECRET`
 
@@ -71,9 +71,10 @@ Local helper variables:
 
 - `SUPABASE_PROJECT_REF`
 
-`SUPABASE_ENV_NAME` is now required Edge Function configuration as well as a
-local deployment label. M24.1 uses it to separate RevenueCat bindings and safe
-correlation hashes across development and production.
+`RECIPE_DOST_ENV` is required Edge Function configuration as well as a local
+deployment label. M24.1D replaced the reserved custom `SUPABASE_ENV_NAME` name.
+It separates RevenueCat bindings and safe correlation hashes across development
+and production and accepts only those two normalized values.
 
 The RevenueCat entitlement remains `premium`, the offering remains `default`, and the planned Google Play products remain `recipe_dost_premium_monthly` and `recipe_dost_premium_yearly` with base plans `monthly-autorenewing` and `yearly-autorenewing`.
 

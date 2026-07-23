@@ -41,7 +41,7 @@ const SUPABASE_REQUIRED_KEYS = [
   "REVENUECAT_API_KEY",
   "REVENUECAT_ENTITLEMENT_ID",
   "REVENUECAT_BINDING_HMAC_SECRET",
-  "SUPABASE_ENV_NAME",
+  "RECIPE_DOST_ENV",
   "MEDIA_WORKER_URL",
   "MEDIA_WORKER_SHARED_SECRET",
 ];
@@ -87,6 +87,8 @@ const DEPRECATED_PUBLIC_KEYS = [
   "EXPO_PUBLIC_POSTHOG_KEY",
   "EXPO_PUBLIC_SUPABASE_KEY",
 ];
+
+const DEPRECATED_SERVER_KEYS = ["SUPABASE_ENV_NAME"];
 
 const PRODUCTION_DEV_VALUE_CHECKS = [
   { label: "development Android package", value: "com.recipedost.dev" },
@@ -222,6 +224,12 @@ function validateRevenueCatBindingSecret(env, useExample) {
   return secret.length >= 32
     ? []
     : ["REVENUECAT_BINDING_HMAC_SECRET must contain at least 32 characters."];
+}
+
+function validateRecipeDostEnvironment(env, environment) {
+  return env.get("RECIPE_DOST_ENV") === environment
+    ? []
+    : [`RECIPE_DOST_ENV must be exactly ${environment}.`];
 }
 
 function isRevenueCatTestStoreKey(value) {
@@ -360,6 +368,7 @@ const requiredKeys = [
 const missing = validateRequired(env, requiredKeys);
 const forbiddenPublicSecrets = validateForbiddenPublicSecrets(env);
 const deprecatedPublicKeys = validateDeprecatedPublicKeys(env);
+const deprecatedServerKeys = DEPRECATED_SERVER_KEYS.filter((key) => env.has(key));
 const placeholderKeys = validatePlaceholderValues(env, requiredKeys, useExample);
 const productionFindings =
   environment === "production" ? validateProductionValues(env) : [];
@@ -369,6 +378,10 @@ const revenueCatFindings = validateRevenueCatStoreKeys(
   useExample,
 );
 const revenueCatBindingFindings = validateRevenueCatBindingSecret(env, useExample);
+const recipeDostEnvironmentFindings = validateRecipeDostEnvironment(
+  env,
+  environment,
+);
 const postHogFindings = validatePostHog(env, environment, useExample);
 const sentryFindings = validateSentry(env, environment, useExample);
 const legalFindings = validateLegalUrls(env, environment, useExample);
@@ -390,10 +403,12 @@ if (
   missing.length ||
   forbiddenPublicSecrets.length ||
   deprecatedPublicKeys.length ||
+  deprecatedServerKeys.length ||
   placeholderKeys.length ||
   productionFindings.length ||
   revenueCatFindings.length ||
   revenueCatBindingFindings.length ||
+  recipeDostEnvironmentFindings.length ||
   postHogFindings.length ||
   sentryFindings.length ||
   legalFindings.length
@@ -411,6 +426,9 @@ if (
   for (const key of deprecatedPublicKeys) {
     console.error(`- Deprecated public env key: ${key}`);
   }
+  for (const key of deprecatedServerKeys) {
+    console.error(`- Deprecated server env key: ${key}; use RECIPE_DOST_ENV.`);
+  }
   for (const key of placeholderKeys) {
     console.error(`- Replace placeholder value for required key: ${key}`);
   }
@@ -421,6 +439,9 @@ if (
     console.error(`- ${finding}`);
   }
   for (const finding of revenueCatBindingFindings) {
+    console.error(`- ${finding}`);
+  }
+  for (const finding of recipeDostEnvironmentFindings) {
     console.error(`- ${finding}`);
   }
   for (const finding of postHogFindings) {

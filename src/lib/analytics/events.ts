@@ -15,6 +15,16 @@ export type PlanInterval = 'monthly' | 'yearly' | 'unknown'
 export type AnalyticsResult = 'success' | 'failure' | 'cancelled' | 'blocked'
 export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed'
 export type LanguageMode = 'english' | 'urdu' | 'both'
+type SubscriptionReconciliationProperties = {
+  trigger: string
+  local_entitlement_active: boolean
+  backend_premium_active: boolean
+  expiration_relation: string
+  provider_environment: string
+  sync_result: string
+  normalized_error_code: string
+  latency_bucket: string
+}
 
 export type ProductEventProperties = {
   app_opened: undefined
@@ -95,6 +105,20 @@ export type ProductEventProperties = {
     result: 'failure'
     failure_code: string
   }
+  subscription_refresh_started: SubscriptionReconciliationProperties
+  subscription_refresh_completed: SubscriptionReconciliationProperties
+  subscription_refresh_failed: SubscriptionReconciliationProperties
+  subscription_restore_started: SubscriptionReconciliationProperties
+  subscription_restore_completed: SubscriptionReconciliationProperties
+  subscription_restore_no_entitlement: SubscriptionReconciliationProperties
+  subscription_restore_failed: SubscriptionReconciliationProperties
+  subscription_state_transition: SubscriptionReconciliationProperties & {
+    state_before: string
+    state_after: string
+  }
+  purchase_reconciliation_started: SubscriptionReconciliationProperties
+  purchase_reconciliation_completed: SubscriptionReconciliationProperties
+  purchase_reconciliation_failed: SubscriptionReconciliationProperties
   posthog_test_event: {
     app_env: 'development'
     platform: 'android' | 'ios' | 'web'

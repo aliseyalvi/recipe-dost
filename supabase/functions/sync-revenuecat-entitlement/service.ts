@@ -11,6 +11,7 @@ export type Json =
 export type SyncRevenueCatErrorCode =
   | "invalid_request"
   | "unauthorized"
+  | "subscription_sync_configuration_error"
   | "server_not_configured"
   | "revenuecat_not_configured"
   | "revenuecat_timeout"
@@ -96,9 +97,9 @@ export type SafeSubscriptionLog = {
     | "revenuecat_binding_created"
     | "revenuecat_binding_verified"
     | "revenuecat_binding_conflict";
-  supabase_user_hash: string;
+  supabase_user_hash?: string;
   revenuecat_customer_hash?: string;
-  environment: string;
+  environment?: string;
   trigger: string;
   status_class: "2xx" | "4xx" | "5xx";
   sync_result: string;
@@ -106,6 +107,11 @@ export type SafeSubscriptionLog = {
   freshness: "fresh" | "cached" | "unchanged";
   latency_bucket: string;
   attempt_count: number;
+  configuration_ready?: boolean;
+  stage?: "configuration";
+  normalized_error_code?: "subscription_sync_configuration_error";
+  missing_config_names?: string[];
+  invalid_config_names?: string[];
 };
 
 export type RevenueCatTransportResult =
@@ -186,18 +192,6 @@ export async function synchronizeRevenueCatEntitlement(
       },
     };
   }
-
-  dependencies.log({
-    event: "subscription_sync_started",
-    supabase_user_hash: userHash,
-    environment: input.environment,
-    trigger: input.trigger,
-    status_class: "2xx",
-    sync_result: "started",
-    freshness: "unchanged",
-    latency_bucket: "lt_250ms",
-    attempt_count: 0,
-  });
 
   let attempts = 0;
   let result: SyncServiceResult;

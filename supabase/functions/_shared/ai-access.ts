@@ -424,11 +424,11 @@ export function evaluateRevenueCatPremium(
 
 async function logAiAccessExpiryApplied(userId: string) {
   const hmacSecret = Deno.env.get("REVENUECAT_BINDING_HMAC_SECRET")?.trim();
-  const environment = Deno.env.get("SUPABASE_ENV_NAME")?.trim().toLowerCase();
+  const environment = Deno.env.get("RECIPE_DOST_ENV")?.trim().toLowerCase();
 
   if (
     !hmacSecret || hmacSecret.length < 32 || !environment ||
-    !/^[a-z0-9_-]{1,40}$/.test(environment)
+    (environment !== "development" && environment !== "production")
   ) {
     return;
   }

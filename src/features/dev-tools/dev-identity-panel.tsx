@@ -7,14 +7,15 @@ import {
 } from '@/features/dev-tools/dev-identities'
 import { shouldShowCustomDevTools } from '@/features/dev-tools/dev-tools-visibility'
 import { getNormalizedSubscriptionStatus } from '@/features/subscription/normalized-subscription-status'
-import { getAiAccessState } from '@/lib/api/ai-access'
 import type { AiAccessState } from '@/lib/api/ai-access'
+import { useAiAccessQuery } from '@/lib/query/ai-access-query'
 import { useAuth } from '@/providers/auth-provider'
+import { useRevenueCat } from '@/providers/revenuecat-provider'
 import { colors, spacing, typography } from '@/theme'
 import { Button } from '@/ui/button'
 import { Card } from '@/ui/card'
 import { Input } from '@/ui/input'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import * as Clipboard from 'expo-clipboard'
 import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
@@ -34,6 +35,7 @@ export function DevIdentityPanel() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const { user } = useAuth()
+  const { subscriptionState } = useRevenueCat()
   const [savedIdentities, setSavedIdentities] = useState<
     DevAnonymousIdentity[]
   >([])
@@ -43,11 +45,7 @@ export function DevIdentityPanel() {
   const [isCreatingUser, setIsCreatingUser] = useState(false)
   const [isSwitchingUser, setIsSwitchingUser] = useState(false)
 
-  const accessQuery = useQuery({
-    enabled: Boolean(user?.id),
-    queryKey: ['ai-access-state', user?.id],
-    queryFn: getAiAccessState,
-  })
+  const accessQuery = useAiAccessQuery(user?.id)
 
   const currentSavedIdentity = useMemo(
     () => savedIdentities.find((identity) => identity.userId === user?.id),
@@ -55,14 +53,8 @@ export function DevIdentityPanel() {
   )
   const subscriptionStatus = useMemo(
     () =>
-      getNormalizedSubscriptionStatus({
-        aiAccess: accessQuery.data,
-        isAiAccessLoading: accessQuery.isLoading,
-        revenueCatState: {
-          isPremium: false,
-        },
-      }),
-    [accessQuery.data, accessQuery.isLoading]
+      getNormalizedSubscriptionStatus(subscriptionState),
+    [subscriptionState]
   )
 
   useEffect(() => {

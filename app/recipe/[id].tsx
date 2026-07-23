@@ -29,12 +29,14 @@ import {
   getNormalizedSubscriptionStatus,
   getRecipeSubscriptionAvailabilityText,
 } from '@/features/subscription/normalized-subscription-status'
+import type { SubscriptionState } from '@/features/subscription/subscription-state'
 import {
   DEFAULT_SECONDARY_RECIPE_LANGUAGE_CODE,
   getSecondaryRecipeLanguage,
 } from '@/features/settings/secondary-recipe-language'
-import { getAiAccessState } from '@/lib/api/ai-access'
+import { aiAccessQueryKey, useAiAccessQuery } from '@/lib/query/ai-access-query'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
+import type { AiAccessState } from '@/lib/api/ai-access'
 import { reportError } from '@/lib/observability/sentry'
 import { isUnexpectedTechnicalFailureCode } from '@/lib/observability/sentry-policy'
 import { useRefetchOnAppForeground } from '@/lib/query/use-refetch-on-app-foreground'
@@ -52,6 +54,7 @@ import {
   toggleFavorite,
 } from '@/lib/api/recipes'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
+import { useAuth } from '@/providers/auth-provider'
 import { useRevenueCat } from '@/providers/revenuecat-provider'
 import { colors, radius, spacing, typography } from '@/theme'
 import { AppBadge } from '@/ui/app-badge'
@@ -86,7 +89,8 @@ export default function SavedRecipeRoute() {
   const rootNavigationState = useRootNavigationState()
   const queryClient = useQueryClient()
   const { track } = usePostHog()
-  const { isPremium, syncPremiumEntitlement } = useRevenueCat()
+  const { user } = useAuth()
+  const { reconcileSubscription, subscriptionState } = useRevenueCat()
   const { id, returnTo } = useLocalSearchParams<{
     id?: string
     returnTo?: string | string[]
@@ -125,10 +129,7 @@ export default function SavedRecipeRoute() {
     refetchInterval: (query) =>
       isMetadataRefreshActive(query.state.data?.metadata_status) ? 2000 : false,
   })
-  const aiAccessQuery = useQuery({
-    queryKey: ['ai-access-state', 'recipe-detail'],
-    queryFn: getAiAccessState,
-  })
+  const aiAccessQuery = useAiAccessQuery(user?.id)
   const mediaJobQuery = useQuery({
     enabled: Boolean(recipeId),
     queryKey: ['media-job', 'recipe', recipeId],
@@ -156,13 +157,7 @@ export default function SavedRecipeRoute() {
     queryFn: () => getRecipeCard(resultRecipeCardId ?? ''),
   })
   const aiAccess = aiAccessQuery.data
-  const subscriptionStatus = getNormalizedSubscriptionStatus({
-    aiAccess,
-    isAiAccessLoading: aiAccessQuery.isLoading,
-    revenueCatState: {
-      isPremium,
-    },
-  })
+  const subscriptionStatus = getNormalizedSubscriptionStatus(subscriptionState)
   const isAiLimitReached =
     aiAccess?.canStartAiJob === false || aiAccess?.reason === 'limit_reached'
   const isNavigationReady = Boolean(rootNavigationState?.key)
@@ -307,7 +302,7 @@ export default function SavedRecipeRoute() {
         reportError(terminalError)
       }
       void queryClient.invalidateQueries({
-        queryKey: ['ai-access-state'],
+        queryKey: aiAccessQueryKey(user?.id),
       })
       void queryClient.invalidateQueries({
         queryKey: ['media-job', 'recipe', recipeId],
@@ -350,7 +345,7 @@ export default function SavedRecipeRoute() {
       queryKey: ['media-job', 'recipe', recipeId],
     })
     void queryClient.invalidateQueries({
-      queryKey: ['ai-access-state'],
+      queryKey: aiAccessQueryKey(user?.id),
     })
 
     if (
@@ -494,9 +489,6 @@ export default function SavedRecipeRoute() {
     !durationBlockMessage &&
     !subscriptionStatus.isPremium &&
     (showCreditLimitState || isAiLimitReached)
-  const backendPremiumActive =
-    subscriptionStatus.sourceOfTruth === 'backend' &&
-    subscriptionStatus.isPremium
   const detailViewState = getRecipeDetailViewState({
     metadataStatus: recipe.metadata_status,
     mediaJob: displayMediaJob,
@@ -662,18 +654,18 @@ export default function SavedRecipeRoute() {
     }
 
     if (
-      subscriptionStatus.needsSync &&
+      subscriptionState.kind === 'store_premium_backend_pending' &&
       aiAccess &&
-      !aiAccess.canStartAiJob &&
-      !backendPremiumActive
+      !aiAccess.canStartAiJob
     ) {
       setIsSyncingPremiumAccess(true)
       setMediaJobError(null)
-      await syncPremiumEntitlement()
-      await aiAccessQuery.refetch()
+      const reconciliation = await reconcileSubscription('generate')
       setIsSyncingPremiumAccess(false)
-      setMediaJobError(new Error('Premium access synced. Please try again.'))
-      return
+      if (!reconciliation.backendAccess?.canStartAiJob) {
+        setMediaJobError(new Error(getGenerateAccessMessage(subscriptionState.kind)))
+        return
+      }
     }
 
     if (isAiLimitReached && !subscriptionStatus.isPremium) {
@@ -695,10 +687,11 @@ export default function SavedRecipeRoute() {
     })
 
     try {
-      const createdJob = await createMediaJob({
+      const submitMediaJob = () => createMediaJob({
         recipeItemId: recipe.id,
         secondaryRecipeLanguageCode: secondaryRecipeLanguage.code,
       })
+      const createdJob = await submitMediaJob()
 
       if (!mountedRef.current) {
         return
@@ -771,11 +764,36 @@ export default function SavedRecipeRoute() {
         caughtError.code === 'premium_sync_required'
       ) {
         setIsSyncingPremiumAccess(true)
-        await syncPremiumEntitlement()
-        await aiAccessQuery.refetch()
+        const reconciliation = await reconcileSubscription('generate')
         setIsSyncingPremiumAccess(false)
+        if (reconciliation.backendAccess?.canStartAiJob) {
+          try {
+            const retriedJob = await createMediaJob({
+              recipeItemId: recipe.id,
+              secondaryRecipeLanguageCode: secondaryRecipeLanguage.code,
+            })
+            shouldAutoOpenResultRef.current = true
+            if (retriedJob.media_job) {
+              const attachedJob = buildAttachedMediaJob({
+                job: retriedJob.media_job,
+                recipeItemId: recipe.id,
+                platform,
+              })
+              queryClient.setQueryData(['media-job', 'recipe', recipe.id], attachedJob)
+              setLastKnownMediaJob(attachedJob)
+            }
+            await mediaJobQuery.refetch()
+          } catch (retryError) {
+            reportError(retryError)
+            setMediaJobError(getFriendlyMediaJobError(
+              retryError,
+              new Error('Could not generate AI recipe. Please try again.')
+            ))
+          }
+        } else {
+          setMediaJobError(new Error(getGenerateAccessMessage(subscriptionState.kind)))
+        }
         setIsStartLocked(false)
-        setMediaJobError(new Error('Premium access synced. Please try again.'))
         return
       }
 
@@ -820,7 +838,7 @@ export default function SavedRecipeRoute() {
       })
     } finally {
       void queryClient.invalidateQueries({
-        queryKey: ['ai-access-state'],
+        queryKey: aiAccessQueryKey(user?.id),
       })
       if (mountedRef.current) {
         setIsCreatingMediaJob(false)
@@ -1758,7 +1776,7 @@ function getAiAvailabilityText(access: {
 }
 
 function getDetailUsageLabel(
-  access: Awaited<ReturnType<typeof getAiAccessState>> | undefined
+  access: AiAccessState | undefined
 ) {
   if (!access) {
     return null
@@ -1769,6 +1787,17 @@ function getDetailUsageLabel(
   }
 
   return `${Math.max(0, access.freeRemainingToStart)} left`
+}
+
+function getGenerateAccessMessage(state: SubscriptionState['kind']) {
+  if (state === 'expired') return 'Your previous subscription has expired.'
+  if (state === 'binding_conflict') {
+    return 'This purchase is linked to another app profile. Contact support for help.'
+  }
+  if (state === 'store_premium_backend_pending') {
+    return 'Purchase found. Verifying your AI access…'
+  }
+  return 'AI access is still unavailable. Check your subscription status.'
 }
 
 function getReadyRecipeStats(

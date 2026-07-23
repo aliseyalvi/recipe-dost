@@ -13,7 +13,8 @@ import {
   RecipeStatusBadge,
 } from '@/features/recipe-card/recipe-card-chrome'
 import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
-import { getAiAccessState } from '@/lib/api/ai-access'
+import { useAiAccessQuery } from '@/lib/query/ai-access-query'
+import type { AiAccessState } from '@/lib/api/ai-access'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import {
   RecipeLibraryItem,
@@ -104,11 +105,7 @@ export default function LibraryRoute() {
         ? 5000
         : false,
   })
-  const aiAccessQuery = useQuery({
-    enabled: Boolean(user?.id),
-    queryKey: ['ai-access-state', 'library'],
-    queryFn: getAiAccessState,
-  })
+  const aiAccessQuery = useAiAccessQuery(user?.id)
   const libraryItems = libraryQuery.data ?? []
   const hasLibraryItems = libraryItems.length > 0
   const normalizedQuery = searchQuery.trim()
@@ -160,8 +157,8 @@ export default function LibraryRoute() {
   }, [libraryQuery.data, track])
 
   const refetchLibrary = useCallback(
-    () => Promise.all([libraryQuery.refetch(), aiAccessQuery.refetch()]),
-    [aiAccessQuery.refetch, libraryQuery.refetch]
+    () => libraryQuery.refetch(),
+    [libraryQuery.refetch]
   )
 
   useFocusEffect(
@@ -1827,7 +1824,7 @@ function hasAiRecipe(item: RecipeLibraryItem) {
 }
 
 function getLibraryUsageLabel(
-  access: Awaited<ReturnType<typeof getAiAccessState>> | undefined
+  access: AiAccessState | undefined
 ) {
   if (!access) {
     return null

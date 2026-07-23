@@ -189,6 +189,9 @@ Deno.test("environment is included in the keyed customer binding", async () => {
   const dev = await hmacSha256Hex(HMAC_SECRET, "development:original-id");
   const prod = await hmacSha256Hex(HMAC_SECRET, "production:original-id");
   assert.notEqual(dev, prod);
+
+  const { store } = await runSync({ originalAppUserId: "original-id" });
+  assert.equal(store.persistedCustomerKey, dev);
 });
 
 Deno.test("request body accepts no body or trigger and rejects user spoofing", () => {

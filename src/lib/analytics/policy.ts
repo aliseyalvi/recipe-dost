@@ -2,6 +2,17 @@ import type { CaptureEvent } from '@posthog/core'
 
 export const ANALYTICS_SCHEMA_VERSION = '1'
 
+const SUBSCRIPTION_RECONCILIATION_KEYS = [
+  'trigger',
+  'local_entitlement_active',
+  'backend_premium_active',
+  'expiration_relation',
+  'provider_environment',
+  'sync_result',
+  'normalized_error_code',
+  'latency_bucket',
+] as const
+
 export const PRODUCT_EVENT_SCHEMAS = {
   app_opened: [],
   onboarding_started: [],
@@ -33,6 +44,21 @@ export const PRODUCT_EVENT_SCHEMAS = {
   restore_started: ['entry_point'],
   restore_completed: ['entry_point', 'result'],
   restore_failed: ['entry_point', 'result', 'failure_code'],
+  subscription_refresh_started: SUBSCRIPTION_RECONCILIATION_KEYS,
+  subscription_refresh_completed: SUBSCRIPTION_RECONCILIATION_KEYS,
+  subscription_refresh_failed: SUBSCRIPTION_RECONCILIATION_KEYS,
+  subscription_restore_started: SUBSCRIPTION_RECONCILIATION_KEYS,
+  subscription_restore_completed: SUBSCRIPTION_RECONCILIATION_KEYS,
+  subscription_restore_no_entitlement: SUBSCRIPTION_RECONCILIATION_KEYS,
+  subscription_restore_failed: SUBSCRIPTION_RECONCILIATION_KEYS,
+  subscription_state_transition: [
+    ...SUBSCRIPTION_RECONCILIATION_KEYS,
+    'state_before',
+    'state_after',
+  ],
+  purchase_reconciliation_started: SUBSCRIPTION_RECONCILIATION_KEYS,
+  purchase_reconciliation_completed: SUBSCRIPTION_RECONCILIATION_KEYS,
+  purchase_reconciliation_failed: SUBSCRIPTION_RECONCILIATION_KEYS,
   posthog_test_event: [
     'app_env',
     'platform',
@@ -77,6 +103,11 @@ const COMMON_PROPERTY_KEYS = [
   'update_channel',
   'analytics_schema_version',
 ] as const
+
+const SAFE_SENSITIVE_PROPERTY_KEYS = new Set([
+  'local_entitlement_active',
+  'normalized_error_code',
+])
 
 const SDK_PROPERTY_KEYS = new Set([
   'token',
@@ -175,7 +206,12 @@ export function sanitizeEventProperties(
     if (!allowedKeys.has(key) && !isSdkProperty) {
       continue
     }
-    if (!isSdkProperty && key !== '$screen_name' && SENSITIVE_KEY_PATTERN.test(key)) {
+    if (
+      !isSdkProperty &&
+      key !== '$screen_name' &&
+      !SAFE_SENSITIVE_PROPERTY_KEYS.has(key) &&
+      SENSITIVE_KEY_PATTERN.test(key)
+    ) {
       continue
     }
     if (!isSafeScalar(value)) continue
@@ -197,6 +233,7 @@ export function sanitizeEventProperties(
 
   return sanitized
 }
+
 
 export function sanitizePostHogCapture(capture: CaptureEvent | null): CaptureEvent | null {
   if (!capture) return null

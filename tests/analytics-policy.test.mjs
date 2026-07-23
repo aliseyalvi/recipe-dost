@@ -96,6 +96,35 @@ test('event names and event properties are closed allowlists', () => {
   assert.equal(sanitizePostHogCapture({ event: 'arbitrary_event', properties: {} }), null)
 })
 
+test('subscription reconciliation events retain only safe normalized diagnostics', () => {
+  assert.equal(isAllowedProductEvent('subscription_restore_no_entitlement'), true)
+  assert.deepEqual(
+    sanitizeEventProperties('subscription_refresh_failed', {
+      trigger: 'refresh',
+      state_before: 'free',
+      local_entitlement_active: false,
+      backend_premium_active: false,
+      expiration_relation: 'expired',
+      provider_environment: 'sandbox',
+      sync_result: 'failed',
+      normalized_error_code: 'timeout',
+      latency_bucket: '2s_5s',
+      customer_id: 'blocked',
+      receipt: 'blocked',
+    }),
+    {
+      trigger: 'refresh',
+      local_entitlement_active: false,
+      backend_premium_active: false,
+      expiration_relation: 'expired',
+      provider_environment: 'sandbox',
+      sync_result: 'failed',
+      normalized_error_code: 'timeout',
+      latency_bucket: '2s_5s',
+    }
+  )
+})
+
 test('before_send preserves only required SDK transport fields', () => {
   assert.deepEqual(
     sanitizePostHogCapture({

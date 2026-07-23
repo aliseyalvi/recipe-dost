@@ -18,7 +18,8 @@ import {
 } from '@/features/media-jobs/processing-stage'
 import { getPaywallHref } from '@/features/paywall/paywall-model'
 import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
-import { getAiAccessState } from '@/lib/api/ai-access'
+import { useAiAccessQuery } from '@/lib/query/ai-access-query'
+import type { AiAccessState } from '@/lib/api/ai-access'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import {
   RecipeLibraryItem,
@@ -59,11 +60,7 @@ export default function HomeRoute() {
         ? 5000
         : false,
   })
-  const aiAccessQuery = useQuery({
-    enabled: Boolean(user?.id),
-    queryKey: ['ai-access-state', 'home'],
-    queryFn: getAiAccessState,
-  })
+  const aiAccessQuery = useAiAccessQuery(user?.id)
   const items = libraryQuery.data ?? []
   const recentRecipe = useMemo(
     () => getMostRecentlyActiveRecipe(items),
@@ -92,8 +89,8 @@ export default function HomeRoute() {
   }, [track])
 
   const refetchHome = useCallback(
-    () => Promise.all([libraryQuery.refetch(), aiAccessQuery.refetch()]),
-    [aiAccessQuery.refetch, libraryQuery.refetch]
+    () => libraryQuery.refetch(),
+    [libraryQuery.refetch]
   )
 
   useFocusEffect(
@@ -532,7 +529,7 @@ function formatDate(value: string) {
   })
 }
 
-function getUsageLabel(access: Awaited<ReturnType<typeof getAiAccessState>> | undefined) {
+function getUsageLabel(access: AiAccessState | undefined) {
   if (!access) {
     return null
   }

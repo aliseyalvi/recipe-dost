@@ -1,7 +1,69 @@
 # Recipe Dost Decision Log
 
+## 2026-07-23
+
+- M24.3A-R separates authoritative subscription identity from current generation
+  availability. Backend `premiumActive=true` confirms Premium regardless of
+  `canStartAiJob`; only Generate uses `canStartAiJob` as its immediate gate.
+- Restore succeeds when local active Premium evidence reconciles to backend
+  Premium, including when the monthly allowance is exhausted or an active job
+  reserves capacity. Purchase may close the paywall on the same backend Premium
+  confirmation rule.
+- Preserve `premium_confirmed` while exposing block reason, remaining-to-start,
+  active reservation, successful usage, and monthly limit separately. Premium
+  quota exhaustion and active processing use specific user copy; unknown
+  normalized blocks use a safe temporary-unavailability message.
+- Local Premium/backend Free remains pending. Generate does not open the upgrade
+  path for confirmed Premium, does not reconcile merely because quota blocks it,
+  and never starts a duplicate job. Backend contracts and quota rules are
+  unchanged.
+
 ## 2026-07-22
 
+- M24.3A makes `get-ai-access` the sole authority for Recipe Dost AI access.
+  RevenueCat `CustomerInfo` remains authoritative store evidence, but local
+  Premium can only enter `store_premium_backend_pending`; it cannot grant or
+  describe confirmed AI access.
+- Replace restore's local-or-backend success test with a shared sequence:
+  restore once, inspect returned entitlement/expiry, synchronize once, fetch the
+  user-scoped backend access once, then derive the final state. M24.3A-R clarifies
+  that Restore success requires backend Premium; `canStartAiJob` is a separate
+  generation-availability result. Expired and absent purchases use non-success
+  copy.
+- Use `['ai-access-state', authenticatedUserId]` everywhere with a conservative
+  60-second stale time. Settings remount does not synchronize; bootstrap and
+  foreground reconcile only when stale, while purchase/restore/explicit refresh
+  always reconcile.
+- Mobile synchronization is a shared Promise keyed by Supabase user. Concurrent
+  callers await it and receive the same typed result; no caller receives `null`.
+  The existing backend lease remains the cross-process protection.
+- Register one RevenueCat customer-info listener only after SDK identity is ready,
+  reconcile only meaningful entitlement changes, suppress implicit reconciliation
+  during explicit store actions, and remove the listener on identity/cleanup.
+- Generate recovery now reconciles and automatically retries `create-media-job`
+  at most once only when refreshed backend access permits it. The unconditional
+  “Premium access synced. Please try again.” message is removed.
+- M24.3A requires a new binary because it changes mobile runtime code. It changes
+  no database, Edge Function contract, quota, worker/media path, deployment,
+  RevenueCat dashboard setting, or existing backend compatibility.
+
+- M24.1D supersedes the reserved custom `SUPABASE_ENV_NAME` setting with
+  `RECIPE_DOST_ENV`. Only normalized `development` and `production` are valid;
+  there is no deployed fallback to the old name.
+- Source inspection confirmed the development 500 was not a module-import throw.
+  Request-time configuration validation returned before authentication in the
+  handler, service initialization, structured sync logging, and lease acquisition.
+- Configuration failures now return HTTP 500 with
+  `subscription_sync_configuration_error`, log only fixed configuration names and
+  safe status metadata, and omit user correlation when the HMAC inputs are not
+  available. Secret values and raw identifiers remain prohibited.
+- The binding input remains
+  `normalized_environment + ":" + original_app_user_id`; changing the variable
+  name does not change existing development key semantics.
+- M24.1D is implemented locally/pending development secret update and deploy.
+  M24.2 is blocked until development runtime verification succeeds. No schema,
+  mobile, worker/media, provider, quota, deployment, merge, or release change was
+  made in this implementation.
 - M24.0 audit is complete. RevenueCat SDK identity already uses the authenticated
   Supabase UUID; the proven failure was the backend's strict equality check
   against RevenueCat `original_app_user_id`, combined with local/backend state
@@ -25,9 +87,8 @@
   Premium. Quota values and `create-media-job` authority are unchanged.
 - Required new server secret: `REVENUECAT_BINDING_HMAC_SECRET`. It is distinct
   per environment, at least 32 characters, server-only, and never printed.
-- M24.1 is local/pending development deployment. No worker/media change, live
-  RevenueCat call, deployment, main merge, or mobile release is part of this
-  implementation.
+- M24.1A is done; M24.1B deployment was attempted and M24.1C isolated the missing
+  environment configuration before M24.1D superseded it.
 - Validation passed on the first consolidated attempt: TypeScript, focused Deno
   lint, all configured Edge checks, 25 Deno tests, 7 Node contract/migration
   tests, static guards, both masked env templates, linked development migration
@@ -309,7 +370,9 @@
 ## 2026-07-07
 - M22D.0C audited app repo env names before real value migration.
 - Decision: Canonical app repo env variables are documented in `docs/m22d-env-variable-map.md`; `APP_ANDROID_PACKAGE` was removed from templates because runtime package resolution belongs to `app.config.js`.
-- Decision: `SUPABASE_ENV_NAME` is an optional local helper label, while `SUPABASE_PROJECT_REF` remains required for Supabase secret sync.
+- Historical decision (superseded by M24.1D): `SUPABASE_ENV_NAME` was treated as
+  an optional local helper label. `SUPABASE_PROJECT_REF` remains required for
+  Supabase secret sync; deployed environment selection now uses `RECIPE_DOST_ENV`.
 - Decision: Edge Function worker secret lookups now prefer canonical `MEDIA_WORKER_SHARED_SECRET` and retain `WORKER_API_SECRET` / `MEDIA_WORKER_SECRET` as migration fallbacks.
 - Validation: `npm run qa:static`, `npm run env:check`, `APP_ENV=development APP_VARIANT=development npx expo config --json >/dev/null`, and `APP_ENV=production APP_VARIANT=production npx expo config --json >/dev/null` passed.
 - M22D.0A established local gitignored env files as the app repo source of truth for development and production separation.

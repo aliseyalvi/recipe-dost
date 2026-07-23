@@ -93,9 +93,13 @@ test('provider transport is bounded and never logs the subscriber request URL', 
   assert.doesNotMatch(syncIndex, /console\.(?:log|error|warn)\([^\n]*user\.id/)
 })
 
-test('required HMAC secret is allowlisted for manual Supabase sync', () => {
+test('required HMAC and Recipe Dost environment are allowlisted for Supabase sync', () => {
   assert.match(secretSync, /"REVENUECAT_BINDING_HMAC_SECRET"/)
-  assert.match(secretSync, /"SUPABASE_ENV_NAME"/)
+  assert.match(secretSync, /"RECIPE_DOST_ENV"/)
+  const requiredAllowlist = secretSync.match(
+    /const REQUIRED_SUPABASE_SECRET_KEYS = \[([\s\S]*?)\]/
+  )?.[1] ?? ''
+  assert.doesNotMatch(requiredAllowlist, /SUPABASE_ENV_NAME/)
 })
 
 test('create-media-job remains authoritative before inserting a media job', () => {

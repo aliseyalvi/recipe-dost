@@ -1,4 +1,12 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { hmacSha256Hex } from "../_shared/keyed-hash.ts";
+import {
+  type EnvironmentReader,
+  inspectSyncConfiguration,
+  type SupabaseRuntimeConfiguration,
+  type SyncConfigurationInspection,
+  type SyncRuntimeConfiguration,
+} from "./configuration.ts";
 import {
   fetchRevenueCatSubscriberWithRetry,
   parseSyncRequestBody,
@@ -6,6 +14,7 @@ import {
   type SafeSubscriptionLog,
   synchronizeRevenueCatEntitlement,
   type SyncRevenueCatErrorCode,
+  type SyncServiceResult,
 } from "./service.ts";
 
 type UserProfileRow = {
@@ -83,6 +92,26 @@ type Database = {
 
 type EdgeSupabaseClient = SupabaseClient<Database>;
 
+type AuthenticatedSyncContext = {
+  userId: string;
+  adminClient: EdgeSupabaseClient;
+};
+
+type HandlerDependencies = {
+  getEnvironment?: EnvironmentReader;
+  log?: (entry: SafeSubscriptionLog) => void;
+  authenticate?: (
+    authHeader: string,
+    configuration: SupabaseRuntimeConfiguration,
+  ) => Promise<AuthenticatedSyncContext | null>;
+  runSynchronization?: (input: {
+    configuration: SyncRuntimeConfiguration;
+    userId: string;
+    trigger: string;
+    adminClient: EdgeSupabaseClient;
+  }) => Promise<SyncServiceResult>;
+};
+
 declare const Deno: {
   serve: (
     handler: (request: Request) => Response | Promise<Response>,
@@ -100,17 +129,24 @@ const corsHeaders = {
   "Access-Control-Max-Age": "86400",
 };
 
-Deno.serve((request) =>
-  handleSyncRevenueCatEntitlementRequest(request).catch(() =>
-    errorResponse(
-      "unexpected_revenuecat_sync_error",
-      "Could not sync Premium access. Please try again.",
-      500,
+if (import.meta.main) {
+  Deno.serve((request) =>
+    handleSyncRevenueCatEntitlementRequest(request).catch(() =>
+      errorResponse(
+        "unexpected_revenuecat_sync_error",
+        "Could not sync Premium access. Please try again.",
+        500,
+      )
     )
-  )
-);
+  );
+}
 
-async function handleSyncRevenueCatEntitlementRequest(request: Request) {
+export async function handleSyncRevenueCatEntitlementRequest(
+  request: Request,
+  dependencies: HandlerDependencies = {},
+) {
+  const log = dependencies.log ?? writeSafeSubscriptionLog;
+
   if (request.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
@@ -144,30 +180,17 @@ async function handleSyncRevenueCatEntitlementRequest(request: Request) {
     );
   }
 
-  const configuration = getConfiguration();
-  if (!configuration.ok) {
-    return errorResponse(
-      configuration.code,
-      "Premium sync is not configured yet.",
-      configuration.status,
-    );
+  const configuration = inspectSyncConfiguration(
+    dependencies.getEnvironment ?? ((name) => Deno.env.get(name)),
+  );
+  if (!configuration.supabaseConfiguration) {
+    logConfigurationFailure(configuration, parsedInput.trigger, log);
+    return configurationErrorResponse();
   }
 
-  const clients = createSupabaseClients(authHeader);
-  if (!clients) {
-    return errorResponse(
-      "server_not_configured",
-      "Premium sync is not configured yet.",
-      500,
-    );
-  }
-
-  const {
-    data: { user },
-    error: authError,
-  } = await clients.userClient.auth.getUser();
-
-  if (authError || !user) {
+  const authenticated = await (dependencies.authenticate ??
+    authenticateWithSupabase)(authHeader, configuration.supabaseConfiguration);
+  if (!authenticated) {
     return errorResponse(
       "unauthorized",
       "Sign in to sync Premium access.",
@@ -175,25 +198,52 @@ async function handleSyncRevenueCatEntitlementRequest(request: Request) {
     );
   }
 
-  const store = createSyncStore(clients.adminClient);
-  const result = await synchronizeRevenueCatEntitlement(
-    {
-      environment: configuration.environment,
-      userId: user.id,
-      entitlementId: configuration.entitlementId,
+  const userHash = configuration.environment &&
+      configuration.correlationHmacSecret
+    ? await hmacSha256Hex(
+      configuration.correlationHmacSecret,
+      `user:${configuration.environment}:${authenticated.userId}`,
+    )
+    : undefined;
+
+  log({
+    event: "subscription_sync_started",
+    supabase_user_hash: userHash,
+    environment: configuration.environment,
+    trigger: parsedInput.trigger,
+    status_class: "2xx",
+    sync_result: "started",
+    freshness: "unchanged",
+    latency_bucket: "lt_250ms",
+    attempt_count: 0,
+    configuration_ready: configuration.ok,
+  });
+
+  if (!configuration.ok || !configuration.configuration) {
+    logConfigurationFailure(
+      configuration,
+      parsedInput.trigger,
+      log,
+      userHash,
+      true,
+    );
+    return configurationErrorResponse();
+  }
+
+  const result = dependencies.runSynchronization
+    ? await dependencies.runSynchronization({
+      configuration: configuration.configuration,
+      userId: authenticated.userId,
       trigger: parsedInput.trigger,
-    },
-    {
-      store,
-      hmacSecret: configuration.hmacSecret,
-      fetchSubscriber: () =>
-        fetchRevenueCatSubscriberWithRetry({
-          apiKey: configuration.revenueCatApiKey,
-          appUserId: user.id,
-        }),
-      log: writeSafeSubscriptionLog,
-    },
-  );
+      adminClient: authenticated.adminClient,
+    })
+    : await runSynchronization({
+      configuration: configuration.configuration,
+      userId: authenticated.userId,
+      trigger: parsedInput.trigger,
+      adminClient: authenticated.adminClient,
+      log,
+    });
 
   if (!result.ok) {
     return errorResponse(result.code, result.message, result.status);
@@ -213,6 +263,101 @@ async function handleSyncRevenueCatEntitlementRequest(request: Request) {
       sync_result_code: result.data.sync_result_code,
     },
   });
+}
+
+async function runSynchronization({
+  configuration,
+  userId,
+  trigger,
+  adminClient,
+  log,
+}: {
+  configuration: SyncRuntimeConfiguration;
+  userId: string;
+  trigger: string;
+  adminClient: EdgeSupabaseClient;
+  log: (entry: SafeSubscriptionLog) => void;
+}) {
+  return await synchronizeRevenueCatEntitlement(
+    {
+      environment: configuration.environment,
+      userId,
+      entitlementId: configuration.entitlementId,
+      trigger,
+    },
+    {
+      store: createSyncStore(adminClient),
+      hmacSecret: configuration.hmacSecret,
+      fetchSubscriber: () =>
+        fetchRevenueCatSubscriberWithRetry({
+          apiKey: configuration.revenueCatApiKey,
+          appUserId: userId,
+        }),
+      log,
+    },
+  );
+}
+
+function logConfigurationFailure(
+  configuration: SyncConfigurationInspection,
+  trigger: string,
+  log: (entry: SafeSubscriptionLog) => void,
+  userHash?: string,
+  startedAlready = false,
+) {
+  if (!startedAlready) {
+    log({
+      event: "subscription_sync_started",
+      environment: configuration.environment,
+      trigger,
+      status_class: "2xx",
+      sync_result: "started",
+      freshness: "unchanged",
+      latency_bucket: "lt_250ms",
+      attempt_count: 0,
+      configuration_ready: false,
+    });
+  }
+
+  log({
+    event: "subscription_sync_failed",
+    supabase_user_hash: userHash,
+    environment: configuration.environment,
+    trigger,
+    status_class: "5xx",
+    sync_result: "subscription_sync_configuration_error",
+    freshness: "unchanged",
+    latency_bucket: "lt_250ms",
+    attempt_count: 0,
+    configuration_ready: false,
+    stage: "configuration",
+    normalized_error_code: "subscription_sync_configuration_error",
+    missing_config_names: configuration.missingConfigNames,
+    invalid_config_names: configuration.invalidConfigNames,
+  });
+}
+
+function configurationErrorResponse() {
+  return errorResponse(
+    "subscription_sync_configuration_error",
+    "Premium access synchronization is temporarily unavailable.",
+    500,
+  );
+}
+
+async function authenticateWithSupabase(
+  authHeader: string,
+  configuration: SupabaseRuntimeConfiguration,
+): Promise<AuthenticatedSyncContext | null> {
+  const clients = createSupabaseClients(authHeader, configuration);
+  const {
+    data: { user },
+    error: authError,
+  } = await clients.userClient.auth.getUser();
+
+  return authError || !user
+    ? null
+    : { userId: user.id, adminClient: clients.adminClient };
 }
 
 function createSyncStore(client: EdgeSupabaseClient): RevenueCatSyncStore {
@@ -315,77 +460,41 @@ function createSyncStore(client: EdgeSupabaseClient): RevenueCatSyncStore {
   };
 }
 
-function getConfiguration():
-  | {
-    ok: true;
-    revenueCatApiKey: string;
-    entitlementId: string;
-    hmacSecret: string;
-    environment: string;
-  }
-  | {
-    ok: false;
-    code: "revenuecat_not_configured" | "server_not_configured";
-    status: number;
-  } {
-  const revenueCatApiKey = Deno.env.get("REVENUECAT_API_KEY")?.trim();
-  const hmacSecret = Deno.env.get("REVENUECAT_BINDING_HMAC_SECRET")?.trim();
-  const environment = Deno.env.get("SUPABASE_ENV_NAME")?.trim().toLowerCase();
-
-  if (!revenueCatApiKey) {
-    return { ok: false, code: "revenuecat_not_configured", status: 503 };
-  }
-  if (
-    !hmacSecret || hmacSecret.length < 32 || !environment ||
-    !/^[a-z0-9_-]{1,40}$/.test(environment)
-  ) {
-    return { ok: false, code: "server_not_configured", status: 500 };
-  }
-
-  return {
-    ok: true,
-    revenueCatApiKey,
-    entitlementId: Deno.env.get("REVENUECAT_ENTITLEMENT_ID")?.trim() ||
-      "premium",
-    hmacSecret,
-    environment,
-  };
-}
-
 async function parseOptionalInput(request: Request): Promise<
   { ok: true; trigger: string } | { ok: false }
 > {
   return parseSyncRequestBody(await request.text());
 }
 
-function createSupabaseClients(authHeader: string) {
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const publishableKey = Deno.env.get("SUPABASE_ANON_KEY") ??
-    Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
-  const serverKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
-    Deno.env.get("SUPABASE_SECRET_KEY");
-
-  if (!supabaseUrl || !publishableKey || !serverKey) {
-    return null;
-  }
-
-  const userClient = createClient<Database>(supabaseUrl, publishableKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-    global: {
-      headers: {
-        Authorization: authHeader,
+function createSupabaseClients(
+  authHeader: string,
+  configuration: SupabaseRuntimeConfiguration,
+) {
+  const userClient = createClient<Database>(
+    configuration.supabaseUrl,
+    configuration.supabasePublishableKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
       },
     },
-  });
-  const adminClient = createClient<Database>(supabaseUrl, serverKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
+  );
+  const adminClient = createClient<Database>(
+    configuration.supabaseUrl,
+    configuration.supabaseServerKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
     },
-  });
+  );
 
   return { userClient, adminClient };
 }

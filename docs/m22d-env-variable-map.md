@@ -24,7 +24,8 @@ This audit maps env names referenced by app code, Supabase Edge Functions, confi
 | `EXPO_PUBLIC_FREE_GROCERY_LIST_LIMIT` | docs only | old root `.env` | deprecated | no | no | Stale public limit. Backend access/quota is source of truth. |
 | `EXPO_PUBLIC_DEV_TOOLS_ENABLED` | `src/env.d.ts` only | docs | deprecated | no | no | Declared type only; no current runtime read found. |
 | `SUPABASE_PROJECT_REF` | `scripts/env/sync-supabase-secrets.mjs`, `scripts/env/validate-env.mjs` | derived from Supabase URL or M22D examples | local helper | no | yes | Required target project ref for Supabase secret sync. |
-| `SUPABASE_ENV_NAME` | RevenueCat sync/expiry logs and env scripts | M22D examples | Supabase config + local helper | no | yes | Required environment boundary and synced to Edge Functions. |
+| `RECIPE_DOST_ENV` | RevenueCat sync/expiry logs and env scripts | M24.1D examples | Supabase config + local helper | no | yes | Required environment boundary; only `development` or `production`. |
+| `SUPABASE_ENV_NAME` | no deployed runtime read | older M24.1 local env | reserved/deprecated | no | no | Custom `SUPABASE_` names are reserved. Validator and sync tooling reject this name. |
 | `REVENUECAT_API_KEY` | `supabase/functions/sync-revenuecat-entitlement/index.ts`, `scripts/env/*` | `supabase/.env.production`, M22D examples | Supabase secret | yes | yes | Canonical server-side RevenueCat API key. Never mobile public. |
 | `REVENUECAT_ENTITLEMENT_ID` | `supabase/functions/sync-revenuecat-entitlement/index.ts`, `scripts/env/*` | `supabase/.env.production`, M22D examples | Supabase config | no | yes | Canonical value remains `premium`. |
 | `REVENUECAT_BINDING_HMAC_SECRET` | RevenueCat binding and safe correlation hashes | M24.1 env examples | Supabase secret | yes | yes | Distinct per environment, at least 32 characters, server-only, never logged or exposed to mobile. |
@@ -83,7 +84,7 @@ Required:
 - `REVENUECAT_API_KEY`
 - `REVENUECAT_ENTITLEMENT_ID`
 - `REVENUECAT_BINDING_HMAC_SECRET`
-- `SUPABASE_ENV_NAME`
+- `RECIPE_DOST_ENV`
 - `MEDIA_WORKER_URL`
 - `MEDIA_WORKER_SHARED_SECRET`
 

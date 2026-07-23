@@ -11,7 +11,8 @@ import type { RecipePlatform } from '@/features/recipe-draft/types'
 import { UsagePill } from '@/features/home/editorial-layout'
 import { getPaywallHref } from '@/features/paywall/paywall-model'
 import { RecipeMetadataChip } from '@/features/recipe-card/recipe-card-chrome'
-import { getAiAccessState } from '@/lib/api/ai-access'
+import { useAiAccessQuery } from '@/lib/query/ai-access-query'
+import type { AiAccessState } from '@/lib/api/ai-access'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import { reportError } from '@/lib/observability/sentry'
 import {
@@ -95,11 +96,7 @@ function GroceryOverview() {
     queryKey: ['recipe-grocery-lists'],
     queryFn: getRecipeGroceryLists,
   })
-  const aiAccessQuery = useQuery({
-    enabled: Boolean(user?.id),
-    queryKey: ['ai-access-state', 'grocery'],
-    queryFn: getAiAccessState,
-  })
+  const aiAccessQuery = useAiAccessQuery(user?.id)
   const allLists = groceryListsQuery.data ?? []
   const filteredLists = useMemo(
     () => filterGroceryLists(allLists, query, selectedFilter),
@@ -1881,7 +1878,7 @@ function getGroceryAnalyticsProperties(
 }
 
 function getUsageLabel(
-  access: Awaited<ReturnType<typeof getAiAccessState>> | undefined
+  access: AiAccessState | undefined
 ) {
   if (!access) {
     return null
