@@ -10,6 +10,8 @@ import { reportError, setSentryUser } from '@/lib/observability/sentry'
 import { AppLoadingScreen } from '@/ui/app-loading-screen'
 import { ErrorState } from '@/ui/error-state'
 import { Session, User } from '@supabase/supabase-js'
+import { clearAiAccessForUser } from '@/lib/query/ai-access-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { ReactNode, createContext, use, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 type AuthContextValue = {
@@ -29,8 +31,10 @@ type Props = {
 }
 
 export function AuthProvider({ children }: Props) {
+  const queryClient = useQueryClient()
   const { identifyUser, resetAnalyticsUser, track } = usePostHog()
   const previousAnalyticsUserId = useRef<string | null>(null)
+  const previousQueryUserId = useRef<string | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -78,6 +82,13 @@ export function AuthProvider({ children }: Props) {
 
   useEffect(() => {
     const userId = session?.user.id ?? null
+    const previousUserId = previousQueryUserId.current
+
+    if (previousUserId && previousUserId !== userId) {
+      clearAiAccessForUser(queryClient, previousUserId)
+    }
+    previousQueryUserId.current = userId
+
     if (userId) {
       identifyUser(userId)
       setSentryUser(userId)
@@ -89,7 +100,7 @@ export function AuthProvider({ children }: Props) {
       setSentryUser(null)
       previousAnalyticsUserId.current = null
     }
-  }, [identifyUser, resetAnalyticsUser, session?.user.id])
+  }, [identifyUser, queryClient, resetAnalyticsUser, session?.user.id])
 
   const handleSignOut = useCallback(async () => {
     await signOut()

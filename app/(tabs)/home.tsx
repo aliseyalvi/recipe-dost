@@ -19,7 +19,7 @@ import {
 import { getPaywallHref } from '@/features/paywall/paywall-model'
 import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
 import { useAiAccessQuery } from '@/lib/query/ai-access-query'
-import type { AiAccessState } from '@/lib/api/ai-access'
+import { getAiAccessQuotaPresentation } from '@/features/ai-access/ai-access-state'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import {
   RecipeLibraryItem,
@@ -200,13 +200,19 @@ export default function HomeRoute() {
     [favoriteMutationId, queryClient, track, user?.id]
   )
 
-  const usageLabel = getUsageLabel(aiAccessQuery.data)
+  const usage = getAiAccessQuotaPresentation(aiAccessQuery.data, {
+    isPending: aiAccessQuery.isPending,
+    isFetching: aiAccessQuery.isFetching,
+    hasError: aiAccessQuery.isError,
+  })
 
   return (
     <EditorialScreen>
       <EditorialHeader
-        usageLabel={usageLabel}
-        isUsageLoading={aiAccessQuery.isLoading && !aiAccessQuery.data}
+        usageLabel={usage.label}
+        isUsageLoading={usage.isInitialLoading}
+        isUsageRefreshing={usage.isRefreshing}
+        hasUsageWarning={usage.hasRefreshWarning}
         onUsagePress={openPaywall}
       />
 
@@ -527,17 +533,4 @@ function formatDate(value: string) {
     month: 'short',
     day: 'numeric',
   })
-}
-
-function getUsageLabel(access: AiAccessState | undefined) {
-  if (!access) {
-    return null
-  }
-
-  const remaining =
-    access.plan === 'premium' || access.premiumActive
-      ? access.premiumMonthlyRemainingToStart
-      : access.freeRemainingToStart
-
-  return `${Math.max(0, remaining)} left`
 }

@@ -30,6 +30,7 @@ import {
   getRecipeSubscriptionAvailabilityText,
 } from '@/features/subscription/normalized-subscription-status'
 import { useAiAccessQuery } from '@/lib/query/ai-access-query'
+import { getAiAccessQuotaPresentation } from '@/features/ai-access/ai-access-state'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { reportError } from '@/lib/observability/sentry'
@@ -101,6 +102,11 @@ export default function PaywallRoute() {
   const usage = aiAccessQuery.data
     ? getPaywallUsage(aiAccessQuery.data, isPremiumActive)
     : null
+  const usagePresentation = getAiAccessQuotaPresentation(aiAccessQuery.data, {
+    isPending: aiAccessQuery.isPending,
+    isFetching: aiAccessQuery.isFetching,
+    hasError: aiAccessQuery.isError,
+  })
   const selectedPackage =
     availablePackages.find((item) => item.identifier === selectedPackageId) ??
     packageMap.yearly ??
@@ -502,8 +508,9 @@ export default function PaywallRoute() {
       <LegalLinks types={['privacy_policy', 'terms']} />
       <UsageProgress
         usage={usage}
-        isLoading={aiAccessQuery.isLoading}
+        isLoading={usagePresentation.isInitialLoading}
         hasError={aiAccessQuery.isError}
+        statusText={usagePresentation.statusText}
         isRetrying={pendingAction === 'retry_usage'}
         onRetry={() => {
           void handleRetryUsage()

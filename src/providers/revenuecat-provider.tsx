@@ -96,6 +96,7 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
   const explicitStoreActionRef = useRef(false)
   const listenerFingerprintRef = useRef<string | null>(null)
   const lastSuccessfulBackendAccessRef = useRef(aiAccessQuery.data ?? null)
+  const lastBackendAccessUserIdRef = useRef(user?.id ?? null)
   const restoreInFlightRef = useRef<Promise<SubscriptionActionResult> | null>(null)
   const refreshInFlightRef = useRef<Promise<SubscriptionActionResult> | null>(null)
   const purchaseInFlightRef = useRef<Promise<SubscriptionActionResult> | null>(null)
@@ -114,7 +115,12 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
     restoreCompleted: false,
   })
 
-  if (aiAccessQuery.data) {
+  if (lastBackendAccessUserIdRef.current !== (user?.id ?? null)) {
+    lastBackendAccessUserIdRef.current = user?.id ?? null
+    lastSuccessfulBackendAccessRef.current = null
+  }
+
+  if (aiAccessQuery.data && user?.id === lastBackendAccessUserIdRef.current) {
     lastSuccessfulBackendAccessRef.current = aiAccessQuery.data
   }
 

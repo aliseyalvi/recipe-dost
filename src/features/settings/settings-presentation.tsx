@@ -212,10 +212,12 @@ export function ProfileSettingsCard({ identifier }: { identifier: string }) {
 export function SubscriptionStatusCard({
   detailText,
   errorMessage,
+  refreshing = false,
   status,
 }: {
   detailText: string | null
   errorMessage?: string | null
+  refreshing?: boolean
   status: NormalizedSubscriptionStatus
 }) {
   return (
@@ -265,6 +267,17 @@ export function SubscriptionStatusCard({
         <Text selectable style={[typography.caption, { color: colors.tertiary }]}>
           {detailText}
         </Text>
+      ) : null}
+      {refreshing ? (
+        <View
+          accessibilityLiveRegion="polite"
+          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
+        >
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+            Updating usage…
+          </Text>
+        </View>
       ) : null}
       {errorMessage ? (
         <SettingsFeedback message={errorMessage} tone="error" />

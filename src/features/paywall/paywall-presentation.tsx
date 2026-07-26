@@ -222,12 +222,14 @@ export function UsageProgress({
   usage,
   isLoading,
   hasError,
+  statusText,
   isRetrying = false,
   onRetry,
 }: {
   usage: PaywallUsage | null
   isLoading: boolean
   hasError: boolean
+  statusText: string | null
   isRetrying?: boolean
   onRetry: () => void
 }) {
@@ -235,7 +237,7 @@ export function UsageProgress({
     return <UsageLoadingState />
   }
 
-  if (hasError || !usage) {
+  if (!usage) {
     return (
       <View
         accessibilityLiveRegion="polite"
@@ -333,6 +335,18 @@ export function UsageProgress({
       {usage.reservedText ? (
         <Text selectable style={[typography.caption, { color: colors.tertiary }]}>
           {usage.reservedText}
+        </Text>
+      ) : null}
+      {statusText ? (
+        <Text
+          accessibilityLiveRegion="polite"
+          selectable
+          style={[
+            typography.caption,
+            { color: hasError ? colors.warning : colors.onSurfaceVariant },
+          ]}
+        >
+          {statusText}
         </Text>
       ) : null}
     </View>
@@ -827,7 +841,7 @@ function UsageLoadingState() {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
         <ActivityIndicator color={colors.primary} />
         <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-          Loading AI recipe usage…
+          Checking your AI recipe allowance…
         </Text>
       </View>
       <SkeletonBlock height={8} />

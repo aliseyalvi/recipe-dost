@@ -296,6 +296,7 @@ export default function SettingsRoute() {
           <SettingsPanel featured>
             <SubscriptionStatusCard
               detailText={shouldShowManage ? subscriptionDetailText : null}
+              refreshing={aiAccessQuery.isFetching && Boolean(aiAccessQuery.data)}
               errorMessage={
                 aiAccessQuery.error
                   ? 'Could not load the latest AI access state. Use Refresh status to try again.'

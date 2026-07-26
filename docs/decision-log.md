@@ -1,5 +1,26 @@
 # Recipe Dost Decision Log
 
+## 2026-07-26
+
+- M24.3B-Q/F keeps the complete user-scoped
+  `['ai-access-state', authenticatedUserId]` snapshot during background
+  refresh. Incomplete `get-ai-access` data now fails validation instead of
+  defaulting missing Premium evidence or counters to Free/zero; refresh errors
+  continue to display the last confirmed allowance with a warning.
+- A newly created job may reserve one visible slot optimistically without
+  changing successful usage or Premium identity. Each terminal media-job
+  attempt triggers one authoritative access fetch keyed by `media_job_id`, so
+  failure releases and completion conversion settle from backend data.
+- Persisted failed AI jobs no longer select the blocking recipe-detail state.
+  Saved thumbnail/title/source metadata remains usable with an inline
+  “Retry AI recipe generation” card. Only an actively watched attempt that
+  transitions to failure gets one full failure presentation; reopening shows
+  the metadata screen and inline retry.
+- Retry fetches authoritative AI access, requires `canStartAiJob`, and uses a
+  synchronous in-flight guard before creating one new job. Existing failed job
+  history, Supabase/RevenueCat contracts, quotas, worker behavior, and schema
+  remain unchanged.
+
 ## 2026-07-23
 
 - M24.3A-R separates authoritative subscription identity from current generation

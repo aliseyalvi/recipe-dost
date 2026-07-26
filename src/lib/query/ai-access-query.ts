@@ -17,6 +17,20 @@ export function useAiAccessQuery(userId: string | null | undefined) {
   })
 }
 
+export function clearAiAccessForUser(
+  queryClient: QueryClient,
+  userId: string | null | undefined
+) {
+  if (!userId) {
+    return
+  }
+
+  queryClient.removeQueries({
+    queryKey: aiAccessQueryKey(userId),
+    exact: true,
+  })
+}
+
 export function fetchAuthoritativeAiAccess(
   queryClient: QueryClient,
   userId: string,

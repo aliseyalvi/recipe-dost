@@ -288,6 +288,7 @@ export type LegacyAnalyticsProperties = Partial<
     | 'requires_manual_caption'
     | 'result'
     | 'result_count'
+    | 'retry_attempt'
     | 'role'
     | 'row'
     | 'screen_name'

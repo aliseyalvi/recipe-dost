@@ -38,10 +38,14 @@ export function EditorialScreen({ children }: { children: ReactNode }) {
 export function EditorialHeader({
   usageLabel,
   isUsageLoading,
+  isUsageRefreshing,
+  hasUsageWarning,
   onUsagePress,
 }: {
   usageLabel: string | null
   isUsageLoading: boolean
+  isUsageRefreshing: boolean
+  hasUsageWarning: boolean
   onUsagePress: () => void
 }) {
   return (
@@ -57,6 +61,8 @@ export function EditorialHeader({
       <UsagePill
         label={usageLabel}
         isLoading={isUsageLoading}
+        isRefreshing={isUsageRefreshing}
+        hasWarning={hasUsageWarning}
         onPress={onUsagePress}
       />
       <Text selectable style={[typography.heading, { color: colors.onSurface }]}>
@@ -76,10 +82,14 @@ export function EditorialHeader({
 export function UsagePill({
   label,
   isLoading,
+  isRefreshing = false,
+  hasWarning = false,
   onPress,
 }: {
   label: string | null
   isLoading: boolean
+  isRefreshing?: boolean
+  hasWarning?: boolean
   onPress: () => void
 }) {
   return (
@@ -115,7 +125,11 @@ export function UsagePill({
         <ActivityIndicator size="small" color={colors.primary} />
       ) : (
         <>
-          <AppIcon name="usage" color={colors.primary} size={14} />
+          <AppIcon
+            name={hasWarning ? 'warning' : 'usage'}
+            color={hasWarning ? colors.warning : colors.primary}
+            size={14}
+          />
           <Text
             selectable={false}
             numberOfLines={1}
@@ -130,6 +144,9 @@ export function UsagePill({
           >
             {label ?? 'Unavailable'}
           </Text>
+          {isRefreshing ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : null}
         </>
       )}
     </Pressable>

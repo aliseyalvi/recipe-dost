@@ -14,7 +14,7 @@ import {
 } from '@/features/recipe-card/recipe-card-chrome'
 import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
 import { useAiAccessQuery } from '@/lib/query/ai-access-query'
-import type { AiAccessState } from '@/lib/api/ai-access'
+import { getAiAccessQuotaPresentation } from '@/features/ai-access/ai-access-state'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import {
   RecipeLibraryItem,
@@ -377,7 +377,11 @@ export default function LibraryRoute() {
     [activeMutation, invalidateRecipeManagement, queryClient, track, user?.id]
   )
 
-  const usageLabel = getLibraryUsageLabel(aiAccessQuery.data)
+  const usage = getAiAccessQuotaPresentation(aiAccessQuery.data, {
+    isPending: aiAccessQuery.isPending,
+    isFetching: aiAccessQuery.isFetching,
+    hasError: aiAccessQuery.isError,
+  })
   const emptyKind = getEmptyKind({
     hasLibraryItems,
     hasQuery,
@@ -418,8 +422,10 @@ export default function LibraryRoute() {
             hasQuery={hasQuery}
             selectedTab={selectedTab}
             resultCount={filteredItems.length}
-            usageLabel={usageLabel}
-            isUsageLoading={aiAccessQuery.isLoading && !aiAccessQuery.data}
+            usageLabel={usage.label}
+            isUsageLoading={usage.isInitialLoading}
+            isUsageRefreshing={usage.isRefreshing}
+            hasUsageWarning={usage.hasRefreshWarning}
             searchSuggestions={searchSuggestions}
             offlineMessage={
               hasBackgroundError
@@ -834,6 +840,8 @@ function LibraryHeader({
   resultCount,
   usageLabel,
   isUsageLoading,
+  isUsageRefreshing,
+  hasUsageWarning,
   searchSuggestions,
   offlineMessage,
   onUsagePress,
@@ -852,6 +860,8 @@ function LibraryHeader({
   resultCount: number
   usageLabel: string | null
   isUsageLoading: boolean
+  isUsageRefreshing: boolean
+  hasUsageWarning: boolean
   searchSuggestions: string[]
   offlineMessage: string | null
   onUsagePress: () => void
@@ -888,6 +898,8 @@ function LibraryHeader({
         <UsagePill
           label={usageLabel}
           isLoading={isUsageLoading}
+          isRefreshing={isUsageRefreshing}
+          hasWarning={hasUsageWarning}
           onPress={onUsagePress}
         />
       </View>
@@ -1821,20 +1833,6 @@ function getAiRecipeMinutes(item: RecipeLibraryItem) {
 
 function hasAiRecipe(item: RecipeLibraryItem) {
   return Boolean(item.latest_card || item.latest_media_job?.result_recipe_card_id)
-}
-
-function getLibraryUsageLabel(
-  access: AiAccessState | undefined
-) {
-  if (!access) {
-    return null
-  }
-
-  if (access.plan === 'premium' || access.premiumActive) {
-    return 'Premium'
-  }
-
-  return `${Math.max(0, access.freeRemainingToStart)} left`
 }
 
 function getEmptyKind({

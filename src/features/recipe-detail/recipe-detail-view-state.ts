@@ -30,7 +30,7 @@ export function getRecipeDetailViewState({
     mediaJob?.status === 'cancelled' ||
     mediaJob?.status === 'needs_caption'
   ) {
-    return 'failed'
+    return 'metadata_ready'
   }
 
   if (
