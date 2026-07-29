@@ -1,5 +1,16 @@
 # Recipe Dost Decision Log
 
+## 2026-07-29
+
+- M23.W10A keeps its unapplied queue-liveness migration in this canonical
+  Supabase-linked repository at
+  `supabase/migrations/202607290001_m23_w10a_queue_liveness.sql`. The timestamp
+  is unique and newer than the prior `20260722105123` migration.
+- The file was moved byte-for-byte from the worker repository; its atomic FIFO
+  claim, heartbeat/ownership fields, stale recovery, quota events, grants, and
+  SQL contents are unchanged. The migration was not applied and no live
+  service was called.
+
 ## 2026-07-26
 
 - M24.3B-Q/F keeps the complete user-scoped
