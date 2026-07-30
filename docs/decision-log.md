@@ -1,5 +1,32 @@
 # Recipe Dost Decision Log
 
+## 2026-07-30 — M24.7A frontend duration and retry contract integration
+
+- Added one pure frontend policy for explicit source-video/recipe duration
+  semantics, effective-limit precedence, dynamic duration copy, and shared CTA
+  states. The only compatibility fallback is 180 seconds in that module;
+  unknown duration stays eligible for backend evaluation, and ambiguous
+  historical `duration_seconds` is never promoted to recipe time.
+- Recipe-item/media-job reads now include the deployed explicit duration and
+  retry fields. Library duration chips use a clock for `recipe_total_minutes`
+  and a play icon for `source_video_duration_seconds`, with a stable empty
+  metadata-row height and no fabricated value.
+- Failed-job retry now calls authenticated `public.retry_media_job` with the
+  existing job ID. Accepted and `already_queued` results optimistically move
+  that same cached job to queued, then invalidate/refetch the established
+  media-job, recipe-item, recipe-card, Library/Home, AI-access, and usage keys.
+  Retry never calls `create-media-job`.
+- Removed frontend 120-second generation gates and user-visible two-minute
+  warnings from saved-recipe detail, legacy preview, media-job cards, and
+  media-job source metadata. Backend actual/max values drive dynamic warnings.
+- Validation passed: focused M24.7A + failed-job tests (29/29), `npm run
+  typecheck`, `npm run lint`, `npm test`, `npm run qa:static`, `npm run
+  functions:check`, and `git diff --check`. `npm run doctor` remains blocked by
+  the repository's pre-existing Expo SDK package-version drift (8 packages);
+  dependencies were intentionally unchanged.
+- No worker, migration, Edge Function, schema, queue, provider, Gemini, quota,
+  RevenueCat, EAS, or backend behavior changed, and no live service was called.
+
 ## 2026-07-30 — M23.W10C source and recipe duration separation
 
 - Migration `202607300001_m23_w10c_duration_semantics.sql` adds explicit

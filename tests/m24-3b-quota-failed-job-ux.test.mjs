@@ -209,7 +209,7 @@ test('current watched attempt failure presents full once, then inline', () => {
   assert.equal(reopened, 'inline')
 })
 
-test('retry checks authoritative access and creates exactly one new job', async () => {
+test('access-gated initial submission creates exactly one job', async () => {
   let accessCalls = 0
   let createCalls = 0
 
@@ -229,7 +229,7 @@ test('retry checks authoritative access and creates exactly one new job', async 
   assert.equal(createCalls, 1)
 })
 
-test('double-tap retry shares the synchronous start guard and creates one job', async () => {
+test('double-tap submission shares the synchronous start guard and creates one job', async () => {
   const guard = new MediaJobStartGuard()
   let createCalls = 0
   let release
@@ -265,7 +265,7 @@ test('failed job keeps thumbnail, title, and source metadata in the normal detai
   assert.match(detail, /<RecipeMetadataState[\s\S]*thumbnailUrl=\{liveThumbnailUrl\}/)
   assert.match(detail, /title=\{normalizedDisplayTitle\}/)
   assert.match(detail, /<InlineAiFailureCard/)
-  assert.match(detail, /Retry AI recipe generation/)
+  assert.match(detail, /Retry AI Recipe Generation/)
   assert.match(detail, /Continue viewing metadata/)
 })
 

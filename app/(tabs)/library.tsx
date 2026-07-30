@@ -5,6 +5,8 @@ import {
 import { EmptyRecipeLibraryCard } from '@/features/home/empty-recipe-library-card'
 import { UsagePill } from '@/features/home/editorial-layout'
 import { getMediaJobProcessingStage } from '@/features/media-jobs/processing-stage'
+import { resolveDurationSemantics } from '@/features/media-jobs/duration-policy'
+import { DurationChips } from '@/features/media-jobs/media-job-source-metadata'
 import { getPaywallHref } from '@/features/paywall/paywall-model'
 import {
   AiRecipeBadge,
@@ -1407,6 +1409,7 @@ function LibraryRecipeImageCard({
         </Text>
         <View
           style={{
+            minHeight: 28,
             flexDirection: 'row',
             alignItems: 'center',
             flexWrap: 'wrap',
@@ -1424,9 +1427,12 @@ function LibraryRecipeImageCard({
               accent
             />
           ) : null}
-          {metadata.time ? (
-            <RecipeMetadataChip icon="clock" label={metadata.time} />
-          ) : null}
+          <DurationChips
+            recipeTotalMinutes={
+              hasAiRecipe(item) ? metadata.recipeTotalMinutes : null
+            }
+            sourceVideoDurationSeconds={metadata.sourceVideoDurationSeconds}
+          />
         </View>
       </View>
     </Pressable>
@@ -1592,7 +1598,11 @@ function getFilteredLibraryItems({
 
 function itemMatchesSearchQuery(item: RecipeLibraryItem, normalizedQuery: string) {
   if (normalizedQuery === 'quick') {
-    const totalMinutes = getAiRecipeMinutes(item)
+    const totalMinutes =
+      typeof item.recipe_total_minutes === 'number' &&
+      item.recipe_total_minutes > 0
+        ? item.recipe_total_minutes
+        : null
 
     if (totalMinutes !== null && totalMinutes <= 30) {
       return true
@@ -1801,13 +1811,11 @@ function getLibrarySummary(item: RecipeLibraryItem) {
 function getCardMetadata(item: RecipeLibraryItem) {
   const platform = getPlatformLabel(item.platform)
   const creator = getRecipeCreatorLabel(item)
-  const aiMinutes = getAiRecipeMinutes(item)
-  const time =
-    aiMinutes !== null
-      ? formatMinutes(aiMinutes)
-      : item.duration_seconds && item.duration_seconds > 0
-        ? formatDurationSeconds(item.duration_seconds)
-        : null
+  const durations = resolveDurationSemantics(item, {
+    actual_duration_seconds:
+      item.latest_media_job?.source_metadata.actual_duration_seconds,
+    media_duration_seconds: item.latest_media_job?.media_duration_seconds,
+  })
 
   return {
     platform,
@@ -1815,20 +1823,8 @@ function getCardMetadata(item: RecipeLibraryItem) {
       creator.toLocaleLowerCase() === platform.toLocaleLowerCase()
         ? null
         : truncateText(creator, 24),
-    time,
+    ...durations,
   }
-}
-
-function getAiRecipeMinutes(item: RecipeLibraryItem) {
-  if (!item.latest_card) {
-    return null
-  }
-
-  const minutes =
-    (item.latest_card.time.prep_time_minutes ?? 0) +
-    (item.latest_card.time.cook_time_minutes ?? 0)
-
-  return minutes > 0 ? minutes : null
 }
 
 function hasAiRecipe(item: RecipeLibraryItem) {
@@ -1903,24 +1899,6 @@ function getPlatformLabel(platform: string | null) {
     default:
       return 'Saved Link'
   }
-}
-
-function formatDurationSeconds(seconds: number) {
-  const roundedSeconds = Math.max(1, Math.round(seconds))
-  const minutes = Math.floor(roundedSeconds / 60)
-  const remainder = roundedSeconds % 60
-
-  return minutes > 0 ? `${minutes}m ${remainder ? `${remainder}s` : ''}`.trim() : `${remainder}s`
-}
-
-function formatMinutes(minutes: number) {
-  if (minutes < 60) {
-    return `${minutes}m`
-  }
-
-  const hours = Math.floor(minutes / 60)
-  const remainder = minutes % 60
-  return `${hours}h${remainder ? ` ${remainder}m` : ''}`
 }
 
 function formatLabel(value: string) {

@@ -4,6 +4,11 @@ import { AppBadge } from '@/ui/app-badge'
 import { Button } from '@/ui/button'
 import { Card } from '@/ui/card'
 import { Image, Text, View } from 'react-native'
+import {
+  getDurationLimitMessage,
+  getEffectiveSourceDurationLimitSeconds,
+  selectMediaCtaState,
+} from './duration-policy'
 import { MediaJobSourceMetadataSummary } from './media-job-source-metadata'
 
 type Props = {
@@ -31,9 +36,21 @@ export function MediaJobCard({
     job.status === 'needs_caption'
   const isCompleted = job.status === 'completed'
   const isCompletedWithoutResult = isCompleted && !job.result_recipe_card_id
-  const isOverDurationLimit =
-    typeof job.source_metadata.duration_seconds === 'number' &&
-    job.source_metadata.duration_seconds > 120
+  const sourceVideoDurationSeconds =
+    job.source_metadata.actual_duration_seconds ??
+    job.media_duration_seconds ??
+    job.source_metadata.duration_seconds
+  const ctaState = selectMediaCtaState({
+    jobId: job.id,
+    jobStatus: job.status,
+    retryable: job.source_metadata.retryable,
+    retryBlockReason: job.source_metadata.retry_block_reason,
+    sourceVideoDurationSeconds,
+    maxDurationSeconds: job.source_metadata.max_duration_seconds,
+    maxSourceVideoDurationSeconds:
+      job.source_metadata.max_source_video_duration_seconds,
+    hasRecipeCard: Boolean(job.result_recipe_card_id),
+  })
 
   return (
     <Card tone={needsAttention || isCompletedWithoutResult ? 'muted' : 'warm'}>
@@ -94,7 +111,7 @@ export function MediaJobCard({
               : 'Video analysis'}
           </Text>
           <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-            {getMediaJobMessage(job)}
+            {getMediaJobMessage(job, ctaState.message)}
           </Text>
           <MediaJobSourceMetadataSummary
             metadata={job.source_metadata}
@@ -138,9 +155,9 @@ export function MediaJobCard({
         <View style={{ gap: spacing.sm }}>
           {onRetry ? (
             <Button
-              label="Retry Analysis"
+              label="Retry AI Recipe Generation"
               fullWidth
-              disabled={isOverDurationLimit}
+              disabled={ctaState.kind !== 'retry'}
               onPress={onRetry}
             />
           ) : null}
@@ -200,9 +217,23 @@ function getMediaJobStatusLabel(status: MediaJob['status']) {
   }
 }
 
-function getMediaJobMessage(job: MediaJob) {
+function getMediaJobMessage(job: MediaJob, ctaMessage: string | null) {
   if (job.error_code === 'video_duration_exceeded') {
-    return 'This video is over the 2-minute analysis limit. Save the link or paste the caption instead.'
+    const actualDuration =
+      job.source_metadata.actual_duration_seconds ??
+      job.media_duration_seconds ??
+      job.source_metadata.duration_seconds
+    const limit = getEffectiveSourceDurationLimitSeconds({
+      maxDurationSeconds: job.source_metadata.max_duration_seconds,
+      maxSourceVideoDurationSeconds:
+        job.source_metadata.max_source_video_duration_seconds,
+    })
+
+    return getDurationLimitMessage(actualDuration, limit).body
+  }
+
+  if (ctaMessage && job.status === 'failed') {
+    return ctaMessage
   }
 
   if (job.status === 'completed' && !job.result_recipe_card_id) {

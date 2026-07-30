@@ -113,8 +113,13 @@ export type MediaJobSourceMetadata = {
   resolver?: string
   author_username?: string
   duration_seconds?: number
+  actual_duration_seconds?: number
   is_too_long?: boolean
   max_duration_seconds?: number
+  max_source_video_duration_seconds?: number
+  duration_validation_source?: string
+  retryable?: boolean
+  retry_block_reason?: string
   secondary_recipe_language_code?: string
   secondary_recipe_language_instruction?: string
   uploaded_thumbnail_url?: string
@@ -138,10 +143,18 @@ type MediaJobRow = Pick<
   | 'progress'
   | 'error_code'
   | 'error_message'
+  | 'media_duration_seconds'
   | 'thumbnail_url'
   | 'result_recipe_card_id'
+  | 'retry_requested_at'
+  | 'user_retry_count'
   | 'created_at'
   | 'updated_at'
+>
+
+type MediaJobEventRow = Pick<
+  Database['public']['Tables']['media_job_events']['Row'],
+  'media_job_id' | 'metadata' | 'created_at'
 >
 
 export type MediaJob = Omit<MediaJobRow, 'status' | 'source_metadata'> & {
@@ -180,6 +193,9 @@ type CreateMediaJobResponse =
       }
     }
 
+export type RetryMediaJobResult =
+  Database['public']['Functions']['retry_media_job']['Returns'][number]
+
 type GenerateRecipeCardResponse =
   | {
       ok: true
@@ -210,6 +226,11 @@ export type SavedRecipeItem = Pick<
   | 'description'
   | 'thumbnail_url'
   | 'duration_seconds'
+  | 'source_video_duration_seconds'
+  | 'recipe_prep_minutes'
+  | 'recipe_cook_minutes'
+  | 'recipe_total_minutes'
+  | 'duration_semantics_version'
   | 'user_note'
   | 'pasted_caption'
   | 'manual_ingredients'
@@ -377,6 +398,11 @@ type RecipeLibraryItemRow = Pick<
   | 'description'
   | 'thumbnail_url'
   | 'duration_seconds'
+  | 'source_video_duration_seconds'
+  | 'recipe_prep_minutes'
+  | 'recipe_cook_minutes'
+  | 'recipe_total_minutes'
+  | 'duration_semantics_version'
   | 'metadata_status'
   | 'source_metadata'
   | 'user_note'
@@ -416,7 +442,18 @@ export type RecipeLibraryCard = Omit<
   tags: string[]
 }
 
-export type RecipeLibraryItem = RecipeLibraryItemRow & {
+type ExplicitRecipeDurationFields =
+  | 'source_video_duration_seconds'
+  | 'recipe_prep_minutes'
+  | 'recipe_cook_minutes'
+  | 'recipe_total_minutes'
+  | 'duration_semantics_version'
+
+export type RecipeLibraryItem = Omit<
+  RecipeLibraryItemRow,
+  ExplicitRecipeDurationFields
+> &
+  Partial<Pick<RecipeLibraryItemRow, ExplicitRecipeDurationFields>> & {
   latest_card: RecipeLibraryCard | null
   latest_media_job: MediaJob | null
 }
@@ -669,6 +706,33 @@ export async function createMediaJob({
   return data.data
 }
 
+export async function retryMediaJob(jobId: string) {
+  const { data, error } = await supabase.rpc('retry_media_job', {
+    p_job_id: jobId,
+  })
+
+  if (error) {
+    throw new RecipeApiError({
+      code: error.code,
+      message: getFriendlyApiErrorMessage(
+        error,
+        'Could not retry this AI recipe. Please try again.'
+      ),
+    })
+  }
+
+  const result = data?.[0]
+
+  if (!result) {
+    throw new RecipeApiError({
+      code: 'unexpected_media_job_retry_error',
+      message: 'Could not retry this AI recipe. Please try again.',
+    })
+  }
+
+  return result
+}
+
 export async function getMediaJob(mediaJobId: string) {
   const {
     data: { user },
@@ -697,7 +761,12 @@ export async function getMediaJob(mediaJobId: string) {
     )
   }
 
-  return normalizeMediaJob(data satisfies MediaJobRow)
+  const failureMetadata = await getLatestMediaJobFailureMetadata([mediaJobId])
+
+  return normalizeMediaJob(
+    data satisfies MediaJobRow,
+    failureMetadata.get(mediaJobId)
+  )
 }
 
 export async function getLatestMediaJobForRecipe(recipeItemId: string) {
@@ -730,7 +799,16 @@ export async function getLatestMediaJobForRecipe(recipeItemId: string) {
     )
   }
 
-  return data ? normalizeMediaJob(data satisfies MediaJobRow) : null
+  if (!data) {
+    return null
+  }
+
+  const failureMetadata = await getLatestMediaJobFailureMetadata([data.id])
+
+  return normalizeMediaJob(
+    data satisfies MediaJobRow,
+    failureMetadata.get(data.id)
+  )
 }
 
 export async function updateSavedRecipeCaption({
@@ -911,7 +989,7 @@ export async function saveRecipeItem({
     .eq('id', savedItem.id)
     .eq('user_id', userId)
     .select(
-      'id, source_url, platform, title, description, thumbnail_url, duration_seconds, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, metadata_status, source_metadata, created_at, updated_at'
+      'id, source_url, platform, title, description, thumbnail_url, duration_seconds, source_video_duration_seconds, recipe_prep_minutes, recipe_cook_minutes, recipe_total_minutes, duration_semantics_version, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, metadata_status, source_metadata, created_at, updated_at'
     )
     .single()
 
@@ -1067,7 +1145,7 @@ export async function getSavedRecipeItem(recipeId: string) {
   const { data, error } = await supabase
     .from('recipe_items')
     .select(
-      'id, source_url, platform, title, description, thumbnail_url, duration_seconds, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, metadata_status, source_metadata, is_favorite, created_at, updated_at'
+      'id, source_url, platform, title, description, thumbnail_url, duration_seconds, source_video_duration_seconds, recipe_prep_minutes, recipe_cook_minutes, recipe_total_minutes, duration_semantics_version, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, metadata_status, source_metadata, is_favorite, created_at, updated_at'
     )
     .eq('id', recipeId)
     .is('deleted_at', null)
@@ -1103,7 +1181,7 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
   let recipeItemsQuery = supabase
     .from('recipe_items')
     .select(
-      'id, source_url, platform, title, description, thumbnail_url, duration_seconds, metadata_status, source_metadata, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, is_favorite, created_at, updated_at'
+      'id, source_url, platform, title, description, thumbnail_url, duration_seconds, source_video_duration_seconds, recipe_prep_minutes, recipe_cook_minutes, recipe_total_minutes, duration_semantics_version, metadata_status, source_metadata, user_note, pasted_caption, manual_ingredients, meal_type, cuisine, is_favorite, created_at, updated_at'
     )
     .eq('user_id', user.id)
     .is('deleted_at', null)
@@ -1160,6 +1238,7 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
 
   const latestCardByRecipeId = new Map<string, RecipeLibraryCard>()
   const latestJobByRecipeId = new Map<string, MediaJob>()
+  const latestJobRowsByRecipeId = new Map<string, MediaJobRow>()
 
   for (const row of recipeCards satisfies RecipeLibraryCardRow[]) {
     if (!latestCardByRecipeId.has(row.recipe_id)) {
@@ -1168,9 +1247,23 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
   }
 
   for (const row of (mediaJobs ?? []) as MediaJobRow[]) {
-    if (row.recipe_item_id && !latestJobByRecipeId.has(row.recipe_item_id)) {
-      latestJobByRecipeId.set(row.recipe_item_id, normalizeMediaJob(row))
+    if (
+      row.recipe_item_id &&
+      !latestJobRowsByRecipeId.has(row.recipe_item_id)
+    ) {
+      latestJobRowsByRecipeId.set(row.recipe_item_id, row)
     }
+  }
+
+  const failureMetadata = await getLatestMediaJobFailureMetadata(
+    [...latestJobRowsByRecipeId.values()].map((row) => row.id)
+  )
+
+  for (const [recipeItemId, row] of latestJobRowsByRecipeId) {
+    latestJobByRecipeId.set(
+      recipeItemId,
+      normalizeMediaJob(row, failureMetadata.get(row.id))
+    )
   }
 
   return items.map((item): RecipeLibraryItem => ({
@@ -1181,7 +1274,7 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
 }
 
 const MEDIA_JOB_SELECT =
-  'id, recipe_item_id, platform, ai_provider, status, source_mode, source_metadata, progress, error_code, error_message, thumbnail_url, result_recipe_card_id, created_at, updated_at'
+  'id, recipe_item_id, platform, ai_provider, status, source_mode, source_metadata, progress, error_code, error_message, media_duration_seconds, thumbnail_url, result_recipe_card_id, retry_requested_at, user_retry_count, created_at, updated_at'
 
 async function getActiveRecipeManagementItem({
   recipeItemId,
@@ -1209,13 +1302,95 @@ async function getActiveRecipeManagementItem({
   return data
 }
 
-function normalizeMediaJob(row: MediaJobRow): MediaJob {
+function normalizeMediaJob(
+  row: MediaJobRow,
+  failureMetadata?: Partial<MediaJobSourceMetadata>
+): MediaJob {
   return {
     ...row,
     status: getMediaJobStatus(row.status),
-    source_metadata: normalizeMediaJobSourceMetadata(row.source_metadata),
+    source_metadata: {
+      ...normalizeMediaJobSourceMetadata(row.source_metadata),
+      ...failureMetadata,
+    },
     progress: Math.min(100, Math.max(0, row.progress)),
   }
+}
+
+async function getLatestMediaJobFailureMetadata(jobIds: string[]) {
+  const metadataByJobId = new Map<
+    string,
+    Partial<MediaJobSourceMetadata>
+  >()
+
+  if (jobIds.length === 0) {
+    return metadataByJobId
+  }
+
+  const { data } = await supabase
+    .from('media_job_events')
+    .select('media_job_id, metadata, created_at')
+    .in('media_job_id', jobIds)
+    .in('event_type', [
+      'queue_job_failed',
+      'unified_extractor_failed',
+      'video_too_long',
+    ])
+    .order('created_at', { ascending: false })
+
+  for (const row of (data ?? []) as MediaJobEventRow[]) {
+    if (metadataByJobId.has(row.media_job_id)) {
+      continue
+    }
+
+    metadataByJobId.set(
+      row.media_job_id,
+      normalizeMediaJobFailureMetadata(row.metadata)
+    )
+  }
+
+  return metadataByJobId
+}
+
+function normalizeMediaJobFailureMetadata(
+  value: Json
+): Partial<MediaJobSourceMetadata> {
+  if (!isRecord(value)) {
+    return {}
+  }
+
+  const result: Partial<MediaJobSourceMetadata> = {}
+  const actualDurationSeconds = getNumberValue(
+    value.actual_duration_seconds ?? value.actualDurationSeconds
+  )
+  const maxDurationSeconds = getNumberValue(
+    value.max_duration_seconds ?? value.maxDurationSeconds
+  )
+  const durationValidationSource = getStringValue(
+    value.duration_validation_source ?? value.durationValidationSource
+  )
+  const retryable = getBooleanValue(value.retryable)
+  const retryBlockReason = getStringValue(
+    value.retry_block_reason ?? value.retryBlockReason
+  )
+
+  if (actualDurationSeconds !== undefined) {
+    result.actual_duration_seconds = actualDurationSeconds
+  }
+  if (maxDurationSeconds !== undefined) {
+    result.max_duration_seconds = maxDurationSeconds
+  }
+  if (durationValidationSource !== undefined) {
+    result.duration_validation_source = durationValidationSource
+  }
+  if (retryable !== undefined) {
+    result.retryable = retryable
+  }
+  if (retryBlockReason !== undefined) {
+    result.retry_block_reason = retryBlockReason
+  }
+
+  return result
 }
 
 function normalizeMediaJobSourceMetadata(
@@ -1243,9 +1418,23 @@ function normalizeMediaJobSourceMetadata(
     resolver: getStringValue(value.resolver),
     author_username: getCreatorMetadataValue(value),
     duration_seconds: getNumberValue(value.duration_seconds),
+    actual_duration_seconds: getNumberValue(
+      value.actual_duration_seconds ?? value.actualDurationSeconds
+    ),
     is_too_long: getBooleanValue(value.is_too_long ?? value.isTooLong),
     max_duration_seconds: getNumberValue(
       value.max_duration_seconds ?? value.maxDurationSeconds
+    ),
+    max_source_video_duration_seconds: getNumberValue(
+      value.max_source_video_duration_seconds ??
+        value.maxSourceVideoDurationSeconds
+    ),
+    duration_validation_source: getStringValue(
+      value.duration_validation_source ?? value.durationValidationSource
+    ),
+    retryable: getBooleanValue(value.retryable),
+    retry_block_reason: getStringValue(
+      value.retry_block_reason ?? value.retryBlockReason
     ),
     secondary_recipe_language_code: getStringValue(
       value.secondary_recipe_language_code

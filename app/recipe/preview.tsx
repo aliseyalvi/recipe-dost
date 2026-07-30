@@ -8,6 +8,11 @@ import {
 import { PlatformBadge } from '@/features/recipe-draft/platform-badge'
 import { useRecipeDraftStore } from '@/features/recipe-draft/recipe-draft-store'
 import { RecipeMealType } from '@/features/recipe-draft/types'
+import {
+  getDurationLimitMessage,
+  getEffectiveSourceDurationLimitSeconds,
+} from '@/features/media-jobs/duration-policy'
+import { DurationChips } from '@/features/media-jobs/media-job-source-metadata'
 import { saveRecipeItem } from '@/lib/api/recipes'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
@@ -87,8 +92,13 @@ export default function RecipePreviewRoute() {
     : null
   const durationSeconds =
     typeof draft.duration_seconds === 'number' ? draft.duration_seconds : null
+  const maxDurationSeconds = getEffectiveSourceDurationLimitSeconds({})
   const isOverDurationLimit =
-    typeof durationSeconds === 'number' && durationSeconds > 120
+    typeof durationSeconds === 'number' &&
+    durationSeconds > maxDurationSeconds
+  const durationLimitCopy = isOverDurationLimit
+    ? getDurationLimitMessage(durationSeconds, maxDurationSeconds)
+    : null
   const needsAccuracyInput =
     isUnsupportedVideoPlatform(draft.platform) &&
     !pastedCaption.trim() &&
@@ -221,37 +231,17 @@ export default function RecipePreviewRoute() {
               Creator: {draft.author_username}
             </Text>
           ) : null}
-          {durationSeconds !== null ? (
-            <Text
-              selectable
-              style={[
-                typography.caption,
-                { color: isOverDurationLimit ? colors.warning : colors.textMuted },
-              ]}
-            >
-              Duration: {formatDuration(durationSeconds)}
-            </Text>
-          ) : null}
+          <DurationChips sourceVideoDurationSeconds={durationSeconds} />
         </View>
-        <Text
-          selectable
-          style={[
-            typography.caption,
-            { color: isOverDurationLimit ? colors.warning : colors.textMuted },
-          ]}
-        >
-          Video analysis supports clips up to 2 minutes.
-        </Text>
       </Card>
 
-      {isOverDurationLimit ? (
+      {durationLimitCopy ? (
         <Card tone="muted">
           <Text selectable style={[typography.heading, { color: colors.warning }]}>
-            This video may be too long to analyze
+            {durationLimitCopy.title}
           </Text>
           <Text selectable style={[typography.body, { color: colors.text }]}>
-            Save the link if you want to keep it, but AI video analysis works
-            best for clips up to 2 minutes.
+            {durationLimitCopy.body}
           </Text>
         </Card>
       ) : null}
@@ -373,14 +363,6 @@ export default function RecipePreviewRoute() {
 function sanitizeOptionalText(value: string) {
   const trimmedValue = value.trim()
   return trimmedValue.length > 0 ? trimmedValue : undefined
-}
-
-function formatDuration(value: number) {
-  const totalSeconds = Math.max(0, Math.round(value))
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-
-  return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`
 }
 
 function isUnsupportedVideoPlatform(platform: string) {
