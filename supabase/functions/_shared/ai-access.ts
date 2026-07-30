@@ -315,7 +315,10 @@ function buildActiveAiJobsCountQuery(
     .from("media_jobs")
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
-    .in("status", ACTIVE_AI_JOB_STATUSES);
+    .in("status", ACTIVE_AI_JOB_STATUSES)
+    // A user-requested retry is reservation-free only while it waits in the
+    // W10A queue. Atomic claim changes it to resolving, which reserves again.
+    .or("status.neq.queued,retry_requested_at.is.null");
 }
 
 function buildMonthlyAccess({

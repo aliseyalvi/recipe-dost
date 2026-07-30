@@ -1,5 +1,28 @@
 # Recipe Dost Decision Log
 
+## 2026-07-29 — M23.W10B atomic user-owned media-job retry
+
+- `public.retry_media_job(p_job_id uuid)` is the only user retry transition. It
+  locks the existing `media_jobs` row, checks `auth.uid()` ownership, result,
+  status, lease freshness, retry limit, and an explicit recoverable-error
+  allowlist, then requeues the same row and inserts one safe retry event in the
+  same transaction. Public/anonymous execution is revoked.
+- Only `user_retry_count` and `retry_requested_at` are added. User retries do
+  not consume `processing_attempt_count`; source URL/platform, source metadata,
+  duration/size, resolver identity, recipe ownership, and valid thumbnails are
+  preserved. `video_duration_exceeded` and unknown errors remain non-retryable.
+- Quota remains status-derived. A retried row is reservation-free only while it
+  is `queued` with `retry_requested_at`; the unchanged W10A atomic claim moves
+  it to `resolving`, restoring one active reservation. Failed/released state
+  never decrements successful generation usage.
+- Offline validation passed TypeScript, all configured Edge checks, the full
+  126-test app suite, 102 migration/compliance/static checks, Deno format/lint,
+  migration filename uniqueness, secret-pattern review, and diff checks.
+- The migration is
+  `supabase/migrations/202607290002_m23_w10b_media_job_retry.sql`. It was not
+  applied, and no Supabase, Gemini, provider, Sentry, Render, deployment,
+  frontend, or raw-media operation was performed.
+
 ## 2026-07-29
 
 - M23.W10A keeps its unapplied queue-liveness migration in this canonical
