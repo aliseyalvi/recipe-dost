@@ -1,5 +1,28 @@
 # Recipe Dost Decision Log
 
+## 2026-07-30 — M23.W10C source and recipe duration separation
+
+- Migration `202607300001_m23_w10c_duration_semantics.sql` adds explicit
+  `recipe_items` source-video and recipe prep/cook/total fields with bounded
+  constraints and semantics version 1. Existing
+  `media_jobs.media_duration_seconds` remains the authoritative per-job source
+  duration.
+- Recipe-card insert/update triggers preserve a valid explicit total or derive
+  total only when both valid prep and cook values exist. The compatibility
+  `recipe_items.duration_seconds` field is recipe-total seconds only; ambiguous
+  historical values become null rather than being guessed.
+- Source-video backfill uses only worker-written media-job duration or source
+  metadata carrying an allowlisted validation source. Metadata refresh now
+  writes `source_video_duration_seconds` and never overwrites the legacy recipe
+  duration field.
+- `create-media-job` no longer enforces a competing Edge hardcode; worker JSON
+  configuration is authoritative. The replaced authenticated W10B RPC permits
+  `video_duration_exceeded` retry only when locked job state or a server-written
+  event proves 1–180 seconds. Ownership, idempotency, retry limit, quota release,
+  same-row queue transition, and grants are unchanged.
+- No frontend UI, quota, provider, media, Gemini, queue-liveness, wake, or
+  resolver behavior was changed.
+
 ## 2026-07-29 — M23.W10B atomic user-owned media-job retry
 
 - `public.retry_media_job(p_job_id uuid)` is the only user retry transition. It

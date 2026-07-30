@@ -35,6 +35,7 @@ type RecipeItem = {
   pasted_caption: string | null;
   manual_ingredients: string | null;
   duration_seconds: number | null;
+  source_video_duration_seconds: number | null;
   source_metadata: Json;
 };
 
@@ -177,8 +178,6 @@ const corsHeaders = {
   "Access-Control-Max-Age": "86400",
 };
 
-const MAX_AI_VIDEO_DURATION_SECONDS = 120;
-
 const ACTIVE_MEDIA_JOB_STATUSES = [
   "queued",
   "processing",
@@ -293,7 +292,7 @@ async function handleCreateMediaJobRequest(request: Request) {
     const recipeResult = await clients.userClient
       .from("recipe_items")
       .select(
-        "id, user_id, source_url, platform, pasted_caption, manual_ingredients, duration_seconds, source_metadata",
+        "id, user_id, source_url, platform, pasted_caption, manual_ingredients, duration_seconds, source_video_duration_seconds, source_metadata",
       )
       .eq("id", input.recipe_item_id)
       .eq("user_id", user.id)
@@ -311,14 +310,6 @@ async function handleCreateMediaJobRequest(request: Request) {
     sourceUrl = normalizeUrl(recipeItem.source_url);
     platform = normalizePlatform(recipeItem.platform) ??
       detectPlatformFromUrl(recipeItem.source_url);
-  }
-
-  if (recipeItem && isRecipeTooLong(recipeItem)) {
-    return errorResponse(
-      "video_duration_exceeded",
-      "This video is longer than 2 minutes. Recipe Dost currently supports videos up to 2 minutes in beta.",
-      422,
-    );
   }
 
   if (!sourceUrl || !platform) {
@@ -485,7 +476,8 @@ function getAccessBlockError(access: AiGenerationAccess): {
 
     return {
       code: "active_ai_job_limit_reached",
-      message: "An AI recipe is already being generated. Please wait for it to finish.",
+      message:
+        "An AI recipe is already being generated. Please wait for it to finish.",
     };
   }
 
@@ -499,7 +491,8 @@ function getAccessBlockError(access: AiGenerationAccess): {
   if (access.freeActiveReserved > 0) {
     return {
       code: "active_ai_job_limit_reached",
-      message: "An AI recipe is already being generated. Please wait for it to finish.",
+      message:
+        "An AI recipe is already being generated. Please wait for it to finish.",
     };
   }
 
@@ -839,26 +832,6 @@ function getSourceMode(
   }
 
   return "text_only";
-}
-
-function isRecipeTooLong(recipeItem: RecipeItem) {
-  if (
-    typeof recipeItem.duration_seconds === "number" &&
-    recipeItem.duration_seconds > MAX_AI_VIDEO_DURATION_SECONDS
-  ) {
-    return true;
-  }
-
-  const sourceMetadata = isRecord(recipeItem.source_metadata)
-    ? recipeItem.source_metadata
-    : {};
-  const metadataDuration = getNumber(sourceMetadata.duration_seconds);
-  const maxDuration =
-    getNumber(sourceMetadata.max_duration_seconds) ??
-      MAX_AI_VIDEO_DURATION_SECONDS;
-
-  return sourceMetadata.is_too_long === true ||
-    (metadataDuration !== null && metadataDuration > maxDuration);
 }
 
 async function triggerWorker(
