@@ -4,6 +4,10 @@ import {
   RecipePlatform,
 } from '@/features/recipe-draft/types'
 import type { SecondaryRecipeLanguageCode } from '@/features/settings/secondary-recipe-language'
+import {
+  CANONICAL_ACTIVE_MEDIA_JOB_STATUSES,
+  isCanonicalActiveMediaJobStatus,
+} from '@/features/media-jobs/media-job-list-policy'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import { supabase } from '@/lib/supabase/client'
 import { Database, Json } from '@/types/supabase'
@@ -148,6 +152,8 @@ type MediaJobRow = Pick<
   | 'result_recipe_card_id'
   | 'retry_requested_at'
   | 'user_retry_count'
+  | 'started_at'
+  | 'completed_at'
   | 'created_at'
   | 'updated_at'
 >
@@ -161,6 +167,20 @@ export type MediaJob = Omit<MediaJobRow, 'status' | 'source_metadata'> & {
   status: MediaJobStatus
   source_metadata: MediaJobSourceMetadata
 }
+
+export type ActiveMediaJob = Pick<
+  MediaJob,
+  | 'id'
+  | 'recipe_item_id'
+  | 'platform'
+  | 'status'
+  | 'source_metadata'
+  | 'thumbnail_url'
+  | 'result_recipe_card_id'
+  | 'started_at'
+  | 'created_at'
+  | 'updated_at'
+>
 
 type CreateMediaJobResponse =
   | {
@@ -811,6 +831,42 @@ export async function getLatestMediaJobForRecipe(recipeItemId: string) {
   )
 }
 
+export async function getActiveMediaJobs(limit = 10) {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    throw new Error(
+      getFriendlyApiErrorMessage(
+        userError,
+        'Could not load active AI recipe jobs.'
+      )
+    )
+  }
+
+  const boundedLimit = Math.min(20, Math.max(1, Math.round(limit)))
+  const { data, error } = await supabase
+    .from('media_jobs')
+    .select(ACTIVE_MEDIA_JOB_SELECT)
+    .eq('user_id', user.id)
+    .in('status', [...CANONICAL_ACTIVE_MEDIA_JOB_STATUSES])
+    .order('created_at', { ascending: true })
+    .order('id', { ascending: true })
+    .limit(boundedLimit)
+
+  if (error) {
+    throw new Error(
+      getFriendlyApiErrorMessage(error, 'Could not load active AI recipe jobs.')
+    )
+  }
+
+  return (data as ActiveMediaJobRow[])
+    .map(normalizeActiveMediaJob)
+    .filter((job): job is ActiveMediaJob => job !== null)
+}
+
 export async function updateSavedRecipeCaption({
   recipeItemId,
   pastedCaption,
@@ -1274,7 +1330,24 @@ export async function getRecipeLibrary(params: RecipeLibraryParams = {}) {
 }
 
 const MEDIA_JOB_SELECT =
-  'id, recipe_item_id, platform, ai_provider, status, source_mode, source_metadata, progress, error_code, error_message, media_duration_seconds, thumbnail_url, result_recipe_card_id, retry_requested_at, user_retry_count, created_at, updated_at'
+  'id, recipe_item_id, platform, ai_provider, status, source_mode, source_metadata, progress, error_code, error_message, media_duration_seconds, thumbnail_url, result_recipe_card_id, retry_requested_at, user_retry_count, started_at, completed_at, created_at, updated_at'
+
+const ACTIVE_MEDIA_JOB_SELECT =
+  'id, recipe_item_id, platform, status, source_metadata, thumbnail_url, result_recipe_card_id, started_at, created_at, updated_at'
+
+type ActiveMediaJobRow = Pick<
+  MediaJobRow,
+  | 'id'
+  | 'recipe_item_id'
+  | 'platform'
+  | 'status'
+  | 'source_metadata'
+  | 'thumbnail_url'
+  | 'result_recipe_card_id'
+  | 'started_at'
+  | 'created_at'
+  | 'updated_at'
+>
 
 async function getActiveRecipeManagementItem({
   recipeItemId,
@@ -1314,6 +1387,18 @@ function normalizeMediaJob(
       ...failureMetadata,
     },
     progress: Math.min(100, Math.max(0, row.progress)),
+  }
+}
+
+function normalizeActiveMediaJob(row: ActiveMediaJobRow): ActiveMediaJob | null {
+  if (!isCanonicalActiveMediaJobStatus(row.status)) {
+    return null
+  }
+
+  return {
+    ...row,
+    status: row.status,
+    source_metadata: normalizeMediaJobSourceMetadata(row.source_metadata),
   }
 }
 

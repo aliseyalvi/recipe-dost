@@ -315,6 +315,17 @@ export default function SavedRecipeRoute() {
         status: mediaJob.status,
       })
     }
+    if (isTerminalMediaJob(mediaJob)) {
+      void queryClient.invalidateQueries({
+        queryKey: ['active-media-jobs'],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: ['recent-recipes'],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: ['recipe-library'],
+      })
+    }
     const failurePresentation = getFailedJobPresentation({
       jobId: mediaJob.id,
       status: mediaJob.status,
@@ -604,6 +615,7 @@ export default function SavedRecipeRoute() {
   }
 
   const invalidateRecipeManagement = () => {
+    void queryClient.invalidateQueries({ queryKey: ['active-media-jobs'] })
     void queryClient.invalidateQueries({ queryKey: ['recent-recipes'] })
     void queryClient.invalidateQueries({ queryKey: ['recipe-library'] })
     void queryClient.invalidateQueries({ queryKey: ['recipe-item', recipe.id] })
@@ -824,6 +836,9 @@ export default function SavedRecipeRoute() {
           retry_attempt: false,
         })
         void queryClient.invalidateQueries({
+          queryKey: ['active-media-jobs'],
+        })
+        void queryClient.invalidateQueries({
           queryKey: ['recipe-item', recipe.id],
         })
         if (createdJob.media_job?.result_recipe_card_id) {
@@ -1027,6 +1042,9 @@ export default function SavedRecipeRoute() {
         await Promise.all([
           queryClient.invalidateQueries({
             queryKey: ['media-job', 'recipe', recipe.id],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: ['active-media-jobs'],
           }),
           queryClient.invalidateQueries({
             queryKey: ['recipe-item', recipe.id],
@@ -1254,7 +1272,7 @@ export default function SavedRecipeRoute() {
           {
             prepMinutes: recipe.recipe_prep_minutes,
             cookMinutes: recipe.recipe_cook_minutes,
-            totalMinutes: durationSemantics.recipeTotalMinutes,
+            totalMinutes: durationSemantics.recipeDisplayMinutes,
           }
         )
       : []
@@ -1876,6 +1894,8 @@ function buildAttachedMediaJob({
     result_recipe_card_id: job.result_recipe_card_id,
     retry_requested_at: null,
     user_retry_count: 0,
+    started_at: null,
+    completed_at: null,
     created_at: job.created_at,
     updated_at: job.updated_at,
   }

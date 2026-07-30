@@ -5,7 +5,11 @@ import {
 import { EmptyRecipeLibraryCard } from '@/features/home/empty-recipe-library-card'
 import { UsagePill } from '@/features/home/editorial-layout'
 import { getMediaJobProcessingStage } from '@/features/media-jobs/processing-stage'
-import { resolveDurationSemantics } from '@/features/media-jobs/duration-policy'
+import {
+  resolveDurationSemantics,
+  selectRecipeDisplayDuration,
+} from '@/features/media-jobs/duration-policy'
+import { compareLibraryRecentItems } from '@/features/media-jobs/media-job-list-policy'
 import { DurationChips } from '@/features/media-jobs/media-job-source-metadata'
 import { getPaywallHref } from '@/features/paywall/paywall-model'
 import {
@@ -187,6 +191,11 @@ export default function LibraryRoute() {
         opened_item_type: itemType,
         platform: item.platform ?? 'other',
       })
+
+      if (isMediaJobActive(item.latest_media_job)) {
+        router.push(`/recipe/${item.id}?returnTo=/library`)
+        return
+      }
 
       if (item.latest_card) {
         router.push(`/recipe-card/${item.latest_card.id}?returnTo=/library`)
@@ -1344,7 +1353,7 @@ function LibraryRecipeImageCard({
           disabled={isFavoriteUpdating}
           onPress={onFavoritePress}
         />
-        {hasAiRecipe(item) ? (
+        {hasAiRecipe(item) && !state.isPreparing ? (
           <AiRecipeBadge />
         ) : (
           <RecipeStatusBadge
@@ -1429,7 +1438,7 @@ function LibraryRecipeImageCard({
           ) : null}
           <DurationChips
             recipeTotalMinutes={
-              hasAiRecipe(item) ? metadata.recipeTotalMinutes : null
+              hasAiRecipe(item) ? metadata.recipeDisplayMinutes : null
             }
             sourceVideoDurationSeconds={metadata.sourceVideoDurationSeconds}
           />
@@ -1590,19 +1599,13 @@ function getFilteredLibraryItems({
 
       return !normalizedQuery || itemMatchesSearchQuery(item, normalizedQuery)
     })
-    .sort(
-      (left, right) =>
-        getValidDateMs(right.created_at) - getValidDateMs(left.created_at)
-    )
+    .sort(compareLibraryRecentItems)
 }
 
 function itemMatchesSearchQuery(item: RecipeLibraryItem, normalizedQuery: string) {
   if (normalizedQuery === 'quick') {
     const totalMinutes =
-      typeof item.recipe_total_minutes === 'number' &&
-      item.recipe_total_minutes > 0
-        ? item.recipe_total_minutes
-        : null
+      selectRecipeDisplayDuration(item).recipeDisplayMinutes
 
     if (totalMinutes !== null && totalMinutes <= 30) {
       return true
@@ -1715,16 +1718,6 @@ function getSearchSuggestions(items: RecipeLibraryItem[], activeQuery: string) {
 }
 
 function getLibraryCardState(item: RecipeLibraryItem) {
-  if (hasAiRecipe(item)) {
-    return {
-      label: 'AI Recipe',
-      icon: 'ai-recipe' as const,
-      color: colors.primary,
-      borderColor: colors.primaryOutlineSoft,
-      isPreparing: false,
-    }
-  }
-
   if (isMediaJobActive(item.latest_media_job)) {
     return {
       label: getMediaJobProcessingStage(item.latest_media_job?.status).label,
@@ -1732,6 +1725,16 @@ function getLibraryCardState(item: RecipeLibraryItem) {
       color: colors.primary,
       borderColor: colors.primaryOutlineSoft,
       isPreparing: true,
+    }
+  }
+
+  if (hasAiRecipe(item)) {
+    return {
+      label: 'AI Recipe',
+      icon: 'ai-recipe' as const,
+      color: colors.primary,
+      borderColor: colors.primaryOutlineSoft,
+      isPreparing: false,
     }
   }
 

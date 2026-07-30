@@ -8,6 +8,7 @@ import {
   formatSourceDurationSeconds,
   getDurationLimitMessage,
   resolveDurationSemantics,
+  selectRecipeDisplayDuration,
   selectMediaCtaState,
 } from '../src/features/media-jobs/duration-policy.ts'
 
@@ -84,7 +85,8 @@ test('explicit duration semantics never mix source video and recipe time', () =>
     ),
     {
       sourceVideoDurationSeconds: 125,
-      recipeTotalMinutes: 40,
+      recipeDisplayMinutes: 40,
+      recipeDurationSource: 'explicit_total',
     }
   )
   assert.deepEqual(
@@ -98,7 +100,8 @@ test('explicit duration semantics never mix source video and recipe time', () =>
     ),
     {
       sourceVideoDurationSeconds: 125,
-      recipeTotalMinutes: null,
+      recipeDisplayMinutes: null,
+      recipeDurationSource: 'none',
     }
   )
   assert.deepEqual(
@@ -108,9 +111,91 @@ test('explicit duration semantics never mix source video and recipe time', () =>
     }),
     {
       sourceVideoDurationSeconds: null,
-      recipeTotalMinutes: null,
+      recipeDisplayMinutes: null,
+      recipeDurationSource: 'none',
     }
   )
+})
+
+test('recipe display duration corrects the 5h screenshot case to 40m', () => {
+  const duration = selectRecipeDisplayDuration({
+    recipe_prep_minutes: 30,
+    recipe_cook_minutes: 10,
+    recipe_total_minutes: 300,
+    duration_seconds: 18_000,
+    duration_semantics_version: 1,
+  })
+
+  assert.deepEqual(duration, {
+    recipeDisplayMinutes: 40,
+    recipeDurationSource: 'inconsistent_total_corrected',
+  })
+  assert.equal(formatRecipeDurationMinutes(duration.recipeDisplayMinutes), '40m')
+  assert.notEqual(
+    formatRecipeDurationMinutes(duration.recipeDisplayMinutes),
+    '5h'
+  )
+})
+
+test('recipe duration selector preserves consistent totals and derives prep plus cook', () => {
+  assert.deepEqual(
+    selectRecipeDisplayDuration({
+      recipe_prep_minutes: 30,
+      recipe_cook_minutes: 10,
+      recipe_total_minutes: 40,
+    }),
+    {
+      recipeDisplayMinutes: 40,
+      recipeDurationSource: 'explicit_total',
+    }
+  )
+  assert.deepEqual(
+    selectRecipeDisplayDuration({
+      recipe_prep_minutes: 30,
+      recipe_cook_minutes: 10,
+    }),
+    {
+      recipeDisplayMinutes: 40,
+      recipeDurationSource: 'prep_plus_cook',
+    }
+  )
+})
+
+test('explicit total alone displays while ambiguous legacy-only duration does not', () => {
+  assert.deepEqual(
+    selectRecipeDisplayDuration({ recipe_total_minutes: 75 }),
+    {
+      recipeDisplayMinutes: 75,
+      recipeDurationSource: 'explicit_total',
+    }
+  )
+  assert.deepEqual(
+    selectRecipeDisplayDuration({
+      duration_seconds: 18_000,
+      duration_semantics_version: 0,
+    }),
+    {
+      recipeDisplayMinutes: null,
+      recipeDurationSource: 'none',
+    }
+  )
+})
+
+test('source-video seconds can never become recipe display minutes', () => {
+  const duration = selectRecipeDisplayDuration({
+    source_video_duration_seconds: 180,
+    duration_seconds: 18_000,
+    duration_semantics_version: 1,
+  })
+  const selectorSource = between(
+    source('../src/features/media-jobs/duration-policy.ts'),
+    'export function selectRecipeDisplayDuration',
+    'export function selectMediaCtaState'
+  )
+
+  assert.equal(duration.recipeDisplayMinutes, null)
+  assert.doesNotMatch(selectorSource, /duration_seconds/)
+  assert.doesNotMatch(selectorSource, /source_video_duration_seconds/)
 })
 
 test('Instagram, TikTok and YouTube all use the platform-neutral CTA selector', () => {
@@ -243,7 +328,7 @@ test('DurationChips uses recipe clock and source play semantics with stable empt
   assert.match(chips, /minHeight: 28/)
   assert.match(
     library,
-    /recipeTotalMinutes=\{[\s\S]*metadata\.recipeTotalMinutes/
+    /recipeTotalMinutes=\{[\s\S]*metadata\.recipeDisplayMinutes/
   )
   assert.match(
     library,

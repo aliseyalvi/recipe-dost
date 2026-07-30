@@ -4,6 +4,8 @@ type NullableNumber = number | null | undefined
 
 export type DurationSemanticsInput = {
   source_video_duration_seconds?: NullableNumber
+  recipe_prep_minutes?: NullableNumber
+  recipe_cook_minutes?: NullableNumber
   recipe_total_minutes?: NullableNumber
   duration_semantics_version?: NullableNumber
   duration_seconds?: NullableNumber
@@ -18,7 +20,12 @@ export type MediaJobDurationInput = {
 
 export type ResolvedDurationSemantics = {
   sourceVideoDurationSeconds: number | null
-  recipeTotalMinutes: number | null
+  recipeDisplayMinutes: number | null
+  recipeDurationSource:
+    | 'explicit_total'
+    | 'prep_plus_cook'
+    | 'none'
+    | 'inconsistent_total_corrected'
 }
 
 export type MediaCtaState =
@@ -103,7 +110,53 @@ export function resolveDurationSemantics(
 
   return {
     sourceVideoDurationSeconds,
-    recipeTotalMinutes: positiveWholeNumber(recipe?.recipe_total_minutes),
+    ...selectRecipeDisplayDuration(recipe),
+  }
+}
+
+export function selectRecipeDisplayDuration(
+  recipe: DurationSemanticsInput | null | undefined
+): Pick<
+  ResolvedDurationSemantics,
+  'recipeDisplayMinutes' | 'recipeDurationSource'
+> {
+  const prepMinutes = positiveWholeNumber(recipe?.recipe_prep_minutes)
+  const cookMinutes = positiveWholeNumber(recipe?.recipe_cook_minutes)
+  const explicitTotal = positiveWholeNumber(recipe?.recipe_total_minutes)
+
+  if (prepMinutes !== null && cookMinutes !== null) {
+    const derivedTotal = prepMinutes + cookMinutes
+
+    if (explicitTotal === null) {
+      return {
+        recipeDisplayMinutes: derivedTotal,
+        recipeDurationSource: 'prep_plus_cook',
+      }
+    }
+
+    if (explicitTotal === derivedTotal) {
+      return {
+        recipeDisplayMinutes: explicitTotal,
+        recipeDurationSource: 'explicit_total',
+      }
+    }
+
+    return {
+      recipeDisplayMinutes: derivedTotal,
+      recipeDurationSource: 'inconsistent_total_corrected',
+    }
+  }
+
+  if (explicitTotal !== null) {
+    return {
+      recipeDisplayMinutes: explicitTotal,
+      recipeDurationSource: 'explicit_total',
+    }
+  }
+
+  return {
+    recipeDisplayMinutes: null,
+    recipeDurationSource: 'none',
   }
 }
 

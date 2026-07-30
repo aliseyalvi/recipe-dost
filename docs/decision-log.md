@@ -896,3 +896,13 @@
 - **Context:** Automated AST graph generators (Graphify/CodeGraph) were causing infinite self-correction loops due to macOS sandbox permission conflicts (`Errno 1`). This was expanding the active context window with 40k+ line JSON data logs, exhausting session limits inside a single task block.
 - **Decision:** Completely uninstalled Graphify, wiped `graphify-out/` and `.code-review-graph/`, and removed the MCP server configuration.
 - **Consequence:** Project context tracking is now 100% shifted back to lightweight, cost-free, explicit markdown files (`agents.md`, `todo.md`, `decision_log.md`). Codex must rely purely on target file blocks provided directly in user prompts.
+
+## [2026-07-30] M24.7C Recipe Duration and Active Queue Discovery
+
+- Added one authoritative frontend recipe-duration selector. Prep plus cook corrects a conflicting explicit total; ambiguous legacy seconds and source-video duration never become recipe time.
+- Home now queries up to 10 canonical active media jobs separately, orders processing before queued FIFO, and renders them in a horizontal `In progress` gallery above completed `Recent`.
+- Terminal jobs leave the active cache on the next 5-second poll and invalidate only active jobs, recent recipes, Library, and linked recipe/card keys. Focus and foreground refresh both active and recent data.
+- Library Recent uses one platform-neutral display comparator: processing, queued FIFO, retryable failure, completed by newest terminal/update time, then other failures.
+- Active placeholders are excluded from Home Recent by recipe-item and result-card linkage, and duplicate completed result cards are collapsed by recipe-card ID.
+- No migration, schema, Edge Function, worker, queue, Gemini, provider, quota, dependency, RevenueCat, or deployment behavior changed.
+- Validation: `npm test`, `npm run typecheck`, `npm run lint`, `npm run qa:static`, and `npm run functions:check` passed. `npm run doctor` reported only the accepted existing Expo package-drift warning.
