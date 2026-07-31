@@ -30,6 +30,7 @@ export default function RootLayout() {
           name="account-access"
           options={{ headerShown: true, title: "Account access" }}
         />
+        <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
         <Stack.Screen name="recipe/preview" options={{ title: "Preview" }} />
         <Stack.Screen
           name="recipe/[id]"

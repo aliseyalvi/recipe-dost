@@ -2,29 +2,26 @@ import { SettingsFeedback, SettingsPanel } from '@/features/settings/settings-pr
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { colors, spacing, typography } from '@/theme'
-import { AppIcon } from '@/ui/app-icon'
 import { Button } from '@/ui/button'
 import { Input } from '@/ui/input'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import type { ComponentProps } from 'react'
 import { useEffect, useState } from 'react'
 import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   Text,
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-type SecureStep = 'email' | 'verification' | 'password'
+type AccountAccessMode = 'secure' | 'recover'
 
 export function AccountAccessScreen() {
   const params = useLocalSearchParams<{ mode?: string | string[] }>()
   const rawMode = Array.isArray(params.mode) ? params.mode[0] : params.mode
-  const mode = rawMode === 'secure' ? 'secure' : 'recover'
+  const mode: AccountAccessMode = rawMode === 'secure' ? 'secure' : 'recover'
 
   return (
     <>
@@ -52,11 +49,7 @@ export function AccountAccessScreen() {
               paddingBottom: spacing.xxl,
             }}
           >
-            {mode === 'secure' ? (
-              <SecureAccountFlow />
-            ) : (
-              <RecoverAccountFlow />
-            )}
+            <MagicLinkFlow key={mode} mode={mode} />
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -64,29 +57,21 @@ export function AccountAccessScreen() {
   )
 }
 
-function SecureAccountFlow() {
+function MagicLinkFlow({ mode }: { mode: AccountAccessMode }) {
   const router = useRouter()
-  const {
-    requestAccountLink,
-    resendAccountLinkCode,
-    verifyAccountLinkCode,
-    completeAccountLinkPassword,
-  } = useAuth()
+  const { requestAccountLink, requestRecoveryLink } = useAuth()
   const { trackEvent } = usePostHog()
-  const [step, setStep] = useState<SecureStep>('email')
   const [email, setEmail] = useState('')
-  const [verificationCode, setVerificationCode] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmation, setConfirmation] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [sent, setSent] = useState(false)
   const [cooldownSeconds, setCooldownSeconds] = useState(0)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
-    trackEvent('account_recovery_form_opened', { mode: 'link' })
-  }, [trackEvent])
+    trackEvent('account_recovery_form_opened', {
+      mode: mode === 'secure' ? 'link' : 'sign_in',
+    })
+  }, [mode, trackEvent])
 
   useEffect(() => {
     if (cooldownSeconds <= 0) return
@@ -98,7 +83,7 @@ function SecureAccountFlow() {
     }
   }, [cooldownSeconds])
 
-  const submitEmail = async () => {
+  const sendLink = async (confirmGuestSwitch = false) => {
     const normalizedEmail = email.trim().toLowerCase()
     if (!isValidEmail(normalizedEmail)) {
       setFeedback('Enter a valid email address.')
@@ -107,13 +92,37 @@ function SecureAccountFlow() {
     if (isSubmitting) return
     setIsSubmitting(true)
     setFeedback(null)
+
     try {
-      await requestAccountLink(normalizedEmail)
+      if (mode === 'secure') {
+        await requestAccountLink(normalizedEmail)
+      } else {
+        const result = await requestRecoveryLink({
+          email: normalizedEmail,
+          confirmGuestSwitch,
+        })
+        if (result.requiresGuestSwitchConfirmation) {
+          Alert.alert(
+            'Switch away from guest data?',
+            'This guest account already has saved Recipe Dost data. Signing in will switch to the other account without merging or deleting either account.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Switch account',
+                style: 'destructive',
+                onPress: () => {
+                  void sendLink(true)
+                },
+              },
+            ]
+          )
+          return
+        }
+      }
+
       setEmail(normalizedEmail)
-      setVerificationCode('')
+      setSent(true)
       setCooldownSeconds(60)
-      setStep('verification')
-      setFeedback('Enter the six-digit code sent to your email.')
     } catch (caughtError) {
       setFeedback(getErrorMessage(caughtError))
     } finally {
@@ -121,76 +130,18 @@ function SecureAccountFlow() {
     }
   }
 
-  const verifyCode = async () => {
-    if (!/^\d{6}$/.test(verificationCode)) {
-      setFeedback('Enter the six-digit verification code.')
-      return
-    }
-    if (isSubmitting) return
-    setIsSubmitting(true)
-    setFeedback(null)
-    try {
-      await verifyAccountLinkCode({
-        email,
-        token: verificationCode,
-      })
-      setStep('password')
-      setFeedback('Email verified. Create a password to finish securing your account.')
-    } catch (caughtError) {
-      setFeedback(getErrorMessage(caughtError))
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const resendCode = async () => {
-    if (isSubmitting || cooldownSeconds > 0) return
-    setIsSubmitting(true)
-    setFeedback(null)
-    try {
-      await resendAccountLinkCode(email)
-      setCooldownSeconds(60)
-      setFeedback('A new verification code was sent.')
-    } catch (caughtError) {
-      setFeedback(getErrorMessage(caughtError))
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const submitPassword = async () => {
-    if (password.length < 8) {
-      setFeedback('Use a password with at least 8 characters.')
-      return
-    }
-    if (password !== confirmation) {
-      setFeedback('The passwords do not match.')
-      return
-    }
-    if (isSubmitting) return
-    setIsSubmitting(true)
-    setFeedback(null)
-    try {
-      await completeAccountLinkPassword(password)
-      setPassword('')
-      setConfirmation('')
-      router.replace('/settings')
-    } catch (caughtError) {
-      setFeedback(getErrorMessage(caughtError))
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+  const title = mode === 'secure' ? 'Secure your account' : 'Recover your account'
+  const explanation =
+    mode === 'secure'
+      ? 'Email a secure link while preserving this same Recipe Dost account, recipes, and Premium access.'
+      : 'Email a sign-in link to recover your saved Recipe Dost account.'
 
   return (
     <View style={{ gap: spacing.xl }}>
-      <AccountAccessHeading
-        title="Secure your account"
-        explanation="Add recovery details while preserving this same Recipe Dost account, recipes, and Premium access."
-      />
+      <AccountAccessHeading title={title} explanation={explanation} />
       <SettingsPanel>
         <View style={{ gap: spacing.lg, paddingVertical: spacing.lg }}>
-          {step === 'email' ? (
+          {!sent ? (
             <>
               <Input
                 label="Email"
@@ -201,58 +152,54 @@ function SecureAccountFlow() {
                 textContentType="emailAddress"
                 keyboardType="email-address"
                 editable={!isSubmitting}
-                returnKeyType="next"
+                returnKeyType="send"
                 onSubmitEditing={() => {
-                  void submitEmail()
-                }}
-              />
-              <Button
-                label={isSubmitting ? 'Sending code…' : 'Continue'}
-                disabled={isSubmitting}
-                fullWidth
-                onPress={() => {
-                  void submitEmail()
-                }}
-              />
-            </>
-          ) : null}
-
-          {step === 'verification' ? (
-            <>
-              <Text selectable style={[typography.body, { color: colors.textMuted }]}>
-                Verifying {email}
-              </Text>
-              <Input
-                label="Verification code"
-                value={verificationCode}
-                onChangeText={(value) => {
-                  setVerificationCode(value.replace(/\D/g, '').slice(0, 6))
-                }}
-                autoComplete="one-time-code"
-                textContentType="oneTimeCode"
-                keyboardType="number-pad"
-                maxLength={6}
-                editable={!isSubmitting}
-              />
-              <Button
-                label={isSubmitting ? 'Verifying…' : 'Verify code'}
-                disabled={isSubmitting || verificationCode.length !== 6}
-                fullWidth
-                onPress={() => {
-                  void verifyCode()
+                  void sendLink()
                 }}
               />
               <Button
                 label={
+                  isSubmitting
+                    ? 'Sending link…'
+                    : mode === 'secure'
+                      ? 'Send secure link'
+                      : 'Send sign-in link'
+                }
+                disabled={isSubmitting}
+                fullWidth
+                onPress={() => {
+                  void sendLink()
+                }}
+              />
+            </>
+          ) : (
+            <>
+              <Text
+                accessibilityRole="header"
+                selectable
+                style={[typography.heading, { color: colors.onSurface }]}
+              >
+                Check your email
+              </Text>
+              <Text
+                selectable
+                style={[typography.body, { color: colors.textMuted }]}
+              >
+                Open the link sent to {email} on this device.
+              </Text>
+              <Button
+                label={
                   cooldownSeconds > 0
-                    ? `Send new code in ${cooldownSeconds}s`
-                    : 'Send new code'
+                    ? `Resend available in ${cooldownSeconds}s`
+                    : isSubmitting
+                      ? 'Sending link…'
+                      : 'Resend link'
                 }
                 variant="ghost"
                 disabled={isSubmitting || cooldownSeconds > 0}
                 fullWidth
                 onPress={() => {
-                  void resendCode()
+                  void sendLink(true)
                 }}
               />
               <Button
@@ -261,167 +208,21 @@ function SecureAccountFlow() {
                 disabled={isSubmitting}
                 fullWidth
                 onPress={() => {
-                  setVerificationCode('')
+                  setSent(false)
                   setCooldownSeconds(0)
                   setFeedback(null)
-                  setStep('email')
                 }}
               />
             </>
-          ) : null}
+          )}
 
-          {step === 'password' ? (
-            <>
-              <PasswordInput
-                label="New password"
-                value={password}
-                onChangeText={setPassword}
-                visible={showPassword}
-                onToggleVisibility={() => {
-                  setShowPassword((visible) => !visible)
-                }}
-                autoComplete="new-password"
-                textContentType="newPassword"
-                editable={!isSubmitting}
-                testID="secure-password-visibility"
-              />
-              <PasswordInput
-                label="Confirm password"
-                value={confirmation}
-                onChangeText={setConfirmation}
-                visible={showConfirmation}
-                onToggleVisibility={() => {
-                  setShowConfirmation((visible) => !visible)
-                }}
-                autoComplete="new-password"
-                textContentType="newPassword"
-                editable={!isSubmitting}
-                testID="secure-confirmation-visibility"
-              />
-              <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-                Use at least 8 characters.
-              </Text>
-              <Button
-                label={isSubmitting ? 'Securing account…' : 'Secure account'}
-                disabled={
-                  isSubmitting ||
-                  password.length < 8 ||
-                  password !== confirmation
-                }
-                fullWidth
-                onPress={() => {
-                  void submitPassword()
-                }}
-              />
-            </>
-          ) : null}
-
-          {feedback ? <SettingsFeedback message={feedback} /> : null}
-        </View>
-      </SettingsPanel>
-    </View>
-  )
-}
-
-function RecoverAccountFlow() {
-  const router = useRouter()
-  const { signInToRecover } = useAuth()
-  const { trackEvent } = usePostHog()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [feedback, setFeedback] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  useEffect(() => {
-    trackEvent('account_recovery_form_opened', { mode: 'sign_in' })
-  }, [trackEvent])
-
-  const submitRecovery = async (confirmGuestSwitch = false) => {
-    const normalizedEmail = email.trim().toLowerCase()
-    if (!isValidEmail(normalizedEmail)) {
-      setFeedback('Enter a valid email address.')
-      return
-    }
-    if (password.length < 8) {
-      setFeedback('Enter the password used to secure this account.')
-      return
-    }
-    if (isSubmitting) return
-    setIsSubmitting(true)
-    setFeedback(null)
-
-    try {
-      const result = await signInToRecover({
-        email: normalizedEmail,
-        password,
-        confirmGuestSwitch,
-      })
-
-      if (result.requiresGuestSwitchConfirmation) {
-        Alert.alert(
-          'Switch away from guest data?',
-          'This guest account already has saved Recipe Dost data. Signing in will switch to the other account without merging or deleting either account.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Switch account',
-              style: 'destructive',
-              onPress: () => {
-                void submitRecovery(true)
-              },
-            },
-          ]
-        )
-        return
-      }
-
-      setPassword('')
-      router.replace('/settings')
-    } catch (caughtError) {
-      setFeedback(getErrorMessage(caughtError))
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  return (
-    <View style={{ gap: spacing.xl }}>
-      <AccountAccessHeading
-        title="Recover your account"
-        explanation="Sign in with the email and password used to secure Recipe Dost."
-      />
-      <SettingsPanel>
-        <View style={{ gap: spacing.lg, paddingVertical: spacing.lg }}>
-          <Input
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            autoComplete="email"
-            textContentType="emailAddress"
-            keyboardType="email-address"
-            editable={!isSubmitting}
-          />
-          <PasswordInput
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            visible={showPassword}
-            onToggleVisibility={() => {
-              setShowPassword((visible) => !visible)
-            }}
-            autoComplete="current-password"
-            textContentType="password"
-            editable={!isSubmitting}
-            testID="recover-password-visibility"
-          />
           <Button
-            label={isSubmitting ? 'Signing in…' : 'Sign in'}
+            label="Cancel"
+            variant="ghost"
             disabled={isSubmitting}
             fullWidth
             onPress={() => {
-              void submitRecovery()
+              router.back()
             }}
           />
           {feedback ? <SettingsFeedback message={feedback} tone="error" /> : null}
@@ -447,43 +248,13 @@ function AccountAccessHeading({
       >
         {title}
       </Text>
-      <Text selectable style={[typography.body, { color: colors.textMuted }]}>
+      <Text
+        selectable
+        style={[typography.body, { color: colors.textMuted }]}
+      >
         {explanation}
       </Text>
     </View>
-  )
-}
-
-function PasswordInput({
-  visible,
-  onToggleVisibility,
-  testID,
-  ...props
-}: ComponentProps<typeof Input> & {
-  visible: boolean
-  onToggleVisibility: () => void
-  testID: string
-}) {
-  return (
-    <Input
-      {...props}
-      secureTextEntry={!visible}
-      rightAccessory={
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={visible ? 'Hide password' : 'Show password'}
-          hitSlop={12}
-          onPress={onToggleVisibility}
-          testID={testID}
-          style={{ padding: spacing.sm }}
-        >
-          <AppIcon
-            name={visible ? 'eye-off' : 'eye'}
-            color={colors.textMuted}
-          />
-        </Pressable>
-      }
-    />
   )
 }
 

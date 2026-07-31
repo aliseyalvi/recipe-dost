@@ -24,21 +24,7 @@ type LinkDependencies = {
   updateEmail: (email: string) => Promise<AuthUserLike>
 }
 
-type VerifyLinkDependencies = {
-  getSession: () => Promise<AuthSessionLike | null>
-  verifyEmailChangeOtp: (
-    email: string,
-    token: string
-  ) => Promise<AuthUserLike>
-}
-
-type CompleteLinkDependencies = {
-  getSession: () => Promise<AuthSessionLike | null>
-  updatePassword: (password: string) => Promise<AuthUserLike>
-}
-
-type RecoveryDependencies<TSession extends AuthSessionLike> = {
-  signInWithPassword: (email: string, password: string) => Promise<TSession>
+type CallbackDependencies<TSession extends AuthSessionLike> = {
   getVerifiedUser: () => Promise<AuthUserLike>
   getSession: () => Promise<TSession | null>
 }
@@ -84,6 +70,23 @@ export class AuthOperationGate {
   }
 }
 
+export class AuthCallbackGate {
+  private fingerprint: number | null = null
+  private result: Promise<unknown> | null = null
+
+  run<T>(callbackUrl: string, task: () => Promise<T>) {
+    const fingerprint = getCallbackFingerprint(callbackUrl)
+    if (this.fingerprint === fingerprint && this.result) {
+      return this.result as Promise<T>
+    }
+
+    const result = Promise.resolve().then(task)
+    this.fingerprint = fingerprint
+    this.result = result
+    return result
+  }
+}
+
 export async function bootstrapAuthSession<TSession extends AuthSessionLike>({
   gate,
   getSession,
@@ -126,85 +129,32 @@ export async function requestAnonymousAccountLink({
   return { originalUserId }
 }
 
-export async function verifyAnonymousAccountEmail({
-  email,
-  token,
-  originalUserId,
+export async function verifyAuthoritativeCallbackSession<
+  TSession extends AuthSessionLike,
+>({
+  expectedUserId,
+  expectedEmail,
   dependencies,
 }: {
-  email: string
-  token: string
-  originalUserId: string
-  dependencies: VerifyLinkDependencies
+  expectedUserId?: string | null
+  expectedEmail?: string | null
+  dependencies: CallbackDependencies<TSession>
 }) {
-  const currentSession = await dependencies.getSession()
-  if (!currentSession) {
-    throw new Error('The guest session could not be verified.')
-  }
-  assertSameUserId(originalUserId, currentSession.user.id)
-
-  const verifiedUser = await dependencies.verifyEmailChangeOtp(email, token)
-  assertSameUserId(originalUserId, verifiedUser.id)
-  assertVerifiedLinkedEmail(verifiedUser, email)
-
-  const verifiedSession = await dependencies.getSession()
-  if (!verifiedSession) {
-    throw new Error('The verified session could not be re-read.')
-  }
-  assertSameUserId(originalUserId, verifiedSession.user.id)
-  assertVerifiedLinkedEmail(verifiedSession.user, email)
-
-  return verifiedSession
-}
-
-export async function completeAnonymousAccountPassword({
-  password,
-  originalUserId,
-  dependencies,
-}: {
-  password: string
-  originalUserId: string
-  dependencies: CompleteLinkDependencies
-}) {
-  const verifiedSession = await dependencies.getSession()
-  if (!verifiedSession) {
-    throw new Error('Verify the email before setting a password.')
-  }
-  assertSameUserId(originalUserId, verifiedSession.user.id)
-  assertLinkedUser(verifiedSession.user)
-
-  const passwordUser = await dependencies.updatePassword(password)
-  assertSameUserId(originalUserId, passwordUser.id)
-  assertLinkedUser(passwordUser)
-
-  const finalSession = await dependencies.getSession()
-  if (!finalSession) {
-    throw new Error('The secured session could not be verified.')
-  }
-  assertSameUserId(originalUserId, finalSession.user.id)
-  assertLinkedUser(finalSession.user)
-
-  return finalSession
-}
-
-export async function recoverLinkedAccount<TSession extends AuthSessionLike>({
-  email,
-  password,
-  dependencies,
-}: {
-  email: string
-  password: string
-  dependencies: RecoveryDependencies<TSession>
-}) {
-  const signedInSession = await dependencies.signInWithPassword(email, password)
   const verifiedUser = await dependencies.getVerifiedUser()
-  assertSameUserId(signedInSession.user.id, verifiedUser.id)
+  assertLinkedEmail(verifiedUser, expectedEmail)
+  if (expectedUserId) {
+    assertSameUserId(expectedUserId, verifiedUser.id)
+  }
 
   const finalSession = await dependencies.getSession()
   if (!finalSession) {
-    throw new Error('The recovered session could not be verified.')
+    throw new Error('The authenticated session could not be re-read.')
   }
   assertSameUserId(verifiedUser.id, finalSession.user.id)
+  assertLinkedEmail(finalSession.user, expectedEmail)
+  if (expectedUserId) {
+    assertSameUserId(expectedUserId, finalSession.user.id)
+  }
 
   return finalSession
 }
@@ -251,18 +201,30 @@ export function assertSameUserId(expectedUserId: string, actualUserId: string) {
   }
 }
 
-function assertVerifiedLinkedEmail(user: AuthUserLike, email: string) {
-  assertLinkedUser(user)
+function assertLinkedEmail(
+  user: AuthUserLike,
+  expectedEmail: string | null | undefined
+) {
   if (
-    user.email?.trim().toLowerCase() !== email.trim().toLowerCase() ||
+    user.is_anonymous ||
+    !user.email ||
     !(user.email_confirmed_at || user.confirmed_at)
   ) {
-    throw new Error('The email address could not be verified safely.')
+    throw new Error('The email link did not secure an account.')
+  }
+  if (
+    expectedEmail &&
+    user.email.trim().toLowerCase() !== expectedEmail.trim().toLowerCase()
+  ) {
+    throw new Error('The email link returned a different account.')
   }
 }
 
-function assertLinkedUser(user: AuthUserLike) {
-  if (user.is_anonymous) {
-    throw new Error('Verify the email before setting a password.')
+function getCallbackFingerprint(callbackUrl: string) {
+  let fingerprint = 2166136261
+  for (let index = 0; index < callbackUrl.length; index += 1) {
+    fingerprint ^= callbackUrl.charCodeAt(index)
+    fingerprint = Math.imul(fingerprint, 16777619)
   }
+  return fingerprint >>> 0
 }

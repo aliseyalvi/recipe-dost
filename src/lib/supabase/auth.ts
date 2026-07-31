@@ -1,5 +1,8 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase/client'
 
+export const MAGIC_LINK_CALLBACK_URL = 'recipe-dost://auth/callback'
+export const AUTH_CALLBACK_FLOW = 'implicit' as const
+
 function assertSupabaseConfigured() {
   if (supabaseConfigError) {
     throw new Error(supabaseConfigError)
@@ -33,7 +36,10 @@ export async function signInAnonymously() {
 export async function updateCurrentUserEmail(email: string) {
   assertSupabaseConfigured()
 
-  const { data, error } = await supabase.auth.updateUser({ email })
+  const { data, error } = await supabase.auth.updateUser(
+    { email },
+    { emailRedirectTo: MAGIC_LINK_CALLBACK_URL }
+  )
 
   if (error) {
     throw error
@@ -42,64 +48,104 @@ export async function updateCurrentUserEmail(email: string) {
   return data.user
 }
 
-export async function verifyCurrentUserEmailChange(email: string, token: string) {
+export async function sendRecoveryMagicLink(email: string) {
   assertSupabaseConfigured()
 
-  const { data, error } = await supabase.auth.verifyOtp({
+  const { error } = await supabase.auth.signInWithOtp({
     email,
-    token,
-    type: 'email_change',
+    options: {
+      shouldCreateUser: false,
+      emailRedirectTo: MAGIC_LINK_CALLBACK_URL,
+    },
   })
 
-  if (error) {
-    throw error
-  }
-
-  if (!data.user) {
-    throw new Error('The email verification response was incomplete.')
-  }
-
-  return data.user
-}
-
-export async function resendCurrentUserEmailChange(email: string) {
-  assertSupabaseConfigured()
-
-  const { error } = await supabase.auth.resend({
-    email,
-    type: 'email_change',
-  })
-
-  if (error) {
+  if (error && !isUnknownRecoveryEmailError(error)) {
     throw error
   }
 }
 
-export async function updateCurrentUserPassword(password: string) {
+export async function establishSessionFromAuthCallback(callbackUrl: string) {
   assertSupabaseConfigured()
+  const parameters = getAuthCallbackParameters(callbackUrl)
 
-  const { data, error } = await supabase.auth.updateUser({ password })
-
-  if (error) {
-    throw error
+  if (parameters.hasError) {
+    throw new Error('This sign-in link is invalid or expired. Request a new link.')
   }
 
-  return data.user
-}
+  if (parameters.code) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(
+      parameters.code
+    )
+    if (error) throw error
+    if (!data.session) {
+      throw new Error('The sign-in session could not be established.')
+    }
+    return data.session
+  }
 
-export async function signInWithPassword(email: string, password: string) {
-  assertSupabaseConfigured()
+  if (!parameters.accessToken || !parameters.refreshToken) {
+    throw new Error('This sign-in link is invalid or expired. Request a new link.')
+  }
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
+  const { data, error } = await supabase.auth.setSession({
+    access_token: parameters.accessToken,
+    refresh_token: parameters.refreshToken,
   })
-
   if (error) {
     throw error
   }
-
+  if (!data.session) {
+    throw new Error('The sign-in session could not be established.')
+  }
   return data.session
+}
+
+export function getAuthCallbackKind(callbackUrl: string) {
+  const type = getAuthCallbackParameters(callbackUrl).type
+  if (type === 'email_change') return 'secure' as const
+  if (type === 'magiclink' || type === 'email') return 'recover' as const
+  return null
+}
+
+export function isAuthCallbackUrl(callbackUrl: string) {
+  try {
+    const parsed = new URL(callbackUrl)
+    return (
+      parsed.protocol === 'recipe-dost:' &&
+      parsed.hostname === 'auth' &&
+      parsed.pathname === '/callback'
+    )
+  } catch {
+    return false
+  }
+}
+
+function getAuthCallbackParameters(callbackUrl: string) {
+  const parsed = new URL(callbackUrl)
+  const hashParameters = new URLSearchParams(parsed.hash.replace(/^#/, ''))
+  const read = (name: string) =>
+    parsed.searchParams.get(name) ?? hashParameters.get(name)
+
+  return {
+    accessToken: read('access_token'),
+    refreshToken: read('refresh_token'),
+    code: read('code'),
+    type: read('type'),
+    hasError: Boolean(read('error') || read('error_code')),
+  }
+}
+
+function isUnknownRecoveryEmailError(error: unknown) {
+  if (!error || typeof error !== 'object') return false
+  const record = error as { code?: unknown; message?: unknown }
+  const code = typeof record.code === 'string' ? record.code.toLowerCase() : ''
+  const message =
+    typeof record.message === 'string' ? record.message.toLowerCase() : ''
+  return (
+    code === 'user_not_found' ||
+    message.includes('user not found') ||
+    message.includes('user does not exist')
+  )
 }
 
 export async function getVerifiedUser() {

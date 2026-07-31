@@ -3,6 +3,7 @@ import type { QueryClient } from '@tanstack/react-query'
 export const USER_OWNED_QUERY_ROOTS = [
   ['recent-recipes'],
   ['recipe-library'],
+  ['favourites'],
   ['recipe-item'],
   ['recipe-card'],
   ['recipe-grocery-list'],
@@ -27,4 +28,3 @@ export async function refreshUserOwnedQueries(queryClient: QueryClient) {
     )
   )
 }
-

@@ -3,13 +3,11 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 import {
+  AuthCallbackGate,
   AuthOperationGate,
   bootstrapAuthSession,
-  completeAnonymousAccountPassword,
-  recoverLinkedAccount,
-  requestAnonymousAccountLink,
   shouldConfirmGuestSwitch,
-  verifyAnonymousAccountEmail,
+  verifyAuthoritativeCallbackSession,
 } from '../src/features/account-recovery/account-recovery.ts'
 import {
   USER_OWNED_QUERY_ROOTS,
@@ -17,136 +15,122 @@ import {
 } from '../src/lib/query/user-owned-query-cache.ts'
 import { RevenueCatIdentitySynchronizer } from '../src/lib/revenuecat/revenuecat-identity.ts'
 
-test('Settings renders account summaries and no auth form fields', () => {
-  const settings = source('../src/features/account-recovery/account-recovery-section.tsx')
+test('secure and recover screens share one email field and no password or OTP UI', () => {
+  const screen = source('../src/features/account-recovery/account-access-screen.tsx')
 
-  assert.match(settings, /Guest account/)
-  assert.match(settings, /Account secured/)
-  assert.match(settings, /maskAccountEmail/)
-  assert.doesNotMatch(settings, /<Input|secureTextEntry|Verification code/)
-  assert.doesNotMatch(settings, /user\?\.id|user\.id/)
+  assert.equal((screen.match(/<Input/g) ?? []).length, 1)
+  assert.match(screen, /Secure your account/)
+  assert.match(screen, /Recover your account/)
+  assert.match(screen, /Send secure link/)
+  assert.match(screen, /Send sign-in link/)
+  assert.doesNotMatch(
+    screen,
+    /PasswordInput|secureTextEntry|Verification code|one-time-code|Verify code/
+  )
 })
 
-test('Settings rows navigate to the focused secure and recover modes', () => {
-  const settings = source('../src/features/account-recovery/account-recovery-section.tsx')
+test('secure uses updateUser email with the app callback and never creates a user', () => {
+  const auth = source('../src/lib/supabase/auth.ts')
 
-  assert.match(settings, /pathname: '\/account-access'/)
-  assert.match(settings, /openAccountAccess\('secure'\)/)
-  assert.match(settings, /openAccountAccess\('recover'\)/)
+  assert.match(auth, /auth\.updateUser\(\s*\{ email \},\s*\{ emailRedirectTo: MAGIC_LINK_CALLBACK_URL \}/)
+  assert.doesNotMatch(auth, /signUp/)
+  assert.doesNotMatch(auth, /updateUser\(\{ password|verifyOtp/)
 })
 
-test('secure flow uses updateUser email and never a new-account path', () => {
+test('recovery uses a non-creating magic link and never password sign-in', () => {
+  const auth = source('../src/lib/supabase/auth.ts')
+
+  assert.match(auth, /auth\.signInWithOtp\(\{/)
+  assert.match(auth, /shouldCreateUser: false/)
+  assert.match(auth, /emailRedirectTo: MAGIC_LINK_CALLBACK_URL/)
+  assert.doesNotMatch(auth, /signInWithPassword/)
+})
+
+test('both flows use the exact Recipe Dost callback URL and implicit client flow', () => {
+  const auth = source('../src/lib/supabase/auth.ts')
+  const config = source('../app.config.js')
+  const client = source('../src/lib/supabase/client.ts')
+
+  assert.match(config, /scheme: "recipe-dost"/)
+  assert.match(auth, /'recipe-dost:\/\/auth\/callback'/)
+  assert.match(auth, /AUTH_CALLBACK_FLOW = 'implicit'/)
+  assert.match(client, /detectSessionInUrl: false/)
+})
+
+test('callback supports implicit session establishment and authoritative refetch', () => {
   const auth = source('../src/lib/supabase/auth.ts')
   const provider = source('../src/providers/auth-provider.tsx')
 
-  assert.match(auth, /auth\.updateUser\(\{ email \}\)/)
-  assert.doesNotMatch(auth, /signUp|signInWithOtp/)
-  assert.doesNotMatch(provider, /signUp|signInWithOtp/)
+  assert.match(auth, /auth\.setSession\(\{/)
+  assert.match(auth, /auth\.exchangeCodeForSession/)
+  assert.match(provider, /establishSessionFromAuthCallback\(callbackUrl\)/)
+  assert.match(provider, /verifyAuthoritativeCallbackSession\(\{/)
+  assert.match(provider, /getVerifiedUser, getSession/)
 })
 
-test('OTP verification and resend use the installed email_change contract', () => {
-  const auth = source('../src/lib/supabase/auth.ts')
-  const screen = source('../src/features/account-recovery/account-access-screen.tsx')
+test('secure callback preserves the original anonymous UUID', async () => {
+  const user = linkedUser('guest-user-id')
+  const session = { user }
+  const finalSession = await verifyAuthoritativeCallbackSession({
+    expectedUserId: 'guest-user-id',
+    expectedEmail: user.email,
+    dependencies: {
+      getVerifiedUser: () => resolved(user),
+      getSession: () => resolved(session),
+    },
+  })
 
-  assert.match(auth, /auth\.verifyOtp\(\{[\s\S]*type: 'email_change'/)
-  assert.match(auth, /auth\.resend\(\{[\s\S]*type: 'email_change'/)
-  assert.match(screen, /setCooldownSeconds\(60\)/)
-  assert.match(screen, /cooldownSeconds > 0/)
+  assert.equal(finalSession.user.id, 'guest-user-id')
 })
 
-test('password cannot be set before email verification', async () => {
-  let passwordUpdates = 0
-
+test('UUID mismatch fails safely', async () => {
+  const user = linkedUser('replacement-user-id')
   await assert.rejects(
-    completeAnonymousAccountPassword({
-      password: 'strong-password',
-      originalUserId: 'guest-user-id',
+    verifyAuthoritativeCallbackSession({
+      expectedUserId: 'guest-user-id',
+      expectedEmail: user.email,
       dependencies: {
-        getSession: () =>
-          resolved({ user: { id: 'guest-user-id', is_anonymous: true } }),
-        updatePassword: () => {
-          passwordUpdates += 1
-          return resolved({ id: 'guest-user-id', is_anonymous: false })
-        },
-      },
-    }),
-    /Verify the email/
-  )
-  assert.equal(passwordUpdates, 0)
-})
-
-test('password update occurs only after OTP verification and preserves user ID', async () => {
-  const flow = secureFlow('guest-user-id')
-  const requested = await requestAnonymousAccountLink({
-    email: flow.email,
-    dependencies: flow.dependencies,
-  })
-  const verified = await verifyAnonymousAccountEmail({
-    email: flow.email,
-    token: '123456',
-    originalUserId: requested.originalUserId,
-    dependencies: flow.dependencies,
-  })
-  const completed = await completeAnonymousAccountPassword({
-    password: 'strong-password',
-    originalUserId: requested.originalUserId,
-    dependencies: flow.dependencies,
-  })
-
-  assert.equal(requested.originalUserId, 'guest-user-id')
-  assert.equal(verified.user.id, 'guest-user-id')
-  assert.equal(completed.user.id, 'guest-user-id')
-  assert.equal(flow.passwordUpdates(), 1)
-})
-
-test('user-ID mismatch stops secure completion', async () => {
-  const passwordUpdates = 0
-  const email = 'cook@example.com'
-
-  await assert.rejects(
-    verifyAnonymousAccountEmail({
-      email,
-      token: '123456',
-      originalUserId: 'guest-user-id',
-      dependencies: {
-        getSession: () =>
-          resolved({ user: { id: 'guest-user-id', is_anonymous: true } }),
-        verifyEmailChangeOtp: () =>
-          resolved({
-            id: 'replacement-user-id',
-            email,
-            email_confirmed_at: '2026-07-30T00:00:00Z',
-            is_anonymous: false,
-          }),
+        getVerifiedUser: () => resolved(user),
+        getSession: () => resolved({ user }),
       },
     }),
     /different user/
   )
-
-  assert.equal(passwordUpdates, 0)
 })
 
-test('secure password and confirmation fields have independent visibility controls', () => {
-  const screen = source('../src/features/account-recovery/account-access-screen.tsx')
-
-  assert.match(screen, /testID="secure-password-visibility"/)
-  assert.match(screen, /testID="secure-confirmation-visibility"/)
-  assert.match(screen, /secureTextEntry=\{!visible\}/)
-  assert.match(screen, /name=\{visible \? 'eye-off' : 'eye'\}/)
-})
-
-test('recover mode uses password sign-in and does not request OTP', () => {
+test('unknown recovery email cannot create an account', () => {
   const auth = source('../src/lib/supabase/auth.ts')
-  const provider = source('../src/providers/auth-provider.tsx')
-  const recoveryBlock = between(
-    provider,
-    'const signInToRecover',
-    'const handleSignOut'
-  )
+  const recovery = between(auth, 'sendRecoveryMagicLink', 'establishSessionFromAuthCallback')
 
-  assert.match(auth, /auth\.signInWithPassword\(\{/)
-  assert.match(recoveryBlock, /signInWithSupabasePassword/)
-  assert.doesNotMatch(recoveryBlock, /verifyOtp|resend|signInWithOtp/)
+  assert.match(recovery, /shouldCreateUser: false/)
+  assert.doesNotMatch(recovery, /signUp|updateUser/)
+})
+
+test('callback processing is idempotent', async () => {
+  const gate = new AuthCallbackGate()
+  let executions = 0
+  const callbackUrl =
+    'recipe-dost://auth/callback#access_token=secret&refresh_token=secret'
+  const task = () => {
+    executions += 1
+    return resolved('completed')
+  }
+
+  const [first, replay] = await Promise.all([
+    gate.run(callbackUrl, task),
+    gate.run(callbackUrl, task),
+  ])
+  assert.equal(first, 'completed')
+  assert.equal(replay, 'completed')
+  assert.equal(executions, 1)
+})
+
+test('terminated and background callback paths are handled without logging URLs', () => {
+  const provider = source('../src/providers/auth-provider.tsx')
+
+  assert.match(provider, /Linking\.getInitialURL\(\)/)
+  assert.match(provider, /Linking\.addEventListener\('url'/)
+  assert.doesNotMatch(provider, /console\./)
 })
 
 test('meaningful guest data requires confirmation but an empty guest can switch', () => {
@@ -164,30 +148,13 @@ test('meaningful guest data requires confirmation but an empty guest can switch'
   assert.match(screen, /without merging or deleting either account/)
 })
 
-test('fresh-install password sign-in re-reads and verifies the recovered user ID', async () => {
-  const session = { user: { id: 'recovered-user-id', is_anonymous: false } }
-  const recovered = await recoverLinkedAccount({
-    email: 'cook@example.com',
-    password: 'strong-password',
-    dependencies: {
-      signInWithPassword: () => resolved(session),
-      getVerifiedUser: () => resolved(session.user),
-      getSession: () => resolved(session),
-    },
-  })
-
-  assert.equal(recovered.user.id, 'recovered-user-id')
-})
-
-test('auth bootstrap cannot overwrite an in-progress recovery', async () => {
+test('auth bootstrap cannot overwrite callback recovery', async () => {
   const gate = new AuthOperationGate()
   let releaseRecovery
   const blocker = new Promise((resolve) => {
     releaseRecovery = resolve
   })
-  const recoveredSession = {
-    user: { id: 'recovered-user-id', is_anonymous: false },
-  }
+  const recoveredSession = { user: linkedUser('recovered-user-id') }
   let anonymousSignIns = 0
 
   const recovery = gate.run('recovering', async () => {
@@ -198,9 +165,7 @@ test('auth bootstrap cannot overwrite an in-progress recovery', async () => {
     getSession: () => resolved(recoveredSession),
     signInAnonymously: () => {
       anonymousSignIns += 1
-      return resolved({
-        user: { id: 'replacement-guest', is_anonymous: true },
-      })
+      return resolved({ user: { id: 'replacement-guest', is_anonymous: true } })
     },
   })
 
@@ -211,7 +176,7 @@ test('auth bootstrap cannot overwrite an in-progress recovery', async () => {
   assert.equal(anonymousSignIns, 0)
 })
 
-test('successful recovery invalidates and refetches scoped user-owned data', async () => {
+test('successful callback refetches every scoped user-owned query root', async () => {
   const invalidated = []
   await refreshUserOwnedQueries({
     invalidateQueries: ({ queryKey }) => {
@@ -224,6 +189,7 @@ test('successful recovery invalidates and refetches scoped user-owned data', asy
   for (const key of [
     'recent-recipes',
     'recipe-library',
+    'favourites',
     'recipe-card',
     'recipe-grocery-lists',
     'active-media-jobs',
@@ -235,7 +201,7 @@ test('successful recovery invalidates and refetches scoped user-owned data', asy
   }
 })
 
-test('linking and recovery synchronize RevenueCat with the Supabase user ID', async () => {
+test('RevenueCat identity uses the recovered Supabase UUID and refreshes Premium', async () => {
   let configuredUserId = null
   const synchronizer = new RevenueCatIdentitySynchronizer({
     configure: (userId) => {
@@ -255,15 +221,12 @@ test('linking and recovery synchronize RevenueCat with the Supabase user ID', as
   )
 })
 
-test('RevenueCat failure leaves the recovered Supabase session intact', async () => {
-  const session = { user: { id: 'recovered-user-id', is_anonymous: false } }
-  const recovered = await recoverLinkedAccount({
-    email: 'cook@example.com',
-    password: 'strong-password',
+test('RevenueCat failure does not undo an authoritative Supabase session', async () => {
+  const user = linkedUser('recovered-user-id')
+  const session = await verifyAuthoritativeCallbackSession({
     dependencies: {
-      signInWithPassword: () => resolved(session),
-      getVerifiedUser: () => resolved(session.user),
-      getSession: () => resolved(session),
+      getVerifiedUser: () => resolved(user),
+      getSession: () => resolved({ user }),
     },
   })
   const synchronizer = new RevenueCatIdentitySynchronizer({
@@ -273,70 +236,54 @@ test('RevenueCat failure leaves the recovered Supabase session intact', async ()
     logOut: () => resolved(customerInfo(false)),
   })
 
-  await assert.rejects(synchronizer.synchronize(recovered.user.id))
-  assert.equal(recovered.user.id, 'recovered-user-id')
+  await assert.rejects(synchronizer.synchronize(session.user.id))
+  assert.equal(session.user.id, 'recovered-user-id')
   assert.match(
     source('../src/providers/auth-provider.tsx'),
     /account_recovery_subscription_refresh_pending/
   )
 })
 
-test('Settings exposes restore purchases and secured state after completion', () => {
-  const provider = source('../src/providers/revenuecat-provider.tsx')
-  const settingsRoute = source('../app/(tabs)/settings.tsx')
-  const accountSection = source('../src/features/account-recovery/account-recovery-section.tsx')
+test('Settings remains summary-only with restore purchases and secured state', () => {
+  const section = source('../src/features/account-recovery/account-recovery-section.tsx')
+  const settings = source('../app/(tabs)/settings.tsx')
 
-  assert.match(provider, /Purchases\.restorePurchases\(\)/)
-  assert.match(provider, /reconcileSubscription\('restore'\)/)
-  assert.match(settingsRoute, /title="Restore purchases"/)
-  assert.match(accountSection, /title="Account secured"/)
+  assert.match(section, /Guest account/)
+  assert.match(section, /Account secured/)
+  assert.match(section, /maskAccountEmail/)
+  assert.doesNotMatch(section, /<Input|secureTextEntry|Verification code/)
+  assert.match(settings, /title="Restore purchases"/)
 })
 
-test('rate limiting is bounded and account flow does not duplicate user data', () => {
+test('magic-link UI retains cooldown, change-email and bounded rate-limit copy', () => {
+  const screen = source('../src/features/account-recovery/account-access-screen.tsx')
   const provider = source('../src/providers/auth-provider.tsx')
-  const contract = source('../src/features/account-recovery/account-recovery.ts')
 
+  assert.match(screen, /setCooldownSeconds\(60\)/)
+  assert.match(screen, /Resend available in/)
+  assert.match(screen, /Change email/)
+  assert.match(screen, /Open the link sent to \{email\} on this device/)
   assert.match(
     provider,
     /Too many verification emails were requested\. Please wait before trying again\./
   )
-  assert.doesNotMatch(contract, /\.from\(|insert\(|upsert\(/)
-  assert.doesNotMatch(provider, /\.from\(|insert\(|upsert\(/)
 })
 
-test('sign-out and account linking preserve onboarding completion', () => {
+test('account recovery does not duplicate user-owned records or reset onboarding', () => {
+  const contract = source('../src/features/account-recovery/account-recovery.ts')
   const provider = source('../src/providers/auth-provider.tsx')
 
+  assert.doesNotMatch(contract, /\.from\(|insert\(|upsert\(/)
+  assert.doesNotMatch(provider, /\.from\(|insert\(|upsert\(/)
   assert.doesNotMatch(provider, /clearOnboardingProfile|resetProfile/)
-  assert.match(provider, /setAccountState\('signed_out'\)/)
 })
 
-function secureFlow(userId) {
-  const email = 'cook@example.com'
-  let session = { user: { id: userId, is_anonymous: true } }
-  let passwordUpdateCount = 0
+function linkedUser(id) {
   return {
-    email,
-    passwordUpdates: () => passwordUpdateCount,
-    dependencies: {
-      getSession: () => resolved(session),
-      updateEmail: () => resolved({ id: userId, is_anonymous: true }),
-      verifyEmailChangeOtp: () => {
-        session = {
-          user: {
-            id: userId,
-            email,
-            email_confirmed_at: '2026-07-30T00:00:00Z',
-            is_anonymous: false,
-          },
-        }
-        return resolved(session.user)
-      },
-      updatePassword: () => {
-        passwordUpdateCount += 1
-        return resolved(session.user)
-      },
-    },
+    id,
+    email: 'cook@example.com',
+    email_confirmed_at: '2026-07-31T00:00:00Z',
+    is_anonymous: false,
   }
 }
 

@@ -52,8 +52,6 @@ export type AppIconName =
   | 'download'
   | 'flame'
   | 'servings'
-  | 'eye'
-  | 'eye-off'
 
 type IoniconName = ComponentProps<typeof Ionicons>['name']
 
@@ -107,8 +105,6 @@ const appIconMap = {
   download: 'download-outline',
   flame: 'flame-outline',
   servings: 'people-outline',
-  eye: 'eye-outline',
-  'eye-off': 'eye-off-outline',
 } satisfies Record<AppIconName, IoniconName>
 
 export function AppIcon({

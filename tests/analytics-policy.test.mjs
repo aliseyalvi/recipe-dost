@@ -100,14 +100,14 @@ test('account recovery events allow only normalized non-PII properties', () => {
   assert.equal(isAllowedProductEvent('account_recovery_completed'), true)
   assert.deepEqual(
     sanitizeEventProperties('account_recovery_completed', {
-      method: 'email_password',
+      method: 'email_magic_link',
       replaced_empty_guest: true,
       subscription_refresh_pending: false,
       email: 'blocked@example.com',
       user_id: 'blocked',
     }),
     {
-      method: 'email_password',
+      method: 'email_magic_link',
       replaced_empty_guest: true,
       subscription_refresh_pending: false,
     }

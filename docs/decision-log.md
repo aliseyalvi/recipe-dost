@@ -926,3 +926,13 @@
 - Recover mode uses email/password sign-in, preserves the existing meaningful-guest confirmation, re-reads the session, synchronizes RevenueCat with the Supabase UUID, and refreshes scoped user-owned data.
 - Supabase dashboard requirements: anonymous sign-ins, manual linking, and Email provider enabled; the Change Email Address template must contain `{{ .Token }}` and must not rely on `{{ .ConfirmationURL }}` for this flow. The built-in sender remains rate limited.
 - No mobile deep link, migration, Edge Function, native configuration, dependency, onboarding, media-job, queue, Gemini, duration/retry, or RevenueCat backend change was added.
+
+## [2026-07-31] M24.5R-MAGIC Passwordless Account Access
+
+- Password and typed-OTP account access was replaced by one passwordless email-link flow at `/account-access` for both `secure` and `recover` modes.
+- The existing `recipe-dost` scheme is reused with `recipe-dost://auth/callback`; the current Supabase client uses the implicit flow and establishes the callback session from official access/refresh parameters.
+- Secure mode calls `updateUser({ email }, { emailRedirectTo })`, captures the anonymous UUID, and rejects callback completion unless the authoritative linked user retains that UUID.
+- Recover mode calls `signInWithOtp` with `shouldCreateUser: false`, retains meaningful-guest confirmation, and does not reveal whether an email exists.
+- Terminated and background callback delivery share one idempotent processor, which re-reads the authoritative session, synchronizes RevenueCat to the Supabase UUID, and refetches scoped user-owned and AI-access queries.
+- Supabase Dashboard must allow `recipe-dost://auth/callback`; both the Magic Link and Change Email Address templates must use `{{ .ConfirmationURL }}`.
+- No migration, Edge Function, custom email service, dependency, onboarding, media, queue, duration/retry, RevenueCat backend, or native configuration change was required.

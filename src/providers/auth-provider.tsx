@@ -1,14 +1,12 @@
 import {
+  AuthCallbackGate,
   AuthOperationGate,
   type AccountRecoveryState,
-  assertSameUserId,
   bootstrapAuthSession,
-  completeAnonymousAccountPassword,
   getAccountRecoveryState,
-  recoverLinkedAccount,
   requestAnonymousAccountLink,
   shouldConfirmGuestSwitch,
-  verifyAnonymousAccountEmail,
+  verifyAuthoritativeCallbackSession,
 } from '@/features/account-recovery/account-recovery'
 import { reportError, setSentryUser } from '@/lib/observability/sentry'
 import { clearAiAccessForUser } from '@/lib/query/ai-access-query'
@@ -22,16 +20,16 @@ import {
 } from '@/lib/revenuecat/runtime-identity'
 import {
   clearSessionLocally,
+  establishSessionFromAuthCallback,
+  getAuthCallbackKind,
   getSession,
   getVerifiedUser,
   hasMeaningfulCurrentUserData,
-  resendCurrentUserEmailChange,
+  isAuthCallbackUrl,
+  sendRecoveryMagicLink,
   signInAnonymously,
-  signInWithPassword as signInWithSupabasePassword,
   signOut,
   updateCurrentUserEmail,
-  updateCurrentUserPassword,
-  verifyCurrentUserEmailChange,
 } from '@/lib/supabase/auth'
 import { supabase } from '@/lib/supabase/client'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
@@ -49,12 +47,13 @@ import {
   useRef,
   useState,
 } from 'react'
+import { Linking } from 'react-native'
 
-export type RecoverySignInResult = {
-  recovered: boolean
+export type MagicLinkRequestResult = {
   requiresGuestSwitchConfirmation: boolean
-  subscriptionRefreshPending: boolean
 }
+
+export type AuthCallbackState = 'idle' | 'processing' | 'success' | 'error'
 
 type AuthContextValue = {
   session: Session | null
@@ -67,17 +66,13 @@ type AuthContextValue = {
   acknowledgeSubscriptionRefresh: () => void
   retry: () => Promise<void>
   requestAccountLink: (email: string) => Promise<void>
-  resendAccountLinkCode: (email: string) => Promise<void>
-  verifyAccountLinkCode: (input: {
+  requestRecoveryLink: (input: {
     email: string
-    token: string
-  }) => Promise<void>
-  completeAccountLinkPassword: (password: string) => Promise<void>
-  signInToRecover: (input: {
-    email: string
-    password: string
     confirmGuestSwitch?: boolean
-  }) => Promise<RecoverySignInResult>
+  }) => Promise<MagicLinkRequestResult>
+  authCallbackState: AuthCallbackState
+  authCallbackError: string | null
+  processAuthCallback: (callbackUrl: string) => Promise<void>
   signOut: () => Promise<void>
   clearDeletedSession: () => Promise<void>
 }
@@ -94,8 +89,13 @@ export function AuthProvider({ children }: Props) {
   const previousAnalyticsUserId = useRef<string | null>(null)
   const previousQueryUserId = useRef<string | null>(null)
   const linkingUserIdRef = useRef<string | null>(null)
-  const verifiedLinkUserIdRef = useRef<string | null>(null)
   const linkingSessionRef = useRef<Session | null>(null)
+  const pendingMagicLinkRef = useRef<{
+    mode: 'secure' | 'recover'
+    email: string
+    originalUserId?: string
+  } | null>(null)
+  const callbackGateRef = useRef(new AuthCallbackGate())
   const operationGateRef = useRef(new AuthOperationGate())
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -105,6 +105,9 @@ export function AuthProvider({ children }: Props) {
   const [accountError, setAccountError] = useState<string | null>(null)
   const [subscriptionRefreshPending, setSubscriptionRefreshPending] =
     useState(false)
+  const [authCallbackState, setAuthCallbackState] =
+    useState<AuthCallbackState>('idle')
+  const [authCallbackError, setAuthCallbackError] = useState<string | null>(null)
 
   const bootstrapSession = useCallback(async () => {
     setIsLoading(true)
@@ -206,10 +209,9 @@ export function AuthProvider({ children }: Props) {
       setAccountState('linking')
       setAccountError(null)
       setSubscriptionRefreshPending(false)
-      trackEvent('account_link_started', { method: 'email_password' })
+      trackEvent('account_link_started', { method: 'email_magic_link' })
 
       try {
-        verifiedLinkUserIdRef.current = null
         const result = await operationGateRef.current.run('linking', async () => {
           linkingSessionRef.current = await getSession()
           return requestAnonymousAccountLink({
@@ -221,10 +223,15 @@ export function AuthProvider({ children }: Props) {
           })
         })
         linkingUserIdRef.current = result.originalUserId
+        pendingMagicLinkRef.current = {
+          mode: 'secure',
+          email,
+          originalUserId: result.originalUserId,
+        }
         const finalSession = await getSession()
         if (finalSession) setSession(finalSession)
         trackEvent('account_link_verification_sent', {
-          method: 'email_password',
+          method: 'email_magic_link',
           stage: 'initial',
         })
       } catch (caughtError) {
@@ -237,7 +244,7 @@ export function AuthProvider({ children }: Props) {
         setAccountError(getSafeAuthErrorMessage(caughtError))
         reportError(caughtError)
         trackEvent('account_link_failed', {
-          method: 'email_password',
+          method: 'email_magic_link',
           stage: 'email',
         })
         throw new Error(getSafeAuthErrorMessage(caughtError))
@@ -246,167 +253,19 @@ export function AuthProvider({ children }: Props) {
     [trackEvent]
   )
 
-  const verifyAccountLinkCode = useCallback(
+  const requestRecoveryLink = useCallback(
     async ({
       email,
-      token,
-    }: {
-      email: string
-      token: string
-    }) => {
-      const originalUserId = linkingUserIdRef.current
-      if (!originalUserId) {
-        throw new Error('Start account security again before entering the code.')
-      }
-
-      setAccountState('linking')
-      setAccountError(null)
-
-      try {
-        await operationGateRef.current.run('linking', async () => {
-          const verifiedSession = await verifyAnonymousAccountEmail({
-            email,
-            token,
-            originalUserId,
-            dependencies: {
-              getSession,
-              verifyEmailChangeOtp: verifyCurrentUserEmailChange,
-            },
-          })
-          verifiedLinkUserIdRef.current = verifiedSession.user.id
-          setSession(verifiedSession as Session)
-          setAccountState('linking')
-        })
-      } catch (caughtError) {
-        const finalSession = await restoreOriginalLinkingSessionOnMismatch(
-          caughtError,
-          linkingSessionRef.current
-        )
-        if (finalSession) setSession(finalSession)
-        setAccountState('error')
-        setAccountError(getSafeAuthErrorMessage(caughtError))
-        reportError(caughtError)
-        trackEvent('account_link_failed', {
-          method: 'email_password',
-          stage: 'verification',
-        })
-        throw new Error(getSafeAuthErrorMessage(caughtError))
-      }
-    },
-    [trackEvent]
-  )
-
-  const completeAccountLinkPassword = useCallback(
-    async (password: string) => {
-      const originalUserId = linkingUserIdRef.current
-      if (
-        !originalUserId ||
-        verifiedLinkUserIdRef.current !== originalUserId
-      ) {
-        throw new Error('Verify the email before setting a password.')
-      }
-
-      setAccountState('linking')
-      setAccountError(null)
-
-      try {
-        await operationGateRef.current.run('linking', async () => {
-          const finalSession = await completeAnonymousAccountPassword({
-            password,
-            originalUserId,
-            dependencies: {
-              getSession,
-              updatePassword: updateCurrentUserPassword,
-            },
-          })
-          const refreshPending = await refreshRecoveredIdentity(
-            finalSession.user.id
-          )
-          clearUserOwnedQueries(queryClient)
-          setSession(finalSession as Session)
-          await refreshUserOwnedQueries(queryClient)
-          linkingUserIdRef.current = null
-          verifiedLinkUserIdRef.current = null
-          linkingSessionRef.current = null
-          setAccountState('linked')
-          setSubscriptionRefreshPending(refreshPending)
-          trackEvent('account_link_completed', {
-            method: 'email_password',
-            subscription_refresh_pending: refreshPending,
-          })
-        })
-      } catch (caughtError) {
-        const finalSession = await restoreOriginalLinkingSessionOnMismatch(
-          caughtError,
-          linkingSessionRef.current
-        )
-        if (finalSession) setSession(finalSession)
-        setAccountState('error')
-        setAccountError(getSafeAuthErrorMessage(caughtError))
-        reportError(caughtError)
-        trackEvent('account_link_failed', {
-          method: 'email_password',
-          stage: 'verification',
-        })
-        throw new Error(getSafeAuthErrorMessage(caughtError))
-      }
-    },
-    [queryClient, refreshRecoveredIdentity, trackEvent]
-  )
-
-  const resendAccountLinkCode = useCallback(
-    async (email: string) => {
-      if (!linkingUserIdRef.current) {
-        throw new Error('Start account security again before requesting a code.')
-      }
-
-      setAccountState('linking')
-      setAccountError(null)
-      try {
-        await operationGateRef.current.run('linking', async () => {
-          const currentSession = await getSession()
-          if (!currentSession) {
-            throw new Error('The guest session could not be verified.')
-          }
-          assertSameUserId(
-            linkingUserIdRef.current!,
-            currentSession.user.id
-          )
-          await resendCurrentUserEmailChange(email)
-        })
-        trackEvent('account_link_verification_sent', {
-          method: 'email_password',
-          stage: 'resend',
-        })
-      } catch (caughtError) {
-        setAccountState('error')
-        setAccountError(getSafeAuthErrorMessage(caughtError))
-        reportError(caughtError)
-        trackEvent('account_link_failed', {
-          method: 'email_password',
-          stage: 'resend',
-        })
-        throw new Error(getSafeAuthErrorMessage(caughtError))
-      }
-    },
-    [trackEvent]
-  )
-
-  const signInToRecover = useCallback(
-    async ({
-      email,
-      password,
       confirmGuestSwitch = false,
     }: {
       email: string
-      password: string
       confirmGuestSwitch?: boolean
-    }): Promise<RecoverySignInResult> => {
+    }): Promise<MagicLinkRequestResult> => {
       setAccountState('signing_in')
       setAccountError(null)
       setSubscriptionRefreshPending(false)
       trackEvent('account_recovery_sign_in_started', {
-        method: 'email_password',
+        method: 'email_magic_link',
       })
 
       try {
@@ -430,41 +289,19 @@ export function AuthProvider({ children }: Props) {
                 undefined
               )
               return {
-                recovered: false,
                 requiresGuestSwitchConfirmation: true,
-                subscriptionRefreshPending: false,
               }
             }
           }
 
-          const finalSession = await recoverLinkedAccount({
-            email,
-            password,
-            dependencies: {
-              signInWithPassword: signInWithSupabasePassword,
-              getVerifiedUser,
-              getSession,
-            },
-          })
-          setAccountState('recovering')
-          const refreshPending = await refreshRecoveredIdentity(
-            finalSession.user.id
+          await sendRecoveryMagicLink(email)
+          pendingMagicLinkRef.current = { mode: 'recover', email }
+          setAccountState(
+            getAccountRecoveryState(currentSession?.user ?? null)
           )
-          clearUserOwnedQueries(queryClient)
-          setSession(finalSession)
-          await refreshUserOwnedQueries(queryClient)
-          setAccountState('linked')
-          setSubscriptionRefreshPending(refreshPending)
-          trackEvent('account_recovery_completed', {
-            method: 'email_password',
-            replaced_empty_guest: isAnonymous,
-            subscription_refresh_pending: refreshPending,
-          })
 
           return {
-            recovered: true,
             requiresGuestSwitchConfirmation: false,
-            subscriptionRefreshPending: refreshPending,
           }
         })
       } catch (caughtError) {
@@ -474,13 +311,130 @@ export function AuthProvider({ children }: Props) {
         setAccountError(getSafeAuthErrorMessage(caughtError))
         reportError(caughtError)
         trackEvent('account_recovery_sign_in_failed', {
-          method: 'email_password',
+          method: 'email_magic_link',
         })
         throw new Error(getSafeAuthErrorMessage(caughtError))
       }
     },
+    [trackEvent]
+  )
+
+  const processAuthCallback = useCallback(
+    async (callbackUrl: string) => {
+      if (!isAuthCallbackUrl(callbackUrl)) return
+
+      await callbackGateRef.current.run(callbackUrl, async () => {
+        setAuthCallbackState('processing')
+        setAuthCallbackError(null)
+        await operationGateRef.current.waitUntilIdle()
+        const originalSession = await getSession().catch(() => null)
+
+        try {
+          await operationGateRef.current.run('recovering', async () => {
+            const pendingLink = pendingMagicLinkRef.current
+            const callbackKind =
+              getAuthCallbackKind(callbackUrl) ?? pendingLink?.mode ?? null
+            if (!callbackKind) {
+              throw new Error(
+                'This sign-in link could not be identified. Request a new link.'
+              )
+            }
+
+            let expectedUserId: string | null = null
+            if (callbackKind === 'secure') {
+              expectedUserId =
+                pendingLink?.mode === 'secure'
+                  ? pendingLink.originalUserId ?? null
+                  : originalSession?.user.is_anonymous
+                    ? originalSession.user.id
+                    : null
+              if (!expectedUserId) {
+                throw new Error(
+                  'Open the secure link on the device where it was requested.'
+                )
+              }
+            } else if (
+              originalSession?.user.is_anonymous &&
+              pendingLink?.mode !== 'recover' &&
+              (await hasMeaningfulCurrentUserData(originalSession.user.id))
+            ) {
+              throw new Error(
+                'This device has guest data. Start recovery here and confirm the account switch first.'
+              )
+            }
+
+            await establishSessionFromAuthCallback(callbackUrl)
+            const finalSession = await verifyAuthoritativeCallbackSession({
+              expectedUserId,
+              expectedEmail: pendingLink?.email ?? null,
+              dependencies: { getVerifiedUser, getSession },
+            })
+
+            setAccountState('recovering')
+            const refreshPending = await refreshRecoveredIdentity(
+              finalSession.user.id
+            )
+            clearUserOwnedQueries(queryClient)
+            setSession(finalSession)
+            await refreshUserOwnedQueries(queryClient)
+            linkingUserIdRef.current = null
+            linkingSessionRef.current = null
+            pendingMagicLinkRef.current = null
+            setAccountState('linked')
+            setSubscriptionRefreshPending(refreshPending)
+            if (callbackKind === 'secure') {
+              trackEvent('account_link_completed', {
+                method: 'email_magic_link',
+                subscription_refresh_pending: refreshPending,
+              })
+            } else {
+              trackEvent('account_recovery_completed', {
+                method: 'email_magic_link',
+                replaced_empty_guest: Boolean(
+                  originalSession?.user.is_anonymous
+                ),
+                subscription_refresh_pending: refreshPending,
+              })
+            }
+          })
+          setAuthCallbackState('success')
+        } catch (caughtError) {
+          const restoredSession = await restoreOriginalLinkingSessionOnMismatch(
+            caughtError,
+            originalSession
+          )
+          if (restoredSession) setSession(restoredSession)
+          const safeMessage = getSafeAuthErrorMessage(caughtError)
+          setAccountState('error')
+          setAccountError(safeMessage)
+          setAuthCallbackState('error')
+          setAuthCallbackError(safeMessage)
+          reportError(caughtError)
+          throw new Error(safeMessage)
+        }
+      })
+    },
     [queryClient, refreshRecoveredIdentity, trackEvent]
   )
+
+  useEffect(() => {
+    let active = true
+    void Linking.getInitialURL().then((url) => {
+      if (active && url && isAuthCallbackUrl(url)) {
+        void processAuthCallback(url).catch(() => undefined)
+      }
+    })
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      if (isAuthCallbackUrl(url)) {
+        void processAuthCallback(url).catch(() => undefined)
+      }
+    })
+
+    return () => {
+      active = false
+      subscription.remove()
+    }
+  }, [processAuthCallback])
 
   const handleSignOut = useCallback(async () => {
     setAccountError(null)
@@ -498,9 +452,12 @@ export function AuthProvider({ children }: Props) {
         resetAnalyticsUser()
         setSentryUser(null)
         previousAnalyticsUserId.current = null
+        pendingMagicLinkRef.current = null
         setSession(null)
         setAccountState('signed_out')
         setSubscriptionRefreshPending(false)
+        setAuthCallbackState('idle')
+        setAuthCallbackError(null)
         trackEvent('account_signed_out', undefined)
       })
     } catch (caughtError) {
@@ -541,10 +498,10 @@ export function AuthProvider({ children }: Props) {
       acknowledgeSubscriptionRefresh,
       retry: bootstrapSession,
       requestAccountLink,
-      resendAccountLinkCode,
-      verifyAccountLinkCode,
-      completeAccountLinkPassword,
-      signInToRecover,
+      requestRecoveryLink,
+      authCallbackState,
+      authCallbackError,
+      processAuthCallback,
       signOut: handleSignOut,
       clearDeletedSession,
     }),
@@ -552,18 +509,18 @@ export function AuthProvider({ children }: Props) {
       accountError,
       accountState,
       acknowledgeSubscriptionRefresh,
+      authCallbackError,
+      authCallbackState,
       bootstrapSession,
       clearDeletedSession,
-      completeAccountLinkPassword,
       error,
       handleSignOut,
       isLoading,
+      processAuthCallback,
       requestAccountLink,
-      resendAccountLinkCode,
+      requestRecoveryLink,
       session,
-      signInToRecover,
       subscriptionRefreshPending,
-      verifyAccountLinkCode,
     ]
   )
 
@@ -607,7 +564,9 @@ async function restoreOriginalLinkingSessionOnMismatch(
   originalSession: Session | null
 ) {
   const isMismatch =
-    error instanceof Error && error.message.toLowerCase().includes('different user')
+    error instanceof Error &&
+    (error.message.toLowerCase().includes('different user') ||
+      error.message.toLowerCase().includes('different account'))
 
   if (!isMismatch || !originalSession) {
     return getSession().catch(() => null)
@@ -633,7 +592,7 @@ function getSafeAuthErrorMessage(error: unknown) {
       ? (error as { status?: unknown }).status
       : null
 
-  if (message.includes('different user')) {
+  if (message.includes('different user') || message.includes('different account')) {
     return 'Account verification returned a different user. Nothing was migrated.'
   }
   if (
@@ -651,26 +610,12 @@ function getSafeAuthErrorMessage(error: unknown) {
     return 'That email is already connected to another account. Sign in to recover it instead.'
   }
   if (
-    message.includes('invalid login credentials') ||
-    message.includes('invalid credentials')
-  ) {
-    return 'The email or password is incorrect.'
-  }
-  if (
+    message.includes('invalid') ||
     message.includes('expired') ||
-    message.includes('token has expired') ||
-    message.includes('otp')
+    message.includes('token') ||
+    message.includes('callback')
   ) {
-    return 'That verification code is invalid or expired. Request a new code and try again.'
-  }
-  if (
-    message.includes('email not confirmed') ||
-    message.includes('email_not_confirmed')
-  ) {
-    return 'Verify your email with the code before setting the password.'
-  }
-  if (message.includes('password')) {
-    return 'Use a stronger password with at least 8 characters.'
+    return 'This sign-in link is invalid or expired. Request a new link.'
   }
   if (
     message.includes('network') ||
@@ -681,6 +626,12 @@ function getSafeAuthErrorMessage(error: unknown) {
   }
   if (message.includes('current guest session')) {
     return 'This account is no longer a guest account.'
+  }
+  if (message.includes('device where it was requested')) {
+    return 'Open this secure link on the device where it was requested.'
+  }
+  if (message.includes('guest data')) {
+    return 'This device has guest data. Start recovery here and confirm the account switch first.'
   }
   if (message.includes('already in progress')) {
     return 'Another account action is still finishing. Please wait and retry.'
