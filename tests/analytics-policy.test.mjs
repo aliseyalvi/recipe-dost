@@ -96,6 +96,24 @@ test('event names and event properties are closed allowlists', () => {
   assert.equal(sanitizePostHogCapture({ event: 'arbitrary_event', properties: {} }), null)
 })
 
+test('account recovery events allow only normalized non-PII properties', () => {
+  assert.equal(isAllowedProductEvent('account_recovery_completed'), true)
+  assert.deepEqual(
+    sanitizeEventProperties('account_recovery_completed', {
+      method: 'email_password',
+      replaced_empty_guest: true,
+      subscription_refresh_pending: false,
+      email: 'blocked@example.com',
+      user_id: 'blocked',
+    }),
+    {
+      method: 'email_password',
+      replaced_empty_guest: true,
+      subscription_refresh_pending: false,
+    }
+  )
+})
+
 test('subscription reconciliation events retain only safe normalized diagnostics', () => {
   assert.equal(isAllowedProductEvent('subscription_restore_no_entitlement'), true)
   assert.deepEqual(

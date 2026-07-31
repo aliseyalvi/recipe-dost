@@ -1,5 +1,4 @@
 import {
-  REVENUECAT_ANDROID_API_KEY,
   REVENUECAT_ENTITLEMENT_ID,
   REVENUECAT_OFFERING_ID,
 } from '@/config/revenuecat'
@@ -23,6 +22,11 @@ import {
   useAiAccessQuery,
 } from '@/lib/query/ai-access-query'
 import { reportError } from '@/lib/observability/sentry'
+import {
+  canSynchronizeRevenueCatIdentity,
+  resetRevenueCatIdentity,
+  synchronizeRevenueCatIdentity,
+} from '@/lib/revenuecat/runtime-identity'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { useQueryClient } from '@tanstack/react-query'
@@ -42,7 +46,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { AppState, Platform } from 'react-native'
+import { AppState } from 'react-native'
 
 export type SubscriptionActionResult = {
   customerInfo: CustomerInfo | null
@@ -83,9 +87,6 @@ type StateMeta = {
 const RevenueCatContext = createContext<RevenueCatContextValue | null>(null)
 const PLANS_UNAVAILABLE_MESSAGE =
   'Plans unavailable right now. Please try again later.'
-
-let didConfigurePurchases = false
-let configuredAppUserId: string | null = null
 
 export function RevenueCatProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
@@ -405,10 +406,12 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    const androidApiKey = REVENUECAT_ANDROID_API_KEY
-    if (!user?.id || Platform.OS !== 'android' || !androidApiKey) {
+    if (!user?.id || !canSynchronizeRevenueCatIdentity()) {
       setIsConfigured(false)
       setConfiguredUserId(null)
+      setCustomerInfo(null)
+      setCurrentOffering(null)
+      setError(null)
       setIsLoading(false)
       return
     }
@@ -417,19 +420,9 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
       setIsLoading(true)
       setError(null)
       try {
-        let initialInfo: CustomerInfo | null = null
-        if (!didConfigurePurchases) {
-          Purchases.configure({ apiKey: androidApiKey, appUserID: user.id })
-          didConfigurePurchases = true
-          configuredAppUserId = user.id
-        } else if (configuredAppUserId !== user.id) {
-          const login = await Purchases.logIn(user.id)
-          configuredAppUserId = user.id
-          initialInfo = login.customerInfo
-        }
+        const info = await synchronizeRevenueCatIdentity(user.id)
         if (!active || !mountedRef.current) return
-        const info = initialInfo ?? await Purchases.getCustomerInfo()
-        if (!active || !mountedRef.current) return
+        if (!info) return
         updateCustomerInfo(info)
         setConfiguredUserId(user.id)
         setIsConfigured(true)
@@ -501,9 +494,8 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
 
   const resetForAccountDeletion = useCallback(async () => {
     try {
-      if (Platform.OS === 'android' && didConfigurePurchases) await Purchases.logOut()
+      await resetRevenueCatIdentity()
     } finally {
-      configuredAppUserId = null
       setConfiguredUserId(null)
       setCustomerInfo(null)
       setCurrentOffering(null)

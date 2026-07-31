@@ -26,6 +26,10 @@ export default function RootLayout() {
         <Stack.Screen name="onboarding" options={{ title: "Onboarding" }} />
         <Stack.Screen name="save-recipe" options={{ title: "Save Recipe" }} />
         <Stack.Screen name="share-recipe" options={{ title: "Share Recipe" }} />
+        <Stack.Screen
+          name="account-access"
+          options={{ headerShown: true, title: "Account access" }}
+        />
         <Stack.Screen name="recipe/preview" options={{ title: "Preview" }} />
         <Stack.Screen
           name="recipe/[id]"

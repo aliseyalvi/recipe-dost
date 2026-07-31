@@ -1,0 +1,268 @@
+export type AccountRecoveryState =
+  | 'anonymous_unlinked'
+  | 'linking'
+  | 'linked'
+  | 'signed_out'
+  | 'signing_in'
+  | 'recovering'
+  | 'error'
+
+export type AuthUserLike = {
+  id: string
+  email?: string | null
+  is_anonymous?: boolean
+  email_confirmed_at?: string | null
+  confirmed_at?: string | null
+}
+
+export type AuthSessionLike = {
+  user: AuthUserLike
+}
+
+type LinkDependencies = {
+  getSession: () => Promise<AuthSessionLike | null>
+  updateEmail: (email: string) => Promise<AuthUserLike>
+}
+
+type VerifyLinkDependencies = {
+  getSession: () => Promise<AuthSessionLike | null>
+  verifyEmailChangeOtp: (
+    email: string,
+    token: string
+  ) => Promise<AuthUserLike>
+}
+
+type CompleteLinkDependencies = {
+  getSession: () => Promise<AuthSessionLike | null>
+  updatePassword: (password: string) => Promise<AuthUserLike>
+}
+
+type RecoveryDependencies<TSession extends AuthSessionLike> = {
+  signInWithPassword: (email: string, password: string) => Promise<TSession>
+  getVerifiedUser: () => Promise<AuthUserLike>
+  getSession: () => Promise<TSession | null>
+}
+
+export class AuthOperationGate {
+  private activeOperation: string | null = null
+  private idlePromise: Promise<void> = Promise.resolve()
+  private resolveIdle: (() => void) | null = null
+
+  get isBusy() {
+    return this.activeOperation !== null
+  }
+
+  get isRecoveryInProgress() {
+    return (
+      this.activeOperation === 'linking' ||
+      this.activeOperation === 'signing_in' ||
+      this.activeOperation === 'recovering'
+    )
+  }
+
+  async waitUntilIdle() {
+    await this.idlePromise
+  }
+
+  async run<T>(operation: string, task: () => Promise<T>) {
+    if (this.activeOperation) {
+      throw new Error('Another account operation is already in progress.')
+    }
+
+    this.activeOperation = operation
+    this.idlePromise = new Promise<void>((resolve) => {
+      this.resolveIdle = resolve
+    })
+
+    try {
+      return await task()
+    } finally {
+      this.activeOperation = null
+      this.resolveIdle?.()
+      this.resolveIdle = null
+    }
+  }
+}
+
+export async function bootstrapAuthSession<TSession extends AuthSessionLike>({
+  gate,
+  getSession,
+  signInAnonymously,
+}: {
+  gate: AuthOperationGate
+  getSession: () => Promise<TSession | null>
+  signInAnonymously: () => Promise<TSession | null>
+}) {
+  const recoveryWasInProgress = gate.isRecoveryInProgress
+
+  if (recoveryWasInProgress) {
+    await gate.waitUntilIdle()
+    return getSession()
+  }
+
+  return gate.run('bootstrap', async () => {
+    const existingSession = await getSession()
+    return existingSession ?? signInAnonymously()
+  })
+}
+
+export async function requestAnonymousAccountLink({
+  email,
+  dependencies,
+}: {
+  email: string
+  dependencies: LinkDependencies
+}) {
+  const session = await dependencies.getSession()
+
+  if (!session?.user.is_anonymous) {
+    throw new Error('A current guest session is required.')
+  }
+
+  const originalUserId = session.user.id
+  const updatedUser = await dependencies.updateEmail(email)
+  assertSameUserId(originalUserId, updatedUser.id)
+
+  return { originalUserId }
+}
+
+export async function verifyAnonymousAccountEmail({
+  email,
+  token,
+  originalUserId,
+  dependencies,
+}: {
+  email: string
+  token: string
+  originalUserId: string
+  dependencies: VerifyLinkDependencies
+}) {
+  const currentSession = await dependencies.getSession()
+  if (!currentSession) {
+    throw new Error('The guest session could not be verified.')
+  }
+  assertSameUserId(originalUserId, currentSession.user.id)
+
+  const verifiedUser = await dependencies.verifyEmailChangeOtp(email, token)
+  assertSameUserId(originalUserId, verifiedUser.id)
+  assertVerifiedLinkedEmail(verifiedUser, email)
+
+  const verifiedSession = await dependencies.getSession()
+  if (!verifiedSession) {
+    throw new Error('The verified session could not be re-read.')
+  }
+  assertSameUserId(originalUserId, verifiedSession.user.id)
+  assertVerifiedLinkedEmail(verifiedSession.user, email)
+
+  return verifiedSession
+}
+
+export async function completeAnonymousAccountPassword({
+  password,
+  originalUserId,
+  dependencies,
+}: {
+  password: string
+  originalUserId: string
+  dependencies: CompleteLinkDependencies
+}) {
+  const verifiedSession = await dependencies.getSession()
+  if (!verifiedSession) {
+    throw new Error('Verify the email before setting a password.')
+  }
+  assertSameUserId(originalUserId, verifiedSession.user.id)
+  assertLinkedUser(verifiedSession.user)
+
+  const passwordUser = await dependencies.updatePassword(password)
+  assertSameUserId(originalUserId, passwordUser.id)
+  assertLinkedUser(passwordUser)
+
+  const finalSession = await dependencies.getSession()
+  if (!finalSession) {
+    throw new Error('The secured session could not be verified.')
+  }
+  assertSameUserId(originalUserId, finalSession.user.id)
+  assertLinkedUser(finalSession.user)
+
+  return finalSession
+}
+
+export async function recoverLinkedAccount<TSession extends AuthSessionLike>({
+  email,
+  password,
+  dependencies,
+}: {
+  email: string
+  password: string
+  dependencies: RecoveryDependencies<TSession>
+}) {
+  const signedInSession = await dependencies.signInWithPassword(email, password)
+  const verifiedUser = await dependencies.getVerifiedUser()
+  assertSameUserId(signedInSession.user.id, verifiedUser.id)
+
+  const finalSession = await dependencies.getSession()
+  if (!finalSession) {
+    throw new Error('The recovered session could not be verified.')
+  }
+  assertSameUserId(verifiedUser.id, finalSession.user.id)
+
+  return finalSession
+}
+
+export function shouldConfirmGuestSwitch({
+  isAnonymous,
+  hasMeaningfulData,
+}: {
+  isAnonymous: boolean
+  hasMeaningfulData: boolean
+}) {
+  return isAnonymous && hasMeaningfulData
+}
+
+export function getAccountRecoveryState(
+  user: AuthUserLike | null
+): AccountRecoveryState {
+  if (!user) return 'signed_out'
+  return user.is_anonymous ? 'anonymous_unlinked' : 'linked'
+}
+
+export function maskAccountEmail(email: string | null | undefined) {
+  if (!email) return 'Email secured'
+  const [localPart, domain] = email.split('@')
+  if (!domain) return 'Email secured'
+
+  const visibleLocal = localPart.slice(0, 1)
+  const maskedLocal = `${visibleLocal}${'•'.repeat(Math.max(3, localPart.length - 1))}`
+  const domainParts = domain.split('.')
+  const domainName = domainParts[0] ?? ''
+  const suffix = domainParts.slice(1).join('.')
+  const maskedDomain = `${domainName.slice(0, 1)}${'•'.repeat(
+    Math.max(2, domainName.length - 1)
+  )}`
+
+  return `${maskedLocal}@${maskedDomain}${suffix ? `.${suffix}` : ''}`
+}
+
+export function assertSameUserId(expectedUserId: string, actualUserId: string) {
+  if (expectedUserId !== actualUserId) {
+    throw new Error(
+      'Account verification returned a different user. Your data was not migrated.'
+    )
+  }
+}
+
+function assertVerifiedLinkedEmail(user: AuthUserLike, email: string) {
+  assertLinkedUser(user)
+  if (
+    user.email?.trim().toLowerCase() !== email.trim().toLowerCase() ||
+    !(user.email_confirmed_at || user.confirmed_at)
+  ) {
+    throw new Error('The email address could not be verified safely.')
+  }
+}
+
+function assertLinkedUser(user: AuthUserLike) {
+  if (user.is_anonymous) {
+    throw new Error('Verify the email before setting a password.')
+  }
+}

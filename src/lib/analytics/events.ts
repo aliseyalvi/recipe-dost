@@ -31,6 +31,40 @@ export type ProductEventProperties = {
   onboarding_started: undefined
   onboarding_completed: undefined
   onboarding_skipped: undefined
+  account_recovery_form_opened: {
+    mode: 'link' | 'verify' | 'sign_in'
+  }
+  account_link_started: {
+    method: 'email_password'
+  }
+  account_link_verification_sent: {
+    method: 'email_password'
+    stage: 'initial' | 'resend'
+  }
+  account_link_completed: {
+    method: 'email_password'
+    subscription_refresh_pending: boolean
+  }
+  account_link_failed: {
+    method: 'email_password'
+    stage: 'email' | 'verification' | 'resend'
+  }
+  account_recovery_sign_in_started: {
+    method: 'email_password'
+  }
+  account_recovery_guest_switch_confirmation_required: undefined
+  account_recovery_completed: {
+    method: 'email_password'
+    replaced_empty_guest: boolean
+    subscription_refresh_pending: boolean
+  }
+  account_recovery_sign_in_failed: {
+    method: 'email_password'
+  }
+  account_recovery_subscription_refreshed: undefined
+  account_recovery_subscription_refresh_pending: undefined
+  account_sign_out_subscription_reset_failed: undefined
+  account_signed_out: undefined
   account_deletion_completed: undefined
   ai_recipe_report_submitted: {
     category:

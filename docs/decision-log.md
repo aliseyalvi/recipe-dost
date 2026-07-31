@@ -906,3 +906,23 @@
 - Active placeholders are excluded from Home Recent by recipe-item and result-card linkage, and duplicate completed result cards are collapsed by recipe-card ID.
 - No migration, schema, Edge Function, worker, queue, Gemini, provider, quota, dependency, RevenueCat, or deployment behavior changed.
 - Validation: `npm test`, `npm run typecheck`, `npm run lint`, `npm run qa:static`, and `npm run functions:check` passed. `npm run doctor` reported only the accepted existing Expo package-drift warning.
+
+## [2026-07-30] M24.5R Same-Account Recovery
+
+- Anonymous accounts are secured in place with Supabase `updateUser`, email-change OTP verification, and a password; every step verifies that the original Supabase user ID is unchanged and never calls `signUp`.
+- Recovery uses email/password sign-in, verifies the final Supabase session, clears/refetches only user-owned query roots, and never inserts, migrates, merges, or deletes recipe/media data.
+- Auth bootstrap, callbacks, linking, recovery, and sign-out are serialized so recovery cannot be replaced by a second anonymous session. Guest data requires confirmation before switching accounts.
+- RevenueCat identity synchronization is centralized on the stable Supabase UUID, refreshes CustomerInfo and AI access, and leaves a recovered Supabase session intact when subscription refresh is temporarily unavailable.
+- Settings now shows guest, secured-email, signed-out, recovery, restore-purchases, and safe sign-out states without exposing production UUIDs.
+- Onboarding storage and routing were not changed; account linking and sign-out preserve local onboarding completion.
+- No migration, Edge Function, dependency, provider, worker, queue, duration/retry, Gemini, or native-package change was required.
+- Validation passed: `npm test`, `npm run typecheck`, `npm run lint`, `npm run qa:static`, `npm run functions:check`, and `git diff --check`.
+
+## [2026-07-30] M24.5R-FIX Account Access Screen and Email-Change OTP
+
+- Account forms moved out of Settings into the focused `/account-access` route with independent `secure` and `recover` state machines.
+- Secure mode now uses `updateUser({ email })`, six-digit `verifyOtp({ type: 'email_change' })`, `resend({ type: 'email_change' })` with a 60-second cooldown, then `updateUser({ password })`.
+- The original anonymous Supabase user ID is checked before and after email verification and password creation; no signup, account merge, record migration, or data deletion path exists.
+- Recover mode uses email/password sign-in, preserves the existing meaningful-guest confirmation, re-reads the session, synchronizes RevenueCat with the Supabase UUID, and refreshes scoped user-owned data.
+- Supabase dashboard requirements: anonymous sign-ins, manual linking, and Email provider enabled; the Change Email Address template must contain `{{ .Token }}` and must not rely on `{{ .ConfirmationURL }}` for this flow. The built-in sender remains rate limited.
+- No mobile deep link, migration, Edge Function, native configuration, dependency, onboarding, media-job, queue, Gemini, duration/retry, or RevenueCat backend change was added.

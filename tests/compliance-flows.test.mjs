@@ -24,6 +24,7 @@ test('account deletion UI prevents duplicate taps and performs complete identity
   const screen = read('app/settings/delete-account-data.tsx')
   const auth = read('src/providers/auth-provider.tsx')
   const revenueCat = read('src/providers/revenuecat-provider.tsx')
+  const revenueCatIdentity = read('src/lib/revenuecat/runtime-identity.ts')
   assert.match(screen, /deletionInFlight\.current/)
   assert.match(screen, /queryClient\.clear\(\)/)
   assert.match(screen, /clearOnboardingProfile\(\)/)
@@ -31,17 +32,20 @@ test('account deletion UI prevents duplicate taps and performs complete identity
   assert.match(screen, /Account deletion was not completed/)
   assert.match(auth, /resetAnalyticsUser\(\)/)
   assert.match(auth, /setSentryUser\(null\)/)
-  assert.match(revenueCat, /Purchases\.logOut\(\)/)
+  assert.match(revenueCat, /resetRevenueCatIdentity\(\)/)
+  assert.match(revenueCatIdentity, /Purchases\.logOut\(\)/)
 })
 
-test('Settings exposes the full selectable anonymous Account ID without sending it to telemetry', () => {
+test('Settings exposes recovery states without a production account UUID', () => {
   const settings = read('app/(tabs)/settings.tsx')
+  const recovery = read('src/features/account-recovery/account-recovery-section.tsx')
   const presentation = read('src/features/settings/settings-presentation.tsx')
-  assert.match(settings, /const userIdentifier = user\?\.id \?\? 'Starting profile…'/)
-  assert.doesNotMatch(settings, /shortId\(user\.id\)/)
-  assert.match(presentation, /Anonymous Account ID/)
-  assert.match(presentation, /Press and hold the ID to copy it/)
-  assert.match(presentation, /<Text[\s\S]*?selectable[\s\S]*?\{identifier\}/)
+  assert.match(settings, /<AccountRecoverySection \/>/)
+  assert.match(recovery, /Guest account/)
+  assert.match(recovery, /Account secured/)
+  assert.match(recovery, /maskAccountEmail/)
+  assert.doesNotMatch(recovery, /user\?\.id|user\.id/)
+  assert.doesNotMatch(presentation, /Anonymous Account ID/)
 })
 
 test('all user-owned app tables cascade from auth user deletion', () => {

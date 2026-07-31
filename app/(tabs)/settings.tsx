@@ -6,7 +6,6 @@ import { useUserProfileQuery } from '@/features/onboarding/use-user-profile-quer
 import { getSecondaryRecipeLanguage } from '@/features/settings/secondary-recipe-language'
 import { getPaywallHref } from '@/features/paywall/paywall-model'
 import {
-  ProfileSettingsCard,
   SettingsDivider,
   SettingsFeedback,
   SettingsHeader,
@@ -16,6 +15,7 @@ import {
   SubscriptionStatusCard,
   type SettingsFeedbackTone,
 } from '@/features/settings/settings-presentation'
+import { AccountRecoverySection } from '@/features/account-recovery/account-recovery-section'
 import {
   type NormalizedSubscriptionStatus,
   getNormalizedSubscriptionStatus,
@@ -49,7 +49,7 @@ type ActionFeedback = {
 
 export default function SettingsRoute() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, acknowledgeSubscriptionRefresh } = useAuth()
   const {
     isControlledDevTest,
     sendControlledTestEvent,
@@ -75,7 +75,6 @@ export default function SettingsRoute() {
   const subscriptionActionRef = useRef<SubscriptionAction | null>(null)
   const aiAccessQuery = useAiAccessQuery(user?.id)
   const showDeveloperSection = shouldShowDevIdentityPanel(aiAccessQuery.data)
-  const userIdentifier = user?.id ?? 'Starting profile…'
   const selectedLanguage = getSecondaryRecipeLanguage(
     profileQuery.data?.secondary_recipe_language_code
   )
@@ -169,6 +168,7 @@ export default function SettingsRoute() {
     try {
       const result = await restoreSubscription()
       if (result.state.kind === 'premium_confirmed') {
+        acknowledgeSubscriptionRefresh()
         showActionFeedback('Premium access has been restored.', 'success')
       } else if (result.state.kind === 'expired') {
         showActionFeedback('Your previous subscription has expired.')
@@ -258,6 +258,7 @@ export default function SettingsRoute() {
     try {
       const result = await refreshSubscription()
       if (result.syncResult.ok) {
+        acknowledgeSubscriptionRefresh()
         track('settings_subscription_refresh_completed')
         showActionFeedback('Premium and AI access status refreshed.', 'success')
         return
@@ -288,9 +289,7 @@ export default function SettingsRoute() {
       <SettingsHeader />
 
       <View style={{ gap: spacing.sectionGap }}>
-        <SettingsSection title="Profile">
-          <ProfileSettingsCard identifier={userIdentifier} />
-        </SettingsSection>
+        <AccountRecoverySection />
 
         <SettingsSection title="Subscription">
           <SettingsPanel featured>
