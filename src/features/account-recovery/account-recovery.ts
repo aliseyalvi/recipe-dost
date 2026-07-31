@@ -87,6 +87,24 @@ export class AuthCallbackGate {
   }
 }
 
+export class SingleFlightRequestGate {
+  private activeRequest: Promise<unknown> | null = null
+
+  run<T>(task: () => Promise<T>) {
+    if (this.activeRequest) {
+      return this.activeRequest as Promise<T>
+    }
+
+    const request = Promise.resolve().then(task)
+    this.activeRequest = request
+    const clear = () => {
+      if (this.activeRequest === request) this.activeRequest = null
+    }
+    void request.then(clear, clear)
+    return request
+  }
+}
+
 export async function bootstrapAuthSession<TSession extends AuthSessionLike>({
   gate,
   getSession,

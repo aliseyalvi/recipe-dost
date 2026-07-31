@@ -1,4 +1,5 @@
 import { OnboardingProfile } from '@/features/onboarding/types'
+import { getLocalOnboardingState } from '@/features/onboarding/welcome-flow-model'
 import { create } from 'zustand'
 import {
   deleteSecureStoreItem,
@@ -102,6 +103,23 @@ export async function persistOnboardingProfile(profile: OnboardingProfile) {
     hydrationStatus: 'ready',
     storageKeyStatus: 'present',
     hydrationError: null,
+  })
+}
+
+export async function markOnboardingCompleted() {
+  const profile = useOnboardingStore.getState().profile
+  await persistOnboardingProfile({
+    ...profile,
+    onboardingCompleted: true,
+  })
+}
+
+export function getCurrentLocalOnboardingState() {
+  const state = useOnboardingStore.getState()
+  return getLocalOnboardingState({
+    hydrationStatus: state.hydrationStatus,
+    storageKeyStatus: state.storageKeyStatus,
+    onboardingCompleted: state.profile.onboardingCompleted,
   })
 }
 

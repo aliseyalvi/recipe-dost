@@ -5,6 +5,7 @@ import test from 'node:test'
 import {
   AuthCallbackGate,
   AuthOperationGate,
+  SingleFlightRequestGate,
   bootstrapAuthSession,
   shouldConfirmGuestSwitch,
   verifyAuthoritativeCallbackSession,
@@ -176,6 +177,53 @@ test('auth bootstrap cannot overwrite callback recovery', async () => {
   assert.equal(anonymousSignIns, 0)
 })
 
+test('first recovery request waits for auth readiness and sends one link', async () => {
+  const operationGate = new AuthOperationGate()
+  const requestGate = new SingleFlightRequestGate()
+  let releaseBootstrap
+  let sends = 0
+  const bootstrapBlocker = new Promise((resolve) => {
+    releaseBootstrap = resolve
+  })
+  const bootstrap = operationGate.run('bootstrap', () => bootstrapBlocker)
+
+  const recovery = requestGate.run(async () => {
+    await operationGate.waitUntilIdle()
+    return operationGate.run('recovering', () => {
+      sends += 1
+      return resolved('sent')
+    })
+  })
+  assert.equal(sends, 0)
+  releaseBootstrap()
+  await bootstrap
+  assert.equal(await recovery, 'sent')
+  assert.equal(sends, 1)
+})
+
+test('repeated recovery taps share one in-flight Magic Link request', async () => {
+  const gate = new SingleFlightRequestGate()
+  let sends = 0
+  let release
+  const blocker = new Promise((resolve) => {
+    release = resolve
+  })
+  const send = () =>
+    gate.run(async () => {
+      sends += 1
+      await blocker
+      return 'sent'
+    })
+
+  const first = send()
+  const repeated = send()
+  await Promise.resolve()
+  assert.equal(sends, 1)
+  release()
+  assert.deepEqual(await Promise.all([first, repeated]), ['sent', 'sent'])
+  assert.equal(sends, 1)
+})
+
 test('successful callback refetches every scoped user-owned query root', async () => {
   const invalidated = []
   await refreshUserOwnedQueries({
@@ -199,6 +247,22 @@ test('successful callback refetches every scoped user-owned query root', async (
   ]) {
     assert.ok(invalidated.includes(key))
   }
+})
+
+test('callback clears guest cache before refetch and completes local onboarding', () => {
+  const provider = source('../src/providers/auth-provider.tsx')
+  const callback = between(
+    provider,
+    'const processAuthCallback',
+    "Linking.getInitialURL()"
+  )
+
+  assert.ok(
+    callback.indexOf('clearUserOwnedQueries(queryClient)') <
+      callback.indexOf('await refreshUserOwnedQueries(queryClient)')
+  )
+  assert.match(callback, /await markOnboardingCompleted\(\)/)
+  assert.match(callback, /setAuthReadiness\('linked_ready'\)/)
 })
 
 test('RevenueCat identity uses the recovered Supabase UUID and refreshes Premium', async () => {

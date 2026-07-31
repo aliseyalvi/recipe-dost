@@ -20,14 +20,25 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LegalLinks } from '@/features/legal/legal-links'
 
 type Props = {
+  initialStep?: number
   onFinish: () => void
+  onRecover: () => void
+  recoverDisabled: boolean
   onSkip: () => void
 }
 
-export function WelcomeExperience({ onFinish, onSkip }: Props) {
+export function WelcomeExperience({
+  initialStep = 0,
+  onFinish,
+  onRecover,
+  recoverDisabled,
+  onSkip,
+}: Props) {
   const insets = useSafeAreaInsets()
-  const { height } = useWindowDimensions()
-  const [stepIndex, setStepIndex] = useState(0)
+  const { height, width } = useWindowDimensions()
+  const [stepIndex, setStepIndex] = useState(() =>
+    Math.max(0, Math.min(initialStep, welcomeSlides.length - 1))
+  )
   const slide = welcomeSlides[stepIndex]
   const topInset = insets.top || Constants.statusBarHeight || 0
   const heroHeight = height < 700 ? 218 : height < 820 ? 252 : 292
@@ -181,12 +192,27 @@ export function WelcomeExperience({ onFinish, onSkip }: Props) {
         }}
       >
         <PageIndicators currentStep={stepIndex} />
-        <WelcomePrimaryButton
-          label={
-            stepIndex === welcomeSlides.length - 1 ? 'Get Started' : 'Continue'
-          }
-          onPress={advance}
-        />
+        {stepIndex === welcomeSlides.length - 1 ? (
+          <View
+            style={{
+              flexDirection: width >= 430 ? 'row' : 'column',
+              gap: spacing.sm,
+            }}
+          >
+            <View style={{ flex: width >= 430 ? 1 : undefined }}>
+              <WelcomePrimaryButton label="Get Started" onPress={advance} />
+            </View>
+            <View style={{ flex: width >= 430 ? 1 : undefined }}>
+              <WelcomeSecondaryButton
+                disabled={recoverDisabled}
+                label="Recover account"
+                onPress={onRecover}
+              />
+            </View>
+          </View>
+        ) : (
+          <WelcomePrimaryButton label="Continue" onPress={advance} />
+        )}
         <LegalLinks types={['privacy_policy', 'terms']} />
       </View>
     </View>
@@ -497,6 +523,7 @@ function WelcomePrimaryButton({
       accessibilityLabel={label}
       onPress={onPress}
       style={({ pressed }) => ({
+        width: '100%',
         minHeight: 56,
         flexDirection: 'row',
         alignItems: 'center',
@@ -518,6 +545,43 @@ function WelcomePrimaryButton({
         {label}
       </Text>
       <AppIcon name="forward" color={colors.onPrimary} size={20} />
+    </Pressable>
+  )
+}
+
+function WelcomeSecondaryButton({
+  disabled,
+  label,
+  onPress,
+}: {
+  disabled: boolean
+  label: string
+  onPress: () => void
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        width: '100%',
+        minHeight: 56,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: radius.pill,
+        borderWidth: 1,
+        borderColor: colors.primaryOutline,
+        backgroundColor: colors.surfaceContainerLow,
+        opacity: disabled ? 0.45 : pressed ? 0.72 : 1,
+      })}
+    >
+      <Text
+        selectable={false}
+        style={[typography.body, { color: colors.primary, fontWeight: '800' }]}
+      >
+        {label}
+      </Text>
     </Pressable>
   )
 }

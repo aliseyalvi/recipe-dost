@@ -1,23 +1,19 @@
-import { getAppEntryHref } from '@/features/onboarding/welcome-flow-model'
-import { useOnboardingStore } from '@/features/onboarding/onboarding-store'
+import { getAppEntryDecision } from '@/features/onboarding/welcome-flow-model'
 import { useOnboardingHydration } from '@/features/onboarding/use-onboarding-hydration'
-import { useUserProfileQuery } from '@/features/onboarding/use-user-profile-query'
+import { useAuth } from '@/providers/auth-provider'
 import { ErrorState } from '@/ui/error-state'
 import { AppLoadingScreen } from '@/ui/app-loading-screen'
 import { Redirect } from 'expo-router'
 
 export default function IndexRoute() {
-  const profileQuery = useUserProfileQuery()
-  const localOnboardingCompleted = useOnboardingStore(
-    (state) => state.profile.onboardingCompleted
-  )
+  const auth = useAuth()
   const onboardingHydration = useOnboardingHydration()
+  const decision = getAppEntryDecision({
+    authStatus: auth.authReadiness,
+    onboardingState: onboardingHydration.onboardingState,
+  })
 
-  if (
-    profileQuery.isLoading ||
-    profileQuery.isFetching ||
-    onboardingHydration.hydrationStatus === 'pending'
-  ) {
+  if (decision.status === 'loading') {
     return (
       <AppLoadingScreen
         message="Preparing your kitchen..."
@@ -26,38 +22,24 @@ export default function IndexRoute() {
     )
   }
 
-  if (onboardingHydration.hydrationStatus === 'error') {
+  if (decision.status === 'error') {
     return (
       <ErrorState
-        title="Could not read setup"
-        message="Recipe Dost could not safely read onboarding settings. Nothing was marked complete."
+        title={decision.source === 'auth' ? 'Could not start Recipe Dost' : 'Could not read setup'}
+        message={
+          decision.source === 'auth'
+            ? auth.error?.message ?? 'Recipe Dost could not establish a safe session.'
+            : 'Recipe Dost could not safely read onboarding settings. Nothing was marked complete.'
+        }
         retryLabel="Retry"
         onRetry={() => {
-          void onboardingHydration.retry()
+          void (decision.source === 'auth'
+            ? auth.retry()
+            : onboardingHydration.retry())
         }}
       />
     )
   }
 
-  if (profileQuery.error) {
-    return (
-      <ErrorState
-        title="Could not check setup"
-        message={profileQuery.error.message}
-        retryLabel="Retry"
-        onRetry={() => {
-          void profileQuery.refetch()
-        }}
-      />
-    )
-  }
-
-  return (
-    <Redirect
-      href={getAppEntryHref(
-        profileQuery.data?.onboarding_completed,
-        localOnboardingCompleted
-      )}
-    />
-  )
+  return <Redirect href={decision.href} />
 }

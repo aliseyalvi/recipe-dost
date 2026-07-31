@@ -1,4 +1,5 @@
 import { useAuth } from '@/providers/auth-provider'
+import { useOnboardingHydration } from '@/features/onboarding/use-onboarding-hydration'
 import { AppLoadingScreen } from '@/ui/app-loading-screen'
 import { ErrorState } from '@/ui/error-state'
 import { Stack, useRouter } from 'expo-router'
@@ -7,10 +8,11 @@ import { useEffect } from 'react'
 export function AuthCallbackScreen() {
   const router = useRouter()
   const { authCallbackState, authCallbackError } = useAuth()
+  const onboarding = useOnboardingHydration()
 
   useEffect(() => {
     if (authCallbackState === 'success') {
-      router.replace('/settings')
+      router.replace('/home')
     }
   }, [authCallbackState, router])
 
@@ -24,9 +26,17 @@ export function AuthCallbackScreen() {
             authCallbackError ??
             'The link may be invalid or expired. Request a new link.'
           }
-          retryLabel="Back to Settings"
+          retryLabel={
+            onboarding.onboardingState === 'completed'
+              ? 'Back to Settings'
+              : 'Back to welcome'
+          }
           onRetry={() => {
-            router.replace('/settings')
+            if (onboarding.onboardingState === 'completed') {
+              router.replace('/settings')
+            } else {
+              router.replace({ pathname: '/welcome', params: { step: 'final' } })
+            }
           }}
         />
       ) : (

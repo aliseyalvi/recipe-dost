@@ -3,8 +3,35 @@ import { StatusBar } from "expo-status-bar";
 import Stack from "expo-router/stack";
 import { colors } from "@/theme";
 import { AnalyticsScreenTracker } from "@/providers/posthog-placeholder-provider";
+import { useOnboardingHydration } from "@/features/onboarding/use-onboarding-hydration";
+import { AppLoadingScreen } from "@/ui/app-loading-screen";
+import { ErrorState } from "@/ui/error-state";
 
 export default function RootLayout() {
+  const onboarding = useOnboardingHydration();
+
+  if (onboarding.onboardingState === "loading") {
+    return (
+      <AppLoadingScreen
+        message="Preparing your kitchen..."
+        detail="Gathering your Recipe Dost setup"
+      />
+    );
+  }
+
+  if (onboarding.onboardingState === "error") {
+    return (
+      <ErrorState
+        title="Could not read setup"
+        message="Recipe Dost could not safely read onboarding settings. Nothing was marked complete."
+        retryLabel="Retry"
+        onRetry={() => {
+          void onboarding.retry();
+        }}
+      />
+    );
+  }
+
   return (
     <AppProviders>
       <AnalyticsScreenTracker />

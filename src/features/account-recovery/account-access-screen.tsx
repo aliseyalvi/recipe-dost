@@ -59,13 +59,15 @@ export function AccountAccessScreen() {
 
 function MagicLinkFlow({ mode }: { mode: AccountAccessMode }) {
   const router = useRouter()
-  const { requestAccountLink, requestRecoveryLink } = useAuth()
+  const { authReadiness, requestAccountLink, requestRecoveryLink } = useAuth()
   const { trackEvent } = usePostHog()
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
   const [cooldownSeconds, setCooldownSeconds] = useState(0)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const authIsPreparing =
+    authReadiness === 'initializing' || authReadiness === 'recovering'
 
   useEffect(() => {
     trackEvent('account_recovery_form_opened', {
@@ -89,7 +91,7 @@ function MagicLinkFlow({ mode }: { mode: AccountAccessMode }) {
       setFeedback('Enter a valid email address.')
       return
     }
-    if (isSubmitting) return
+    if (isSubmitting || authIsPreparing) return
     setIsSubmitting(true)
     setFeedback(null)
 
@@ -151,7 +153,7 @@ function MagicLinkFlow({ mode }: { mode: AccountAccessMode }) {
                 autoComplete="email"
                 textContentType="emailAddress"
                 keyboardType="email-address"
-                editable={!isSubmitting}
+                editable={!isSubmitting && !authIsPreparing}
                 returnKeyType="send"
                 onSubmitEditing={() => {
                   void sendLink()
@@ -161,11 +163,13 @@ function MagicLinkFlow({ mode }: { mode: AccountAccessMode }) {
                 label={
                   isSubmitting
                     ? 'Sending link…'
+                    : authIsPreparing
+                      ? 'Preparing account…'
                     : mode === 'secure'
                       ? 'Send secure link'
                       : 'Send sign-in link'
                 }
-                disabled={isSubmitting}
+                disabled={isSubmitting || authIsPreparing}
                 fullWidth
                 onPress={() => {
                   void sendLink()
@@ -196,7 +200,7 @@ function MagicLinkFlow({ mode }: { mode: AccountAccessMode }) {
                       : 'Resend link'
                 }
                 variant="ghost"
-                disabled={isSubmitting || cooldownSeconds > 0}
+                disabled={isSubmitting || authIsPreparing || cooldownSeconds > 0}
                 fullWidth
                 onPress={() => {
                   void sendLink(true)
@@ -205,7 +209,7 @@ function MagicLinkFlow({ mode }: { mode: AccountAccessMode }) {
               <Button
                 label="Change email"
                 variant="ghost"
-                disabled={isSubmitting}
+                disabled={isSubmitting || authIsPreparing}
                 fullWidth
                 onPress={() => {
                   setSent(false)
@@ -219,7 +223,7 @@ function MagicLinkFlow({ mode }: { mode: AccountAccessMode }) {
           <Button
             label="Cancel"
             variant="ghost"
-            disabled={isSubmitting}
+            disabled={isSubmitting || authIsPreparing}
             fullWidth
             onPress={() => {
               router.back()

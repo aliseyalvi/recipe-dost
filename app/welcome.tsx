@@ -2,29 +2,25 @@ import { WelcomeExperience } from '@/features/onboarding/welcome-experience'
 import {
   getOnboardingCompletionEvent,
   WELCOME_COMPLETION_HREF,
+  welcomeSlides,
 } from '@/features/onboarding/welcome-flow-model'
-import { saveOnboardingProfile } from '@/features/onboarding/profile-api'
-import { useOnboardingStore } from '@/features/onboarding/onboarding-store'
-import { persistOnboardingProfile } from '@/features/onboarding/onboarding-store'
+import { markOnboardingCompleted } from '@/features/onboarding/onboarding-store'
 import { useOnboardingHydration } from '@/features/onboarding/use-onboarding-hydration'
-import { useUserProfileQuery } from '@/features/onboarding/use-user-profile-query'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { AppLoadingScreen } from '@/ui/app-loading-screen'
 import { ErrorState } from '@/ui/error-state'
 import { Screen } from '@/ui/screen'
-import { useQueryClient } from '@tanstack/react-query'
-import { Redirect, useRouter } from 'expo-router'
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 export default function WelcomeRoute() {
   const router = useRouter()
-  const queryClient = useQueryClient()
-  const { user } = useAuth()
+  const params = useLocalSearchParams<{ step?: string | string[] }>()
+  const rawStep = Array.isArray(params.step) ? params.step[0] : params.step
+  const { authReadiness } = useAuth()
   const { track } = usePostHog()
-  const { profile, setProfile } = useOnboardingStore()
   const onboardingHydration = useOnboardingHydration()
-  const profileQuery = useUserProfileQuery()
   const didTrackStart = useRef(false)
   const completionInFlight = useRef(false)
   const [isCompleting, setIsCompleting] = useState(false)
@@ -35,31 +31,13 @@ export default function WelcomeRoute() {
       return
     }
 
-    if (!user?.id) {
-      setCompletionError(new Error('Your app session is not ready yet.'))
-      return
-    }
-
     completionInFlight.current = true
     setIsCompleting(true)
     setCompletionError(null)
 
     try {
-      const completedProfile = {
-        ...profile,
-        onboardingCompleted: true,
-      }
-      await persistOnboardingProfile(completedProfile)
-      await saveOnboardingProfile({
-        userId: user.id,
-        profile: completedProfile,
-        onboardingCompleted: true,
-      })
-      setProfile(completedProfile)
+      await markOnboardingCompleted()
       track(getOnboardingCompletionEvent(outcome))
-      await queryClient.invalidateQueries({
-        queryKey: ['user-profile', user.id],
-      })
       router.replace(WELCOME_COMPLETION_HREF)
     } catch (caughtError) {
       setCompletionError(
@@ -71,16 +49,13 @@ export default function WelcomeRoute() {
       completionInFlight.current = false
       setIsCompleting(false)
     }
-  }, [profile, queryClient, router, setProfile, track, user?.id])
+  }, [router, track])
 
   useEffect(() => {
     if (
       didTrackStart.current ||
       onboardingHydration.hydrationStatus !== 'ready' ||
-      profileQuery.isLoading ||
-      profileQuery.error ||
-      (profileQuery.data?.onboarding_completed &&
-        profile.onboardingCompleted)
+      onboardingHydration.onboardingState === 'completed'
     ) {
       return
     }
@@ -88,18 +63,12 @@ export default function WelcomeRoute() {
     didTrackStart.current = true
     track('onboarding_started')
   }, [
-    profileQuery.data?.onboarding_completed,
-    profileQuery.error,
-    profileQuery.isLoading,
     onboardingHydration.hydrationStatus,
-    profile.onboardingCompleted,
+    onboardingHydration.onboardingState,
     track,
   ])
 
-  if (
-    profileQuery.isLoading ||
-    onboardingHydration.hydrationStatus === 'pending'
-  ) {
+  if (onboardingHydration.onboardingState === 'loading') {
     return (
       <AppLoadingScreen
         message="Preparing your welcome..."
@@ -108,7 +77,7 @@ export default function WelcomeRoute() {
     )
   }
 
-  if (onboardingHydration.hydrationStatus === 'error') {
+  if (onboardingHydration.onboardingState === 'error') {
     return (
       <ErrorState
         title="Could not read setup"
@@ -121,23 +90,7 @@ export default function WelcomeRoute() {
     )
   }
 
-  if (profileQuery.error) {
-    return (
-      <ErrorState
-        title="Could not check setup"
-        message={profileQuery.error.message}
-        retryLabel="Retry"
-        onRetry={() => {
-          void profileQuery.refetch()
-        }}
-      />
-    )
-  }
-
-  if (
-    profileQuery.data?.onboarding_completed &&
-    profile.onboardingCompleted
-  ) {
+  if (onboardingHydration.onboardingState === 'completed') {
     return <Redirect href={WELCOME_COMPLETION_HREF} />
   }
 
@@ -167,9 +120,21 @@ export default function WelcomeRoute() {
 
   return (
     <WelcomeExperience
+      initialStep={
+        rawStep === 'final' ? welcomeSlides.length - 1 : 0
+      }
       onFinish={() => {
         void completeOnboarding('completed')
       }}
+      onRecover={() => {
+        router.push({
+          pathname: '/account-access',
+          params: { mode: 'recover', source: 'onboarding' },
+        })
+      }}
+      recoverDisabled={
+        authReadiness === 'initializing' || authReadiness === 'recovering'
+      }
       onSkip={() => {
         void completeOnboarding('skipped')
       }}

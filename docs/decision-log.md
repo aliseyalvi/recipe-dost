@@ -936,3 +936,12 @@
 - Terminated and background callback delivery share one idempotent processor, which re-reads the authoritative session, synchronizes RevenueCat to the Supabase UUID, and refetches scoped user-owned and AI-access queries.
 - Supabase Dashboard must allow `recipe-dost://auth/callback`; both the Magic Link and Change Email Address templates must use `{{ .ConfirmationURL }}`.
 - No migration, Edge Function, custom email service, dependency, onboarding, media, queue, duration/retry, RevenueCat backend, or native configuration change was required.
+
+## [2026-07-31] M24.5R-FINAL Deterministic Recovery Entry
+
+- The persisted local onboarding key is the only onboarding-completion authority; a missing key is incomplete regardless of anonymous, linked, or signed-out auth state.
+- Root startup hydrates onboarding before mounting auth bootstrap, and unresolved onboarding/auth states retain the existing loading UI without rendering tabs first.
+- The final welcome screen keeps `Get Started` and adds `Recover account`; recovery does not complete onboarding until the authoritative Magic Link callback succeeds.
+- Recovery requests are single-flight, wait for auth bootstrap to become idle, re-read the session, and retain `shouldCreateUser: false`.
+- Callback completion clears guest-scoped cache before refetch, synchronizes RevenueCat to the recovered Supabase UUID, completes local onboarding when needed, and opens Home.
+- No migration, Edge Function, backend, native configuration, dependency, media, queue, Gemini, duration/retry, or RevenueCat configuration change was required.

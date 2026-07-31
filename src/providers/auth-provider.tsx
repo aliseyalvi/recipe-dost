@@ -1,6 +1,7 @@
 import {
   AuthCallbackGate,
   AuthOperationGate,
+  SingleFlightRequestGate,
   type AccountRecoveryState,
   bootstrapAuthSession,
   getAccountRecoveryState,
@@ -8,6 +9,11 @@ import {
   shouldConfirmGuestSwitch,
   verifyAuthoritativeCallbackSession,
 } from '@/features/account-recovery/account-recovery'
+import {
+  getCurrentLocalOnboardingState,
+  hydrateOnboardingStore,
+  markOnboardingCompleted,
+} from '@/features/onboarding/onboarding-store'
 import { reportError, setSentryUser } from '@/lib/observability/sentry'
 import { clearAiAccessForUser } from '@/lib/query/ai-access-query'
 import {
@@ -55,11 +61,20 @@ export type MagicLinkRequestResult = {
 
 export type AuthCallbackState = 'idle' | 'processing' | 'success' | 'error'
 
+export type AuthReadiness =
+  | 'initializing'
+  | 'anonymous_ready'
+  | 'linked_ready'
+  | 'signed_out_ready'
+  | 'recovering'
+  | 'error'
+
 type AuthContextValue = {
   session: Session | null
   user: User | null
   isLoading: boolean
   error: Error | null
+  authReadiness: AuthReadiness
   accountState: AccountRecoveryState
   accountError: string | null
   subscriptionRefreshPending: boolean
@@ -97,9 +112,12 @@ export function AuthProvider({ children }: Props) {
   } | null>(null)
   const callbackGateRef = useRef(new AuthCallbackGate())
   const operationGateRef = useRef(new AuthOperationGate())
+  const recoveryRequestGateRef = useRef(new SingleFlightRequestGate())
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const [authReadiness, setAuthReadiness] =
+    useState<AuthReadiness>('initializing')
   const [accountState, setAccountState] =
     useState<AccountRecoveryState>('signing_in')
   const [accountError, setAccountError] = useState<string | null>(null)
@@ -112,6 +130,7 @@ export function AuthProvider({ children }: Props) {
   const bootstrapSession = useCallback(async () => {
     setIsLoading(true)
     setError(null)
+    setAuthReadiness('initializing')
     setAccountError(null)
     setAccountState('signing_in')
     track('anonymous_auth_bootstrap_started')
@@ -130,6 +149,7 @@ export function AuthProvider({ children }: Props) {
 
       setSession(finalSession)
       setAccountState(getAccountRecoveryState(finalSession.user))
+      setAuthReadiness(getAuthReadiness(finalSession))
       track('anonymous_auth_bootstrap_completed')
     } catch (caughtError) {
       const nextError =
@@ -139,6 +159,7 @@ export function AuthProvider({ children }: Props) {
 
       setError(nextError)
       setAccountState('error')
+      setAuthReadiness('error')
       reportError(caughtError)
       track('anonymous_auth_bootstrap_failed')
     } finally {
@@ -158,6 +179,7 @@ export function AuthProvider({ children }: Props) {
 
       setSession(nextSession)
       setAccountState(getAccountRecoveryState(nextSession?.user ?? null))
+      setAuthReadiness(getAuthReadiness(nextSession))
     })
 
     return () => {
@@ -254,68 +276,74 @@ export function AuthProvider({ children }: Props) {
   )
 
   const requestRecoveryLink = useCallback(
-    async ({
+    ({
       email,
       confirmGuestSwitch = false,
     }: {
       email: string
       confirmGuestSwitch?: boolean
-    }): Promise<MagicLinkRequestResult> => {
-      setAccountState('signing_in')
-      setAccountError(null)
-      setSubscriptionRefreshPending(false)
-      trackEvent('account_recovery_sign_in_started', {
-        method: 'email_magic_link',
-      })
-
-      try {
-        return await operationGateRef.current.run('signing_in', async () => {
-          const currentSession = await getSession()
-          const isAnonymous = Boolean(currentSession?.user.is_anonymous)
-
-          if (isAnonymous && !confirmGuestSwitch) {
-            const hasMeaningfulData = await hasMeaningfulCurrentUserData(
-              currentSession!.user.id
-            )
-            if (
-              shouldConfirmGuestSwitch({
-                isAnonymous,
-                hasMeaningfulData,
-              })
-            ) {
-              setAccountState('anonymous_unlinked')
-              trackEvent(
-                'account_recovery_guest_switch_confirmation_required',
-                undefined
-              )
-              return {
-                requiresGuestSwitchConfirmation: true,
-              }
-            }
-          }
-
-          await sendRecoveryMagicLink(email)
-          pendingMagicLinkRef.current = { mode: 'recover', email }
-          setAccountState(
-            getAccountRecoveryState(currentSession?.user ?? null)
-          )
-
-          return {
-            requiresGuestSwitchConfirmation: false,
-          }
-        })
-      } catch (caughtError) {
-        const finalSession = await getSession().catch(() => null)
-        setSession(finalSession)
-        setAccountState('error')
-        setAccountError(getSafeAuthErrorMessage(caughtError))
-        reportError(caughtError)
-        trackEvent('account_recovery_sign_in_failed', {
+    }): Promise<MagicLinkRequestResult> =>
+      recoveryRequestGateRef.current.run(async () => {
+        setAccountState('signing_in')
+        setAuthReadiness('recovering')
+        setAccountError(null)
+        setSubscriptionRefreshPending(false)
+        trackEvent('account_recovery_sign_in_started', {
           method: 'email_magic_link',
         })
-        throw new Error(getSafeAuthErrorMessage(caughtError))
-      }
-    },
+
+        try {
+          await operationGateRef.current.waitUntilIdle()
+          return await operationGateRef.current.run('recovering', async () => {
+            const currentSession = await getSession()
+            const isAnonymous = Boolean(currentSession?.user.is_anonymous)
+
+            if (isAnonymous && !confirmGuestSwitch) {
+              const hasMeaningfulData = await hasMeaningfulCurrentUserData(
+                currentSession!.user.id
+              )
+              if (
+                shouldConfirmGuestSwitch({
+                  isAnonymous,
+                  hasMeaningfulData,
+                })
+              ) {
+                setAccountState('anonymous_unlinked')
+                setAuthReadiness('anonymous_ready')
+                trackEvent(
+                  'account_recovery_guest_switch_confirmation_required',
+                  undefined
+                )
+                return {
+                  requiresGuestSwitchConfirmation: true,
+                }
+              }
+            }
+
+            await sendRecoveryMagicLink(email)
+            pendingMagicLinkRef.current = { mode: 'recover', email }
+            setAccountState(
+              getAccountRecoveryState(currentSession?.user ?? null)
+            )
+            setAuthReadiness(getAuthReadiness(currentSession))
+
+            return {
+              requiresGuestSwitchConfirmation: false,
+            }
+          })
+        } catch (caughtError) {
+          const finalSession = await getSession().catch(() => null)
+          setSession(finalSession)
+          setAccountState('error')
+          setAuthReadiness(getAuthReadiness(finalSession))
+          setAccountError(getSafeAuthErrorMessage(caughtError))
+          reportError(caughtError)
+          trackEvent('account_recovery_sign_in_failed', {
+            method: 'email_magic_link',
+          })
+          throw new Error(getSafeAuthErrorMessage(caughtError))
+        }
+      }),
     [trackEvent]
   )
 
@@ -325,6 +353,7 @@ export function AuthProvider({ children }: Props) {
 
       await callbackGateRef.current.run(callbackUrl, async () => {
         setAuthCallbackState('processing')
+        setAuthReadiness('recovering')
         setAuthCallbackError(null)
         await operationGateRef.current.waitUntilIdle()
         const originalSession = await getSession().catch(() => null)
@@ -371,16 +400,25 @@ export function AuthProvider({ children }: Props) {
             })
 
             setAccountState('recovering')
-            const refreshPending = await refreshRecoveredIdentity(
-              finalSession.user.id
-            )
             clearUserOwnedQueries(queryClient)
             setSession(finalSession)
             await refreshUserOwnedQueries(queryClient)
+            const refreshPending = await refreshRecoveredIdentity(
+              finalSession.user.id
+            )
+            await hydrateOnboardingStore()
+            const onboardingState = getCurrentLocalOnboardingState()
+            if (onboardingState === 'error') {
+              throw new Error('Could not save onboarding completion.')
+            }
+            if (onboardingState === 'incomplete') {
+              await markOnboardingCompleted()
+            }
             linkingUserIdRef.current = null
             linkingSessionRef.current = null
             pendingMagicLinkRef.current = null
             setAccountState('linked')
+            setAuthReadiness('linked_ready')
             setSubscriptionRefreshPending(refreshPending)
             if (callbackKind === 'secure') {
               trackEvent('account_link_completed', {
@@ -406,6 +444,7 @@ export function AuthProvider({ children }: Props) {
           if (restoredSession) setSession(restoredSession)
           const safeMessage = getSafeAuthErrorMessage(caughtError)
           setAccountState('error')
+          setAuthReadiness(getAuthReadiness(restoredSession))
           setAccountError(safeMessage)
           setAuthCallbackState('error')
           setAuthCallbackError(safeMessage)
@@ -455,6 +494,7 @@ export function AuthProvider({ children }: Props) {
         pendingMagicLinkRef.current = null
         setSession(null)
         setAccountState('signed_out')
+        setAuthReadiness('signed_out_ready')
         setSubscriptionRefreshPending(false)
         setAuthCallbackState('idle')
         setAuthCallbackError(null)
@@ -479,6 +519,7 @@ export function AuthProvider({ children }: Props) {
       previousAnalyticsUserId.current = null
       setSession(null)
       setAccountState('signed_out')
+      setAuthReadiness('signed_out_ready')
     }
   }, [queryClient, resetAnalyticsUser])
 
@@ -492,6 +533,7 @@ export function AuthProvider({ children }: Props) {
       user: session?.user ?? null,
       isLoading,
       error,
+      authReadiness,
       accountState,
       accountError,
       subscriptionRefreshPending,
@@ -514,6 +556,7 @@ export function AuthProvider({ children }: Props) {
       bootstrapSession,
       clearDeletedSession,
       error,
+      authReadiness,
       handleSignOut,
       isLoading,
       processAuthCallback,
@@ -557,6 +600,11 @@ export function useAuth() {
   }
 
   return value
+}
+
+function getAuthReadiness(session: Session | null): AuthReadiness {
+  if (!session) return 'signed_out_ready'
+  return session.user.is_anonymous ? 'anonymous_ready' : 'linked_ready'
 }
 
 async function restoreOriginalLinkingSessionOnMismatch(
