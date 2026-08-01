@@ -8,6 +8,8 @@ import { spawnSync } from "node:child_process";
 const REQUIRED_SUPABASE_SECRET_KEYS = [
   "REVENUECAT_API_KEY",
   "REVENUECAT_ENTITLEMENT_ID",
+  "REVENUECAT_BINDING_HMAC_SECRET",
+  "RECIPE_DOST_ENV",
   "MEDIA_WORKER_URL",
   "MEDIA_WORKER_SHARED_SECRET",
 ];
@@ -79,6 +81,12 @@ function mask(value) {
 }
 
 function requireValues(env) {
+  if (env.has("SUPABASE_ENV_NAME")) {
+    console.error(
+      "SUPABASE_ENV_NAME is reserved/deprecated; use RECIPE_DOST_ENV instead.",
+    );
+    process.exit(1);
+  }
   const requiredKeys = ["SUPABASE_PROJECT_REF", ...REQUIRED_SUPABASE_SECRET_KEYS];
   const missing = requiredKeys.filter(
     (key) => !env.has(key) || !String(env.get(key)).trim(),

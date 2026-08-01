@@ -16,15 +16,28 @@ import {
   getMediaJobProcessingStage,
   getMetadataProcessingStage,
 } from '@/features/media-jobs/processing-stage'
+import {
+  formatRecipeDurationMinutes,
+  selectRecipeDisplayDuration,
+} from '@/features/media-jobs/duration-policy'
+import {
+  compareActiveMediaJobs,
+  getActiveMediaJobStatusLabel,
+  isCanonicalActiveMediaJobStatus,
+  selectHomeRecentItems,
+} from '@/features/media-jobs/media-job-list-policy'
 import { getPaywallHref } from '@/features/paywall/paywall-model'
 import { useSaveRecipeModal } from '@/features/save-recipe/save-recipe-modal'
-import { getAiAccessState } from '@/lib/api/ai-access'
+import { useAiAccessQuery } from '@/lib/query/ai-access-query'
+import { getAiAccessQuotaPresentation } from '@/features/ai-access/ai-access-state'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import {
+  ActiveMediaJob,
   RecipeLibraryItem,
+  getActiveMediaJobs,
   getRecipeLibrary,
   isMediaJobActive,
-  shouldRefreshRecipeLibraryItem,
+  shouldPollRecipeMetadata,
   toggleFavorite,
 } from '@/lib/api/recipes'
 import { useRefetchOnAppForeground } from '@/lib/query/use-refetch-on-app-foreground'
@@ -35,8 +48,8 @@ import { colors, radius, spacing, typography } from '@/theme'
 import { ErrorState } from '@/ui/error-state'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Text, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { FlatList, Text, View } from 'react-native'
 
 export default function HomeRoute() {
   const router = useRouter()
@@ -50,40 +63,80 @@ export default function HomeRoute() {
   const [favoriteActionError, setFavoriteActionError] = useState<string | null>(
     null
   )
-  const libraryQuery = useQuery({
+  const recentQuery = useQuery({
     enabled: Boolean(user?.id),
-    queryKey: ['recipe-library', user?.id],
+    queryKey: ['recent-recipes', user?.id],
     queryFn: () => getRecipeLibrary(),
     refetchInterval: (query) =>
-      query.state.data?.some((recipe) => shouldRefreshRecipeLibraryItem(recipe))
+      query.state.data?.some((recipe) =>
+        shouldPollRecipeMetadata({
+          status: recipe.metadata_status,
+          updatedAt: recipe.updated_at,
+        })
+      )
         ? 5000
         : false,
   })
-  const aiAccessQuery = useQuery({
+  const activeJobsQuery = useQuery({
     enabled: Boolean(user?.id),
-    queryKey: ['ai-access-state', 'home'],
-    queryFn: getAiAccessState,
+    queryKey: ['active-media-jobs', user?.id],
+    queryFn: () => getActiveMediaJobs(10),
+    refetchInterval: (query) =>
+      (query.state.data?.length ?? 0) > 0 ? 5000 : false,
   })
-  const items = libraryQuery.data ?? []
-  const recentRecipe = useMemo(
-    () => getMostRecentlyActiveRecipe(items),
+  const aiAccessQuery = useAiAccessQuery(user?.id)
+  const items = recentQuery.data ?? []
+  const activeJobs = useMemo(
+    () => [...(activeJobsQuery.data ?? [])].sort(compareActiveMediaJobs),
+    [activeJobsQuery.data]
+  )
+  const activeRecipeIds = useMemo(
+    () =>
+      new Set(
+        activeJobs
+          .map((job) => job.recipe_item_id)
+          .filter((id): id is string => Boolean(id))
+      ),
+    [activeJobs]
+  )
+  const itemsById = useMemo(
+    () => new Map(items.map((item) => [item.id, item])),
     [items]
+  )
+  const recentItems = useMemo(
+    () => selectHomeRecentItems(items, activeJobs),
+    [activeJobs, items]
+  )
+  const recentRecipe = useMemo(
+    () => recentItems[0] ?? null,
+    [recentItems]
   )
   const favoriteRecipe = useMemo(
     () =>
       getMostRecentlyActiveRecipe(
         items.filter(
-          (item) => item.is_favorite && item.id !== recentRecipe?.id
+          (item) =>
+            item.is_favorite &&
+            item.id !== recentRecipe?.id &&
+            !activeRecipeIds.has(item.id)
         )
       ),
-    [items, recentRecipe?.id]
+    [activeRecipeIds, items, recentRecipe?.id]
   )
   const hasAiRecipes = useMemo(() => items.some(hasAiRecipe), [items])
   const latestAiRecipe = useMemo(
-    () => getLatestAiRecipe(items.filter((item) => item.id !== recentRecipe?.id)),
-    [items, recentRecipe?.id]
+    () =>
+      getLatestAiRecipe(
+        items.filter(
+          (item) =>
+            item.id !== recentRecipe?.id && !activeRecipeIds.has(item.id)
+        )
+      ),
+    [activeRecipeIds, items, recentRecipe?.id]
   )
   const hasLibraryItems = items.length > 0
+  const hasHomeItems = hasLibraryItems || activeJobs.length > 0
+  const previousActiveJobsRef = useRef<ActiveMediaJob[]>([])
 
   useEffect(() => {
     track('home_viewed', {
@@ -92,22 +145,54 @@ export default function HomeRoute() {
   }, [track])
 
   const refetchHome = useCallback(
-    () => Promise.all([libraryQuery.refetch(), aiAccessQuery.refetch()]),
-    [aiAccessQuery.refetch, libraryQuery.refetch]
+    () => Promise.all([recentQuery.refetch(), activeJobsQuery.refetch()]),
+    [activeJobsQuery.refetch, recentQuery.refetch]
   )
 
   useFocusEffect(
     useCallback(() => {
-      if (user?.id && !libraryQuery.isLoading) {
+      if (user?.id && !recentQuery.isLoading) {
         void refetchHome()
       }
-    }, [libraryQuery.isLoading, refetchHome, user?.id])
+    }, [recentQuery.isLoading, refetchHome, user?.id])
   )
 
   useRefetchOnAppForeground({
     enabled: Boolean(user?.id),
     refetch: refetchHome,
   })
+
+  useEffect(() => {
+    if (!activeJobsQuery.data) {
+      return
+    }
+
+    const currentIds = new Set(activeJobsQuery.data.map((job) => job.id))
+    const terminalJobs = previousActiveJobsRef.current.filter(
+      (job) => !currentIds.has(job.id)
+    )
+    previousActiveJobsRef.current = activeJobsQuery.data
+
+    if (terminalJobs.length === 0) {
+      return
+    }
+
+    void queryClient.invalidateQueries({ queryKey: ['recent-recipes'] })
+    void queryClient.invalidateQueries({ queryKey: ['recipe-library'] })
+
+    for (const job of terminalJobs) {
+      if (job.recipe_item_id) {
+        void queryClient.invalidateQueries({
+          queryKey: ['recipe-item', job.recipe_item_id],
+        })
+      }
+      if (job.result_recipe_card_id) {
+        void queryClient.invalidateQueries({
+          queryKey: ['recipe-card', job.result_recipe_card_id],
+        })
+      }
+    }
+  }, [activeJobsQuery.data, queryClient])
 
   const openLibrary = (source: 'recent' | 'favorites' | 'ai_recipes') => {
     track('home_section_opened', { section: source, destination: 'library' })
@@ -154,6 +239,18 @@ export default function HomeRoute() {
     }
 
     router.push(`/recipe/${recipe.id}?returnTo=/home`)
+  }
+
+  const openActiveJob = (job: ActiveMediaJob) => {
+    track('home_editorial_card_opened', {
+      section: 'in_progress',
+      platform: job.platform ?? 'other',
+      item_type: 'media_job',
+    })
+
+    if (job.recipe_item_id) {
+      router.push(`/recipe/${job.recipe_item_id}?returnTo=/home`)
+    }
   }
 
   const handleToggleFavorite = useCallback(
@@ -203,25 +300,31 @@ export default function HomeRoute() {
     [favoriteMutationId, queryClient, track, user?.id]
   )
 
-  const usageLabel = getUsageLabel(aiAccessQuery.data)
+  const usage = getAiAccessQuotaPresentation(aiAccessQuery.data, {
+    isPending: aiAccessQuery.isPending,
+    isFetching: aiAccessQuery.isFetching,
+    hasError: aiAccessQuery.isError,
+  })
 
   return (
     <EditorialScreen>
       <EditorialHeader
-        usageLabel={usageLabel}
-        isUsageLoading={aiAccessQuery.isLoading && !aiAccessQuery.data}
+        usageLabel={usage.label}
+        isUsageLoading={usage.isInitialLoading}
+        isUsageRefreshing={usage.isRefreshing}
+        hasUsageWarning={usage.hasRefreshWarning}
         onUsagePress={openPaywall}
       />
 
-      {libraryQuery.isLoading && !libraryQuery.data ? (
+      {recentQuery.isLoading && !recentQuery.data ? (
         <HomeLoadingState />
       ) : null}
 
-      {libraryQuery.error && !hasLibraryItems ? (
+      {recentQuery.error && !hasHomeItems ? (
         <ErrorState
           title="Could not load Home"
           message={getFriendlyApiErrorMessage(
-            libraryQuery.error,
+            recentQuery.error,
             'Could not load your recipes. Please try again.'
           )}
           retryLabel="Retry"
@@ -231,19 +334,44 @@ export default function HomeRoute() {
         />
       ) : null}
 
-      {libraryQuery.error && hasLibraryItems ? (
+      {recentQuery.error && hasHomeItems ? (
         <BackgroundRefreshNotice
           message={getFriendlyApiErrorMessage(
-            libraryQuery.error,
+            recentQuery.error,
             'Could not refresh Home. Showing your last loaded recipes.'
           )}
         />
       ) : null}
 
-      {!libraryQuery.isLoading && (libraryQuery.data || libraryQuery.error) ? (
+      {activeJobsQuery.error ? (
+        <BackgroundRefreshNotice
+          message={getFriendlyApiErrorMessage(
+            activeJobsQuery.error,
+            'Could not refresh active AI recipes.'
+          )}
+          onRetry={() => {
+            void activeJobsQuery.refetch()
+          }}
+        />
+      ) : null}
+
+      {!recentQuery.isLoading && (recentQuery.data || recentQuery.error) ? (
         <>
           {favoriteActionError ? (
             <BackgroundRefreshNotice message={favoriteActionError} />
+          ) : null}
+          {activeJobs.length > 0 ? (
+            <HomeSection title="In progress">
+              <InProgressGallery
+                jobs={activeJobs}
+                itemsById={itemsById}
+                favoriteMutationId={favoriteMutationId}
+                onFavoritePress={(recipe) => {
+                  void handleToggleFavorite(recipe)
+                }}
+                onPress={openActiveJob}
+              />
+            </HomeSection>
           ) : null}
           {recentRecipe ? (
             <HomeSection title="Recent">
@@ -254,7 +382,7 @@ export default function HomeRoute() {
                   platform={recentRecipe.platform}
                   platformLabel={getPlatformLabel(recentRecipe.platform)}
                   creatorLabel={getRecipeCreatorLabel(recentRecipe)}
-                  durationLabel={getSourceDurationLabel(recentRecipe)}
+                  durationLabel={getRecipeDurationLabel(recentRecipe)}
                   dateLabel={formatDate(getLatestActivityAt(recentRecipe))}
                   {...getHomeStatusProps(recentRecipe)}
                   isAiRecipe={hasAiRecipe(recentRecipe)}
@@ -287,7 +415,7 @@ export default function HomeRoute() {
                   platform={favoriteRecipe.platform}
                   platformLabel={getPlatformLabel(favoriteRecipe.platform)}
                   creatorLabel={getRecipeCreatorLabel(favoriteRecipe)}
-                  durationLabel={getSourceDurationLabel(favoriteRecipe)}
+                  durationLabel={getRecipeDurationLabel(favoriteRecipe)}
                   dateLabel={formatDate(getLatestActivityAt(favoriteRecipe))}
                   {...getHomeStatusProps(favoriteRecipe)}
                   isAiRecipe={hasAiRecipe(favoriteRecipe)}
@@ -316,7 +444,7 @@ export default function HomeRoute() {
                     platform={latestAiRecipe.platform}
                     platformLabel={getPlatformLabel(latestAiRecipe.platform)}
                     creatorLabel={getRecipeCreatorLabel(latestAiRecipe)}
-                    durationLabel={getSourceDurationLabel(latestAiRecipe)}
+                    durationLabel={getRecipeDurationLabel(latestAiRecipe)}
                     dateLabel={formatDate(
                       latestAiRecipe.latest_card?.created_at ??
                         latestAiRecipe.created_at
@@ -368,10 +496,90 @@ function HomeSection({ title, children }: { title: string; children: React.React
   )
 }
 
-function BackgroundRefreshNotice({ message }: { message: string }) {
+function InProgressGallery({
+  jobs,
+  itemsById,
+  favoriteMutationId,
+  onFavoritePress,
+  onPress,
+}: {
+  jobs: ActiveMediaJob[]
+  itemsById: Map<string, RecipeLibraryItem>
+  favoriteMutationId: string | null
+  onFavoritePress: (recipe: RecipeLibraryItem) => void
+  onPress: (job: ActiveMediaJob) => void
+}) {
+  return (
+    <FlatList
+      horizontal
+      accessibilityLabel={`${jobs.length} AI recipes in progress`}
+      data={jobs}
+      keyExtractor={(job) => job.id}
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ gap: spacing.md }}
+      renderItem={({ item: job }) => {
+        if (!isCanonicalActiveMediaJobStatus(job.status)) {
+          return null
+        }
+
+        const recipe = job.recipe_item_id
+          ? itemsById.get(job.recipe_item_id)
+          : undefined
+        const title =
+          recipe
+            ? getRecipeDisplayTitle(recipe)
+            : job.source_metadata.title?.trim() || 'AI recipe'
+        const creator =
+          recipe
+            ? getRecipeCreatorLabel(recipe)
+            : job.source_metadata.author_username?.trim() ?? null
+
+        return (
+          <View style={{ width: 286 }}>
+            <EditorialRecipeCard
+              title={title}
+              thumbnailUrl={
+                job.thumbnail_url ??
+                job.source_metadata.uploaded_thumbnail_url ??
+                (recipe ? getRecipeCardThumbnail(recipe) : null)
+              }
+              platform={job.platform}
+              platformLabel={getPlatformLabel(job.platform)}
+              creatorLabel={creator}
+              durationLabel={recipe ? getRecipeDurationLabel(recipe) : null}
+              dateLabel={formatDate(job.created_at)}
+              statusLabel={getActiveMediaJobStatusLabel(job.status)}
+              statusIcon="hourglass"
+              isAiRecipe={false}
+              isFavorite={recipe?.is_favorite === true}
+              isFavoriteUpdating={favoriteMutationId === recipe?.id}
+              isProcessing
+              showFavoriteAction={Boolean(recipe)}
+              onFavoritePress={() => {
+                if (recipe) {
+                  onFavoritePress(recipe)
+                }
+              }}
+              onPress={() => onPress(job)}
+            />
+          </View>
+        )
+      }}
+    />
+  )
+}
+
+function BackgroundRefreshNotice({
+  message,
+  onRetry,
+}: {
+  message: string
+  onRetry?: () => void
+}) {
   return (
     <View
       style={{
+        gap: spacing.sm,
         borderRadius: radius.md,
         backgroundColor: colors.surfaceContainerLow,
         padding: spacing.md,
@@ -380,6 +588,9 @@ function BackgroundRefreshNotice({ message }: { message: string }) {
       <Text selectable style={[typography.caption, { color: colors.onSurfaceVariant }]}>
         {message}
       </Text>
+      {onRetry ? (
+        <OutlinePillButton label="Retry active recipes" onPress={onRetry} />
+      ) : null}
     </View>
   )
 }
@@ -486,22 +697,12 @@ function getHomeStatusProps(recipe: RecipeLibraryItem) {
   }
 }
 
-function getSourceDurationLabel(recipe: RecipeLibraryItem) {
-  if (
-    typeof recipe.duration_seconds !== 'number' ||
-    !Number.isFinite(recipe.duration_seconds) ||
-    recipe.duration_seconds <= 0
-  ) {
-    return null
-  }
+function getRecipeDurationLabel(recipe: RecipeLibraryItem) {
+  const duration = selectRecipeDisplayDuration(recipe)
 
-  const totalSeconds = Math.round(recipe.duration_seconds)
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-
-  return minutes > 0
-    ? `${minutes}m${seconds > 0 ? ` ${seconds}s` : ''}`
-    : `${seconds}s`
+  return duration.recipeDisplayMinutes === null
+    ? null
+    : formatRecipeDurationMinutes(duration.recipeDisplayMinutes)
 }
 
 function getPlatformLabel(platform: string | null) {
@@ -530,17 +731,4 @@ function formatDate(value: string) {
     month: 'short',
     day: 'numeric',
   })
-}
-
-function getUsageLabel(access: Awaited<ReturnType<typeof getAiAccessState>> | undefined) {
-  if (!access) {
-    return null
-  }
-
-  const remaining =
-    access.plan === 'premium' || access.premiumActive
-      ? access.premiumMonthlyRemainingToStart
-      : access.freeRemainingToStart
-
-  return `${Math.max(0, remaining)} left`
 }

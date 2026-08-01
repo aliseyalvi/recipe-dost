@@ -40,6 +40,8 @@ const EAS_OPTIONAL_PUBLIC_KEYS = [
 const SUPABASE_REQUIRED_KEYS = [
   "REVENUECAT_API_KEY",
   "REVENUECAT_ENTITLEMENT_ID",
+  "REVENUECAT_BINDING_HMAC_SECRET",
+  "RECIPE_DOST_ENV",
   "MEDIA_WORKER_URL",
   "MEDIA_WORKER_SHARED_SECRET",
 ];
@@ -59,7 +61,7 @@ const SUPABASE_OPTIONAL_KEYS = [
 ];
 
 const LOCAL_REQUIRED_KEYS = ["SUPABASE_PROJECT_REF"];
-const LOCAL_OPTIONAL_KEYS = ["SUPABASE_ENV_NAME"];
+const LOCAL_OPTIONAL_KEYS = [];
 
 const FORBIDDEN_PUBLIC_SECRET_PATTERNS = [
   /^EXPO_PUBLIC_.*ANTHROPIC_API_KEY$/,
@@ -70,6 +72,7 @@ const FORBIDDEN_PUBLIC_SECRET_PATTERNS = [
   /^EXPO_PUBLIC_.*OPENAI_API_KEY$/,
   /^EXPO_PUBLIC_.*OPENROUTER_API_KEY$/,
   /^EXPO_PUBLIC_.*REVENUECAT_API_KEY$/,
+  /^EXPO_PUBLIC_.*REVENUECAT_BINDING_HMAC_SECRET$/,
   /^EXPO_PUBLIC_.*SUPABASE_SECRET_KEY$/,
   /^EXPO_PUBLIC_.*SUPABASE_SERVICE_ROLE_KEY$/,
   /^EXPO_PUBLIC_.*WORKER_API_SECRET$/,
@@ -84,6 +87,8 @@ const DEPRECATED_PUBLIC_KEYS = [
   "EXPO_PUBLIC_POSTHOG_KEY",
   "EXPO_PUBLIC_SUPABASE_KEY",
 ];
+
+const DEPRECATED_SERVER_KEYS = ["SUPABASE_ENV_NAME"];
 
 const PRODUCTION_DEV_VALUE_CHECKS = [
   { label: "development Android package", value: "com.recipedost.dev" },
@@ -211,6 +216,20 @@ function validateRevenueCatStoreKeys(env, environment, useExample) {
   return isRevenueCatTestStoreKey(androidApiKey)
     ? ["Production env must not use a RevenueCat Test Store Android API key."]
     : [];
+}
+
+function validateRevenueCatBindingSecret(env, useExample) {
+  if (useExample) return [];
+  const secret = String(env.get("REVENUECAT_BINDING_HMAC_SECRET") ?? "").trim();
+  return secret.length >= 32
+    ? []
+    : ["REVENUECAT_BINDING_HMAC_SECRET must contain at least 32 characters."];
+}
+
+function validateRecipeDostEnvironment(env, environment) {
+  return env.get("RECIPE_DOST_ENV") === environment
+    ? []
+    : [`RECIPE_DOST_ENV must be exactly ${environment}.`];
 }
 
 function isRevenueCatTestStoreKey(value) {
@@ -349,6 +368,7 @@ const requiredKeys = [
 const missing = validateRequired(env, requiredKeys);
 const forbiddenPublicSecrets = validateForbiddenPublicSecrets(env);
 const deprecatedPublicKeys = validateDeprecatedPublicKeys(env);
+const deprecatedServerKeys = DEPRECATED_SERVER_KEYS.filter((key) => env.has(key));
 const placeholderKeys = validatePlaceholderValues(env, requiredKeys, useExample);
 const productionFindings =
   environment === "production" ? validateProductionValues(env) : [];
@@ -356,6 +376,11 @@ const revenueCatFindings = validateRevenueCatStoreKeys(
   env,
   environment,
   useExample,
+);
+const revenueCatBindingFindings = validateRevenueCatBindingSecret(env, useExample);
+const recipeDostEnvironmentFindings = validateRecipeDostEnvironment(
+  env,
+  environment,
 );
 const postHogFindings = validatePostHog(env, environment, useExample);
 const sentryFindings = validateSentry(env, environment, useExample);
@@ -378,9 +403,12 @@ if (
   missing.length ||
   forbiddenPublicSecrets.length ||
   deprecatedPublicKeys.length ||
+  deprecatedServerKeys.length ||
   placeholderKeys.length ||
   productionFindings.length ||
   revenueCatFindings.length ||
+  revenueCatBindingFindings.length ||
+  recipeDostEnvironmentFindings.length ||
   postHogFindings.length ||
   sentryFindings.length ||
   legalFindings.length
@@ -398,6 +426,9 @@ if (
   for (const key of deprecatedPublicKeys) {
     console.error(`- Deprecated public env key: ${key}`);
   }
+  for (const key of deprecatedServerKeys) {
+    console.error(`- Deprecated server env key: ${key}; use RECIPE_DOST_ENV.`);
+  }
   for (const key of placeholderKeys) {
     console.error(`- Replace placeholder value for required key: ${key}`);
   }
@@ -405,6 +436,12 @@ if (
     console.error(`- Production env contains obvious dev value: ${finding}`);
   }
   for (const finding of revenueCatFindings) {
+    console.error(`- ${finding}`);
+  }
+  for (const finding of revenueCatBindingFindings) {
+    console.error(`- ${finding}`);
+  }
+  for (const finding of recipeDostEnvironmentFindings) {
     console.error(`- ${finding}`);
   }
   for (const finding of postHogFindings) {

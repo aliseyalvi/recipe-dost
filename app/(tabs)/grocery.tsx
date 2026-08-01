@@ -11,7 +11,8 @@ import type { RecipePlatform } from '@/features/recipe-draft/types'
 import { UsagePill } from '@/features/home/editorial-layout'
 import { getPaywallHref } from '@/features/paywall/paywall-model'
 import { RecipeMetadataChip } from '@/features/recipe-card/recipe-card-chrome'
-import { getAiAccessState } from '@/lib/api/ai-access'
+import { useAiAccessQuery } from '@/lib/query/ai-access-query'
+import { getAiAccessQuotaPresentation } from '@/features/ai-access/ai-access-state'
 import { getFriendlyApiErrorMessage } from '@/lib/api/errors'
 import { reportError } from '@/lib/observability/sentry'
 import {
@@ -95,17 +96,17 @@ function GroceryOverview() {
     queryKey: ['recipe-grocery-lists'],
     queryFn: getRecipeGroceryLists,
   })
-  const aiAccessQuery = useQuery({
-    enabled: Boolean(user?.id),
-    queryKey: ['ai-access-state', 'grocery'],
-    queryFn: getAiAccessState,
-  })
+  const aiAccessQuery = useAiAccessQuery(user?.id)
   const allLists = groceryListsQuery.data ?? []
   const filteredLists = useMemo(
     () => filterGroceryLists(allLists, query, selectedFilter),
     [allLists, query, selectedFilter]
   )
-  const usageLabel = getUsageLabel(aiAccessQuery.data)
+  const usage = getAiAccessQuotaPresentation(aiAccessQuery.data, {
+    isPending: aiAccessQuery.isPending,
+    isFetching: aiAccessQuery.isFetching,
+    hasError: aiAccessQuery.isError,
+  })
   const hasData = allLists.length > 0
   const topInset = insets.top || Constants.statusBarHeight || 0
 
@@ -211,8 +212,10 @@ function GroceryOverview() {
           <GroceryOverviewHeader
             query={query}
             selectedFilter={selectedFilter}
-            usageLabel={usageLabel}
-            isUsageLoading={aiAccessQuery.isLoading}
+            usageLabel={usage.label}
+            isUsageLoading={usage.isInitialLoading}
+            isUsageRefreshing={usage.isRefreshing}
+            hasUsageWarning={usage.hasRefreshWarning}
             backgroundError={
               groceryListsQuery.error && hasData
                 ? getFriendlyApiErrorMessage(
@@ -308,6 +311,8 @@ function GroceryOverviewHeader({
   selectedFilter,
   usageLabel,
   isUsageLoading,
+  isUsageRefreshing,
+  hasUsageWarning,
   backgroundError,
   resultCount,
   onQueryChange,
@@ -320,6 +325,8 @@ function GroceryOverviewHeader({
   selectedFilter: GroceryFilter
   usageLabel: string | null
   isUsageLoading: boolean
+  isUsageRefreshing: boolean
+  hasUsageWarning: boolean
   backgroundError: string | null
   resultCount: number
   onQueryChange: (value: string) => void
@@ -350,6 +357,8 @@ function GroceryOverviewHeader({
         <UsagePill
           label={usageLabel}
           isLoading={isUsageLoading}
+          isRefreshing={isUsageRefreshing}
+          hasWarning={hasUsageWarning}
           onPress={onUsagePress}
         />
       </View>
@@ -1878,20 +1887,6 @@ function getGroceryAnalyticsProperties(
     has_urdu: items.some((item) => hasUrduScript(item.label_ur)),
     has_categories: items.some((item) => Boolean(item.category?.trim())),
   }
-}
-
-function getUsageLabel(
-  access: Awaited<ReturnType<typeof getAiAccessState>> | undefined
-) {
-  if (!access) {
-    return null
-  }
-
-  if (access.plan === 'premium' || access.premiumActive) {
-    return 'Premium'
-  }
-
-  return `${Math.max(0, access.freeRemainingToStart)} left`
 }
 
 function formatDuration(value: number | null) {

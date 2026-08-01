@@ -29,18 +29,17 @@ import {
   getNormalizedSubscriptionStatus,
   getRecipeSubscriptionAvailabilityText,
 } from '@/features/subscription/normalized-subscription-status'
-import { getAiAccessState } from '@/lib/api/ai-access'
+import { useAiAccessQuery } from '@/lib/query/ai-access-query'
+import { getAiAccessQuotaPresentation } from '@/features/ai-access/ai-access-state'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { reportError } from '@/lib/observability/sentry'
 import {
   getPremiumEntitlement,
   getSubscriptionManagementUrl,
-  isCustomerPremium,
   useRevenueCat,
 } from '@/providers/revenuecat-provider'
 import { colors, spacing, typography } from '@/theme'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   CustomerInfo,
   PurchasesPackage,
@@ -64,7 +63,6 @@ type PaywallFeedbackState = {
 
 export default function PaywallRoute() {
   const router = useRouter()
-  const queryClient = useQueryClient()
   const { trigger: triggerParam } = useLocalSearchParams<{
     trigger?: string | string[]
   }>()
@@ -73,20 +71,17 @@ export default function PaywallRoute() {
   const {
     isConfigured,
     isLoading,
-    isPremium,
     customerInfo,
     packages,
     refreshCustomerInfo,
     refreshOfferings,
-    purchasePackage,
-    restorePurchases,
+    purchaseSubscription,
+    refreshSubscription,
+    restoreSubscription,
+    subscriptionState,
   } = useRevenueCat()
   const trigger = normalizePaywallTrigger(triggerParam)
-  const aiAccessQuery = useQuery({
-    enabled: Boolean(user?.id),
-    queryKey: ['ai-access-state', user?.id, 'paywall'],
-    queryFn: getAiAccessState,
-  })
+  const aiAccessQuery = useAiAccessQuery(user?.id)
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null)
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const [feedback, setFeedback] = useState<PaywallFeedbackState | null>(null)
@@ -102,15 +97,16 @@ export default function PaywallRoute() {
       ),
     [packageMap.monthly, packageMap.yearly]
   )
-  const subscriptionStatus = getNormalizedSubscriptionStatus({
-    aiAccess: aiAccessQuery.data,
-    isAiAccessLoading: aiAccessQuery.isLoading,
-    revenueCatState: { isPremium, isLoading },
-  })
+  const subscriptionStatus = getNormalizedSubscriptionStatus(subscriptionState)
   const isPremiumActive = subscriptionStatus.isPremium
   const usage = aiAccessQuery.data
     ? getPaywallUsage(aiAccessQuery.data, isPremiumActive)
     : null
+  const usagePresentation = getAiAccessQuotaPresentation(aiAccessQuery.data, {
+    isPending: aiAccessQuery.isPending,
+    isFetching: aiAccessQuery.isFetching,
+    hasError: aiAccessQuery.isError,
+  })
   const selectedPackage =
     availablePackages.find((item) => item.identifier === selectedPackageId) ??
     packageMap.yearly ??
@@ -248,28 +244,6 @@ export default function PaywallRoute() {
     setPendingAction(null)
   }
 
-  const refreshPremiumRecognition = async (
-    baseInfo?: CustomerInfo | null,
-    shouldRefreshCustomerInfo = false
-  ) => {
-    const refreshedInfo = shouldRefreshCustomerInfo
-      ? await refreshCustomerInfo()
-      : null
-    const effectiveInfo = refreshedInfo ?? baseInfo ?? customerInfo
-    const localPremiumActive = isCustomerPremium(effectiveInfo)
-
-    await queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
-    const accessResult = await aiAccessQuery.refetch()
-    if (accessResult.error) {
-      reportError(accessResult.error)
-    }
-    const backendPremiumActive =
-      accessResult.data?.plan === 'premium' ||
-      accessResult.data?.premiumActive === true
-
-    return { backendPremiumActive, localPremiumActive }
-  }
-
   const handleSelectPackage = (
     nextPackage: PurchasesPackage,
     plan: PaywallPlan
@@ -302,13 +276,9 @@ export default function PaywallRoute() {
     track('purchase_started', purchaseProperties)
 
     try {
-      const purchasedInfo = await purchasePackage(selectedPackage)
-      const recognition = await refreshPremiumRecognition(purchasedInfo, true)
+      const result = await purchaseSubscription(selectedPackage)
 
-      if (
-        recognition.localPremiumActive &&
-        recognition.backendPremiumActive
-      ) {
+      if (result.state.kind === 'premium_confirmed') {
         track('purchase_completed', {
           ...purchaseProperties,
           premium_active: true,
@@ -318,7 +288,7 @@ export default function PaywallRoute() {
         return
       }
 
-      if (recognition.localPremiumActive) {
+      if (result.state.localEntitlementActive) {
         track('purchase_failed', {
           ...purchaseProperties,
           outcome: 'backend_access_pending',
@@ -360,7 +330,8 @@ export default function PaywallRoute() {
       }
 
       if (kind === 'already_subscribed') {
-        const recognition = await refreshPremiumRecognition(null, true)
+        const recognition = await refreshSubscription()
+        const confirmed = recognition.state.kind === 'premium_confirmed'
 
         track('purchase_failed', {
           ...purchaseProperties,
@@ -368,13 +339,11 @@ export default function PaywallRoute() {
         })
         setFeedback({
           message:
-            recognition.localPremiumActive || recognition.backendPremiumActive
+            confirmed
               ? 'Premium is already active on this app profile.'
               : 'This plan is already owned. Use Restore purchases to refresh access.',
           tone:
-            recognition.localPremiumActive || recognition.backendPremiumActive
-              ? 'success'
-              : 'info',
+            confirmed ? 'success' : 'info',
         })
         return
       }
@@ -407,24 +376,30 @@ export default function PaywallRoute() {
     })
 
     try {
-      const restoredInfo = await restorePurchases()
-      const recognition = await refreshPremiumRecognition(restoredInfo, true)
-      const premiumActive =
-        recognition.localPremiumActive || recognition.backendPremiumActive
-
-      track('restore_completed', {
-        trigger,
-        premium_active: premiumActive,
-      })
-      setFeedback(
-        premiumActive
-          ? { message: 'Premium restored.', tone: 'success' }
-          : {
-              message:
-                'No active Premium purchase was found for this Google Play account.',
-              tone: 'info',
-            }
-      )
+      const result = await restoreSubscription()
+      if (result.state.kind === 'premium_confirmed') {
+        track('restore_completed', { trigger, premium_active: true })
+        setFeedback({ message: 'Premium access has been restored.', tone: 'success' })
+      } else if (result.state.kind === 'expired') {
+        setFeedback({ message: 'Your previous subscription has expired.', tone: 'info' })
+      } else if (result.state.kind === 'restore_no_active_entitlement') {
+        setFeedback({
+          message: 'No active subscription was found for this store account.',
+          tone: 'info',
+        })
+      } else if (result.state.kind === 'store_premium_backend_pending') {
+        setFeedback({ message: 'Purchase found. Verifying your AI access…', tone: 'info' })
+      } else if (result.state.kind === 'binding_conflict') {
+        setFeedback({
+          message: 'This purchase is linked to another app profile. Contact support for help.',
+          tone: 'error',
+        })
+      } else {
+        setFeedback({
+          message: 'Could not verify Premium access. Your last confirmed access was not changed.',
+          tone: 'error',
+        })
+      }
     } catch (caughtError) {
       reportError(caughtError)
       track('restore_failed', { trigger })
@@ -533,8 +508,9 @@ export default function PaywallRoute() {
       <LegalLinks types={['privacy_policy', 'terms']} />
       <UsageProgress
         usage={usage}
-        isLoading={aiAccessQuery.isLoading}
+        isLoading={usagePresentation.isInitialLoading}
         hasError={aiAccessQuery.isError}
+        statusText={usagePresentation.statusText}
         isRetrying={pendingAction === 'retry_usage'}
         onRetry={() => {
           void handleRetryUsage()

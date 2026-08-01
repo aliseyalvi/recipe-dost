@@ -6,7 +6,6 @@ import { useUserProfileQuery } from '@/features/onboarding/use-user-profile-quer
 import { getSecondaryRecipeLanguage } from '@/features/settings/secondary-recipe-language'
 import { getPaywallHref } from '@/features/paywall/paywall-model'
 import {
-  ProfileSettingsCard,
   SettingsDivider,
   SettingsFeedback,
   SettingsHeader,
@@ -16,23 +15,22 @@ import {
   SubscriptionStatusCard,
   type SettingsFeedbackTone,
 } from '@/features/settings/settings-presentation'
+import { AccountRecoverySection } from '@/features/account-recovery/account-recovery-section'
 import {
   type NormalizedSubscriptionStatus,
   getNormalizedSubscriptionStatus,
 } from '@/features/subscription/normalized-subscription-status'
-import { getAiAccessState } from '@/lib/api/ai-access'
+import { useAiAccessQuery } from '@/lib/query/ai-access-query'
 import { useAuth } from '@/providers/auth-provider'
 import { usePostHog } from '@/providers/posthog-placeholder-provider'
 import { reportError } from '@/lib/observability/sentry'
 import {
   getPremiumEntitlement,
   getSubscriptionManagementUrl,
-  isCustomerPremium,
   useRevenueCat,
 } from '@/providers/revenuecat-provider'
 import { spacing } from '@/theme'
 import { Screen } from '@/ui/screen'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { CustomerInfo } from '@revenuecat/purchases-typescript-internal'
 import * as Application from 'expo-application'
 import Constants from 'expo-constants'
@@ -51,8 +49,7 @@ type ActionFeedback = {
 
 export default function SettingsRoute() {
   const router = useRouter()
-  const queryClient = useQueryClient()
-  const { user } = useAuth()
+  const { user, acknowledgeSubscriptionRefresh } = useAuth()
   const {
     isControlledDevTest,
     sendControlledTestEvent,
@@ -63,11 +60,10 @@ export default function SettingsRoute() {
     isConfigured: isRevenueCatConfigured,
     isLoading: isRevenueCatLoading,
     isReadyForCurrentUser: isRevenueCatReadyForCurrentUser,
-    isPremium,
     customerInfo,
-    refreshCustomerInfo,
-    restorePurchases,
-    syncPremiumEntitlement,
+    subscriptionState,
+    refreshSubscription,
+    restoreSubscription,
   } = useRevenueCat()
   const [pendingSubscriptionAction, setPendingSubscriptionAction] =
     useState<SubscriptionAction | null>(null)
@@ -77,30 +73,14 @@ export default function SettingsRoute() {
   const [postHogTestSent, setPostHogTestSent] = useState(false)
   const mountedRef = useRef(false)
   const subscriptionActionRef = useRef<SubscriptionAction | null>(null)
-  const didAttemptPremiumSyncRef = useRef(false)
-  const lastBackendPremiumAccessRef =
-    useRef<Awaited<ReturnType<typeof getAiAccessState>> | null>(null)
-  const aiAccessQuery = useQuery({
-    enabled: Boolean(user?.id),
-    queryKey: ['ai-access-state', user?.id, 'settings'],
-    queryFn: getAiAccessState,
-  })
+  const aiAccessQuery = useAiAccessQuery(user?.id)
   const showDeveloperSection = shouldShowDevIdentityPanel(aiAccessQuery.data)
-  const userIdentifier = user?.id ?? 'Starting profile…'
   const selectedLanguage = getSecondaryRecipeLanguage(
     profileQuery.data?.secondary_recipe_language_code
   )
   const managementUrl = getSubscriptionManagementUrl(customerInfo)
   const subscriptionDetailText = getSubscriptionDetailText(customerInfo)
-  const subscriptionStatus = getNormalizedSubscriptionStatus({
-    aiAccess: aiAccessQuery.data,
-    previousAiAccess: lastBackendPremiumAccessRef.current,
-    isAiAccessLoading: aiAccessQuery.isLoading,
-    revenueCatState: {
-      isPremium,
-      isLoading: isRevenueCatLoading,
-    },
-  })
+  const subscriptionStatus = getNormalizedSubscriptionStatus(subscriptionState)
   const hasPendingSubscriptionAction = pendingSubscriptionAction !== null
   const shouldShowUpgrade =
     !subscriptionStatus.isPremium &&
@@ -141,38 +121,6 @@ export default function SettingsRoute() {
   useEffect(() => {
     track('settings_screen_viewed')
   }, [track])
-
-  useEffect(() => {
-    if (
-      aiAccessQuery.data?.plan === 'premium' ||
-      aiAccessQuery.data?.premiumActive === true
-    ) {
-      lastBackendPremiumAccessRef.current = aiAccessQuery.data
-    }
-  }, [aiAccessQuery.data])
-
-  useEffect(() => {
-    if (!subscriptionStatus.needsSync || didAttemptPremiumSyncRef.current) {
-      return
-    }
-
-    didAttemptPremiumSyncRef.current = true
-
-    const syncBackendAccess = async () => {
-      await syncPremiumEntitlement()
-      await queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
-      if (mountedRef.current) {
-        await aiAccessQuery.refetch()
-      }
-    }
-
-    void syncBackendAccess()
-  }, [
-    aiAccessQuery,
-    queryClient,
-    subscriptionStatus.needsSync,
-    syncPremiumEntitlement,
-  ])
 
   const beginSubscriptionAction = (action: SubscriptionAction) => {
     if (subscriptionActionRef.current) {
@@ -218,44 +166,28 @@ export default function SettingsRoute() {
     track('restore_started', { source: 'settings' })
 
     try {
-      const restoredCustomerInfo = await restorePurchases()
-      const refreshedCustomerInfo = await refreshCustomerInfo()
-      const premiumActive = isCustomerPremium(
-        refreshedCustomerInfo ?? restoredCustomerInfo
-      )
-
-      track('restore_completed', {
-        source: 'settings',
-        premium_active: premiumActive,
-      })
-
-      const synced = await syncPremiumEntitlement()
-      await queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
-      const accessResult = await aiAccessQuery.refetch()
-      if (accessResult.error) {
-        reportError(accessResult.error)
-      }
-      const backendPremiumActive =
-        accessResult.data?.plan === 'premium' ||
-        accessResult.data?.premiumActive === true
-
-      if (premiumActive) {
+      const result = await restoreSubscription()
+      if (result.state.kind === 'premium_confirmed') {
+        acknowledgeSubscriptionRefresh()
+        showActionFeedback('Premium access has been restored.', 'success')
+      } else if (result.state.kind === 'expired') {
+        showActionFeedback('Your previous subscription has expired.')
+      } else if (result.state.kind === 'restore_no_active_entitlement') {
         showActionFeedback(
-          'Your Premium subscription has been restored.',
-          'success'
+          'No active subscription was found for this store account.'
         )
-      } else if (subscriptionStatus.isPremium || backendPremiumActive) {
+      } else if (result.state.kind === 'store_premium_backend_pending') {
+        showActionFeedback('Purchase found. Verifying your AI access…')
+      } else if (result.state.kind === 'binding_conflict') {
         showActionFeedback(
-          'Premium access is already active on this app profile.',
-          'success'
-        )
-      } else if (!synced) {
-        showActionFeedback(
-          'Could not refresh subscription status. Your current app access was not changed.',
+          'This purchase is linked to another app profile. Contact support for help.',
           'error'
         )
       } else {
-        showActionFeedback('No active subscription was found.')
+        showActionFeedback(
+          'Could not verify Premium access. Your last confirmed access was not changed.',
+          'error'
+        )
       }
     } catch (caughtError) {
       reportError(caughtError)
@@ -324,37 +256,20 @@ export default function SettingsRoute() {
     }
 
     try {
-      const nextInfo = isRevenueCatConfigured
-        ? await refreshCustomerInfo()
-        : customerInfo
-
-      if (nextInfo || !isRevenueCatConfigured) {
-        const synced = await syncPremiumEntitlement()
-        await queryClient.invalidateQueries({ queryKey: ['ai-access-state'] })
-        if (mountedRef.current) {
-          await aiAccessQuery.refetch()
-        }
-
-        if (!synced) {
-          showActionFeedback(
-            'Could not refresh subscription status. Your current app access was not changed.',
-            'error'
-          )
-          return
-        }
-
+      const result = await refreshSubscription()
+      if (result.syncResult.ok) {
+        acknowledgeSubscriptionRefresh()
         track('settings_subscription_refresh_completed')
         showActionFeedback('Premium and AI access status refreshed.', 'success')
         return
       }
-
       showActionFeedback(
-        'Could not refresh subscription status. Your current app access was not changed.',
+        'Could not verify Premium access. Your last confirmed access was not changed.',
         'error'
       )
     } catch {
       showActionFeedback(
-        'Could not refresh subscription status. Your current app access was not changed.',
+        'Could not verify Premium access. Your last confirmed access was not changed.',
         'error'
       )
     } finally {
@@ -374,14 +289,13 @@ export default function SettingsRoute() {
       <SettingsHeader />
 
       <View style={{ gap: spacing.sectionGap }}>
-        <SettingsSection title="Profile">
-          <ProfileSettingsCard identifier={userIdentifier} />
-        </SettingsSection>
+        <AccountRecoverySection />
 
         <SettingsSection title="Subscription">
           <SettingsPanel featured>
             <SubscriptionStatusCard
               detailText={shouldShowManage ? subscriptionDetailText : null}
+              refreshing={aiAccessQuery.isFetching && Boolean(aiAccessQuery.data)}
               errorMessage={
                 aiAccessQuery.error
                   ? 'Could not load the latest AI access state. Use Refresh status to try again.'

@@ -671,16 +671,20 @@ export function RecipeFailedState({
   kind,
   message,
   canRetry,
+  retryLabel = 'Retry',
+  secondaryActionLabel = 'Back to Library',
   onRetry,
   onOpenOriginal,
-  onGoToLibrary,
+  onSecondaryAction,
 }: {
   kind: 'metadata' | 'ai'
   message: string
   canRetry: boolean
+  retryLabel?: string
+  secondaryActionLabel?: string
   onRetry: () => void
   onOpenOriginal?: () => void
-  onGoToLibrary: () => void
+  onSecondaryAction: () => void
 }) {
   return (
     <View
@@ -714,10 +718,65 @@ export function RecipeFailedState({
         </Text>
       </View>
       <View style={{ width: '100%', gap: spacing.sm }}>
-        {canRetry ? <EditorialButton label="Retry" variant="primary" onPress={onRetry} /> : null}
+        {canRetry ? <EditorialButton label={retryLabel} variant="primary" onPress={onRetry} /> : null}
         {onOpenOriginal ? <EditorialButton label="Open Original" variant="secondary" onPress={onOpenOriginal} /> : null}
-        <EditorialButton label="Back to Library" variant="ghost" onPress={onGoToLibrary} />
+        <EditorialButton label={secondaryActionLabel} variant="ghost" onPress={onSecondaryAction} />
       </View>
+    </View>
+  )
+}
+
+export function InlineAiFailureCard({
+  title,
+  message,
+  retrying,
+  canRetry,
+  onRetry,
+  onDismiss,
+}: {
+  title: string
+  message: string
+  retrying: boolean
+  canRetry: boolean
+  onRetry: () => void
+  onDismiss: () => void
+}) {
+  return (
+    <View
+      accessibilityLiveRegion="polite"
+      style={{
+        gap: spacing.md,
+        borderRadius: radius.card,
+        borderWidth: 1,
+        borderColor: colors.error,
+        backgroundColor: colors.dangerSurface,
+        padding: spacing.lg,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md }}>
+        <AppIcon name="warning" color={colors.error} size={22} />
+        <View style={{ minWidth: 0, flex: 1, gap: spacing.xs }}>
+          <Text selectable style={[typography.heading, { color: colors.onSurface }]}>
+            {title}
+          </Text>
+          <Text selectable style={[typography.body, { color: colors.onSurfaceVariant }]}>
+            {message}
+          </Text>
+        </View>
+      </View>
+      {canRetry ? (
+        <EditorialButton
+          label={retrying ? 'Checking allowance…' : 'Retry AI recipe generation'}
+          variant="primary"
+          disabled={retrying}
+          onPress={onRetry}
+        />
+      ) : null}
+      <EditorialButton
+        label="Continue viewing metadata"
+        variant="ghost"
+        onPress={onDismiss}
+      />
     </View>
   )
 }

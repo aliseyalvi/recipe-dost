@@ -195,7 +195,9 @@ export type Database = {
           started_at: string | null
           status: string
           thumbnail_url: string | null
+          retry_requested_at: string | null
           updated_at: string
+          user_retry_count: number
           user_id: string
         }
         Insert: {
@@ -222,7 +224,9 @@ export type Database = {
           started_at?: string | null
           status?: string
           thumbnail_url?: string | null
+          retry_requested_at?: string | null
           updated_at?: string
+          user_retry_count?: number
           user_id: string
         }
         Update: {
@@ -249,7 +253,9 @@ export type Database = {
           started_at?: string | null
           status?: string
           thumbnail_url?: string | null
+          retry_requested_at?: string | null
           updated_at?: string
+          user_retry_count?: number
           user_id?: string
         }
         Relationships: [
@@ -405,6 +411,7 @@ export type Database = {
           cuisine: string | null
           deleted_at: string | null
           description: string | null
+          duration_semantics_version: number
           duration_seconds: number | null
           id: string
           is_favorite: boolean
@@ -413,8 +420,12 @@ export type Database = {
           metadata_status: string | null
           pasted_caption: string | null
           platform: string | null
+          recipe_cook_minutes: number | null
+          recipe_prep_minutes: number | null
+          recipe_total_minutes: number | null
           source_metadata: Json
           source_url: string
+          source_video_duration_seconds: number | null
           thumbnail_url: string | null
           title: string | null
           updated_at: string
@@ -426,6 +437,7 @@ export type Database = {
           cuisine?: string | null
           deleted_at?: string | null
           description?: string | null
+          duration_semantics_version?: number
           duration_seconds?: number | null
           id?: string
           is_favorite?: boolean
@@ -434,8 +446,12 @@ export type Database = {
           metadata_status?: string | null
           pasted_caption?: string | null
           platform?: string | null
+          recipe_cook_minutes?: number | null
+          recipe_prep_minutes?: number | null
+          recipe_total_minutes?: number | null
           source_metadata?: Json
           source_url: string
+          source_video_duration_seconds?: number | null
           thumbnail_url?: string | null
           title?: string | null
           updated_at?: string
@@ -447,6 +463,7 @@ export type Database = {
           cuisine?: string | null
           deleted_at?: string | null
           description?: string | null
+          duration_semantics_version?: number
           duration_seconds?: number | null
           id?: string
           is_favorite?: boolean
@@ -455,8 +472,12 @@ export type Database = {
           metadata_status?: string | null
           pasted_caption?: string | null
           platform?: string | null
+          recipe_cook_minutes?: number | null
+          recipe_prep_minutes?: number | null
+          recipe_total_minutes?: number | null
           source_metadata?: Json
           source_url?: string
+          source_video_duration_seconds?: number | null
           thumbnail_url?: string | null
           title?: string | null
           updated_at?: string
@@ -641,7 +662,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      retry_media_job: {
+        Args: {
+          p_job_id: string
+        }
+        Returns: {
+          job_id: string
+          next_state: string | null
+          retry_accepted: boolean
+          retry_block_reason: string | null
+          retry_count: number
+          retryable: boolean
+          status: string | null
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

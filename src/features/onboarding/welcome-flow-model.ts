@@ -1,5 +1,22 @@
 export const WELCOME_COMPLETION_HREF = '/home' as const
 
+export type LocalOnboardingState =
+  | 'loading'
+  | 'incomplete'
+  | 'completed'
+  | 'error'
+
+export function getLocalOnboardingState(input: {
+  hydrationStatus: 'pending' | 'ready' | 'error'
+  storageKeyStatus: 'unknown' | 'absent' | 'present'
+  onboardingCompleted: boolean
+}): LocalOnboardingState {
+  if (input.hydrationStatus === 'pending') return 'loading'
+  if (input.hydrationStatus === 'error') return 'error'
+  if (input.storageKeyStatus !== 'present') return 'incomplete'
+  return input.onboardingCompleted ? 'completed' : 'incomplete'
+}
+
 export const welcomeSlides = [
   {
     id: 'brand_intro',
@@ -48,36 +65,31 @@ export type WelcomeHero = WelcomeSlide['hero']
 
 export type AppEntryDecision =
   | { status: 'loading' }
-  | { status: 'error'; source: 'auth' | 'storage' | 'profile' }
+  | { status: 'error'; source: 'auth' | 'storage' }
   | { status: 'route'; href: '/home' | '/welcome' }
 
 export function getAppEntryDecision(input: {
-  authStatus: 'pending' | 'signed_in' | 'signed_out' | 'error'
-  storageStatus: 'pending' | 'ready' | 'error'
-  profileStatus: 'pending' | 'ready' | 'error'
-  remoteOnboardingCompleted?: boolean | null
-  localOnboardingCompleted: boolean
+  authStatus:
+    | 'initializing'
+    | 'anonymous_ready'
+    | 'linked_ready'
+    | 'signed_out_ready'
+    | 'recovering'
+    | 'error'
+  onboardingState: LocalOnboardingState
 }) : AppEntryDecision {
   if (input.authStatus === 'error') return { status: 'error', source: 'auth' }
-  if (input.storageStatus === 'error') return { status: 'error', source: 'storage' }
-  if (input.profileStatus === 'error') return { status: 'error', source: 'profile' }
+  if (input.onboardingState === 'error') {
+    return { status: 'error', source: 'storage' }
+  }
   if (
-    input.authStatus === 'pending' ||
-    input.storageStatus === 'pending' ||
-    input.profileStatus === 'pending'
+    input.authStatus === 'initializing' ||
+    input.authStatus === 'recovering' ||
+    input.onboardingState === 'loading'
   ) {
     return { status: 'loading' }
   }
-  if (input.authStatus === 'signed_out') {
-    return { status: 'route', href: '/welcome' }
-  }
-  return {
-    status: 'route',
-    href: getAppEntryHref(
-      input.remoteOnboardingCompleted,
-      input.localOnboardingCompleted
-    ),
-  }
+  return { status: 'route', href: getAppEntryHref(input.onboardingState) }
 }
 
 export function getOnboardingCompletionEvent(outcome: 'completed' | 'skipped') {
@@ -85,12 +97,9 @@ export function getOnboardingCompletionEvent(outcome: 'completed' | 'skipped') {
 }
 
 export function getAppEntryHref(
-  remoteOnboardingCompleted: boolean | null | undefined,
-  localOnboardingCompleted: boolean
+  onboardingState: 'incomplete' | 'completed'
 ) {
-  return remoteOnboardingCompleted && localOnboardingCompleted
-    ? ('/home' as const)
-    : ('/welcome' as const)
+  return onboardingState === 'completed' ? ('/home' as const) : ('/welcome' as const)
 }
 
 export function getWelcomePrimaryAction(stepIndex: number) {

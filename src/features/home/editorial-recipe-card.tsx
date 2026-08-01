@@ -23,6 +23,7 @@ export function EditorialRecipeCard({
   isFavorite,
   isFavoriteUpdating = false,
   isProcessing = false,
+  showFavoriteAction = true,
   onFavoritePress,
   onPress,
 }: {
@@ -39,6 +40,7 @@ export function EditorialRecipeCard({
   isFavorite: boolean
   isFavoriteUpdating?: boolean
   isProcessing?: boolean
+  showFavoriteAction?: boolean
   onFavoritePress: () => void
   onPress: () => void
 }) {
@@ -124,12 +126,14 @@ export function EditorialRecipeCard({
             gap: spacing.sm,
           }}
         >
-          <FavoriteIconButton
-            title={title}
-            isFavorite={isFavorite}
-            disabled={isFavoriteUpdating}
-            onPress={onFavoritePress}
-          />
+          {showFavoriteAction ? (
+            <FavoriteIconButton
+              title={title}
+              isFavorite={isFavorite}
+              disabled={isFavoriteUpdating}
+              onPress={onFavoritePress}
+            />
+          ) : null}
           {isAiRecipe ? <AiRecipeBadge /> : null}
           {!isAiRecipe && statusLabel ? (
             <RecipeStatusBadge

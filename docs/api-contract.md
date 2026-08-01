@@ -5,6 +5,45 @@ Mobile app -> Supabase Auth -> Supabase Database / Edge Functions -> AI provider
 
 The mobile app must never call OpenAI or any LLM provider directly.
 
+## M24.1 Premium synchronization contract
+
+### POST /functions/v1/sync-revenuecat-entitlement
+
+The function requires a Supabase bearer session and derives the target user only
+from `auth.getUser()`. An empty body remains valid. The only optional input is:
+
+```json
+{ "trigger": "string" }
+```
+
+Any user/target UUID field is rejected. Existing success fields remain
+`revenuecat_entitlement_active`, `revenuecat_entitlement`,
+`revenuecat_product_id`, `revenuecat_expires_at`, and
+`revenuecat_updated_at`. Additive fields are `sync_status`,
+`entitlement_source`, `freshness`, and `sync_result_code`.
+
+Concurrent calls may receive a cached compatible success with
+`sync_status=in_progress`; only the lease owner contacts RevenueCat. Errors
+retain `{ ok: false, error: { code, message } }`. Provider payloads and
+identifiers are never returned. A customer already bound to another Supabase
+owner returns `revenuecat_binding_conflict` and no profile update.
+
+M24.1D requires `RECIPE_DOST_ENV` to normalize to `development` or `production`.
+Missing or invalid server configuration fails before lease acquisition with HTTP
+500 and the same error envelope:
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "subscription_sync_configuration_error",
+    "message": "Premium access synchronization is temporarily unavailable."
+  }
+}
+```
+
+The function does not read the reserved custom `SUPABASE_ENV_NAME` setting.
+
 ## Auth model
 Use Supabase Auth.
 Start with anonymous/guest users.

@@ -1,5 +1,89 @@
 # Recipe Dost Milestones
 
+## M24.3A-R - Premium Confirmation / Generation Eligibility Separation
+
+- Status: implemented locally on `develop`; Android mobile QA and a new binary
+  remain pending. Nothing was deployed or published.
+- Corrected M24.3A Restore and Purchase completion to require authoritative
+  backend `premiumActive=true` without also requiring immediate AI-job
+  eligibility. Local RevenueCat evidence alone still cannot confirm Premium.
+- `canStartAiJob`, normalized block reason, remaining quota, active reservations,
+  successful monthly usage, and monthly limit are represented independently.
+  Confirmed Premium remains Premium when quota or a reservation blocks Generate.
+- Settings/paywall show successful Premium confirmation plus separate
+  quota/reservation copy. Generate stays disabled, does not reopen the purchase
+  path, does not resynchronize unnecessarily, and creates no job while blocked.
+- No Edge Function, API contract, migration, quota, worker, provider setting,
+  deployment, main merge, or publication changed.
+
+## M24.3A - Authoritative Mobile Subscription State Machine
+
+- Status: implemented locally on `develop`; Android sandbox QA and a new mobile
+  binary remain pending. Nothing was deployed or published.
+- M24.2A sandbox expiry lifecycle and M24.2B backend restore semantics are
+  verified. Backend Premium activation, expiry projection, and Free fallback are
+  authoritative and unchanged. The worker track is unchanged.
+- Added one user-scoped AI-access cache and state machine. Only authoritative
+  backend Premium can produce `premium_confirmed`; local RevenueCat information
+  is store evidence and can produce only a bounded verification state.
+- Purchase, restore, explicit refresh, SDK listener, stale bootstrap/foreground,
+  and Generate recovery share one Promise-based reconciliation path. Restore no
+  longer treats SDK completion or an expired entitlement as restored access.
+- Added safe subscription transition analytics, exact expiry/no-entitlement copy,
+  one-minute stale time, listener lifecycle cleanup, and focused mobile tests.
+  Free/Premium quotas, backend APIs, database, worker, and media processing did
+  not change.
+
+## M24.1D - Reserved Supabase Environment Variable Repair
+
+- Status: implemented locally on `develop`; development secret update, focused
+  Edge Function deployment, and runtime verification remain human-gated.
+- M24.0 is done. M24.1A is done. M24.1B development deployment was attempted;
+  M24.1C isolated the runtime failure before lease acquisition. M24.2 remains
+  blocked until M24.1D passes development runtime verification.
+- Replaced the invalid custom `SUPABASE_ENV_NAME` setting with the server-only
+  `RECIPE_DOST_ENV`, restricted to `development` or `production`. Development
+  still hashes `development + ":" + original_app_user_id`; binding identity is
+  unchanged.
+- Configuration is now inspected inside the controlled request path. Missing or
+  invalid required settings emit allowlisted structured diagnostics and return
+  `subscription_sync_configuration_error` without identifiers or values.
+- No migration, mobile UX, quota, worker, media processing, RevenueCat dashboard,
+  purchase, live provider call, deployment, main merge, or mobile release is in
+  M24.1D.
+
+## M24.1 - Backward-Compatible RevenueCat Alias, Binding, Sync, Expiry and Observability Repair
+
+- Status: M24.1A implementation done; M24.1B development deployment attempted;
+  M24.1C runtime root cause isolated; M24.1D correction is local/pending deploy.
+- Added service-only RevenueCat customer bindings keyed by an environment-scoped
+  server HMAC of RevenueCat `original_app_user_id`. A resolved current Supabase
+  UUID may be a RevenueCat alias; an existing binding to another Supabase user
+  returns a conflict and never moves data or entitlement.
+- Added an atomic 20-second database sync lease. Concurrent callers receive the
+  current compatible `user_profiles` projection with `sync_status=in_progress`
+  and do not make another RevenueCat request.
+- RevenueCat transport now has an eight-second per-attempt timeout, at most two
+  attempts, and retries only transient network/5xx failures. Active and inactive
+  authoritative responses update the existing profile projection; transient
+  failures preserve it.
+- AI access now requires a future or legitimate null RevenueCat expiry while
+  preserving Free 3-total, Premium 100-monthly, tester, admin, and media-job
+  reservation rules. `create-media-job` remains authoritative.
+- Added keyed structured synchronization/expiry logs, focused Deno and static
+  contract tests, secret allowlisting, architecture documentation, and the
+  development deployment runbook. No worker or media processing changed.
+
+## M24.0 - RevenueCat, Supabase Identity and Reinstall-Recovery Audit
+
+- Status: done. The evidence-based audit confirmed correct SDK configuration
+  with Supabase UUID, local/backend Premium split-brain, alias rejection in the
+  backend synchronizer, non-coalesced mobile refresh calls, missing expiry
+  enforcement, and unrecoverable anonymous data after local session loss.
+- M24.0 made no code, schema, deployment, provider, worker, or secret changes.
+- M24.1 is the backward-compatible backend repair; recoverable account linking
+  remains a future mobile milestone.
+
 ## M23.0A - Public-release compliance and final-candidate patch
 
 - Explicit fresh-install onboarding hydration states, safe storage error/retry, single completion/Skip persistence and analytics, and versionCode 3 candidate.

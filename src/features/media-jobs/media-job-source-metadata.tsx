@@ -1,9 +1,16 @@
 import { shouldShowCustomDevTools } from '@/features/dev-tools/dev-tools-visibility'
 import { RecipePlatform } from '@/features/recipe-draft/types'
 import { MediaJobSourceMetadata } from '@/lib/api/recipes'
-import { colors, spacing, typography } from '@/theme'
+import { colors, radius, spacing, typography } from '@/theme'
 import { AppBadge } from '@/ui/app-badge'
+import { AppIcon } from '@/ui/app-icon'
 import { Text, View } from 'react-native'
+import {
+  formatRecipeDurationMinutes,
+  formatSourceDurationSeconds,
+  getDurationLimitMessage,
+  getEffectiveSourceDurationLimitSeconds,
+} from './duration-policy'
 
 type Props = {
   metadata?: MediaJobSourceMetadata | null
@@ -21,13 +28,20 @@ export function MediaJobSourceMetadataSummary({
   const platformLabel = getPlatformLabel(
     getSourcePlatform(metadata?.platform ?? fallbackPlatform)
   )
-  const durationLabel =
-    typeof metadata?.duration_seconds === 'number'
-      ? formatDuration(metadata.duration_seconds)
-      : null
+  const sourceDurationSeconds =
+    metadata?.actual_duration_seconds ?? metadata?.duration_seconds ?? null
+  const maxDurationSeconds = getEffectiveSourceDurationLimitSeconds({
+    maxDurationSeconds: metadata?.max_duration_seconds,
+    maxSourceVideoDurationSeconds:
+      metadata?.max_source_video_duration_seconds,
+  })
   const isOverDurationLimit =
-    typeof metadata?.duration_seconds === 'number' &&
-    metadata.duration_seconds > 120
+    typeof sourceDurationSeconds === 'number'
+      ? sourceDurationSeconds > maxDurationSeconds
+      : metadata?.is_too_long === true
+  const durationLimitCopy = isOverDurationLimit
+    ? getDurationLimitMessage(sourceDurationSeconds, maxDurationSeconds)
+    : null
   const sizeLabel =
     typeof metadata?.media?.size_bytes === 'number'
       ? formatBytes(metadata.media.size_bytes)
@@ -39,7 +53,7 @@ export function MediaJobSourceMetadataSummary({
       sourceDescription ||
       authorLabel ||
       platformLabel ||
-      durationLabel ||
+      sourceDurationSeconds ||
       sizeLabel ||
       resolverLabel ||
       isMockResult
@@ -53,7 +67,9 @@ export function MediaJobSourceMetadataSummary({
     <View style={{ gap: spacing.sm }}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
         {platformLabel ? <AppBadge label={platformLabel} /> : null}
-        {durationLabel ? <AppBadge label={durationLabel} /> : null}
+        <DurationChips
+          sourceVideoDurationSeconds={sourceDurationSeconds}
+        />
         {authorLabel ? <AppBadge label={`Creator: ${authorLabel}`} /> : null}
         {sizeLabel ? <AppBadge label={sizeLabel} /> : null}
         {resolverLabel ? <AppBadge label={`Resolver: ${resolverLabel}`} /> : null}
@@ -78,10 +94,15 @@ export function MediaJobSourceMetadataSummary({
         </Text>
       ) : null}
 
-      {isOverDurationLimit ? (
-        <Text selectable style={[typography.caption, { color: colors.warning }]}>
-          Video analysis supports clips up to 2 minutes.
-        </Text>
+      {durationLimitCopy ? (
+        <View style={{ gap: spacing.xs }}>
+          <Text selectable style={[typography.label, { color: colors.warning }]}>
+            {durationLimitCopy.title}
+          </Text>
+          <Text selectable style={[typography.caption, { color: colors.warning }]}>
+            {durationLimitCopy.body}
+          </Text>
+        </View>
       ) : null}
     </View>
   )
@@ -118,12 +139,92 @@ function getPlatformLabel(platform: RecipePlatform | null) {
   }
 }
 
-function formatDuration(value: number) {
-  const totalSeconds = Math.max(0, Math.round(value))
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
+export function DurationChips({
+  recipeTotalMinutes,
+  sourceVideoDurationSeconds,
+}: {
+  recipeTotalMinutes?: number | null
+  sourceVideoDurationSeconds?: number | null
+}) {
+  const recipeDuration =
+    typeof recipeTotalMinutes === 'number' &&
+    Number.isFinite(recipeTotalMinutes) &&
+    recipeTotalMinutes > 0
+      ? formatRecipeDurationMinutes(recipeTotalMinutes)
+      : null
+  const sourceDuration =
+    typeof sourceVideoDurationSeconds === 'number' &&
+    Number.isFinite(sourceVideoDurationSeconds) &&
+    sourceVideoDurationSeconds > 0
+      ? formatSourceDurationSeconds(sourceVideoDurationSeconds)
+      : null
 
-  return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`
+  return (
+    <View
+      style={{
+        minHeight: 28,
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: spacing.xs,
+      }}
+    >
+      {recipeDuration ? (
+        <DurationChip
+          accessibilityLabel={`Recipe time ${recipeDuration}`}
+          icon="clock"
+          label={recipeDuration}
+        />
+      ) : null}
+      {sourceDuration ? (
+        <DurationChip
+          accessibilityLabel={`Video length ${sourceDuration}`}
+          icon="play"
+          label={sourceDuration}
+        />
+      ) : null}
+    </View>
+  )
+}
+
+function DurationChip({
+  accessibilityLabel,
+  icon,
+  label,
+}: {
+  accessibilityLabel: string
+  icon: 'clock' | 'play'
+  label: string
+}) {
+  return (
+    <View
+      accessible
+      accessibilityLabel={accessibilityLabel}
+      style={{
+        minHeight: 28,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        borderRadius: radius.pill,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.12)',
+        backgroundColor: 'rgba(0, 0, 0, 0.48)',
+        paddingHorizontal: spacing.sm,
+      }}
+    >
+      <AppIcon name={icon} color={colors.onSurfaceVariant} size={14} />
+      <Text
+        selectable
+        numberOfLines={1}
+        style={[
+          typography.label,
+          { color: colors.onSurfaceVariant, fontSize: 9 },
+        ]}
+      >
+        {label}
+      </Text>
+    </View>
+  )
 }
 
 function formatBytes(value: number) {

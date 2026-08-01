@@ -15,12 +15,56 @@ export type PlanInterval = 'monthly' | 'yearly' | 'unknown'
 export type AnalyticsResult = 'success' | 'failure' | 'cancelled' | 'blocked'
 export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed'
 export type LanguageMode = 'english' | 'urdu' | 'both'
+type SubscriptionReconciliationProperties = {
+  trigger: string
+  local_entitlement_active: boolean
+  backend_premium_active: boolean
+  expiration_relation: string
+  provider_environment: string
+  sync_result: string
+  normalized_error_code: string
+  latency_bucket: string
+}
 
 export type ProductEventProperties = {
   app_opened: undefined
   onboarding_started: undefined
   onboarding_completed: undefined
   onboarding_skipped: undefined
+  account_recovery_form_opened: {
+    mode: 'link' | 'verify' | 'sign_in'
+  }
+  account_link_started: {
+    method: 'email_magic_link'
+  }
+  account_link_verification_sent: {
+    method: 'email_magic_link'
+    stage: 'initial' | 'resend'
+  }
+  account_link_completed: {
+    method: 'email_magic_link'
+    subscription_refresh_pending: boolean
+  }
+  account_link_failed: {
+    method: 'email_magic_link'
+    stage: 'email' | 'verification' | 'resend'
+  }
+  account_recovery_sign_in_started: {
+    method: 'email_magic_link'
+  }
+  account_recovery_guest_switch_confirmation_required: undefined
+  account_recovery_completed: {
+    method: 'email_magic_link'
+    replaced_empty_guest: boolean
+    subscription_refresh_pending: boolean
+  }
+  account_recovery_sign_in_failed: {
+    method: 'email_magic_link'
+  }
+  account_recovery_subscription_refreshed: undefined
+  account_recovery_subscription_refresh_pending: undefined
+  account_sign_out_subscription_reset_failed: undefined
+  account_signed_out: undefined
   account_deletion_completed: undefined
   ai_recipe_report_submitted: {
     category:
@@ -95,6 +139,20 @@ export type ProductEventProperties = {
     result: 'failure'
     failure_code: string
   }
+  subscription_refresh_started: SubscriptionReconciliationProperties
+  subscription_refresh_completed: SubscriptionReconciliationProperties
+  subscription_refresh_failed: SubscriptionReconciliationProperties
+  subscription_restore_started: SubscriptionReconciliationProperties
+  subscription_restore_completed: SubscriptionReconciliationProperties
+  subscription_restore_no_entitlement: SubscriptionReconciliationProperties
+  subscription_restore_failed: SubscriptionReconciliationProperties
+  subscription_state_transition: SubscriptionReconciliationProperties & {
+    state_before: string
+    state_after: string
+  }
+  purchase_reconciliation_started: SubscriptionReconciliationProperties
+  purchase_reconciliation_completed: SubscriptionReconciliationProperties
+  purchase_reconciliation_failed: SubscriptionReconciliationProperties
   posthog_test_event: {
     app_env: 'development'
     platform: 'android' | 'ios' | 'web'
@@ -264,6 +322,7 @@ export type LegacyAnalyticsProperties = Partial<
     | 'requires_manual_caption'
     | 'result'
     | 'result_count'
+    | 'retry_attempt'
     | 'role'
     | 'row'
     | 'screen_name'

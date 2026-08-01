@@ -28,6 +28,7 @@ type RecipeItem = {
   description: string | null;
   thumbnail_url: string | null;
   duration_seconds: number | null;
+  source_video_duration_seconds: number | null;
   metadata_status: string | null;
   source_metadata: Json;
   created_at: string;
@@ -40,6 +41,7 @@ type RecipeItemUpdate = {
   description?: string | null;
   thumbnail_url?: string | null;
   duration_seconds?: number | null;
+  source_video_duration_seconds?: number | null;
   metadata_status?: MetadataStatus;
   source_metadata?: Json;
 };
@@ -93,6 +95,7 @@ type PreviewMetadata = {
   metadataStatus: MetadataStatus | null;
   isTooLong: boolean | null;
   maxDurationSeconds: number | null;
+  durationValidationSource: string | null;
   thumbnailSource: string | null;
   thumbnailProvider: string | null;
   thumbnailStrategy: string | null;
@@ -228,7 +231,7 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
   const recipeResult = await clients.userClient
     .from("recipe_items")
     .select(
-      "id, user_id, source_url, platform, title, description, thumbnail_url, duration_seconds, metadata_status, source_metadata, created_at, updated_at",
+      "id, user_id, source_url, platform, title, description, thumbnail_url, duration_seconds, source_video_duration_seconds, metadata_status, source_metadata, created_at, updated_at",
     )
     .eq("id", recipeItemId)
     .eq("user_id", user.id)
@@ -246,7 +249,9 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
   const sourceUrl = getRecipeSourceUrl(recipeItem);
   const sourceUrlInfo = getSafeSourceUrlInfo(sourceUrl);
   const platform = normalizePlatform(recipeItem.platform) ??
-    (sourceUrlInfo.ok ? detectPlatformFromUrl(sourceUrlInfo.sourceUrl) : "other");
+    (sourceUrlInfo.ok
+      ? detectPlatformFromUrl(sourceUrlInfo.sourceUrl)
+      : "other");
 
   logRefreshEvent("recipe_item_loaded", {
     recipe_item_id: recipeItem.id,
@@ -276,7 +281,7 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
         errorCode: "source_url_missing",
         titlePresent: Boolean(failedItem.title?.trim()),
         thumbnailPresent: Boolean(failedItem.thumbnail_url),
-        durationSeconds: failedItem.duration_seconds,
+        durationSeconds: failedItem.source_video_duration_seconds,
       }),
     });
   }
@@ -304,7 +309,7 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
         errorCode: workerConfig.errorCode,
         titlePresent: Boolean(failedItem.title?.trim()),
         thumbnailPresent: Boolean(failedItem.thumbnail_url),
-        durationSeconds: failedItem.duration_seconds,
+        durationSeconds: failedItem.source_video_duration_seconds,
       }),
     });
   }
@@ -355,7 +360,7 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
         errorCode: workerResult.errorCode,
         titlePresent: Boolean(failedItem.title?.trim()),
         thumbnailPresent: Boolean(failedItem.thumbnail_url),
-        durationSeconds: failedItem.duration_seconds,
+        durationSeconds: failedItem.source_video_duration_seconds,
       }),
     });
   }
@@ -397,15 +402,15 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
       description: workerResult.metadata.description ?? recipeItem.description,
       thumbnail_url: workerResult.metadata.thumbnailUrl ??
         recipeItem.thumbnail_url,
-      duration_seconds: workerResult.metadata.durationSeconds ??
-        recipeItem.duration_seconds,
+      source_video_duration_seconds: workerResult.metadata.durationSeconds ??
+        recipeItem.source_video_duration_seconds,
       metadata_status: nextStatus,
       source_metadata: buildSafeSourceMetadata(workerResult.metadata),
     })
     .eq("id", recipeItem.id)
     .eq("user_id", user.id)
     .select(
-      "id, user_id, source_url, platform, title, description, thumbnail_url, duration_seconds, metadata_status, source_metadata, created_at, updated_at",
+      "id, user_id, source_url, platform, title, description, thumbnail_url, duration_seconds, source_video_duration_seconds, metadata_status, source_metadata, created_at, updated_at",
     )
     .single<RecipeItem>();
 
@@ -443,7 +448,7 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
         errorCode: "db_update_failed",
         titlePresent: Boolean(failedItem.title?.trim()),
         thumbnailPresent: Boolean(failedItem.thumbnail_url),
-        durationSeconds: failedItem.duration_seconds,
+        durationSeconds: failedItem.source_video_duration_seconds,
       }),
     });
   }
@@ -469,7 +474,7 @@ async function handleRefreshRecipeMetadataRequest(request: Request) {
       errorCode: null,
       titlePresent: Boolean(updateResult.data.title?.trim()),
       thumbnailPresent: Boolean(updateResult.data.thumbnail_url),
-      durationSeconds: updateResult.data.duration_seconds,
+      durationSeconds: updateResult.data.source_video_duration_seconds,
     }),
   });
 }
@@ -827,7 +832,9 @@ function normalizeFinalWorkerFailure(
   };
 }
 
-function getWorkerHttpErrorCode(status: number): RefreshRecipeMetadataErrorCode {
+function getWorkerHttpErrorCode(
+  status: number,
+): RefreshRecipeMetadataErrorCode {
   if (status === 401 || status === 403) {
     return "worker_auth_failed";
   }
@@ -879,7 +886,7 @@ async function markMetadataFailed(
     .eq("id", recipeItem.id)
     .eq("user_id", recipeItem.user_id)
     .select(
-      "id, user_id, source_url, platform, title, description, thumbnail_url, duration_seconds, metadata_status, source_metadata, created_at, updated_at",
+      "id, user_id, source_url, platform, title, description, thumbnail_url, duration_seconds, source_video_duration_seconds, metadata_status, source_metadata, created_at, updated_at",
     )
     .single<RecipeItem>();
 
@@ -952,6 +959,10 @@ function normalizePreviewMetadata(value: unknown): PreviewMetadata {
       getRecordValue(value, "max_duration_seconds") ??
         getRecordValue(value, "maxDurationSeconds"),
     ),
+    durationValidationSource: getMetadataTraceString(
+      getRecordValue(value, "duration_validation_source") ??
+        getRecordValue(value, "durationValidationSource"),
+    ),
     thumbnailSource: getMetadataTraceString(
       getRecordValue(value, "thumbnail_source") ??
         getRecordValue(value, "thumbnailSource"),
@@ -985,6 +996,7 @@ function buildSafeSourceMetadata(metadata: PreviewMetadata) {
     metadata_status: getMetadataStatus(metadata),
     is_too_long: metadata.isTooLong,
     max_duration_seconds: metadata.maxDurationSeconds,
+    duration_validation_source: metadata.durationValidationSource,
     thumbnail_source: metadata.thumbnailSource,
     thumbnail_provider: metadata.thumbnailProvider,
     thumbnail_strategy: metadata.thumbnailStrategy,
@@ -1234,7 +1246,9 @@ function getRecordValue(value: unknown, key: string) {
 
 async function getWorkerValidationExceptionType(response: Response) {
   try {
-    return `worker_response_${getSanitizedWorkerErrorClass(await response.text())}`;
+    return `worker_response_${
+      getSanitizedWorkerErrorClass(await response.text())
+    }`;
   } catch {
     return "worker_response_unreadable";
   }

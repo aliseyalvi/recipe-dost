@@ -1,5 +1,204 @@
 # Recipe Dost Decision Log
 
+## 2026-07-30 — M24.7A frontend duration and retry contract integration
+
+- Added one pure frontend policy for explicit source-video/recipe duration
+  semantics, effective-limit precedence, dynamic duration copy, and shared CTA
+  states. The only compatibility fallback is 180 seconds in that module;
+  unknown duration stays eligible for backend evaluation, and ambiguous
+  historical `duration_seconds` is never promoted to recipe time.
+- Recipe-item/media-job reads now include the deployed explicit duration and
+  retry fields. Library duration chips use a clock for `recipe_total_minutes`
+  and a play icon for `source_video_duration_seconds`, with a stable empty
+  metadata-row height and no fabricated value.
+- Failed-job retry now calls authenticated `public.retry_media_job` with the
+  existing job ID. Accepted and `already_queued` results optimistically move
+  that same cached job to queued, then invalidate/refetch the established
+  media-job, recipe-item, recipe-card, Library/Home, AI-access, and usage keys.
+  Retry never calls `create-media-job`.
+- Removed frontend 120-second generation gates and user-visible two-minute
+  warnings from saved-recipe detail, legacy preview, media-job cards, and
+  media-job source metadata. Backend actual/max values drive dynamic warnings.
+- Validation passed: focused M24.7A + failed-job tests (29/29), `npm run
+  typecheck`, `npm run lint`, `npm test`, `npm run qa:static`, `npm run
+  functions:check`, and `git diff --check`. `npm run doctor` remains blocked by
+  the repository's pre-existing Expo SDK package-version drift (8 packages);
+  dependencies were intentionally unchanged.
+- No worker, migration, Edge Function, schema, queue, provider, Gemini, quota,
+  RevenueCat, EAS, or backend behavior changed, and no live service was called.
+
+## 2026-07-30 — M23.W10C source and recipe duration separation
+
+- Migration `202607300001_m23_w10c_duration_semantics.sql` adds explicit
+  `recipe_items` source-video and recipe prep/cook/total fields with bounded
+  constraints and semantics version 1. Existing
+  `media_jobs.media_duration_seconds` remains the authoritative per-job source
+  duration.
+- Recipe-card insert/update triggers preserve a valid explicit total or derive
+  total only when both valid prep and cook values exist. The compatibility
+  `recipe_items.duration_seconds` field is recipe-total seconds only; ambiguous
+  historical values become null rather than being guessed.
+- Source-video backfill uses only worker-written media-job duration or source
+  metadata carrying an allowlisted validation source. Metadata refresh now
+  writes `source_video_duration_seconds` and never overwrites the legacy recipe
+  duration field.
+- `create-media-job` no longer enforces a competing Edge hardcode; worker JSON
+  configuration is authoritative. The replaced authenticated W10B RPC permits
+  `video_duration_exceeded` retry only when locked job state or a server-written
+  event proves 1–180 seconds. Ownership, idempotency, retry limit, quota release,
+  same-row queue transition, and grants are unchanged.
+- No frontend UI, quota, provider, media, Gemini, queue-liveness, wake, or
+  resolver behavior was changed.
+
+## 2026-07-29 — M23.W10B atomic user-owned media-job retry
+
+- `public.retry_media_job(p_job_id uuid)` is the only user retry transition. It
+  locks the existing `media_jobs` row, checks `auth.uid()` ownership, result,
+  status, lease freshness, retry limit, and an explicit recoverable-error
+  allowlist, then requeues the same row and inserts one safe retry event in the
+  same transaction. Public/anonymous execution is revoked.
+- Only `user_retry_count` and `retry_requested_at` are added. User retries do
+  not consume `processing_attempt_count`; source URL/platform, source metadata,
+  duration/size, resolver identity, recipe ownership, and valid thumbnails are
+  preserved. `video_duration_exceeded` and unknown errors remain non-retryable.
+- Quota remains status-derived. A retried row is reservation-free only while it
+  is `queued` with `retry_requested_at`; the unchanged W10A atomic claim moves
+  it to `resolving`, restoring one active reservation. Failed/released state
+  never decrements successful generation usage.
+- Offline validation passed TypeScript, all configured Edge checks, the full
+  126-test app suite, 102 migration/compliance/static checks, Deno format/lint,
+  migration filename uniqueness, secret-pattern review, and diff checks.
+- The migration is
+  `supabase/migrations/202607290002_m23_w10b_media_job_retry.sql`. It was not
+  applied, and no Supabase, Gemini, provider, Sentry, Render, deployment,
+  frontend, or raw-media operation was performed.
+
+## 2026-07-29
+
+- M23.W10A keeps its unapplied queue-liveness migration in this canonical
+  Supabase-linked repository at
+  `supabase/migrations/202607290001_m23_w10a_queue_liveness.sql`. The timestamp
+  is unique and newer than the prior `20260722105123` migration.
+- The file was moved byte-for-byte from the worker repository; its atomic FIFO
+  claim, heartbeat/ownership fields, stale recovery, quota events, grants, and
+  SQL contents are unchanged. The migration was not applied and no live
+  service was called.
+
+## 2026-07-26
+
+- M24.3B-Q/F keeps the complete user-scoped
+  `['ai-access-state', authenticatedUserId]` snapshot during background
+  refresh. Incomplete `get-ai-access` data now fails validation instead of
+  defaulting missing Premium evidence or counters to Free/zero; refresh errors
+  continue to display the last confirmed allowance with a warning.
+- A newly created job may reserve one visible slot optimistically without
+  changing successful usage or Premium identity. Each terminal media-job
+  attempt triggers one authoritative access fetch keyed by `media_job_id`, so
+  failure releases and completion conversion settle from backend data.
+- Persisted failed AI jobs no longer select the blocking recipe-detail state.
+  Saved thumbnail/title/source metadata remains usable with an inline
+  “Retry AI recipe generation” card. Only an actively watched attempt that
+  transitions to failure gets one full failure presentation; reopening shows
+  the metadata screen and inline retry.
+- Retry fetches authoritative AI access, requires `canStartAiJob`, and uses a
+  synchronous in-flight guard before creating one new job. Existing failed job
+  history, Supabase/RevenueCat contracts, quotas, worker behavior, and schema
+  remain unchanged.
+
+## 2026-07-23
+
+- M24.3A-R separates authoritative subscription identity from current generation
+  availability. Backend `premiumActive=true` confirms Premium regardless of
+  `canStartAiJob`; only Generate uses `canStartAiJob` as its immediate gate.
+- Restore succeeds when local active Premium evidence reconciles to backend
+  Premium, including when the monthly allowance is exhausted or an active job
+  reserves capacity. Purchase may close the paywall on the same backend Premium
+  confirmation rule.
+- Preserve `premium_confirmed` while exposing block reason, remaining-to-start,
+  active reservation, successful usage, and monthly limit separately. Premium
+  quota exhaustion and active processing use specific user copy; unknown
+  normalized blocks use a safe temporary-unavailability message.
+- Local Premium/backend Free remains pending. Generate does not open the upgrade
+  path for confirmed Premium, does not reconcile merely because quota blocks it,
+  and never starts a duplicate job. Backend contracts and quota rules are
+  unchanged.
+
+## 2026-07-22
+
+- M24.3A makes `get-ai-access` the sole authority for Recipe Dost AI access.
+  RevenueCat `CustomerInfo` remains authoritative store evidence, but local
+  Premium can only enter `store_premium_backend_pending`; it cannot grant or
+  describe confirmed AI access.
+- Replace restore's local-or-backend success test with a shared sequence:
+  restore once, inspect returned entitlement/expiry, synchronize once, fetch the
+  user-scoped backend access once, then derive the final state. M24.3A-R clarifies
+  that Restore success requires backend Premium; `canStartAiJob` is a separate
+  generation-availability result. Expired and absent purchases use non-success
+  copy.
+- Use `['ai-access-state', authenticatedUserId]` everywhere with a conservative
+  60-second stale time. Settings remount does not synchronize; bootstrap and
+  foreground reconcile only when stale, while purchase/restore/explicit refresh
+  always reconcile.
+- Mobile synchronization is a shared Promise keyed by Supabase user. Concurrent
+  callers await it and receive the same typed result; no caller receives `null`.
+  The existing backend lease remains the cross-process protection.
+- Register one RevenueCat customer-info listener only after SDK identity is ready,
+  reconcile only meaningful entitlement changes, suppress implicit reconciliation
+  during explicit store actions, and remove the listener on identity/cleanup.
+- Generate recovery now reconciles and automatically retries `create-media-job`
+  at most once only when refreshed backend access permits it. The unconditional
+  “Premium access synced. Please try again.” message is removed.
+- M24.3A requires a new binary because it changes mobile runtime code. It changes
+  no database, Edge Function contract, quota, worker/media path, deployment,
+  RevenueCat dashboard setting, or existing backend compatibility.
+
+- M24.1D supersedes the reserved custom `SUPABASE_ENV_NAME` setting with
+  `RECIPE_DOST_ENV`. Only normalized `development` and `production` are valid;
+  there is no deployed fallback to the old name.
+- Source inspection confirmed the development 500 was not a module-import throw.
+  Request-time configuration validation returned before authentication in the
+  handler, service initialization, structured sync logging, and lease acquisition.
+- Configuration failures now return HTTP 500 with
+  `subscription_sync_configuration_error`, log only fixed configuration names and
+  safe status metadata, and omit user correlation when the HMAC inputs are not
+  available. Secret values and raw identifiers remain prohibited.
+- The binding input remains
+  `normalized_environment + ":" + original_app_user_id`; changing the variable
+  name does not change existing development key semantics.
+- M24.1D is implemented locally/pending development secret update and deploy.
+  M24.2 is blocked until development runtime verification succeeds. No schema,
+  mobile, worker/media, provider, quota, deployment, merge, or release change was
+  made in this implementation.
+- M24.0 audit is complete. RevenueCat SDK identity already uses the authenticated
+  Supabase UUID; the proven failure was the backend's strict equality check
+  against RevenueCat `original_app_user_id`, combined with local/backend state
+  presentation and non-coalesced client refresh calls.
+- M24.1 accepts an authenticated Supabase UUID that RevenueCat successfully
+  resolves as an alias. Ownership is enforced by a unique environment-scoped
+  customer binding keyed with `HMAC-SHA-256(environment + ":" + original ID)`;
+  conflicting bindings fail closed and never transfer recipes or grocery data.
+- Use service-only RLS tables and service-role-only invoker RPCs for binding,
+  atomic lease acquisition, projection persistence, and lease completion. The
+  mobile request cannot select a target user; `auth.getUser()` remains the only
+  source of the Supabase UUID.
+- Coalesce server calls with a 20-second lease. Return the existing cached
+  projection plus additive in-progress metadata to concurrent callers instead
+  of issuing another RevenueCat request or returning null.
+- Bound RevenueCat transport to two attempts, eight seconds each, and a short
+  backoff. Retry only transient network/5xx failures. Definitive inactive or
+  missing Premium clears stale active state; transient failure preserves it.
+- Enforce `revenuecat_expires_at` in shared AI authorization. Null remains valid
+  for legitimately non-expiring products; exact/past/invalid timestamps are not
+  Premium. Quota values and `create-media-job` authority are unchanged.
+- Required new server secret: `REVENUECAT_BINDING_HMAC_SECRET`. It is distinct
+  per environment, at least 32 characters, server-only, and never printed.
+- M24.1A is done; M24.1B deployment was attempted and M24.1C isolated the missing
+  environment configuration before M24.1D superseded it.
+- Validation passed on the first consolidated attempt: TypeScript, focused Deno
+  lint, all configured Edge checks, 25 Deno tests, 7 Node contract/migration
+  tests, static guards, both masked env templates, linked development migration
+  dry-run, redacted changed-file secret scan, and `git diff --check`.
+
 ## 2026-07-18
 
 - M23.0A: replace boolean-only onboarding hydration with explicit pending/ready/error and absent/present state. Storage errors fail visibly and never mark onboarding complete; completion and Skip persist locally/remotely once before Home.
@@ -276,7 +475,9 @@
 ## 2026-07-07
 - M22D.0C audited app repo env names before real value migration.
 - Decision: Canonical app repo env variables are documented in `docs/m22d-env-variable-map.md`; `APP_ANDROID_PACKAGE` was removed from templates because runtime package resolution belongs to `app.config.js`.
-- Decision: `SUPABASE_ENV_NAME` is an optional local helper label, while `SUPABASE_PROJECT_REF` remains required for Supabase secret sync.
+- Historical decision (superseded by M24.1D): `SUPABASE_ENV_NAME` was treated as
+  an optional local helper label. `SUPABASE_PROJECT_REF` remains required for
+  Supabase secret sync; deployed environment selection now uses `RECIPE_DOST_ENV`.
 - Decision: Edge Function worker secret lookups now prefer canonical `MEDIA_WORKER_SHARED_SECRET` and retain `WORKER_API_SECRET` / `MEDIA_WORKER_SECRET` as migration fallbacks.
 - Validation: `npm run qa:static`, `npm run env:check`, `APP_ENV=development APP_VARIANT=development npx expo config --json >/dev/null`, and `APP_ENV=production APP_VARIANT=production npx expo config --json >/dev/null` passed.
 - M22D.0A established local gitignored env files as the app repo source of truth for development and production separation.
@@ -695,3 +896,52 @@
 - **Context:** Automated AST graph generators (Graphify/CodeGraph) were causing infinite self-correction loops due to macOS sandbox permission conflicts (`Errno 1`). This was expanding the active context window with 40k+ line JSON data logs, exhausting session limits inside a single task block.
 - **Decision:** Completely uninstalled Graphify, wiped `graphify-out/` and `.code-review-graph/`, and removed the MCP server configuration.
 - **Consequence:** Project context tracking is now 100% shifted back to lightweight, cost-free, explicit markdown files (`agents.md`, `todo.md`, `decision_log.md`). Codex must rely purely on target file blocks provided directly in user prompts.
+
+## [2026-07-30] M24.7C Recipe Duration and Active Queue Discovery
+
+- Added one authoritative frontend recipe-duration selector. Prep plus cook corrects a conflicting explicit total; ambiguous legacy seconds and source-video duration never become recipe time.
+- Home now queries up to 10 canonical active media jobs separately, orders processing before queued FIFO, and renders them in a horizontal `In progress` gallery above completed `Recent`.
+- Terminal jobs leave the active cache on the next 5-second poll and invalidate only active jobs, recent recipes, Library, and linked recipe/card keys. Focus and foreground refresh both active and recent data.
+- Library Recent uses one platform-neutral display comparator: processing, queued FIFO, retryable failure, completed by newest terminal/update time, then other failures.
+- Active placeholders are excluded from Home Recent by recipe-item and result-card linkage, and duplicate completed result cards are collapsed by recipe-card ID.
+- No migration, schema, Edge Function, worker, queue, Gemini, provider, quota, dependency, RevenueCat, or deployment behavior changed.
+- Validation: `npm test`, `npm run typecheck`, `npm run lint`, `npm run qa:static`, and `npm run functions:check` passed. `npm run doctor` reported only the accepted existing Expo package-drift warning.
+
+## [2026-07-30] M24.5R Same-Account Recovery
+
+- Anonymous accounts are secured in place with Supabase `updateUser`, email-change OTP verification, and a password; every step verifies that the original Supabase user ID is unchanged and never calls `signUp`.
+- Recovery uses email/password sign-in, verifies the final Supabase session, clears/refetches only user-owned query roots, and never inserts, migrates, merges, or deletes recipe/media data.
+- Auth bootstrap, callbacks, linking, recovery, and sign-out are serialized so recovery cannot be replaced by a second anonymous session. Guest data requires confirmation before switching accounts.
+- RevenueCat identity synchronization is centralized on the stable Supabase UUID, refreshes CustomerInfo and AI access, and leaves a recovered Supabase session intact when subscription refresh is temporarily unavailable.
+- Settings now shows guest, secured-email, signed-out, recovery, restore-purchases, and safe sign-out states without exposing production UUIDs.
+- Onboarding storage and routing were not changed; account linking and sign-out preserve local onboarding completion.
+- No migration, Edge Function, dependency, provider, worker, queue, duration/retry, Gemini, or native-package change was required.
+- Validation passed: `npm test`, `npm run typecheck`, `npm run lint`, `npm run qa:static`, `npm run functions:check`, and `git diff --check`.
+
+## [2026-07-30] M24.5R-FIX Account Access Screen and Email-Change OTP
+
+- Account forms moved out of Settings into the focused `/account-access` route with independent `secure` and `recover` state machines.
+- Secure mode now uses `updateUser({ email })`, six-digit `verifyOtp({ type: 'email_change' })`, `resend({ type: 'email_change' })` with a 60-second cooldown, then `updateUser({ password })`.
+- The original anonymous Supabase user ID is checked before and after email verification and password creation; no signup, account merge, record migration, or data deletion path exists.
+- Recover mode uses email/password sign-in, preserves the existing meaningful-guest confirmation, re-reads the session, synchronizes RevenueCat with the Supabase UUID, and refreshes scoped user-owned data.
+- Supabase dashboard requirements: anonymous sign-ins, manual linking, and Email provider enabled; the Change Email Address template must contain `{{ .Token }}` and must not rely on `{{ .ConfirmationURL }}` for this flow. The built-in sender remains rate limited.
+- No mobile deep link, migration, Edge Function, native configuration, dependency, onboarding, media-job, queue, Gemini, duration/retry, or RevenueCat backend change was added.
+
+## [2026-07-31] M24.5R-MAGIC Passwordless Account Access
+
+- Password and typed-OTP account access was replaced by one passwordless email-link flow at `/account-access` for both `secure` and `recover` modes.
+- The existing `recipe-dost` scheme is reused with `recipe-dost://auth/callback`; the current Supabase client uses the implicit flow and establishes the callback session from official access/refresh parameters.
+- Secure mode calls `updateUser({ email }, { emailRedirectTo })`, captures the anonymous UUID, and rejects callback completion unless the authoritative linked user retains that UUID.
+- Recover mode calls `signInWithOtp` with `shouldCreateUser: false`, retains meaningful-guest confirmation, and does not reveal whether an email exists.
+- Terminated and background callback delivery share one idempotent processor, which re-reads the authoritative session, synchronizes RevenueCat to the Supabase UUID, and refetches scoped user-owned and AI-access queries.
+- Supabase Dashboard must allow `recipe-dost://auth/callback`; both the Magic Link and Change Email Address templates must use `{{ .ConfirmationURL }}`.
+- No migration, Edge Function, custom email service, dependency, onboarding, media, queue, duration/retry, RevenueCat backend, or native configuration change was required.
+
+## [2026-07-31] M24.5R-FINAL Deterministic Recovery Entry
+
+- The persisted local onboarding key is the only onboarding-completion authority; a missing key is incomplete regardless of anonymous, linked, or signed-out auth state.
+- Root startup hydrates onboarding before mounting auth bootstrap, and unresolved onboarding/auth states retain the existing loading UI without rendering tabs first.
+- The final welcome screen keeps `Get Started` and adds `Recover account`; recovery does not complete onboarding until the authoritative Magic Link callback succeeds.
+- Recovery requests are single-flight, wait for auth bootstrap to become idle, re-read the session, and retain `shouldCreateUser: false`.
+- Callback completion clears guest-scoped cache before refetch, synchronizes RevenueCat to the recovered Supabase UUID, completes local onboarding when needed, and opens Home.
+- No migration, Edge Function, backend, native configuration, dependency, media, queue, Gemini, duration/retry, or RevenueCat configuration change was required.

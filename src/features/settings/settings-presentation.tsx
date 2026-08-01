@@ -149,73 +149,15 @@ export function SettingsDivider() {
   )
 }
 
-export function ProfileSettingsCard({ identifier }: { identifier: string }) {
-  return (
-    <SettingsPanel>
-      <View
-        accessible
-        accessibilityLabel={`Anonymous Account ID ${identifier}`}
-        style={{
-          minHeight: 92,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.lg,
-          paddingVertical: spacing.lg,
-        }}
-      >
-        <View
-          style={{
-            width: 56,
-            height: 56,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: radius.pill,
-            borderWidth: 1,
-            borderColor: colors.primaryOutlineSoft,
-            backgroundColor: colors.primaryWash,
-          }}
-        >
-          <Text
-            selectable={false}
-            style={[
-              typography.heading,
-              { color: colors.primary, fontStyle: 'italic', fontWeight: '700' },
-            ]}
-          >
-            R
-          </Text>
-        </View>
-        <View style={{ minWidth: 0, flex: 1, gap: spacing.xs }}>
-          <Text
-            selectable
-            style={[typography.body, { color: colors.onSurface, fontWeight: '800' }]}
-          >
-            Anonymous Account ID
-          </Text>
-          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
-            Support may request this non-secret ID to locate your anonymous account. Press and hold the ID to copy it.
-          </Text>
-          <Text
-            selectable
-            numberOfLines={1}
-            ellipsizeMode="middle"
-            style={[typography.caption, { color: colors.tertiary, fontWeight: '700' }]}
-          >
-            {identifier}
-          </Text>
-        </View>
-      </View>
-    </SettingsPanel>
-  )
-}
-
 export function SubscriptionStatusCard({
   detailText,
   errorMessage,
+  refreshing = false,
   status,
 }: {
   detailText: string | null
   errorMessage?: string | null
+  refreshing?: boolean
   status: NormalizedSubscriptionStatus
 }) {
   return (
@@ -265,6 +207,17 @@ export function SubscriptionStatusCard({
         <Text selectable style={[typography.caption, { color: colors.tertiary }]}>
           {detailText}
         </Text>
+      ) : null}
+      {refreshing ? (
+        <View
+          accessibilityLiveRegion="polite"
+          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
+        >
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text selectable style={[typography.caption, { color: colors.textMuted }]}>
+            Updating usage…
+          </Text>
+        </View>
       ) : null}
       {errorMessage ? (
         <SettingsFeedback message={errorMessage} tone="error" />

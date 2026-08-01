@@ -2,11 +2,39 @@ import type { CaptureEvent } from '@posthog/core'
 
 export const ANALYTICS_SCHEMA_VERSION = '1'
 
+const SUBSCRIPTION_RECONCILIATION_KEYS = [
+  'trigger',
+  'local_entitlement_active',
+  'backend_premium_active',
+  'expiration_relation',
+  'provider_environment',
+  'sync_result',
+  'normalized_error_code',
+  'latency_bucket',
+] as const
+
 export const PRODUCT_EVENT_SCHEMAS = {
   app_opened: [],
   onboarding_started: [],
   onboarding_completed: [],
   onboarding_skipped: [],
+  account_recovery_form_opened: ['mode'],
+  account_link_started: ['method'],
+  account_link_verification_sent: ['method', 'stage'],
+  account_link_completed: ['method', 'subscription_refresh_pending'],
+  account_link_failed: ['method', 'stage'],
+  account_recovery_sign_in_started: ['method'],
+  account_recovery_guest_switch_confirmation_required: [],
+  account_recovery_completed: [
+    'method',
+    'replaced_empty_guest',
+    'subscription_refresh_pending',
+  ],
+  account_recovery_sign_in_failed: ['method'],
+  account_recovery_subscription_refreshed: [],
+  account_recovery_subscription_refresh_pending: [],
+  account_sign_out_subscription_reset_failed: [],
+  account_signed_out: [],
   account_deletion_completed: [],
   ai_recipe_report_submitted: ['category'],
   legal_link_opened: [],
@@ -33,6 +61,21 @@ export const PRODUCT_EVENT_SCHEMAS = {
   restore_started: ['entry_point'],
   restore_completed: ['entry_point', 'result'],
   restore_failed: ['entry_point', 'result', 'failure_code'],
+  subscription_refresh_started: SUBSCRIPTION_RECONCILIATION_KEYS,
+  subscription_refresh_completed: SUBSCRIPTION_RECONCILIATION_KEYS,
+  subscription_refresh_failed: SUBSCRIPTION_RECONCILIATION_KEYS,
+  subscription_restore_started: SUBSCRIPTION_RECONCILIATION_KEYS,
+  subscription_restore_completed: SUBSCRIPTION_RECONCILIATION_KEYS,
+  subscription_restore_no_entitlement: SUBSCRIPTION_RECONCILIATION_KEYS,
+  subscription_restore_failed: SUBSCRIPTION_RECONCILIATION_KEYS,
+  subscription_state_transition: [
+    ...SUBSCRIPTION_RECONCILIATION_KEYS,
+    'state_before',
+    'state_after',
+  ],
+  purchase_reconciliation_started: SUBSCRIPTION_RECONCILIATION_KEYS,
+  purchase_reconciliation_completed: SUBSCRIPTION_RECONCILIATION_KEYS,
+  purchase_reconciliation_failed: SUBSCRIPTION_RECONCILIATION_KEYS,
   posthog_test_event: [
     'app_env',
     'platform',
@@ -77,6 +120,11 @@ const COMMON_PROPERTY_KEYS = [
   'update_channel',
   'analytics_schema_version',
 ] as const
+
+const SAFE_SENSITIVE_PROPERTY_KEYS = new Set([
+  'local_entitlement_active',
+  'normalized_error_code',
+])
 
 const SDK_PROPERTY_KEYS = new Set([
   'token',
@@ -175,7 +223,12 @@ export function sanitizeEventProperties(
     if (!allowedKeys.has(key) && !isSdkProperty) {
       continue
     }
-    if (!isSdkProperty && key !== '$screen_name' && SENSITIVE_KEY_PATTERN.test(key)) {
+    if (
+      !isSdkProperty &&
+      key !== '$screen_name' &&
+      !SAFE_SENSITIVE_PROPERTY_KEYS.has(key) &&
+      SENSITIVE_KEY_PATTERN.test(key)
+    ) {
       continue
     }
     if (!isSafeScalar(value)) continue
@@ -197,6 +250,7 @@ export function sanitizeEventProperties(
 
   return sanitized
 }
+
 
 export function sanitizePostHogCapture(capture: CaptureEvent | null): CaptureEvent | null {
   if (!capture) return null

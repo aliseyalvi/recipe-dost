@@ -1,5 +1,22 @@
 # Recipe Dost Database Schema Plan
 
+## M24.1 service-only subscription state
+
+`revenuecat_customer_bindings` stores one environment-scoped keyed RevenueCat
+customer binding per Supabase user. The customer key is an Edge Function HMAC;
+the raw RevenueCat original ID is never stored. Unique constraints prevent one
+customer from binding to two users and one user from binding to two customers in
+the same environment.
+
+`revenuecat_sync_state` stores an expiring synchronization lease plus last
+attempt/success/result/latency metadata per environment and Supabase user.
+
+Both tables reference `auth.users`, enable RLS, have no anonymous/authenticated
+policies, and grant table/RPC access only to `service_role`. Service-role-only
+invoker functions atomically acquire/complete leases, create/verify bindings,
+and transactionally update the existing `user_profiles` entitlement projection
+and binding verification metadata.
+
 Use Supabase Postgres.
 
 Use Supabase auth.users as the auth user table.
