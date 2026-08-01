@@ -52,7 +52,7 @@ module.exports = ({ config }) => {
       },
       android: {
         package: androidPackage,
-        versionCode: 3,
+        versionCode: 4,
         blockedPermissions: [
           "android.permission.READ_EXTERNAL_STORAGE",
           "android.permission.WRITE_EXTERNAL_STORAGE",
